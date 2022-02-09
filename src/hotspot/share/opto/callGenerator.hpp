@@ -172,19 +172,6 @@ class CallGenerator : public ResourceObj {
                                                  CallGenerator* cg);
   virtual Node* generate_predicate(JVMState* jvms, int predicate) { return NULL; };
 
-  virtual void print_inlining_late(const char* msg) { ShouldNotReachHere(); }
-
-  static void print_inlining(Compile* C, ciMethod* callee, int inline_level, int bci, const char* msg) {
-    if (C->print_inlining()) {
-      C->print_inlining(callee, inline_level, bci, msg);
-    }
-  }
-
-  static void print_inlining_failure(Compile* C, ciMethod* callee, int inline_level, int bci, const char* msg) {
-    print_inlining(C, callee, inline_level, bci, msg);
-    C->log_inline_failure(msg);
-  }
-
   static bool is_inlined_method_handle_intrinsic(JVMState* jvms, ciMethod* m);
   static bool is_inlined_method_handle_intrinsic(ciMethod* caller, int bci, ciMethod* m);
   static bool is_inlined_method_handle_intrinsic(ciMethod* symbolic_info, ciMethod* m);

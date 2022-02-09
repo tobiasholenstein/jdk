@@ -122,6 +122,7 @@ JVMState* LibraryIntrinsic::generate(JVMState* jvms) {
     CompileTask::print_inlining_ul(callee, jvms->depth() - 1, bci, inline_msg);
     if (C->print_intrinsics() || C->print_inlining()) {
       C->print_inlining(callee, jvms->depth() - 1, bci, inline_msg);
+      C->print_inlining_update(this);
     }
     C->gather_intrinsic_statistics(intrinsic_id(), is_virtual(), Compile::_intrinsic_worked);
     if (C->log()) {
@@ -132,7 +133,6 @@ JVMState* LibraryIntrinsic::generate(JVMState* jvms) {
     }
     // Push the result from the inlined method onto the stack.
     kit.push_result();
-    C->print_inlining_update(this);
     return kit.transfer_exceptions_into_jvms();
   }
 
@@ -150,6 +150,7 @@ JVMState* LibraryIntrinsic::generate(JVMState* jvms) {
     CompileTask::print_inlining_ul(callee, jvms->depth() - 1, bci, msg);
     if (C->print_intrinsics() || C->print_inlining()) {
       C->print_inlining(callee, jvms->depth() - 1, bci, msg);
+      C->print_inlining_update(this);
     }
   } else {
     // Root compile
@@ -161,11 +162,11 @@ JVMState* LibraryIntrinsic::generate(JVMState* jvms) {
     const char *msg = msg_stream.as_string();
     log_debug(jit, inlining)("%s", msg);
     if (C->print_intrinsics() || C->print_inlining()) {
-      tty->print("%s", msg);
+      C->print_inlining(callee, jvms->depth() - 1, bci, msg);
+      C->print_inlining_update(this);
     }
   }
   C->gather_intrinsic_statistics(intrinsic_id(), is_virtual(), Compile::_intrinsic_failed);
-  C->print_inlining_update(this);
 
   return NULL;
 }

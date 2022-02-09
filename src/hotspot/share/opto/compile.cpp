@@ -1957,7 +1957,11 @@ void Compile::inline_incrementally(PhaseIterGVN& igvn) {
             CallGenerator* cg = _late_inlines.at(i);
             const char* msg = "live nodes > LiveNodeCountInliningCutoff";
             if (do_print_inlining) {
-              cg->print_inlining_late(msg);
+              CallNode* call = cg->call_node();
+              print_inlining_assert_ready();
+              print_inlining(method(), call->jvms()->depth()-1, call->jvms()->bci(), msg);
+              print_inlining_move_to(cg);
+              print_inlining_update_delayed(cg);
             }
             log_late_inline_failure(cg, msg);
           }
@@ -4256,16 +4260,12 @@ void Compile::print_inlining_reinit() {
   }
 }
 
-void Compile::print_inlining_reset() {
-  _print_inlining_stream->reset();
-}
-
 void Compile::print_inlining_commit() {
   assert(print_inlining() || print_intrinsics(), "PrintInlining off?");
   // Transfer the message from _print_inlining_stream to the current
   // _print_inlining_list buffer and clear _print_inlining_stream.
   _print_inlining_list->at(_print_inlining_idx)->ss()->write(_print_inlining_stream->base(), _print_inlining_stream->size());
-  print_inlining_reset();
+  _print_inlining_stream->reset();
 }
 
 void Compile::print_inlining_push() {
@@ -4278,6 +4278,8 @@ Compile::PrintInliningBuffer* Compile::print_inlining_current() {
   return _print_inlining_list->at(_print_inlining_idx);
 }
 
+// commit the messages placed by print_inlining()
+// messages for late inlining can be replaced later by print_inlining_update_delayed()
 void Compile::print_inlining_update(CallGenerator* cg) {
   if (print_inlining() || print_intrinsics()) {
     if (cg->is_late_inline()) {
@@ -4311,15 +4313,29 @@ void Compile::print_inlining_move_to(CallGenerator* cg) {
   }
 }
 
+// used only for late inlining messages:
+// replaces the inline message with a new one placed by print_inlining()
 void Compile::print_inlining_update_delayed(CallGenerator* cg) {
   if (print_inlining() || print_intrinsics()) {
     assert(_print_inlining_stream->size() > 0, "missing inlining msg");
     assert(print_inlining_current()->cg() == cg, "wrong entry");
     // replace message with new message
-    _print_inlining_list->at_put(_print_inlining_idx, new PrintInliningBuffer());
+    print_inlining_current()->ss()->reset();
     print_inlining_commit();
-    print_inlining_current()->set_cg(cg);
   }
+}
+
+void Compile::print_inlining(ciMethod* method, int inline_level, int bci, const char* msg = NULL) {
+  stringStream ss;
+  CompileTask::print_inlining_inner(&ss, method, inline_level, bci, msg);
+  print_inlining_stream()->print("%s", ss.as_string());
+}
+
+void Compile::print_inlining_failure(ciMethod* callee, int inline_level, int bci, const char* msg) {
+  if (print_inlining()) {
+    print_inlining(callee, inline_level, bci, msg);
+  }
+  log_inline_failure(msg);
 }
 
 void Compile::print_inlining_assert_ready() {
@@ -4392,8 +4408,8 @@ void Compile::log_inline_id(CallGenerator* cg) {
 }
 
 void Compile::log_inline_failure(const char* msg) {
-  if (C->log() != NULL) {
-    C->log()->inline_fail(msg);
+  if (log() != NULL) {
+    log()->inline_fail(msg);
   }
 }
 

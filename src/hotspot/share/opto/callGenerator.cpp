@@ -352,15 +352,6 @@ class LateInlineCallGenerator : public DirectCallGenerator {
     return DirectCallGenerator::generate(jvms);
   }
 
-  virtual void print_inlining_late(const char* msg) {
-    CallNode* call = call_node();
-    Compile* C = Compile::current();
-    C->print_inlining_assert_ready();
-    C->print_inlining(method(), call->jvms()->depth()-1, call->jvms()->bci(), msg);
-    C->print_inlining_move_to(this);
-    C->print_inlining_update_delayed(this);
-  }
-
   virtual void set_unique_id(jlong id) {
     _unique_id = id;
   }
@@ -427,6 +418,7 @@ bool LateInlineMHCallGenerator::do_late_inline_check(Compile* C, JVMState* jvms)
   bool allow_inline = C->inlining_incrementally();
   bool input_not_const = true;
   CallGenerator* cg = for_method_handle_inline(jvms, _caller, method(), allow_inline, input_not_const);
+  C->print_inlining_update_delayed(this);
   assert(!input_not_const, "sanity"); // shouldn't have been scheduled for inlining in the first place
 
   if (cg != NULL) {
@@ -494,15 +486,6 @@ class LateInlineVirtualCallGenerator : public VirtualCallGenerator {
     return new_jvms;
   }
 
-  virtual void print_inlining_late(const char* msg) {
-    CallNode* call = call_node();
-    Compile* C = Compile::current();
-    C->print_inlining_assert_ready();
-    C->print_inlining(method(), call->jvms()->depth()-1, call->jvms()->bci(), msg);
-    C->print_inlining_move_to(this);
-    C->print_inlining_update_delayed(this);
-  }
-
   virtual void set_unique_id(jlong id) {
     _unique_id = id;
   }
@@ -542,6 +525,7 @@ bool LateInlineVirtualCallGenerator::do_late_inline_check(Compile* C, JVMState* 
                                         _prof_factor,
                                         NULL /*speculative_receiver_type*/,
                                         true /*allow_intrinsics*/);
+  C->print_inlining_update_delayed(this);
 
   if (cg != NULL) {
     assert(!cg->is_late_inline() || cg->is_mh_late_inline() || AlwaysIncrementalInline, "we're doing late inlining");
@@ -732,15 +716,13 @@ void CallGenerator::do_late_inline_helper() {
     }
 
     C->print_inlining_assert_ready();
-
     C->print_inlining_move_to(this);
-
     C->log_late_inline(this);
 
     // JVMState is ready, so time to perform some checks and prepare for inlining attempt.
-    if (!do_late_inline_check(C, jvms)) {
+    bool do_late_inlining = do_late_inline_check(C, jvms);
+    if (!do_late_inlining) {
       map->disconnect_inputs(C);
-      C->print_inlining_update_delayed(this);
       return;
     }
 
@@ -1112,8 +1094,7 @@ CallGenerator* CallGenerator::for_method_handle_inline(JVMState* jvms, ciMethod*
         const int vtable_index = Method::invalid_vtable_index;
 
         if (!ciMethod::is_consistent_info(callee, target)) {
-          print_inlining_failure(C, callee, jvms->depth() - 1, jvms->bci(),
-                                 "signatures mismatch");
+          C->print_inlining_failure(callee, jvms->depth() - 1, jvms->bci(), "signatures mismatch");
           return NULL;
         }
 
@@ -1124,8 +1105,8 @@ CallGenerator* CallGenerator::for_method_handle_inline(JVMState* jvms, ciMethod*
                                               PROB_ALWAYS);
         return cg;
       } else {
-        print_inlining_failure(C, callee, jvms->depth() - 1, jvms->bci(),
-                               "receiver not constant");
+        C->print_inlining_failure(callee, jvms->depth() - 1, jvms->bci(), "receiver not constant");
+        return NULL;
       }
     }
     break;
@@ -1143,8 +1124,7 @@ CallGenerator* CallGenerator::for_method_handle_inline(JVMState* jvms, ciMethod*
         ciMethod* target = oop_ptr->const_oop()->as_member_name()->get_vmtarget();
 
         if (!ciMethod::is_consistent_info(callee, target)) {
-          print_inlining_failure(C, callee, jvms->depth() - 1, jvms->bci(),
-                                 "signatures mismatch");
+          C->print_inlining_failure(callee, jvms->depth() - 1, jvms->bci(), "signatures mismatch");
           return NULL;
         }
 
@@ -1210,13 +1190,13 @@ CallGenerator* CallGenerator::for_method_handle_inline(JVMState* jvms, ciMethod*
                                               speculative_receiver_type);
         return cg;
       } else {
-        print_inlining_failure(C, callee, jvms->depth() - 1, jvms->bci(),
-                               "member_name not constant");
+        C->print_inlining_failure(callee, jvms->depth() - 1, jvms->bci(), "member_name not constant");
+        return NULL;
       }
     }
     break;
 
-    case vmIntrinsics::_linkToNative:
+  case vmIntrinsics::_linkToNative:
     {
       Node* addr_n = kit.argument(1); // target address
       Node* nep_n = kit.argument(callee->arg_size() - 1); // NativeEntryPoint
@@ -1229,8 +1209,9 @@ CallGenerator* CallGenerator::for_method_handle_inline(JVMState* jvms, ciMethod*
         ciNativeEntryPoint* nep = nep_t->const_oop()->as_native_entry_point();
         return new NativeCallGenerator(callee, addr, nep);
       } else {
-        print_inlining_failure(C, callee, jvms->depth() - 1, jvms->bci(),
-                               "NativeEntryPoint not constant");
+        C->print_inlining_failure(callee, jvms->depth() - 1, jvms->bci(),
+                                  "NativeEntryPoint not constant");
+        return NULL;
       }
     }
     break;

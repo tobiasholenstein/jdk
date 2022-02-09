@@ -479,13 +479,8 @@ class Compile : public Phase {
   void print_inlining_update_delayed(CallGenerator* cg);
   void print_inlining_move_to(CallGenerator* cg);
   void print_inlining_assert_ready();
-  void print_inlining_reset();
-
-  void print_inlining(ciMethod* method, int inline_level, int bci, const char* msg = NULL) {
-    stringStream ss;
-    CompileTask::print_inlining_inner(&ss, method, inline_level, bci, msg);
-    print_inlining_stream()->print("%s", ss.as_string());
-  }
+  void print_inlining(ciMethod* method, int inline_level, int bci, const char* msg);
+  void print_inlining_failure(ciMethod* callee, int inline_level, int bci, const char* msg);
 
 #ifndef PRODUCT
   IdealGraphPrinter* igv_printer() { return _igv_printer; }
@@ -1092,8 +1087,6 @@ class Compile : public Phase {
  private:
   // Phase control:
   void Init(int aliaslevel);                     // Prepare for a single compilation
-  int  Inline_Warm();                            // Find more inlining work.
-  void Finish_Warm();                            // Give up on further inlines.
   void Optimize();                               // Given a graph, optimize it
   void Code_Gen();                               // Generate code from a graph
 
