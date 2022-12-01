@@ -141,6 +141,7 @@ public class Figure extends Properties.Entity implements Vertex {
         this.color = Color.WHITE;
         Canvas canvas = new Canvas();
         this.metrics = canvas.getFontMetrics(Diagram.FONT.deriveFont(Font.BOLD));
+        updateLines();
     }
 
     public int getId() {

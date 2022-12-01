@@ -24,6 +24,10 @@
  */
 package com.sun.hotspot.igv.filter;
 
+import java.awt.Color;
+import java.awt.Dimension;
+import javax.swing.JEditorPane;
+import org.openide.text.CloneableEditorSupport;
 import org.openide.windows.WindowManager;
 
 /**
@@ -43,6 +47,23 @@ public class EditFilterDialog extends javax.swing.JDialog {
 
         sourceTextArea.setText(customFilter.getCode());
         nameTextField.setText(customFilter.getName());
+
+
+        JEditorPane editor = new JEditorPane();
+        //editor.getAccessibleContext().setAccessibleName(NbBundle.getMessage(FmtOptions.class, "AN_Preview")); //NOI18N
+        //editor.getAccessibleContext().setAccessibleDescription(NbBundle.getMessage(FmtOptions.class, "AD_Preview")); //NOI18N
+        //editor.setEditorKit(CloneableEditorSupport.getEditorKit("text/x-javascript"));
+        editor.setEditable(true);
+
+        editor.setContentType("text/html");
+        //editor.setEditable(false);
+        editor.setBackground(Color.GREEN);
+        editor.setPreferredSize(new Dimension(400, 250));
+        //editor.addHyperlinkListener(this);
+        this.add(editor);
+        this.pack();
+        this.setVisible(true);
+
     }
 
     public boolean wasAccepted() {

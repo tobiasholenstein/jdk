@@ -25,11 +25,16 @@
 package com.sun.hotspot.igv.filter;
 
 import com.sun.hotspot.igv.graph.Diagram;
+import java.awt.Color;
+import java.awt.Dimension;
 import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
+import javax.swing.JDialog;
+import javax.swing.JEditorPane;
 import org.openide.cookies.OpenCookie;
+import org.openide.text.CloneableEditorSupport;
 import org.openide.util.Exceptions;
 
 /**
@@ -80,11 +85,35 @@ public class CustomFilter extends AbstractFilter {
     }
 
     public boolean openInEditor() {
-        EditFilterDialog dialog = new EditFilterDialog(CustomFilter.this);
-        dialog.setVisible(true);
-        boolean result = dialog.wasAccepted();
+        //EditFilterDialog dialog = new EditFilterDialog(CustomFilter.this);
+        //dialog.setVisible(true);
+        //boolean result = dialog.wasAccepted();
+
+        //sourceTextArea.setText(this.getCode());
+        //nameTextField.setText(this.getName());
+
+
+        JEditorPane editor = new JEditorPane();
+        //editor.getAccessibleContext().setAccessibleName(NbBundle.getMessage(FmtOptions.class, "AN_Preview")); //NOI18N
+        //editor.getAccessibleContext().setAccessibleDescription(NbBundle.getMessage(FmtOptions.class, "AD_Preview")); //NOI18N
+        //editor.setEditorKit(CloneableEditorSupport.getEditorKit("text/x-javascript"));
+        editor.setEditable(true);
+
+        editor.setContentType("text/javascript");
+        //editor.setEditable(false);
+        //editor.setBackground(Color.GREEN);
+        editor.setPreferredSize(new Dimension(400, 250));
+        editor.setText(this.getCode());
+
+        //editor.addHyperlinkListener(this);
+        JDialog jj = new JDialog();
+        jj.getContentPane().add(editor);
+        jj.pack();
+        jj.setVisible(true);
+
+
         this.getChangedEvent().fire();
-        return result;
+        return true;
     }
 
     @Override

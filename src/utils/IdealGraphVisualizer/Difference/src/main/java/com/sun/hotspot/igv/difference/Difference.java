@@ -365,7 +365,7 @@ public class Difference {
             String s = otherNode.getProperties().get(p.getName());
             if (s == null && p.getValue().length() > 0) {
                 difference = true;
-                n.getProperties().setProperty(NEW_PREFIX + p.getName(), "");
+                n.getProperties().setProperty(NEW_PREFIX + p.getName(), "xxx");
             }
         }
 
