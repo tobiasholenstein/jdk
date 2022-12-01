@@ -85,6 +85,16 @@ public class Group extends Properties.Entity implements ChangedEventProvider<Gro
         return Collections.unmodifiableList(graphs);
     }
 
+    @Override
+    public void reorder(int[] perm) {
+        List<InputGraph> permGraphs = new ArrayList<>(graphs.size());
+        for (int i=0; i < perm.length; i++) {
+            permGraphs.add(perm[i], graphs.get(i));
+        }
+        graphs.clear();
+        graphs.addAll(permGraphs);
+    }
+
     public List<InputGraph> getGraphs() {
         return Collections.unmodifiableList(graphs);
     }

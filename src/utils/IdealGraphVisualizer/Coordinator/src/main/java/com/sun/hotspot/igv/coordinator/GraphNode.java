@@ -31,6 +31,7 @@ import com.sun.hotspot.igv.util.PropertiesSheet;
 import com.sun.hotspot.igv.util.StringUtils;
 import java.awt.Image;
 import javax.swing.Action;
+import org.openide.actions.MoveDownAction;
 import org.openide.actions.OpenAction;
 import org.openide.actions.RenameAction;
 import org.openide.nodes.*;
@@ -101,6 +102,8 @@ public class GraphNode extends AbstractNode {
             // Action for opening the graph
             content.add(new GraphOpenCookie(viewer, graph));
         }
+
+        content.add(MoveDownAction.findObject(MoveDownAction.class, true));
 
         // Action for removing a graph
         content.add(new GraphRemoveCookie(graph));

@@ -95,6 +95,16 @@ public class GraphDocument extends Properties.Entity implements ChangedEventProv
     }
 
     @Override
+    public void reorder(int[] perm) {
+        List<FolderElement> permElements = new ArrayList<>(elements.size());
+        for (int i=0; i < perm.length; i++) {
+            permElements.add(perm[i], elements.get(i));
+        }
+        elements.clear();
+        elements.addAll(permElements);
+    }
+
+    @Override
     public void removeElement(FolderElement element) {
         if (elements.remove(element)) {
             getChangedEvent().fire();

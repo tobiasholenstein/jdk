@@ -30,6 +30,7 @@ public interface Folder {
     String getName();
     String getDisplayName();
     List<? extends FolderElement> getElements();
+    void reorder(int[] perm);
     void removeElement(FolderElement element);
     void addElement(FolderElement group);
     ChangedEvent<? extends Folder> getChangedEvent();

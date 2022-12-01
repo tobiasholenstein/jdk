@@ -31,6 +31,7 @@ import java.awt.Image;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.Action;
+import org.openide.actions.MoveDownAction;
 import org.openide.actions.PropertiesAction;
 import org.openide.actions.RenameAction;
 import org.openide.nodes.*;
@@ -62,6 +63,12 @@ public class FolderNode extends AbstractNode {
 
         public Folder getFolder() {
             return folder;
+        }
+
+        public void reorder(int[] perm) {
+            super.destroyNodes(getNodes());
+            folder.reorder(perm);
+            super.addNotify();
         }
 
         @Override
@@ -135,6 +142,22 @@ public class FolderNode extends AbstractNode {
                 children.destroyNodes(children.getNodes());
                 folderElement.getParent().removeElement(folderElement);
             });
+            this.content.add(new Index.Support() {
+                @Override
+                public int getNodesCount() {
+                    return children.getNodesCount();
+                }
+
+                @Override
+                public Node[] getNodes() {
+                    return children.getNodes();
+                }
+
+                @Override
+                public void reorder(int[] ints) {
+                    children.reorder(ints);
+                }
+            });
         }
     }
 
@@ -188,6 +211,8 @@ public class FolderNode extends AbstractNode {
     public Action[] getActions(boolean b) {
         return new Action[]{
                 RenameAction.findObject(RenameAction.class, true),
+                MoveDownAction.findObject(MoveDownAction.class, true),
+
                 PropertiesAction.findObject(PropertiesAction.class, true),
         };
     }
