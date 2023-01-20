@@ -74,12 +74,15 @@ public class NodeQuickSearch implements SearchProvider {
         if (parts.length == 1) {
             name = DEFAULT_PROPERTY;
             rawValue = parts[0];
-            value = ".*" + Pattern.quote(rawValue) + ".*";
+            boolean keepRaw = rawValue.startsWith("\"") && rawValue.endsWith("\"") && rawValue.length() > 2;
+            value = keepRaw ? rawValue.substring(1, rawValue.length() - 1) : ".*" + Pattern.quote(rawValue) + ".*";
         } else {
             name = parts[0];
             rawValue = parts[1];
-            value = (rawValue.isEmpty() ? "" : Pattern.quote(rawValue)) + ".*";
+            boolean keepRaw = rawValue.startsWith("\"") && rawValue.endsWith("\"") && rawValue.length() > 2;
+            value = keepRaw ? rawValue.substring(1, rawValue.length() - 1) : ((rawValue.isEmpty() ? "" : Pattern.quote(rawValue)) + ".*");
         }
+        System.out.println(value);
 
         final InputGraphProvider p = LookupHistory.getLast(InputGraphProvider.class);
         if (p != null && p.getGraph() != null) {
