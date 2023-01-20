@@ -66,6 +66,7 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
     private boolean showNodeHull;
     private boolean showEmptyBlocks;
     private boolean hideDuplicates;
+    private boolean markedDuplicates;
     private static boolean globalSelection = false;
 
     private final ChangedListener<FilterChain> filterChainChangedListener = source -> filterChanged();
@@ -132,6 +133,7 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         this.hideDuplicates = hideDuplicates;
         InputGraph currentGraph = getFirstGraph();
         if (hideDuplicates) {
+            markDuplicateGraphs();
             // Back up to the unhidden equivalent graph
             int index = graphs.indexOf(currentGraph);
             while (graphs.get(index).getProperties().get("_isDuplicate") != null) {
@@ -141,8 +143,12 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         }
         filterGraphs();
         selectGraph(currentGraph);
+        group.updateChildrenDisplayNames();
     }
 
+    public boolean getHideDuplicates() {
+        return this.hideDuplicates;
+    }
 
     public DiagramViewModel(InputGraph graph, FilterChain filterChain, FilterChain sequenceFilterChain) {
         assert filterChain != null;
@@ -170,6 +176,8 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         // If the group has been emptied, all corresponding graph views
         // will be closed, so do nothing.
         ChangedListener<Group> groupContentChangedListener = g -> {
+            this.markedDuplicates = false;
+            this.hideDuplicates = false;
             assert g == group;
             if (group.getGraphs().isEmpty()) {
                 // If the group has been emptied, all corresponding graph views
@@ -465,4 +473,19 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
             }
         };
     }
+
+    private void markDuplicateGraphs() {
+        if (markedDuplicates) {
+            return;
+        }
+        InputGraph previous = null;
+        for (InputGraph graph : group.getGraphs()) {
+            if (previous != null && graph.isSameContent(previous)) {
+                graph.getProperties().setProperty("_isDuplicate", "true");
+            }
+            previous = graph;
+        }
+        markedDuplicates = true;
+    }
+
 }

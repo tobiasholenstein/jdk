@@ -29,6 +29,7 @@ import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.data.services.GraphViewer;
 import com.sun.hotspot.igv.util.PropertiesSheet;
 import com.sun.hotspot.igv.util.StringUtils;
+import com.sun.hotspot.igv.view.EditorTopComponent;
 import java.awt.Image;
 import javax.swing.Action;
 import org.openide.actions.OpenAction;
@@ -47,6 +48,9 @@ public class GraphNode extends AbstractNode {
 
     private final InputGraph graph;
     private boolean selected = false;
+
+    private boolean duplicate = false;
+
 
     /** Creates a new instance of GraphNode */
     public GraphNode(InputGraph graph) {
@@ -75,11 +79,21 @@ public class GraphNode extends AbstractNode {
         fireIconChange();
     }
 
+    public void setDuplicate(boolean duplicate) {
+        this.duplicate = duplicate;
+        fireDisplayNameChange(null, null);
+    }
+
     @Override
     public String getHtmlDisplayName() {
         String htmlDisplayName = StringUtils.escapeHTML(getDisplayName());
         if (selected) {
             htmlDisplayName = "<b>" + htmlDisplayName + "</b>";
+        } else if (graph.getProperties().get("_isDuplicate") != null) {
+            EditorTopComponent editor = EditorTopComponent.getActive();
+            if (editor != null && editor.getModel().getHideDuplicates()) {
+                htmlDisplayName = "<HTML><font color='#808080'>" + htmlDisplayName + "</font></HTML>";
+            }
         }
         return htmlDisplayName;
     }
@@ -94,6 +108,7 @@ public class GraphNode extends AbstractNode {
         this.graph = graph;
         this.setDisplayName(graph.getName());
         content.add(graph);
+        graph.getDisplayNameChangedEvent().addListener(l -> fireDisplayNameChange(null, null));
 
         final GraphViewer viewer = Lookup.getDefault().lookup(GraphViewer.class);
 

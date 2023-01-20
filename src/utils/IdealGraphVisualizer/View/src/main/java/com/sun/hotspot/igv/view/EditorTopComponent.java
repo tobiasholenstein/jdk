@@ -207,7 +207,7 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.add(new JToggleButton(new OverviewAction(centerPanel)));
         toolBar.add(new JToggleButton(new PredSuccAction()));
         toolBar.add(new JToggleButton(new ShowEmptyBlocksAction(cfgLayoutAction, true)));
-        toolBar.add(new JToggleButton(new HideDuplicatesAction()));
+        toolBar.add(new JToggleButton(new HideDuplicatesAction(diagramViewModel.getGraphChangedEvent())));
 
         toolBar.addSeparator();
         UndoAction undoAction = UndoAction.get(UndoAction.class);

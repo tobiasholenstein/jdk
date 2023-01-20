@@ -23,6 +23,8 @@
  */
 package com.sun.hotspot.igv.view.actions;
 
+import com.sun.hotspot.igv.data.ChangedEvent;
+import com.sun.hotspot.igv.view.DiagramViewModel;
 import com.sun.hotspot.igv.view.EditorTopComponent;
 import java.awt.event.ActionEvent;
 import javax.swing.AbstractAction;
@@ -36,10 +38,11 @@ import org.openide.util.ImageUtilities;
  */
 public class HideDuplicatesAction extends AbstractAction {
 
-    public HideDuplicatesAction() {
+    public HideDuplicatesAction(ChangedEvent<DiagramViewModel> graphChangedEvent) {
         putValue(AbstractAction.SMALL_ICON, new ImageIcon(ImageUtilities.loadImage(iconResource())));
         putValue(Action.SELECTED_KEY, false);
         putValue(Action.SHORT_DESCRIPTION, "Hide graphs which are the same as the previous graph");
+        graphChangedEvent.addListener(model -> putValue(SELECTED_KEY, model.getHideDuplicates()));
     }
 
     @Override

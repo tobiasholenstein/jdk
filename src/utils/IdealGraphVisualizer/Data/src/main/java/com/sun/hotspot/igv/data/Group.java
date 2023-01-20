@@ -74,8 +74,11 @@ public class Group extends Properties.Entity implements ChangedEventProvider<Gro
         if (graphs.remove((InputGraph) element)) {
             getChangedEvent().fire();
         }
+        updateChildrenDisplayNames();
+    }
+
+    public void updateChildrenDisplayNames() {
         for (InputGraph inputGraph : graphs) {
-            assert inputGraph.getDisplayNameChangedEvent() != null;
             inputGraph.getDisplayNameChangedEvent().fire();
         }
     }
