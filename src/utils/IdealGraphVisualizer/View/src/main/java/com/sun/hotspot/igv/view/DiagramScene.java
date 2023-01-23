@@ -58,6 +58,7 @@ import org.netbeans.api.visual.layout.LayoutFactory;
 import org.netbeans.api.visual.model.*;
 import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
+import org.netbeans.modules.visual.action.MoveAction;
 import org.openide.awt.UndoRedo;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
@@ -584,6 +585,31 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             figureWidget.getActions().addAction(ActionFactory.createPopupMenuAction(figureWidget));
             figureWidget.getActions().addAction(selectAction);
             figureWidget.getActions().addAction(hoverAction);
+            //figureWidget.getActions().addAction(ActionFactory.createMoveAction());
+            figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
+                @Override
+                public void movementStarted(Widget widget) {
+                    System.out.println("movementStarted");
+                }
+
+                @Override
+                public void movementFinished(Widget widget) {
+                    System.out.println("movementFinished");
+                }
+
+                @Override
+                public Point getOriginalLocation(Widget widget) {
+                    return ActionFactory.createDefaultMoveProvider().getOriginalLocation(widget);
+                }
+
+                @Override
+                public void setNewLocation(Widget widget, Point location) {
+                    ActionFactory.createDefaultMoveProvider().setNewLocation(widget, location);
+                }
+            }));
+
+
+
             addObject(figure, figureWidget);
             mainLayer.addChild(figureWidget);
 
