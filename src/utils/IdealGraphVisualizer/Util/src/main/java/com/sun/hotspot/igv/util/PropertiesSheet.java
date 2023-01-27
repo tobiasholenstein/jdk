@@ -61,6 +61,17 @@ public class PropertiesSheet {
                 public void setValue(String arg0) throws IllegalArgumentException {
                     properties.setProperty(p.getName(), arg0);
                 }
+
+                @Override
+                public String getHtmlDisplayName() {
+                    String displayName = getDisplayName();
+                    String htmlDisplayName = StringUtils.escapeHTML(displayName);
+                    htmlDisplayName = "<b>" + htmlDisplayName + "</b>";
+                    if (displayName.startsWith("NEW_")) {
+                        htmlDisplayName = "<HTML><font color='#FF0000'>" + htmlDisplayName + "</font></HTML>";
+                    }
+                    return htmlDisplayName;
+                }
             };
             prop.setName(p.getName());
             set1.put(prop);
