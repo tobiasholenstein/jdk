@@ -34,7 +34,7 @@ public class EnableNewLayoutAction extends EnableLayoutAction {
 
     @Override
     protected String iconResource() {
-        return "com/sun/hotspot/igv/view/images/sea.png";
+        return "com/sun/hotspot/igv/view/images/new_layout.png";
     }
 
     @Override
