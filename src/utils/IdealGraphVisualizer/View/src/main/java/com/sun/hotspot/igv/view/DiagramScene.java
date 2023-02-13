@@ -688,8 +688,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private void doNewLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
-        NewLayoutManager manager = new NewLayoutManager(NewLayoutManager.Combine.SAME_OUTPUTS);
-        manager.setMaxLayerLength(10);
+        NewLayoutManager manager = new NewLayoutManager();
         manager.doLayout(new LayoutGraph(edges, figures));
     }
 
