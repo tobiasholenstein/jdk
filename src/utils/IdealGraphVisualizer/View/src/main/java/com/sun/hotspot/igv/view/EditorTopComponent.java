@@ -187,6 +187,11 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.addSeparator();
         ButtonGroup layoutButtons = new ButtonGroup();
 
+        JToggleButton newLayoutButton = new JToggleButton(new EnableNewLayoutAction(this));
+        newLayoutButton.setSelected(Settings.get().getInt(Settings.DEFAULT_VIEW, Settings.DEFAULT_VIEW_DEFAULT) == Settings.DefaultView.NEW_LAYOUT);
+        layoutButtons.add(newLayoutButton);
+        toolBar.add(newLayoutButton);
+
         JToggleButton seaLayoutButton = new JToggleButton(new EnableSeaLayoutAction(this));
         seaLayoutButton.setSelected(Settings.get().getInt(Settings.DEFAULT_VIEW, Settings.DEFAULT_VIEW_DEFAULT) == Settings.DefaultView.SEA_OF_NODES);
         layoutButtons.add(seaLayoutButton);
