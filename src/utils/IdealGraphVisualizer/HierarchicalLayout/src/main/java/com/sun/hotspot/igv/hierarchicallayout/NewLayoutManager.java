@@ -107,7 +107,7 @@ public class NewLayoutManager {
         }
     }
 
-    public void doLayout(HashSet<? extends Vertex> vertices, HashSet<? extends Link> links) {
+    public void updateLayout(HashSet<? extends Vertex> vertices, HashSet<? extends Link> links) {
         currentVertices = vertices;
         currentLinks = links;
 

@@ -690,8 +690,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return w1.isVisible() && w2.isVisible();
     }
 
-    private void doNewLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
-        newLayoutManager.doLayout(figures, edges);
+    private void doNewLayout(HashSet<Figure> visibleFigures, HashSet<Connection> visibleConnections) {
+        newLayoutManager.updateLayout(visibleFigures, visibleConnections);
     }
 
     private void doSeaLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
