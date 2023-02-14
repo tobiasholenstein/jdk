@@ -31,7 +31,6 @@ import java.util.*;
 
 public class NewLayoutManager {
 
-    public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;
     public static final int DUMMY_HEIGHT = 1;
     public static final int DUMMY_WIDTH = 1;
@@ -75,7 +74,6 @@ public class NewLayoutManager {
     }
 
     private class LayoutEdge {
-
         public LayoutNode from;
         public LayoutNode to;
         // Horizontal distance relative to start of 'from'.
@@ -100,6 +98,14 @@ public class NewLayoutManager {
                     node.preds.remove(e);
                 }
             }
+        }
+    }
+
+    // Re-add saved self-edges from selfEdges set.
+    private void addSelfEdges() {
+        for (LayoutEdge e : selfEdges) {
+            e.from.succs.add(e);
+            e.to.preds.add(e);
         }
     }
 
@@ -143,18 +149,11 @@ public class NewLayoutManager {
         new CrossingReduction().run();
 
         // #############################################################
-        // STEP 7: Assign X coordinates
-        new AssignXCoordinates().run();
-
-        // #############################################################
         // STEP 6: Assign Y coordinates
         new AssignYCoordinates().run();
 
         // Put saved self-edges back so that they are assigned points.
-        for (LayoutEdge e : selfEdges) {
-            e.from.succs.add(e);
-            e.to.preds.add(e);
-        }
+        addSelfEdges();
 
         // #############################################################
         // STEP 8: Write back to interface
@@ -222,7 +221,6 @@ public class NewLayoutManager {
                                 points.add(0, null);
                                 points.addAll(0, splitStartPoints.get(e.link));
 
-                                //checkPoints(points);
                                 if (reversedLinks.contains(e.link)) {
                                     Collections.reverse(points);
                                 }
@@ -382,251 +380,6 @@ public class NewLayoutManager {
                 // EMMY: Here is where the new positions of the edges are actually set
                 l.setControlPoints(points);
             }
-        }
-    }
-
-    private class AssignXCoordinates {
-
-        private ArrayList<Integer>[] space;
-        private ArrayList<LayoutNode>[] downProcessingOrder;
-        private ArrayList<LayoutNode>[] upProcessingOrder;
-
-        private void initialPositions() {
-            for (LayoutNode n : nodes) {
-                n.x = space[n.layer].get(n.pos);
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        private void createArrays() {
-            space = new ArrayList[layers.length];
-            downProcessingOrder = new ArrayList[layers.length];
-            upProcessingOrder = new ArrayList[layers.length];
-        }
-
-        void run() {
-            createArrays();
-
-            for (int i = 0; i < layers.length; i++) {
-                space[i] = new ArrayList<>();
-                downProcessingOrder[i] = new ArrayList<>();
-                upProcessingOrder[i] = new ArrayList<>();
-
-                int curX = 0;
-                for (LayoutNode n : layers[i]) {
-                    space[i].add(curX);
-                    curX += n.width + X_OFFSET;
-                    downProcessingOrder[i].add(n);
-                    upProcessingOrder[i].add(n);
-                }
-
-                downProcessingOrder[i].sort(nodeProcessingDownComparator);
-                upProcessingOrder[i].sort(nodeProcessingUpComparator);
-            }
-
-            initialPositions();
-            for (int i = 0; i < SWEEP_ITERATIONS; i++) {
-                sweepDown();
-                adjustSpace();
-                sweepUp();
-                adjustSpace();
-            }
-
-            sweepDown();
-            adjustSpace();
-            sweepUp();
-        }
-
-        private final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
-            int n1VIP = 0;
-            for (LayoutEdge e : n1.preds) {
-                if (e.vip) {
-                    n1VIP++;
-                }
-            }
-            int n2VIP = 0;
-            for (LayoutEdge e : n2.preds) {
-                if (e.vip) {
-                    n2VIP++;
-                }
-            }
-            if (n1VIP != n2VIP) {
-                return n2VIP - n1VIP;
-            }
-            if (n1.vertex == null) {
-                if (n2.vertex == null) {
-                    return 0;
-                }
-                return -1;
-            }
-            if (n2.vertex == null) {
-                return 1;
-            }
-            return n1.preds.size() - n2.preds.size();
-        };
-
-
-        private final Comparator<LayoutNode> nodeProcessingUpComparator = (n1, n2) -> {
-            int n1VIP = 0;
-            for (LayoutEdge e : n1.succs) {
-                if (e.vip) {
-                    n1VIP++;
-                }
-            }
-            int n2VIP = 0;
-            for (LayoutEdge e : n2.succs) {
-                if (e.vip) {
-                    n2VIP++;
-                }
-            }
-            if (n1VIP != n2VIP) {
-                return n2VIP - n1VIP;
-            }
-            if (n1.vertex == null) {
-                if (n2.vertex == null) {
-                    return 0;
-                }
-                return -1;
-            }
-            if (n2.vertex == null) {
-                return 1;
-            }
-            return n1.succs.size() - n2.succs.size();
-        };
-
-
-        private void adjustSpace() {
-            for (int i = 0; i < layers.length; i++) {
-                for (LayoutNode n : layers[i]) {
-                    space[i].add(n.x);
-                }
-            }
-        }
-
-        private int calculateOptimalDown(LayoutNode n) {
-            int size = n.preds.size();
-            if (size == 0) {
-                return n.x;
-            }
-            int vipCount = 0;
-            for (LayoutEdge e : n.preds) {
-                if (e.vip) {
-                    vipCount++;
-                }
-            }
-
-            if (vipCount == 0) {
-                int[] values = new int[size];
-                for (int i = 0; i < size; i++) {
-                    LayoutEdge e = n.preds.get(i);
-                    values[i] = e.from.x + e.relativeFrom - e.relativeTo;
-                }
-                return median(values);
-            } else {
-                int z = 0;
-                int[] values = new int[vipCount];
-                for (int i = 0; i < size; i++) {
-                    LayoutEdge e = n.preds.get(i);
-                    if (e.vip) {
-                        values[z++] = e.from.x + e.relativeFrom - e.relativeTo;
-                    }
-                }
-                return median(values);
-            }
-        }
-
-        private int calculateOptimalUp(LayoutNode n) {
-            int size = n.succs.size();
-            if (size == 0) {
-                return n.x;
-            }
-            int[] values = new int[size];
-            for (int i = 0; i < size; i++) {
-                LayoutEdge e = n.succs.get(i);
-                values[i] = e.to.x + e.relativeTo - e.relativeFrom;
-                if (e.vip) {
-                    return values[i];
-                }
-            }
-            return median(values);
-        }
-
-        private int median(int[] values) {
-            Arrays.sort(values);
-            if (values.length % 2 == 0) {
-                return (values[values.length / 2 - 1] + values[values.length / 2]) / 2;
-            } else {
-                return values[values.length / 2];
-            }
-        }
-
-        private void sweepUp() {
-            for (int i = layers.length - 1; i >= 0; i--) {
-                NodeRow r = new NodeRow(space[i]);
-                for (LayoutNode n : upProcessingOrder[i]) {
-                    int optimal = calculateOptimalUp(n);
-                    r.insert(n, optimal);
-                }
-            }
-        }
-
-        private void sweepDown() {
-            for (int i = 1; i < layers.length; i++) {
-                NodeRow r = new NodeRow(space[i]);
-                for (LayoutNode n : downProcessingOrder[i]) {
-                    int optimal = calculateOptimalDown(n);
-                    r.insert(n, optimal);
-                }
-            }
-        }
-    }
-
-    private static class NodeRow {
-
-        private final TreeSet<LayoutNode> treeSet;
-        private final ArrayList<Integer> space;
-        private static final Comparator<LayoutNode> nodePositionComparator = Comparator.comparingInt(n -> n.pos);
-
-        public NodeRow(ArrayList<Integer> space) {
-            treeSet = new TreeSet<>(nodePositionComparator);
-            this.space = space;
-        }
-
-        public int offset(LayoutNode n1, LayoutNode n2) {
-            int v1 = space.get(n1.pos) + n1.width;
-            int v2 = space.get(n2.pos);
-            return v2 - v1;
-        }
-
-        public void insert(LayoutNode n, int pos) {
-
-            SortedSet<LayoutNode> headSet = treeSet.headSet(n);
-
-            LayoutNode leftNeighbor;
-            int minX = Integer.MIN_VALUE;
-            if (!headSet.isEmpty()) {
-                leftNeighbor = headSet.last();
-                minX = leftNeighbor.x + leftNeighbor.width + offset(leftNeighbor, n);
-            }
-
-            if (pos < minX) {
-                n.x = minX;
-            } else {
-
-                LayoutNode rightNeighbor;
-                SortedSet<LayoutNode> tailSet = treeSet.tailSet(n);
-                int maxX = Integer.MAX_VALUE;
-                if (!tailSet.isEmpty()) {
-                    rightNeighbor = tailSet.first();
-                    maxX = rightNeighbor.x - offset(n, rightNeighbor) - n.width;
-                }
-
-                n.x = Math.min(pos, maxX);
-
-                assert minX <= maxX : minX + " vs " + maxX;
-            }
-
-            treeSet.add(n);
         }
     }
 
