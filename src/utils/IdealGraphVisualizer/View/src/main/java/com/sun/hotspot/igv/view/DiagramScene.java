@@ -691,7 +691,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private void doNewLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
-        newLayoutManager.doLayout(new LayoutGraph(edges, figures));
+        newLayoutManager.doLayout(figures, edges);
     }
 
     private void doSeaLayout(HashSet<Figure> figures, HashSet<Connection> edges) {

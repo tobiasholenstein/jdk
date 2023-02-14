@@ -23,7 +23,6 @@
  */
 package com.sun.hotspot.igv.hierarchicallayout;
 
-import com.sun.hotspot.igv.layout.LayoutGraph;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Dimension;
@@ -41,6 +40,8 @@ public class NewLayoutManager {
     public static final int MIN_LAYER_DIFFERENCE = 1;
     public static final int VIP_BONUS = 10;
     // Algorithm global datastructures
+    private HashSet<? extends Vertex> currentVertices;
+    private HashSet<? extends Link> currentLinks;
     private Set<Link> reversedLinks;
     private Set<LayoutEdge> selfEdges;
     private List<LayoutNode> nodes;
@@ -49,7 +50,6 @@ public class NewLayoutManager {
     private HashMap<Link, List<Point>> reversedLinkEndPoints;
     private HashMap<Link, List<Point>> splitStartPoints;
     private HashMap<Link, List<Point>> splitEndPoints;
-    private LayoutGraph graph;
     private List<LayoutNode>[] layers;
     private int layerCount;
 
@@ -103,8 +103,9 @@ public class NewLayoutManager {
         }
     }
 
-    public void doLayout(LayoutGraph graph) {
-        this.graph = graph;
+    public void doLayout(HashSet<? extends Vertex> vertices, HashSet<? extends Link> links) {
+        currentVertices = vertices;
+        currentLinks = links;
 
         vertexToLayoutNode = new HashMap<>();
         reversedLinks = new HashSet<>();
@@ -162,11 +163,11 @@ public class NewLayoutManager {
 
     private class WriteResult {
 
-        protected void run() {
+        void run() {
 
             HashMap<Vertex, Point> vertexPositions = new HashMap<>();
             HashMap<Link, List<Point>> linkPositions = new HashMap<>();
-            for (Vertex v : graph.getVertices()) {
+            for (Vertex v : currentVertices) {
                 LayoutNode n = vertexToLayoutNode.get(v);
                 assert !vertexPositions.containsKey(v);
                 vertexPositions.put(v, new Point(n.x + n.xOffset, n.y + n.yOffset));
@@ -384,62 +385,6 @@ public class NewLayoutManager {
         }
     }
 
-    private static final Comparator<LayoutNode> nodePositionComparator = Comparator.comparingInt(n -> n.pos);
-    private static final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
-        int n1VIP = 0;
-        for (LayoutEdge e : n1.preds) {
-            if (e.vip) {
-                n1VIP++;
-            }
-        }
-        int n2VIP = 0;
-        for (LayoutEdge e : n2.preds) {
-            if (e.vip) {
-                n2VIP++;
-            }
-        }
-        if (n1VIP != n2VIP) {
-            return n2VIP - n1VIP;
-        }
-        if (n1.vertex == null) {
-            if (n2.vertex == null) {
-                return 0;
-            }
-            return -1;
-        }
-        if (n2.vertex == null) {
-            return 1;
-        }
-        return n1.preds.size() - n2.preds.size();
-    };
-    private static final Comparator<LayoutNode> nodeProcessingUpComparator = (n1, n2) -> {
-        int n1VIP = 0;
-        for (LayoutEdge e : n1.succs) {
-            if (e.vip) {
-                n1VIP++;
-            }
-        }
-        int n2VIP = 0;
-        for (LayoutEdge e : n2.succs) {
-            if (e.vip) {
-                n2VIP++;
-            }
-        }
-        if (n1VIP != n2VIP) {
-            return n2VIP - n1VIP;
-        }
-        if (n1.vertex == null) {
-            if (n2.vertex == null) {
-                return 0;
-            }
-            return -1;
-        }
-        if (n2.vertex == null) {
-            return 1;
-        }
-        return n1.succs.size() - n2.succs.size();
-    };
-
     private class AssignXCoordinates {
 
         private ArrayList<Integer>[] space;
@@ -459,7 +404,7 @@ public class NewLayoutManager {
             upProcessingOrder = new ArrayList[layers.length];
         }
 
-        protected void run() {
+        void run() {
             createArrays();
 
             for (int i = 0; i < layers.length; i++) {
@@ -491,6 +436,64 @@ public class NewLayoutManager {
             adjustSpace();
             sweepUp();
         }
+
+        private final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
+            int n1VIP = 0;
+            for (LayoutEdge e : n1.preds) {
+                if (e.vip) {
+                    n1VIP++;
+                }
+            }
+            int n2VIP = 0;
+            for (LayoutEdge e : n2.preds) {
+                if (e.vip) {
+                    n2VIP++;
+                }
+            }
+            if (n1VIP != n2VIP) {
+                return n2VIP - n1VIP;
+            }
+            if (n1.vertex == null) {
+                if (n2.vertex == null) {
+                    return 0;
+                }
+                return -1;
+            }
+            if (n2.vertex == null) {
+                return 1;
+            }
+            return n1.preds.size() - n2.preds.size();
+        };
+
+
+        private final Comparator<LayoutNode> nodeProcessingUpComparator = (n1, n2) -> {
+            int n1VIP = 0;
+            for (LayoutEdge e : n1.succs) {
+                if (e.vip) {
+                    n1VIP++;
+                }
+            }
+            int n2VIP = 0;
+            for (LayoutEdge e : n2.succs) {
+                if (e.vip) {
+                    n2VIP++;
+                }
+            }
+            if (n1VIP != n2VIP) {
+                return n2VIP - n1VIP;
+            }
+            if (n1.vertex == null) {
+                if (n2.vertex == null) {
+                    return 0;
+                }
+                return -1;
+            }
+            if (n2.vertex == null) {
+                return 1;
+            }
+            return n1.succs.size() - n2.succs.size();
+        };
+
 
         private void adjustSpace() {
             for (int i = 0; i < layers.length; i++) {
@@ -582,6 +585,7 @@ public class NewLayoutManager {
 
         private final TreeSet<LayoutNode> treeSet;
         private final ArrayList<Integer> space;
+        private static final Comparator<LayoutNode> nodePositionComparator = Comparator.comparingInt(n -> n.pos);
 
         public NodeRow(ArrayList<Integer> space) {
             treeSet = new TreeSet<>(nodePositionComparator);
@@ -625,7 +629,6 @@ public class NewLayoutManager {
             treeSet.add(n);
         }
     }
-    private static final Comparator<LayoutNode> crossingNodeComparator = Comparator.comparingInt(n -> n.crossingNumber);
 
     private class CrossingReduction {
 
@@ -638,7 +641,7 @@ public class NewLayoutManager {
             }
         }
 
-        protected void run() {
+        void run() {
             createLayers();
 
             // Generate initial ordering
@@ -701,6 +704,8 @@ public class NewLayoutManager {
                 }
             }
         }
+
+        private final Comparator<LayoutNode> crossingNodeComparator = Comparator.comparingInt(n -> n.crossingNumber);
 
         private void downSweep() {
 
@@ -817,7 +822,7 @@ public class NewLayoutManager {
 
     private class AssignYCoordinates {
 
-        protected void run() {
+        void run() {
             int curY = 0;
 
             for (List<LayoutNode> layer : layers) {
@@ -855,7 +860,7 @@ public class NewLayoutManager {
 
     private class CreateDummyNodes {
 
-        protected void run() {
+        void run() {
             Comparator<LayoutEdge> comparator = Comparator.comparingInt(e -> e.to.layer);
             HashMap<Integer, List<LayoutEdge>> portHash = new HashMap<>();
             ArrayList<LayoutNode> currentNodes = new ArrayList<>(nodes);
@@ -975,7 +980,7 @@ public class NewLayoutManager {
 
     private class AssignLayers {
 
-        protected void run() {
+        void run() {
             assignLayerDownwards();
             assignLayerUpwards();
         }
@@ -1088,7 +1093,7 @@ public class NewLayoutManager {
         private HashSet<LayoutNode> visited;
         private HashSet<LayoutNode> active;
 
-        protected void run() {
+        void run() {
 
             // Reverse inputs of roots
             for (LayoutNode node : nodes) {
@@ -1311,36 +1316,12 @@ public class NewLayoutManager {
             oldTo.succs.add(e);
         }
     }
-    private final Comparator<Link> linkComparator = (l1, l2) -> {
-        if (l1.isVIP() && !l2.isVIP()) {
-            return -1;
-        }
-
-        if (!l1.isVIP() && l2.isVIP()) {
-            return 1;
-        }
-
-        int result = l1.getFrom().getVertex().compareTo(l2.getFrom().getVertex());
-        if (result != 0) {
-            return result;
-        }
-        result = l1.getTo().getVertex().compareTo(l2.getTo().getVertex());
-        if (result != 0) {
-            return result;
-        }
-        result = l1.getFrom().getRelativePosition().x - l2.getFrom().getRelativePosition().x;
-        if (result != 0) {
-            return result;
-        }
-        result = l1.getTo().getRelativePosition().x - l2.getTo().getRelativePosition().x;
-        return result;
-    };
 
     private class BuildDatastructure {
 
-        protected void run() {
+        void run() {
             // Set up nodes
-            List<Vertex> vertices = new ArrayList<>(graph.getVertices());
+            List<Vertex> vertices = new ArrayList<>(currentVertices);
             // Order roots first to create more natural layer assignments.
             vertices.sort((Vertex a, Vertex b) ->
                     a.isRoot() == b.isRoot() ? a.compareTo(b) : Boolean.compare(b.isRoot(), a.isRoot()));
@@ -1356,12 +1337,10 @@ public class NewLayoutManager {
             }
 
             // Set up edges
-            List<Link> links = new ArrayList<>(graph.getLinks());
+            List<Link> links = new ArrayList<>(currentLinks);
             links.sort(linkComparator);
             for (Link l : links) {
                 LayoutEdge edge = new LayoutEdge();
-                assert vertexToLayoutNode.containsKey(l.getFrom().getVertex());
-                assert vertexToLayoutNode.containsKey(l.getTo().getVertex());
                 edge.from = vertexToLayoutNode.get(l.getFrom().getVertex());
                 edge.to = vertexToLayoutNode.get(l.getTo().getVertex());
                 edge.relativeFrom = l.getFrom().getRelativePosition().x;
@@ -1372,5 +1351,30 @@ public class NewLayoutManager {
                 edge.to.preds.add(edge);
             }
         }
+
+        private final Comparator<Link> linkComparator = (l1, l2) -> {
+            if (l1.isVIP() && !l2.isVIP()) {
+                return -1;
+            }
+
+            if (!l1.isVIP() && l2.isVIP()) {
+                return 1;
+            }
+
+            int result = l1.getFrom().getVertex().compareTo(l2.getFrom().getVertex());
+            if (result != 0) {
+                return result;
+            }
+            result = l1.getTo().getVertex().compareTo(l2.getTo().getVertex());
+            if (result != 0) {
+                return result;
+            }
+            result = l1.getFrom().getRelativePosition().x - l2.getFrom().getRelativePosition().x;
+            if (result != 0) {
+                return result;
+            }
+            result = l1.getTo().getRelativePosition().x - l2.getTo().getRelativePosition().x;
+            return result;
+        };
     }
 }
