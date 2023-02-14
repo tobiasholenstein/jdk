@@ -672,35 +672,47 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private boolean isVisible(Connection c) {
+        if (c instanceof FigureConnection) {
+            return isVisibleFigureConnection((FigureConnection) c);
+        } else if (c instanceof BlockConnection) {
+            return isVisibleBlockConnection((BlockConnection) c);
+        } else {
+            return false;
+        }
+    }
+
+    private boolean isVisibleFigureConnection(FigureConnection c) {
         // Generally, a connection is visible if its source and destination
         // widgets are visible. An exception is Figure connections in the CFG
         // view, which are never shown.
-        if (getModel().getShowCFG() && c instanceof FigureConnection) {
+        if (getModel().getShowCFG()) {
             return false;
-        }
-        Widget w1, w2;
-        if (c instanceof BlockConnection) {
-            w1 = getWidget(((Block)c.getFromCluster()).getInputBlock());
-            w2 = getWidget(((Block)c.getToCluster()).getInputBlock());
         } else {
-            assert (c instanceof FigureConnection);
-            w1 = getWidget(c.getFrom().getVertex());
-            w2 = getWidget(c.getTo().getVertex());
+            Widget src = getWidget(c.getFrom().getVertex());
+            Widget desc = getWidget(c.getTo().getVertex());
+            return src.isVisible() && desc.isVisible();
         }
-        return w1.isVisible() && w2.isVisible();
+
     }
 
-    private void doNewLayout(HashSet<Figure> visibleFigures, HashSet<Connection> visibleConnections) {
-        newLayoutManager.updateLayout(visibleFigures, visibleConnections);
+    private boolean isVisibleBlockConnection(BlockConnection c) {
+        Widget src = getWidget((c.getFromCluster()).getInputBlock());
+        Widget dest = getWidget((c.getToCluster()).getInputBlock());
+        return src.isVisible() && dest.isVisible();
     }
 
-    private void doSeaLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
+    private void doNewLayout(Set<Figure> oldVisibleFigures, Set<Figure> visibleFigures,
+                             Set<FigureConnection> oldVisibleConnections, Set<FigureConnection> visibleConnections) {
+        newLayoutManager.updateLayout(oldVisibleFigures, visibleFigures, oldVisibleConnections, visibleConnections);
+    }
+
+    private void doSeaLayout(Set<Figure> figures, Set<FigureConnection> edges) {
         HierarchicalLayoutManager manager = new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
         manager.setMaxLayerLength(10);
         manager.doLayout(new LayoutGraph(edges, figures));
     }
 
-    private void doClusteredLayout(HashSet<Connection> edges) {
+    private void doClusteredLayout(Set<FigureConnection> edges) {
         HierarchicalClusterLayoutManager m = new HierarchicalClusterLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
         HierarchicalLayoutManager manager = new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
         manager.setMaxLayerLength(9);
@@ -710,7 +722,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         m.doLayout(new LayoutGraph(edges));
     }
 
-    private void doCFGLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
+    private void doCFGLayout(Set<Figure> figures) {
+        HashSet<BlockConnection> blockConnections = new HashSet<>();
         Diagram diagram = getModel().getDiagram();
         HierarchicalCFGLayoutManager m = new HierarchicalCFGLayoutManager();
         HierarchicalLayoutManager manager = new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
@@ -743,8 +756,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
         // Add visible connections for CFG edges.
         for (BlockConnection c : diagram.getBlockConnections()) {
-            if (isVisible(c)) {
-                edges.add(c);
+            if (isVisibleBlockConnection(c)) {
+                blockConnections.add(c);
             }
         }
         m.setSubManager(new LinearLayoutManager(figureRank));
@@ -756,7 +769,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             }
         }
         m.setClusters(new HashSet<>(visibleBlocks));
-        m.doLayout(new LayoutGraph(edges, figures));
+        m.doLayout(new LayoutGraph(blockConnections, figures));
     }
 
 
@@ -991,7 +1004,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
         if (getModel().getShowCFG()) {
             for (BlockConnection blockConnection : getModel().getDiagram().getBlockConnections()) {
-                if (isVisible(blockConnection)) {
+                if (isVisibleBlockConnection(blockConnection)) {
                     processOutputSlot(null, Collections.singletonList(blockConnection), 0, null, null);
                 }
             }
@@ -1106,27 +1119,25 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return visibleFigures;
     }
 
-    private HashSet<Connection> getVisibleConnections() {
-        HashSet<Connection> visibleConnections = new HashSet<>();
-        for (Connection connection : getModel().getDiagram().getConnections()) {
-            if (isVisible(connection)) {
+    private HashSet<FigureConnection> getVisibleFigureConnections() {
+        HashSet<FigureConnection> visibleConnections = new HashSet<>();
+        for (FigureConnection connection : getModel().getDiagram().getConnections()) {
+            if (isVisibleFigureConnection(connection)) {
                 visibleConnections.add(connection);
             }
         }
         return visibleConnections;
     }
 
-    private void updateFigureWidgetLocations(Set<FigureWidget> oldVisibleFigureWidgets) {
+    private void updateFigureWidgetLocations(Set<Figure> visibleFigures, Set<Figure> oldVisibleFigures) {
         boolean doAnimation = shouldAnimate();
-        for (Figure figure : getModel().getDiagram().getFigures()) {
+        for (Figure figure : visibleFigures) {
             FigureWidget figureWidget = getWidget(figure);
-            if (figureWidget.isVisible()) {
-                Point location = new Point(figure.getPosition());
-                if (doAnimation && oldVisibleFigureWidgets.contains(figureWidget)) {
-                    getSceneAnimator().animatePreferredLocation(figureWidget, location);
-                } else {
-                    figureWidget.setPreferredLocation(location);
-                }
+            Point location = new Point(figure.getPosition());
+            if (doAnimation && oldVisibleFigures.contains(figure)) {
+                getSceneAnimator().animatePreferredLocation(figureWidget, location);
+            } else {
+                figureWidget.setPreferredLocation(location);
             }
         }
     }
@@ -1180,27 +1191,28 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
     private void relayout() {
         rebuilding = true;
-        Set<FigureWidget> oldVisibleFigureWidgets = getVisibleFigureWidgets();
+        Set<Figure> oldVisibleFigures = getVisibleFigures();
         Set<BlockWidget> oldVisibleBlockWidgets = getVisibleBlockWidgets();
+        Set<FigureConnection> oldVisibleConnections = getVisibleFigureConnections();
 
         updateVisibleFigureWidgets();
         updateNodeHull();
         updateVisibleBlockWidgets();
 
-        HashSet<Figure> visibleFigures = getVisibleFigures();
-        HashSet<Connection> visibleConnections = getVisibleConnections();
+        Set<Figure> visibleFigures = getVisibleFigures();
+        Set<FigureConnection> visibleConnections = getVisibleFigureConnections();
         if (getModel().getNewLayout()) {
-            doNewLayout(visibleFigures, visibleConnections);
+            doNewLayout(oldVisibleFigures, visibleFigures, oldVisibleConnections, visibleConnections);
         } else if (getModel().getShowSea()) {
             doSeaLayout(visibleFigures, visibleConnections);
         } else if (getModel().getShowBlocks()) {
             doClusteredLayout(visibleConnections);
         } else if (getModel().getShowCFG()) {
-            doCFGLayout(visibleFigures, visibleConnections);
+            doCFGLayout(visibleFigures);
         }
         rebuildConnectionLayer();
 
-        updateFigureWidgetLocations(oldVisibleFigureWidgets);
+        updateFigureWidgetLocations(visibleFigures, oldVisibleFigures);
         updateBlockWidgetBounds(oldVisibleBlockWidgets);
         validateAll();
 

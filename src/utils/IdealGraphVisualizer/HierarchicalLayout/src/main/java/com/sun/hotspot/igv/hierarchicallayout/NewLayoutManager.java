@@ -39,8 +39,8 @@ public class NewLayoutManager {
     public static final int MIN_LAYER_DIFFERENCE = 1;
     public static final int VIP_BONUS = 10;
     // Algorithm global datastructures
-    private HashSet<? extends Vertex> currentVertices;
-    private HashSet<? extends Link> currentLinks;
+    private Set<? extends Vertex> currentVertices;
+    private Set<? extends Link> currentLinks;
     private Set<Link> reversedLinks;
     private Set<LayoutEdge> selfEdges;
     private List<LayoutNode> nodes;
@@ -107,7 +107,16 @@ public class NewLayoutManager {
         }
     }
 
-    public void updateLayout(HashSet<? extends Vertex> vertices, HashSet<? extends Link> links) {
+    public void updateLayout(Set<? extends Vertex> oldVertices, Set<? extends Vertex> vertices,
+                             Set<? extends Link> oldLinks, Set<? extends Link> links) {
+
+        Set<Vertex> addedVertices = new HashSet<>(vertices);
+        addedVertices.removeAll(oldVertices);
+        System.out.println("Added nodes: " + oldVertices.size() + " new " + vertices.size());
+        for (Vertex vertex: addedVertices) {
+            //System.out.print(vertex.toString() + " ");
+        }
+
         currentVertices = vertices;
         currentLinks = links;
 
