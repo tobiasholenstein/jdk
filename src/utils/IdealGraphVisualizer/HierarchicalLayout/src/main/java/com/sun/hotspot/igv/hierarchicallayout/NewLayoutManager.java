@@ -24,7 +24,6 @@
 package com.sun.hotspot.igv.hierarchicallayout;
 
 import com.sun.hotspot.igv.layout.LayoutGraph;
-import com.sun.hotspot.igv.layout.LayoutManager;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Dimension;
@@ -39,7 +38,6 @@ public class NewLayoutManager {
     public static final int DUMMY_WIDTH = 1;
     public static final int X_OFFSET = 8;
     public static final int LAYER_OFFSET = 8;
-    public static final int MAX_LAYER_LENGTH = -1;
     public static final int MIN_LAYER_DIFFERENCE = 1;
     public static final int VIP_BONUS = 10;
     private final int dummyWidth;
@@ -47,7 +45,6 @@ public class NewLayoutManager {
     private int xOffset;
     private int layerOffset;
     private int minLayerDifference;
-    private boolean layoutSelfEdges;
     // Algorithm global datastructures
     private Set<Link> reversedLinks;
     private Set<LayoutEdge> selfEdges;
@@ -60,7 +57,6 @@ public class NewLayoutManager {
     private LayoutGraph graph;
     private List<LayoutNode>[] layers;
     private int layerCount;
-    private final Set<Link> linksToFollow;
 
     private class LayoutNode {
 
@@ -101,8 +97,6 @@ public class NewLayoutManager {
         this.xOffset = X_OFFSET;
         this.layerOffset = LAYER_OFFSET;
         this.minLayerDifference = MIN_LAYER_DIFFERENCE;
-        this.layoutSelfEdges = false;
-        this.linksToFollow = new HashSet<>();
     }
 
     public void setXOffset(int xOffset) {
@@ -115,10 +109,6 @@ public class NewLayoutManager {
 
     public void setMinLayerDifference(int v) {
         minLayerDifference = v;
-    }
-
-    public void setLayoutSelfEdges(boolean layoutSelfEdges) {
-        this.layoutSelfEdges = layoutSelfEdges;
     }
 
     // Remove self-edges, possibly saving them into the selfEdges set.
@@ -152,10 +142,8 @@ public class NewLayoutManager {
         // Step 1: Build up data structure
         new BuildDatastructure().run();
 
-        if (!layoutSelfEdges) {
-            // Remove self-edges from the beginning.
-            removeSelfEdges(false);
-        }
+        // Remove self-edges from the beginning.
+        removeSelfEdges(false);
 
         // #############################################################
         // STEP 2: Reverse edges, handle backedges
@@ -1332,7 +1320,7 @@ public class NewLayoutManager {
                         assert visited.contains(e.to);
                         // Encountered back edge
                         reverseEdge(e);
-                    } else if (!visited.contains(e.to) && (linksToFollow.size() == 0 || linksToFollow.contains(e.link))) {
+                    } else if (!visited.contains(e.to)) {
                         stack.push(e.to);
                     }
                 }

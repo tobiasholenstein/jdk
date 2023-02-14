@@ -84,6 +84,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private final DiagramViewModel model;
     private ModelState modelState;
     private boolean rebuilding;
+    private final NewLayoutManager newLayoutManager;
 
     /**
      * The alpha level of partially visible figures.
@@ -484,6 +485,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 }
             }
         });
+
+        newLayoutManager = new NewLayoutManager();
         update();
     }
 
@@ -688,8 +691,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private void doNewLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
-        NewLayoutManager manager = new NewLayoutManager();
-        manager.doLayout(new LayoutGraph(edges, figures));
+        newLayoutManager.doLayout(new LayoutGraph(edges, figures));
     }
 
     private void doSeaLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
