@@ -40,11 +40,6 @@ public class NewLayoutManager {
     public static final int LAYER_OFFSET = 8;
     public static final int MIN_LAYER_DIFFERENCE = 1;
     public static final int VIP_BONUS = 10;
-    private final int dummyWidth;
-    private final int dummyHeight;
-    private int xOffset;
-    private int layerOffset;
-    private int minLayerDifference;
     // Algorithm global datastructures
     private Set<Link> reversedLinks;
     private Set<LayoutEdge> selfEdges;
@@ -91,25 +86,7 @@ public class NewLayoutManager {
         public boolean vip;
     }
 
-    public NewLayoutManager() {
-        this.dummyWidth = DUMMY_WIDTH;
-        this.dummyHeight = DUMMY_HEIGHT;
-        this.xOffset = X_OFFSET;
-        this.layerOffset = LAYER_OFFSET;
-        this.minLayerDifference = MIN_LAYER_DIFFERENCE;
-    }
-
-    public void setXOffset(int xOffset) {
-        this.xOffset = xOffset;
-    }
-
-    public void setLayerOffset(int layerOffset) {
-        this.layerOffset = layerOffset;
-    }
-
-    public void setMinLayerDifference(int v) {
-        minLayerDifference = v;
-    }
+    public NewLayoutManager() {}
 
     // Remove self-edges, possibly saving them into the selfEdges set.
     private void removeSelfEdges(boolean save) {
@@ -184,8 +161,6 @@ public class NewLayoutManager {
     }
 
     private class WriteResult {
-
-        private int pointCount;
 
         protected void run() {
 
@@ -280,7 +255,6 @@ public class NewLayoutManager {
                             assert !linkPositions.containsKey(e.link);
                             linkPositions.put(e.link, points);
                         }
-                        pointCount += points.size();
 
                         // No longer needed!
                         e.link = null;
@@ -364,7 +338,6 @@ public class NewLayoutManager {
                             linkPositions.put(e.link, points);
                         }
 
-                        pointCount += points.size();
                         e.link = null;
                     }
                 }
@@ -393,6 +366,7 @@ public class NewLayoutManager {
                 Point p = vertexPositions.get(v);
                 p.x -= minX;
                 p.y -= minY;
+                // EMMY: Here is where the new positions of the nodes are actually set
                 v.setPosition(p);
             }
 
@@ -404,8 +378,8 @@ public class NewLayoutManager {
                         p.y -= minY;
                     }
                 }
+                // EMMY: Here is where the new positions of the edges are actually set
                 l.setControlPoints(points);
-
             }
         }
     }
@@ -496,7 +470,7 @@ public class NewLayoutManager {
                 int curX = 0;
                 for (LayoutNode n : layers[i]) {
                     space[i].add(curX);
-                    curX += n.width + xOffset;
+                    curX += n.width + X_OFFSET;
                     downProcessingOrder[i].add(n);
                     upProcessingOrder[i].add(n);
                 }
@@ -556,27 +530,6 @@ public class NewLayoutManager {
                 }
                 return median(values);
             }
-        }
-
-        private int calculateOptimalBoth(LayoutNode n) {
-            if (n.preds.size() == n.succs.size()) {
-                return n.x;
-            }
-
-            int[] values = new int[n.preds.size() + n.succs.size()];
-            int i = 0;
-
-            for (LayoutEdge e : n.preds) {
-                values[i] = e.from.x + e.relativeFrom - e.relativeTo;
-                i++;
-            }
-
-            for (LayoutEdge e : n.succs) {
-                values[i] = e.to.x + e.relativeTo - e.relativeFrom;
-                i++;
-            }
-
-            return median(values);
         }
 
         private int calculateOptimalUp(LayoutNode n) {
@@ -735,7 +688,7 @@ public class NewLayoutManager {
 
             for (LayoutNode n : layers[index]) {
                 n.x = x;
-                x += n.width + xOffset;
+                x += n.width + X_OFFSET;
             }
         }
 
@@ -895,18 +848,14 @@ public class NewLayoutManager {
                 }
 
                 curY += maxHeight + baseLine + bottomBaseLine;
-                curY += layerOffset + ((int) (Math.sqrt(maxXOffset) * 1.5));
+                curY += LAYER_OFFSET + ((int) (Math.sqrt(maxXOffset) * 1.5));
             }
         }
     }
 
     private class CreateDummyNodes {
 
-        private int oldNodeCount;
-
         protected void run() {
-            oldNodeCount = nodes.size();
-
             Comparator<LayoutEdge> comparator = Comparator.comparingInt(e -> e.to.layer);
             HashMap<Integer, List<LayoutEdge>> portHash = new HashMap<>();
             ArrayList<LayoutNode> currentNodes = new ArrayList<>(nodes);
@@ -914,8 +863,6 @@ public class NewLayoutManager {
                 portHash.clear();
 
                 ArrayList<LayoutEdge> succs = new ArrayList<>(n.succs);
-                HashMap<Integer, LayoutNode> topNodeHash = new HashMap<>();
-                HashMap<Integer, HashMap<Integer, LayoutNode>> bottomNodeHash = new HashMap<>();
                 for (LayoutEdge e : succs) {
                     assert e.from.layer < e.to.layer;
                     if (e.from.layer != e.to.layer - 1) {
@@ -955,12 +902,12 @@ public class NewLayoutManager {
                             n.succs.add(edges[0]);
 
                             nodes[0] = new LayoutNode();
-                            nodes[0].width = dummyWidth;
-                            nodes[0].height = dummyHeight;
+                            nodes[0].width = DUMMY_WIDTH;
+                            nodes[0].height = DUMMY_HEIGHT;
                             nodes[0].layer = n.layer + 1;
                             nodes[0].preds.add(edges[0]);
                             edges[0].to = nodes[0];
-                            edges[0].relativeTo = nodes[0].width / 2;
+                            edges[0].relativeTo = 0;
                             for (int j = 1; j < cnt; j++) {
                                 edges[j] = new LayoutEdge();
                                 edges[j].vip = e.vip;
@@ -968,8 +915,8 @@ public class NewLayoutManager {
                                 edges[j].relativeFrom = nodes[j - 1].width / 2;
                                 nodes[j - 1].succs.add(edges[j]);
                                 nodes[j] = new LayoutNode();
-                                nodes[j].width = dummyWidth;
-                                nodes[j].height = dummyHeight;
+                                nodes[j].width = DUMMY_WIDTH;
+                                nodes[j].height = DUMMY_HEIGHT;
                                 nodes[j].layer = n.layer + j + 1;
                                 nodes[j].preds.add(edges[j]);
                                 edges[j].to = nodes[j];
@@ -1006,8 +953,8 @@ public class NewLayoutManager {
 
         private LayoutEdge addBetween(LayoutEdge e, int layer) {
             LayoutNode n = new LayoutNode();
-            n.width = dummyWidth;
-            n.height = dummyHeight;
+            n.width = DUMMY_WIDTH;
+            n.height = DUMMY_HEIGHT;
             n.layer = layer;
             n.preds.add(e);
             nodes.add(n);
@@ -1015,10 +962,10 @@ public class NewLayoutManager {
             result.vip = e.vip;
             n.succs.add(result);
             result.from = n;
-            result.relativeFrom = n.width / 2;
+            result.relativeFrom = 0;
             result.to = e.to;
             result.relativeTo = e.relativeTo;
-            e.relativeTo = n.width / 2;
+            e.relativeTo = 0;
             e.to.preds.remove(e);
             e.to.preds.add(result);
             e.to = n;
@@ -1042,7 +989,7 @@ public class NewLayoutManager {
                 }
             }
 
-            int z = minLayerDifference;
+            int z = MIN_LAYER_DIFFERENCE;
             while (!hull.isEmpty()) {
                 ArrayList<LayoutNode> newSet = new ArrayList<>();
                 for (LayoutNode n : hull) {
@@ -1072,10 +1019,10 @@ public class NewLayoutManager {
                 }
 
                 hull = newSet;
-                z += minLayerDifference;
+                z += MIN_LAYER_DIFFERENCE;
             }
 
-            layerCount = z - minLayerDifference;
+            layerCount = z - MIN_LAYER_DIFFERENCE;
             for (LayoutNode n : nodes) {
                 n.layer = (layerCount - 1 - n.layer);
             }
@@ -1091,7 +1038,7 @@ public class NewLayoutManager {
                 }
             }
 
-            int z = minLayerDifference;
+            int z = MIN_LAYER_DIFFERENCE;
             while (!hull.isEmpty()) {
                 ArrayList<LayoutNode> newSet = new ArrayList<>();
                 for (LayoutNode n : hull) {
@@ -1125,10 +1072,10 @@ public class NewLayoutManager {
                 }
 
                 hull = newSet;
-                z += minLayerDifference;
+                z += MIN_LAYER_DIFFERENCE;
             }
 
-            layerCount = z - minLayerDifference;
+            layerCount = z - MIN_LAYER_DIFFERENCE;
 
             for (LayoutNode n : nodes) {
                 n.layer = (layerCount - 1 - n.layer);
@@ -1199,7 +1146,7 @@ public class NewLayoutManager {
                     }
                 }
 
-                final int offset = xOffset + DUMMY_WIDTH;
+                final int offset = X_OFFSET + DUMMY_WIDTH;
 
                 int curY = 0;
                 int curWidth = node.width + reversedDown.size() * offset;
