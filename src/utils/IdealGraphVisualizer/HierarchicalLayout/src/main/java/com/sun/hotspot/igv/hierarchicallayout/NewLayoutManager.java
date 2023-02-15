@@ -107,16 +107,7 @@ public class NewLayoutManager {
         }
     }
 
-    public void updateLayout(Set<? extends Vertex> oldVertices, Set<? extends Vertex> vertices,
-                             Set<? extends Link> oldLinks, Set<? extends Link> links) {
-
-        Set<Vertex> addedVertices = new HashSet<>(vertices);
-        addedVertices.removeAll(oldVertices);
-        System.out.println("Added nodes: " + oldVertices.size() + " new " + vertices.size());
-        for (Vertex vertex: addedVertices) {
-            //System.out.print(vertex.toString() + " ");
-        }
-
+    public void updateLayout(Set<? extends Vertex> vertices, Set<? extends Link> links) {
         currentVertices = vertices;
         currentLinks = links;
 

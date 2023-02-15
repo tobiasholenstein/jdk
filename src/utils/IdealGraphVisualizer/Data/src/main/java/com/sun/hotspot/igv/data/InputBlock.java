@@ -36,6 +36,7 @@ public class InputBlock {
     private final InputGraph graph;
     private final Set<InputBlock> successors;
     private boolean artificial;
+    private InputNode representative;
 
     @Override
     public int hashCode() {
@@ -79,6 +80,7 @@ public class InputBlock {
         nodes = new ArrayList<>();
         successors = new LinkedHashSet<>(2);
         artificial = false;
+        representative = null;
     }
 
     public String getName() {
@@ -122,5 +124,17 @@ public class InputBlock {
 
     public boolean isArtificial() {
         return artificial;
+    }
+
+    public void setRepresentative(InputNode representative) {
+        this.representative = representative;
+    }
+
+    public InputNode getRepresentative() {
+        if (representative == null) {
+            // Guarantee that a representative node is always returned.
+            return new InputNode(-1);
+        }
+        return representative;
     }
 }

@@ -870,4 +870,38 @@ public class ServerCompilerScheduler implements Scheduler {
         }
     }
 
+    @Override
+    public void decorate(InputGraph graph) {
+        // Select representative to identify each block (if no representative is
+        // chosen, fall back to block's name).
+        for (InputBlock b : graph.getBlocks()) {
+            if (b.getNodes().isEmpty()) {
+                continue;
+            }
+            List<Node> blockNodes = new ArrayList<>(b.getNodes().size());
+            for (InputNode n : b.getNodes()) {
+                blockNodes.add(new Node(n));
+            }
+            Node repr = Collections.min(blockNodes,
+                        (n1, n2) -> Integer.compare(reprRank(n1), reprRank(n2)));
+            b.setRepresentative(repr.inputNode);
+        }
+    }
+
+    int reprRank(Node n) {
+        // Mixed-category and return-like nodes are ranked highest since they
+        // remain stable before and after C2 scheduling.
+        if (n.inputNode.getProperties().get("category").equals("mixed")) {
+            return 1;
+        } else if (n.inputNode.getProperties().get("category").equals("other") &&
+                   n.inputNode.getProperties().get("type").equals("bottom")) {
+            return 2;
+        } else if (n.isBlockStart || isOtherBlockStart(n)) {
+            return 3;
+        } else if (isRegion(n)) {
+            return 4;
+        } else {
+            return 5;
+        }
+    }
 }
