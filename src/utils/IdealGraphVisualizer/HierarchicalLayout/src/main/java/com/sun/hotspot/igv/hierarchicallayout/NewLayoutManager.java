@@ -115,7 +115,7 @@ public class NewLayoutManager {
     private HashSet<? extends Link> oldLinks;
 
 
-    public void updateLayout(HashSet<? extends Vertex> vertices, HashSet<? extends Link> links) {
+    public void updateLayout(Set<? extends Vertex> vertices, Set<? extends Link> links) {
         currentVertices = vertices;
         currentLinks = links;
 

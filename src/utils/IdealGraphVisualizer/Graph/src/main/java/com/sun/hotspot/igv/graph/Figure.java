@@ -353,18 +353,6 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof Figure)) {
-            return false;
-        }
-        return getInputNode().equals(((Figure)o).getInputNode());
-    }
-    @Override
-    public int hashCode() {
-        return getInputNode().hashCode();
-    }
-
-    @Override
     public String toString() {
         return idString;
     }
