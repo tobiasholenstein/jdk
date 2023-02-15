@@ -82,7 +82,10 @@ public class NewLayoutManager {
         public boolean vip;
     }
 
-    public NewLayoutManager() {}
+    public NewLayoutManager() {
+        oldVertices = new HashSet<>();
+        oldLinks = new HashSet<>();
+    }
 
     // Remove self-edges, possibly saving them into the selfEdges set.
     private void removeSelfEdges(boolean save) {
@@ -107,9 +110,26 @@ public class NewLayoutManager {
         }
     }
 
-    public void updateLayout(Set<? extends Vertex> vertices, Set<? extends Link> links) {
+
+    private HashSet<? extends Vertex> oldVertices;
+    private HashSet<? extends Link> oldLinks;
+
+
+    public void updateLayout(HashSet<? extends Vertex> vertices, HashSet<? extends Link> links) {
         currentVertices = vertices;
         currentLinks = links;
+
+        HashSet<Vertex> addedVertices = new HashSet<>(currentVertices);
+        addedVertices.removeAll(oldVertices);
+
+        HashSet<Vertex> removedVertices = new HashSet<>(oldVertices);
+        removedVertices.removeAll(currentVertices);
+
+        System.out.println("currentVertices " + currentVertices.size());
+        System.out.println("oldVertices " + oldVertices.size());
+        System.out.println("addedVertices " + addedVertices.size());
+        System.out.println("removedVertices " + removedVertices.size());
+
 
         vertexToLayoutNode = new HashMap<>();
         reversedLinks = new HashSet<>();
@@ -148,6 +168,9 @@ public class NewLayoutManager {
 
         // STEP 8: Write back to interface
         new WriteResult().run();
+
+        oldVertices = new HashSet<>(currentVertices);
+        oldLinks = new HashSet<>(currentLinks);
     }
 
     private class BuildDatastructure {
