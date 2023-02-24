@@ -1838,9 +1838,7 @@ void Compile::process_for_post_loop_opts_igvn(PhaseIterGVN& igvn) {
     assert(_for_post_loop_igvn.length() == 0, "no more delayed nodes allowed");
 
     // Sometimes IGVN sets major progress (e.g., when processing loop nodes).
-    if (C->major_progress()) {
-      C->clear_major_progress(); // ensure that major progress is now clear
-    }
+    C->clear_major_progress(); // ensure that major progress is now clear
   }
 }
 
@@ -2149,18 +2147,7 @@ void Compile::process_late_inline_calls_no_inline(PhaseIterGVN& igvn) {
   }
 }
 
-bool Compile::optimize_loops(PhaseIterGVN& igvn, LoopOptsMode mode) {
-  if (_loop_opts_cnt > 0) {
-    while (major_progress() && (_loop_opts_cnt > 0)) {
-      TracePhase tp("idealLoop", &timers[_t_idealLoop]);
-      PhaseIdealLoop::optimize(igvn, mode);
-      _loop_opts_cnt--;
-      if (failing())  return false;
-      if (major_progress()) print_method(PHASE_PHASEIDEALLOOP_ITERATIONS, 2);
-    }
-  }
-  return true;
-}
+
 
 // Remove edges from "root" to each SafePoint at a backward branch.
 // They were inserted during parsing (see add_safepoint()) to make
@@ -2358,69 +2345,39 @@ void Compile::Optimize() {
       PhaseIdealLoop::optimize(igvn, LoopOptsSkipSplitIf);
       _loop_opts_cnt--;
       if (major_progress()) print_method(PHASE_PHASEIDEALLOOP3, 2);
+      if (failing())  return;
     }
-    if (!failing()) {
-      // Verify that last round of loop opts produced a valid graph
-      PhaseIdealLoop::verify(igvn);
-    }
+    // Verify that last round of loop opts produced a valid graph
+    PhaseIdealLoop::verify(igvn);
   }
-  if (failing())  return;
 
+  // ---------------------------------------------------------------------------
   // Conditional Constant Propagation;
-  PhaseCCP ccp( &igvn );
-  assert( true, "Break here to ccp.dump_nodes_and_types(_root,999,1)");
-  {
-    TracePhase tp("ccp", &timers[_t_ccp]);
-    ccp.do_transform();
-  }
-  print_method(PHASE_CCP1, 2);
+  do_cpp(igvn);
+  if (failing()) return;
 
-  assert( true, "Break here to ccp.dump_old2new_map()");
-
+  // ---------------------------------------------------------------------------
   // Iterative Global Value Numbering, including ideal transforms
-  {
-    TracePhase tp("iterGVN2", &timers[_t_iterGVN2]);
-    igvn = ccp;
-    igvn.optimize();
-  }
-  print_method(PHASE_ITER_GVN2, 2);
+  do_igvn2(igvn);
+  if (failing()) return;
 
+  // ---------------------------------------------------------------------------
+  // Loop transformations: Range Check Elimination, Peeling, Unrolling, etc.
+  optimize_loops(igvn);
   if (failing())  return;
 
-  // Loop transforms on the ideal graph.  Range Check Elimination,
-  // peeling, unrolling, etc.
-  if (!optimize_loops(igvn, LoopOptsDefault)) {
-    return;
-  }
-
-  if (failing())  return;
-
-  C->clear_major_progress(); // ensure that major progress is now clear
-
+  // ---------------------------------------------------------------------------
   process_for_post_loop_opts_igvn(igvn);
+  if (failing())  return;
 
-#ifdef ASSERT
-  bs->verify_gc_barriers(this, BarrierSetC2::BeforeMacroExpand);
-#endif
+  // ---------------------------------------------------------------------------
+  do_macro_expand(igvn, bs);
+  if (failing())  return;
 
-  {
-    TracePhase tp("macroExpand", &timers[_t_macroExpand]);
-    PhaseMacroExpand  mex(igvn);
-    if (mex.expand_macro_nodes()) {
-      assert(failing(), "must bail out w/ explicit message");
-      return;
-    }
-    print_method(PHASE_MACRO_EXPANSION, 2);
-  }
+  // ---------------------------------------------------------------------------
+  do_barrier_expand(igvn, bs);
+  if (failing())  return;
 
-  {
-    TracePhase tp("barrierExpand", &timers[_t_barrierExpand]);
-    if (bs->expand_barriers(this, igvn)) {
-      assert(failing(), "must bail out w/ explicit message");
-      return;
-    }
-    print_method(PHASE_BARRIER_EXPANSION, 2);
-  }
 
   if (C->max_vector_size() > 0) {
     C->optimize_logic_cones(igvn);
@@ -2456,6 +2413,55 @@ void Compile::Optimize() {
  print_method(PHASE_OPTIMIZE_FINISHED, 2);
  DEBUG_ONLY(set_phase_optimize_finished();)
 }
+
+void Compile::do_cpp(PhaseIterGVN &igvn) {
+  PhaseCCP ccp( &igvn );
+  TracePhase tp("ccp", &timers[_t_ccp]);
+  ccp.do_transform();
+  igvn = &ccp;
+  print_method(PHASE_CCP1, 2);
+}
+
+void Compile::do_igvn2(PhaseIterGVN &igvn) {
+  TracePhase tp("iterGVN2", &timers[_t_iterGVN2]);
+  igvn.optimize();
+  print_method(PHASE_ITER_GVN2, 2);
+}
+
+void Compile::optimize_loops(PhaseIterGVN& igvn) {
+  while(!failing() && major_progress() && (_loop_opts_cnt > 0)) {
+    TracePhase tp("idealLoop", &timers[_t_idealLoop]);
+    PhaseIdealLoop::optimize(igvn, LoopOptsDefault);
+    print_method(PHASE_PHASEIDEALLOOP_ITERATIONS, 2);
+    _loop_opts_cnt--;
+  }
+  C->clear_major_progress();
+}
+
+void Compile::do_macro_expand(PhaseIterGVN& igvn, BarrierSetC2* bs) {
+#ifdef ASSERT
+  bs->verify_gc_barriers(this, BarrierSetC2::BeforeMacroExpand);
+#endif
+  TracePhase tp("macroExpand", &timers[_t_macroExpand]);
+  PhaseMacroExpand  mex(igvn);
+  if (mex.expand_macro_nodes()) {
+    assert(failing(), "must bail out w/ explicit message");
+    return;
+  }
+  print_method(PHASE_MACRO_EXPANSION, 2);
+}
+
+void Compile::do_barrier_expand(PhaseIterGVN& igvn, BarrierSetC2* bs) {
+  TracePhase tp("barrierExpand", &timers[_t_barrierExpand]);
+  if (bs->expand_barriers(this, igvn)) {
+    assert(failing(), "must bail out w/ explicit message");
+    return;
+  }
+  print_method(PHASE_BARRIER_EXPANSION, 2);
+}
+
+
+
 
 #ifdef ASSERT
 void Compile::check_no_dead_use() const {

@@ -32,6 +32,7 @@
 #include "compiler/compilerOracle.hpp"
 #include "compiler/compileBroker.hpp"
 #include "compiler/compilerEvent.hpp"
+#include "gc/shared/barrierSet.hpp"
 #include "libadt/dict.hpp"
 #include "libadt/vectset.hpp"
 #include "memory/resourceArea.hpp"
@@ -252,7 +253,7 @@ class Compile : public Phase {
     ciField*        field()         const { return _field; }
     const Type*     element()       const { return _element; }
     bool            is_rewritable() const { return _is_rewritable; }
-    bool            is_volatile()   const { return (_field ? _field->is_volatile() : false); }
+    bool            is_volatile()   const { return _field != nullptr && _field->is_volatile(); }
     int             general_index() const { return (_general_index != 0) ? _general_index : _index; }
 
     void set_rewritable(bool z) { _is_rewritable = z; }
@@ -1005,7 +1006,6 @@ class Compile : public Phase {
   void inline_incrementally(PhaseIterGVN& igvn);
   void inline_string_calls(bool parse_time);
   void inline_boxing_calls(PhaseIterGVN& igvn);
-  bool optimize_loops(PhaseIterGVN& igvn, LoopOptsMode mode);
   void remove_root_to_sfpts_edges(PhaseIterGVN& igvn);
 
   void inline_vector_reboxing_calls();
@@ -1222,6 +1222,16 @@ class Compile : public Phase {
                             BasicType out_bt, BasicType in_bt);
 
   static Node* narrow_value(BasicType bt, Node* value, const Type* type, PhaseGVN* phase, bool transform_res);
+
+  void do_cpp(PhaseIterGVN &igvn);
+
+  void do_igvn2(PhaseIterGVN &igvn);
+
+  void optimize_loops(PhaseIterGVN &igvn);
+
+  void do_macro_expand(PhaseIterGVN &igvn, BarrierSetC2 *bs);
+
+  void do_barrier_expand(PhaseIterGVN &igvn, BarrierSetC2 *bs);
 };
 
 #endif // SHARE_OPTO_COMPILE_HPP
