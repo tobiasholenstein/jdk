@@ -3500,9 +3500,9 @@ void StubGenerator::generate_libm_stubs() {
     if (vmIntrinsics::is_intrinsic_available(vmIntrinsics::_dpow)) {
       StubRoutines::_dpow = generate_libmPow(); // from stubGenerator_x86_64_pow.cpp
     }
-    if (vmIntrinsics::is_intrinsic_available(vmIntrinsics::_dlog)) {
-      StubRoutines::_dlog = generate_libmLog(); // from stubGenerator_x86_64_log.cpp
-    }
+    //if (vmIntrinsics::is_intrinsic_available(vmIntrinsics::_dlog)) {
+      //StubRoutines::_dlog = generate_libmLog(); // from stubGenerator_x86_64_log.cpp
+    //}
     if (vmIntrinsics::is_intrinsic_available(vmIntrinsics::_dlog10)) {
       StubRoutines::_dlog10 = generate_libmLog10(); // from stubGenerator_x86_64_log.cpp
     }
