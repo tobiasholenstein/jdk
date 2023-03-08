@@ -45,7 +45,6 @@
 #endif
 
 #include "runtime/sharedRuntimeMath.hpp"
-#include "timerTrace.hpp"
 
 /* __ieee754_log(x)
  * Return the logarithm of x
@@ -111,43 +110,23 @@ ln2_hi  =  6.93147180369123816490e-01,        /* 3fe62e42 fee00000 */
 
 static double zero = 0.0;
 
-
-static elapsedTimer accumulator;
-
-static int counter = 0;
-static void print_time() {
-  counter++;
-  if (counter % 10000000 == 0) {
-    tty->print_cr ("  Total : %3.3ld ms.", accumulator.milliseconds());
-  }
-}
-
 static double __ieee754_log(double x) {
-  TraceTime traceTime("compilation", &accumulator, true);
-
   double hfsq,f,s,z,R,w,t1,t2,dk;
   int k,hx,i,j;
   unsigned lx;
 
   hx = high(x);               /* high word of x */
   lx = low(x);                /* low  word of x */
+
   k=0;
   if (hx < 0x00100000) {                   /* x < 2**-1022  */
-    if (((hx&0x7fffffff)|lx)==0) {
-      print_time();
+    if (((hx&0x7fffffff)|lx)==0)
       return -two54/zero;             /* log(+-0)=-inf */
-    }
-    if (hx<0) {
-      print_time();
-      return (x-x)/zero;   /* log(-#) = NaN */
-    }
+    if (hx<0) return (x-x)/zero;   /* log(-#) = NaN */
     k -= 54; x *= two54; /* subnormal number, scale up x */
     hx = high(x);             /* high word of x */
   }
-  if (hx >= 0x7ff00000) {
-    print_time();
-    return x+x;
-  }
+  if (hx >= 0x7ff00000) return x+x;
   k += (hx>>20)-1023;
   hx &= 0x000fffff;
   i = (hx+0x95f64)&0x100000;
@@ -156,22 +135,12 @@ static double __ieee754_log(double x) {
   f = x-1.0;
   if((0x000fffff&(2+hx))<3) {  /* |f| < 2**-20 */
     if(f==zero) {
-      if (k==0) {
-        print_time();
-        return zero;
-      } else {
-        dk=(double)k;
-        print_time();
-        return dk*ln2_hi+dk*ln2_lo;
-      }
+      if (k==0) return zero;
+      else {dk=(double)k; return dk*ln2_hi+dk*ln2_lo;}
     }
     R = f*f*(0.5-0.33333333333333333*f);
-    if(k==0) {
-      print_time();
-      return f-R;
-    } else {dk=(double)k;
-      print_time();
-      return dk*ln2_hi-((R-dk*ln2_lo)-f);}
+    if(k==0) return f-R; else {dk=(double)k;
+    return dk*ln2_hi-((R-dk*ln2_lo)-f);}
   }
   s = f/(2.0+f);
   dk = (double)k;
@@ -185,26 +154,13 @@ static double __ieee754_log(double x) {
   R = t2+t1;
   if(i>0) {
     hfsq=0.5*f*f;
-    if(k==0) {
-      print_time();
-      return f-(hfsq-s*(hfsq+R));
-    } else {
-      print_time();
+    if(k==0) return f-(hfsq-s*(hfsq+R)); else
       return dk*ln2_hi-((hfsq-(s*(hfsq+R)+dk*ln2_lo))-f);
-    }
   } else {
-    if(k==0) {
-      print_time();
-      return f-s*(f-R);
-    } else {
-      print_time();
+    if(k==0) return f-s*(f-R); else
       return dk*ln2_hi-((s*(f-R)-dk*ln2_lo)-f);
-    }
-
   }
 }
-
-
 
 JRT_LEAF(jdouble, SharedRuntime::dlog(jdouble x))
   return __ieee754_log(x);
