@@ -140,7 +140,7 @@ static double __ieee754_log(double x) {
     }
     R = f*f*(0.5-0.33333333333333333*f);
     if(k==0) return f-R; else {dk=(double)k;
-    return dk*ln2_hi-((R-dk*ln2_lo)-f);}
+      return dk*ln2_hi-((R-dk*ln2_lo)-f);}
   }
   s = f/(2.0+f);
   dk = (double)k;
@@ -162,8 +162,14 @@ static double __ieee754_log(double x) {
   }
 }
 
+static int counter = 0;
+
 JRT_LEAF(jdouble, SharedRuntime::dlog(jdouble x))
-  return __ieee754_log(x);
+  jdouble res = log(x);
+  if (counter++ % 10000000 == 0) {
+    tty->print_cr ("  log ");
+  }
+  return res;
 JRT_END
 
 /* __ieee754_log10(x)

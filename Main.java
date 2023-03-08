@@ -9,12 +9,11 @@ public class Main {
             values[i] = random.nextDouble();
         }
 
+        final long start = System.nanoTime();
+        double blackhole = compute(values);
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
 
-            final long start = System.nanoTime();
-            double blackhole = compute(values);
-            final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-
-            System.out.println(elapsed + " ms (" + blackhole + ")");
+        System.out.println(elapsed + " ms (" + blackhole + ")");
     }
 
     public static double compute(double[] values) {
