@@ -45,6 +45,7 @@
 #endif
 
 #include "runtime/sharedRuntimeMath.hpp"
+#include "timerTrace.hpp"
 
 /* __ieee754_log(x)
  * Return the logarithm of x
@@ -110,7 +111,11 @@ ln2_hi  =  6.93147180369123816490e-01,        /* 3fe62e42 fee00000 */
 
 static double zero = 0.0;
 
+static elapsedTimer accumulator;
+
+
 static double __ieee754_log(double x) {
+  TraceTime traceTime("compilation", &accumulator, true);
   double hfsq,f,s,z,R,w,t1,t2,dk;
   int k,hx,i,j;
   unsigned lx;
@@ -165,10 +170,8 @@ static double __ieee754_log(double x) {
 static int counter = 0;
 
 JRT_LEAF(jdouble, SharedRuntime::dlog(jdouble x))
-  jdouble res = log(x);
-  if (counter++ % 10000000 == 0) {
-    tty->print_cr ("  log ");
-  }
+  double res = __ieee754_log(x);
+  if (counter++ % 9990000 == 0) tty->print_cr ("  Total : %3.3ld ms.", accumulator.milliseconds());
   return res;
 JRT_END
 

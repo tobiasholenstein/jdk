@@ -13,6 +13,9 @@ import java.util.concurrent.TimeUnit;
 
 public class Main {
 
+
+    private static int ITERATIONS = 10_000_000;
+
     public static void main(String[] args) throws Exception {
         final Random random = new Random();
         double value = random.nextDouble();
@@ -34,13 +37,13 @@ public class Main {
 
 
     public static void compute(double value) {
-        for (int i = 0; i < 10_000_000; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             Math.log(value); // {runtime_call SharedRuntime::dlog(double)}
         }
     }
 
     public static void computeFdLibm(double value) {
-        for (int i = 0; i < 10_000_000; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             computeLog(value);
         }
     }
