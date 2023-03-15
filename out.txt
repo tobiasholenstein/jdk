@@ -1,0 +1,14 @@
+Default
+CompileCommand: compileonly Main.compute bool compileonly = true
+CompileCommand: compileonly java/lang/FdLibm*.compute bool compileonly = true
+CompileCommand: dontinline java/lang/Double.* bool dontinline = true
+CompileCommand: dontinline java/lang/FdLibm.__LO bool dontinline = true
+CompileCommand: dontinline java/lang/FdLibm.__HI bool dontinline = true
+1850 ms
+DisableIntrinsic
+CompileCommand: compileonly Main.compute bool compileonly = true
+CompileCommand: compileonly java/lang/FdLibm*.compute bool compileonly = true
+CompileCommand: dontinline java/lang/Double.* bool dontinline = true
+CompileCommand: dontinline java/lang/FdLibm.__LO bool dontinline = true
+CompileCommand: dontinline java/lang/FdLibm.__HI bool dontinline = true
+1833 ms
