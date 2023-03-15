@@ -115,7 +115,7 @@ static elapsedTimer accumulator;
 
 
 static double __ieee754_log(double x) {
-  TraceTime traceTime("compilation", &accumulator, true);
+  //TraceTime traceTime("compilation", &accumulator, true);
   double hfsq,f,s,z,R,w,t1,t2,dk;
   int k,hx,i,j;
   unsigned lx;
@@ -170,9 +170,8 @@ static double __ieee754_log(double x) {
 static int counter = 0;
 
 JRT_LEAF(jdouble, SharedRuntime::dlog(jdouble x))
-  double res = __ieee754_log(x);
-  if (counter++ % 9990000 == 0) tty->print_cr ("  Total : %3.3ld ms.", accumulator.milliseconds());
-  return res;
+  // if (counter++ % 9990000 == 0) tty->print_cr ("  Total : %3.3ld ms.", accumulator.milliseconds());
+  return __ieee754_log(x);
 JRT_END
 
 /* __ieee754_log10(x)
