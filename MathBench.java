@@ -10,17 +10,25 @@ import java.util.concurrent.TimeUnit;
 
 -XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly -XX:PrintAssemblyOptions=intel
 
+-XX:+UnlockDiagnosticVMOptions -XX:CompileCommand=print,*::compute
 */
 
 
 public class MathBench {
+
+    private static int ITERATIONS = 10_000_000;
 
     public static void main(String[] args) throws Exception {
         final Random random = new Random();
         double a = random.nextDouble();
         double b = random.nextDouble();
 
+        expBench(a);
+        powBench(a, b);
+        logBench(a);
+        log10Bench(a);
 
+/*
         sinBench(a);
         cosBench(a);
         tanBench(a);
@@ -29,18 +37,13 @@ public class MathBench {
         asinBench(a);
         atanBench(a);
 
-        expBench(a);
-        logBench(a);
-        log10Bench(a);
-
-        // sqrt
         cbrtBench(a);
         IEEEremainderBench(a, b);
+        atan2Bench(a, b);
+        // sqrt
         // ceil
         // floor
         // rint
-        atan2Bench(a, b);
-        powBench(a, b);
 
         sinhBench(a);
         coshBench(a);
@@ -49,315 +52,12 @@ public class MathBench {
         hypotBench(a, b);
         expm1Bench(a);
         log1pBench(a);
-    }
+        */
 
-    public static void IEEEremainderBench(double a, double b) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.IEEEremainder(a, b);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.IEEEremainder)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.IEEEremainder(a, b);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.IEEEremainder)");
-
-        assert Math.IEEEremainder(a, b) == StrictMath.IEEEremainder(a, b);
-    }
-
-    public static void hypotBench(double a, double b) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.hypot(a, b);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.hypot)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.hypot(a, b);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.hypot)");
-
-        assert Math.hypot(a, b) == StrictMath.hypot(a, b);
-    }
-
-    public static void powBench(double a, double b) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.pow(a, b);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.pow)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.pow(a, b);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.pow)");
-
-        assert Math.pow(a, b) == StrictMath.pow(a, b);
-    }
-
-    public static void log1pBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.log1p(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.log1p)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.log1p(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.log1p)");
-
-        assert Math.log1p(a) == StrictMath.log1p(a);
-    }
-
-    public static void expm1Bench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.expm1(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.expm1)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.expm1(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.expm1)");
-
-        assert Math.expm1(a) == StrictMath.expm1(a);
-    }
-
-    public static void tanhBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.tanh(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.tanh)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.tanh(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.tanh)");
-
-        assert Math.tanh(a) == StrictMath.tanh(a);
-    }
-
-    public static void coshBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.cosh(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.cosh)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.cosh(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.cosh)");
-
-        assert Math.cosh(a) == StrictMath.cosh(a);
-    }
-
-    public static void sinhBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.sinh(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.sinh)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.sinh(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.sinh)");
-
-        assert Math.sinh(a) == StrictMath.sinh(a);
-    }
-
-    public static void atanBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.atan(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.atan)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.atan(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.atan)");
-
-        assert Math.atan(a) == StrictMath.atan(a);
-    }
-
-    public static void asinBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.asin(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.asin)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.asin(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.asin)");
-
-        assert Math.asin(a) == StrictMath.asin(a);
-    }
-
-    public static void acosBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.acos(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.acos)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.acos(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.acos)");
-
-        assert Math.acos(a) == StrictMath.acos(a);
-    }
-
-    public static void atan2Bench(double a, double b) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.atan2(a, b);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.atan2)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.atan2(a, b);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.atan2)");
-
-        assert Math.atan2(a, b) == StrictMath.atan2(a, b);
-    }
-
-    public static void tanBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.tan(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.tan)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.tan(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.tan)");
-
-        assert Math.tan(a) == StrictMath.tan(a);
-    }
-
-    public static void cosBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.cos(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.cos)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.cos(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.cos)");
-
-        assert Math.cos(a) == StrictMath.cos(a);
-    }
-
-    public static void sinBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.sin(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.sin)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.sin(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.sin)");
-
-        assert Math.sin(a) == StrictMath.sin(a);
-    }
-
-    public static void cbrtBench(double a) {
-        final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            Math.cbrt(a);
-        }
-        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-        System.out.println(elapsed + " ms (Math.cbrt)");
-
-
-        final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
-            StrictMath.cbrt(a);
-        }
-        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
-        System.out.println(elapsed2 + " ms (StrictMath.cbrt)");
-
-        assert Math.cbrt(a) == StrictMath.cbrt(a);
-    }
 
     public static void expBench(double a) {
         final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             Math.exp(a);
         }
         final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
@@ -365,7 +65,7 @@ public class MathBench {
 
 
         final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             StrictMath.exp(a);
         }
         final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
@@ -374,9 +74,28 @@ public class MathBench {
         assert Math.exp(a) == StrictMath.exp(a);
     }
 
+    public static void powBench(double a, double b) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.pow(a, b);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.pow)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.pow(a, b);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.pow)");
+
+        assert Math.pow(a, b) == StrictMath.pow(a, b);
+    }
+
     public static void log10Bench(double a) {
         final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             Math.log10(a);
         }
         final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
@@ -384,7 +103,7 @@ public class MathBench {
 
 
         final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             StrictMath.log10(a);
         }
         final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
@@ -395,7 +114,7 @@ public class MathBench {
 
     public static void logBench(double a) {
         final long start = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             Math.log(a);
         }
         final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
@@ -403,7 +122,7 @@ public class MathBench {
 
 
         final long start2 = System.nanoTime();
-        for (int i = 0; i < 10_000_000; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             StrictMath.log(a);
         }
         final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
@@ -412,7 +131,336 @@ public class MathBench {
         assert Math.log(a) == StrictMath.log(a);
     }
 
+
+
+    public static void IEEEremainderBench(double a, double b) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.IEEEremainder(a, b);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.IEEEremainder)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.IEEEremainder(a, b);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.IEEEremainder)");
+
+        assert Math.IEEEremainder(a, b) == StrictMath.IEEEremainder(a, b);
+    }
+
+    public static void hypotBench(double a, double b) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.hypot(a, b);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.hypot)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.hypot(a, b);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.hypot)");
+
+        assert Math.hypot(a, b) == StrictMath.hypot(a, b);
+    }
+
+    public static void log1pBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.log1p(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.log1p)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.log1p(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.log1p)");
+
+        assert Math.log1p(a) == StrictMath.log1p(a);
+    }
+
+    public static void expm1Bench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.expm1(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.expm1)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.expm1(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.expm1)");
+
+        assert Math.expm1(a) == StrictMath.expm1(a);
+    }
+
+    public static void tanhBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.tanh(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.tanh)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.tanh(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.tanh)");
+
+        assert Math.tanh(a) == StrictMath.tanh(a);
+    }
+
+    public static void coshBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.cosh(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.cosh)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.cosh(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.cosh)");
+
+        assert Math.cosh(a) == StrictMath.cosh(a);
+    }
+
+    public static void sinhBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.sinh(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.sinh)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.sinh(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.sinh)");
+
+        assert Math.sinh(a) == StrictMath.sinh(a);
+    }
+
+    public static void atanBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.atan(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.atan)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.atan(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.atan)");
+
+        assert Math.atan(a) == StrictMath.atan(a);
+    }
+
+    public static void asinBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.asin(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.asin)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.asin(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.asin)");
+
+        assert Math.asin(a) == StrictMath.asin(a);
+    }
+
+    public static void acosBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.acos(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.acos)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.acos(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.acos)");
+
+        assert Math.acos(a) == StrictMath.acos(a);
+    }
+
+    public static void atan2Bench(double a, double b) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.atan2(a, b);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.atan2)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.atan2(a, b);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.atan2)");
+
+        assert Math.atan2(a, b) == StrictMath.atan2(a, b);
+    }
+
+    public static void tanBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.tan(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.tan)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.tan(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.tan)");
+
+        assert Math.tan(a) == StrictMath.tan(a);
+    }
+
+    public static void cosBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.cos(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.cos)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.cos(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.cos)");
+
+        assert Math.cos(a) == StrictMath.cos(a);
+    }
+
+    public static void sinBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.sin(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.sin)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.sin(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.sin)");
+
+        assert Math.sin(a) == StrictMath.sin(a);
+    }
+
+    public static void cbrtBench(double a) {
+        final long start = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            Math.cbrt(a);
+        }
+        final long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        System.out.println(elapsed + " ms (Math.cbrt)");
+
+
+        final long start2 = System.nanoTime();
+        for (int i = 0; i < ITERATIONS; i++) {
+            StrictMath.cbrt(a);
+        }
+        final long elapsed2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start2);
+        System.out.println(elapsed2 + " ms (StrictMath.cbrt)");
+
+        assert Math.cbrt(a) == StrictMath.cbrt(a);
+    }
+
+
 }
+
+/* M1 Math vs StrictMath
+25 ms (Math.sin) StubRoutines::_dsin
+362 ms (StrictMath.sin) native
+29 ms (Math.cos) StubRoutines::_dcos
+389 ms (StrictMath.cos) native
+593 ms (Math.tan)
+438 ms (StrictMath.tan) native
+48 ms (Math.acos)
+36 ms (StrictMath.acos) FdLibm
+46 ms (Math.asin)
+42 ms (StrictMath.asin) FdLibm
+51 ms (Math.atan)
+42 ms (StrictMath.atan) FdLibm
+684 ms (Math.exp)
+49 ms (StrictMath.exp) FdLibm
+503 ms (Math.log) SharedRuntime::dlog -> __ieee754_log
+48 ms (StrictMath.log) FdLibm
+649 ms (Math.log10) SharedRuntime::dlog10 -> __ieee754_log10
+59 ms (StrictMath.log10) FdLibm
+10 ms (Math.cbrt)
+2 ms (StrictMath.cbrt) FdLibm
+294 ms (Math.IEEEremainder)
+293 ms (StrictMath.IEEEremainder) native
+74 ms (Math.atan2)
+67 ms (StrictMath.atan2) FdLibm
+1319 ms (Math.pow)
+248 ms (StrictMath.pow) FdLibm
+65 ms (Math.sinh)
+46 ms (StrictMath.sinh) FdLibm
+47 ms (Math.cosh)
+44 ms (StrictMath.cosh) FdLibm
+81 ms (Math.tanh)
+73 ms (StrictMath.tanh) FdLibm
+39 ms (Math.hypot)
+34 ms (StrictMath.hypot) FdLibm
+67 ms (Math.expm1)
+69 ms (StrictMath.expm1) FdLibm
+59 ms (Math.log1p)
+53 ms (StrictMath.log1p) FdLibm
+*/
 
 
 /*
@@ -420,10 +468,8 @@ lscpu: Intel(R) Xeon(R) Gold 6354 CPU @ 3.00GHz
 
 95 ms (Math.sin)
 3 ms (StrictMath.sin)
-
 94 ms (Math.cos)
 3 ms (StrictMath.cos)
-
 141 ms (Math.tan)
 62 ms (StrictMath.tan)
 50 ms (Math.acos)
@@ -512,27 +558,20 @@ Mac M1 Max:
 42 ms (StrictMath.asin)
 51 ms (Math.atan)
 42 ms (StrictMath.atan)
-
 684 ms (Math.exp)
 49 ms (StrictMath.exp)
-
 503 ms (Math.log)
 48 ms (StrictMath.log)
-
 649 ms (Math.log10)
 59 ms (StrictMath.log10)
-
 10 ms (Math.cbrt)
 2 ms (StrictMath.cbrt)
-
 294 ms (Math.IEEEremainder)
 293 ms (StrictMath.IEEEremainder)
 74 ms (Math.atan2)
 67 ms (StrictMath.atan2)
-
 1319 ms (Math.pow)
 248 ms (StrictMath.pow)
-
 65 ms (Math.sinh)
 46 ms (StrictMath.sinh)
 47 ms (Math.cosh)
