@@ -39,7 +39,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
     public static final boolean TRACE = false;
     public static final boolean CHECK = false;
-    public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;
     public static final int DUMMY_HEIGHT = 1;
     public static final int DUMMY_WIDTH = 1;
@@ -526,7 +525,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
         }
     }
 
-    private static final Comparator<LayoutNode> nodePositionComparator = Comparator.comparingInt(n -> n.pos);
     private static final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
         int n1VIP = 0;
         for (LayoutEdge e : n1.preds) {
@@ -584,209 +582,197 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
     private class AssignXCoordinates extends AlgorithmPart {
 
-        private ArrayList<Integer>[] space;
-        private ArrayList<LayoutNode>[] downProcessingOrder;
-        private ArrayList<LayoutNode>[] upProcessingOrder;
-
-        private void initialPositions() {
-            for (LayoutNode n : nodes) {
-                n.x = space[n.layer].get(n.pos);
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        private void createArrays() {
-            space = new ArrayList[layers.length];
-            downProcessingOrder = new ArrayList[layers.length];
-            upProcessingOrder = new ArrayList[layers.length];
-        }
-
         @Override
         protected void run() {
-            createArrays();
-
-            for (int i = 0; i < layers.length; i++) {
-                space[i] = new ArrayList<>();
-                downProcessingOrder[i] = new ArrayList<>();
-                upProcessingOrder[i] = new ArrayList<>();
-
-                int curX = 0;
-                for (LayoutNode n : layers[i]) {
-                    space[i].add(curX);
-                    curX += n.width + xOffset;
-                    downProcessingOrder[i].add(n);
-                    upProcessingOrder[i].add(n);
-                }
-
-                downProcessingOrder[i].sort(nodeProcessingDownComparator);
-                upProcessingOrder[i].sort(nodeProcessingUpComparator);
-            }
-
-            initialPositions();
-            for (int i = 0; i < SWEEP_ITERATIONS; i++) {
-                sweepDown();
-                adjustSpace();
-                sweepUp();
-                adjustSpace();
-            }
-
-            sweepDown();
-            adjustSpace();
-            sweepUp();
+            // TODO: currently sweepUp/sweepDown overrides the result of previous sweepUp/sweepDown
+            sweepUp(true);
+            //sweepDown(true);
+            //sweepUp(false);
+            //sweepDown(false);
         }
+    }
 
-        private void adjustSpace() {
-            for (int i = 0; i < layers.length; i++) {
-                for (LayoutNode n : layers[i]) {
-                    space[i].add(n.x);
-                }
-            }
-        }
+    private void sweepUp(boolean sort) {
+        for (int i = layers.length - 1; i >= 0; i--) {
+            ArrayList<LayoutNode> upProcessingOrder = new ArrayList<>(layers[i]);
+            if (sort) upProcessingOrder.sort(nodeProcessingUpComparator);
 
-        private int calculateOptimalDown(LayoutNode n) {
-            int size = n.preds.size();
-            if (size == 0) {
-                return n.x;
-            }
-            int vipCount = 0;
-            for (LayoutEdge e : n.preds) {
-                if (e.vip) {
-                    vipCount++;
-                }
+            int curX = 10000;
+            for (LayoutNode layoutNode : layers[i]) {
+                layoutNode.x = curX;
+                curX += layoutNode.width + xOffset;
             }
 
-            if (vipCount == 0) {
-                int[] values = new int[size];
-                for (int i = 0; i < size; i++) {
-                    LayoutEdge e = n.preds.get(i);
-                    values[i] = e.from.x + e.relativeFrom - e.relativeTo;
-                }
-                return median(values);
-            } else {
-                int z = 0;
-                int[] values = new int[vipCount];
-                for (int i = 0; i < size; i++) {
-                    LayoutEdge e = n.preds.get(i);
-                    if (e.vip) {
-                        values[z++] = e.from.x + e.relativeFrom - e.relativeTo;
+            NodeRow nodeRow = new NodeRow(xOffset);
+            for (LayoutNode layoutNode : upProcessingOrder) {
+                int size = layoutNode.succs.size();
+                if (size == 0) {
+                    nodeRow.insert(layoutNode);
+                } else {
+                    int[] values = new int[size];
+                    for (int j = 0; j < size; j++) {
+                        LayoutEdge e = layoutNode.succs.get(j);
+                        values[j] = e.to.x + e.relativeTo - e.relativeFrom;
                     }
-                }
-                return median(values);
-            }
-        }
-
-        private int calculateOptimalBoth(LayoutNode n) {
-            if (n.preds.size() == n.succs.size()) {
-                return n.x;
-            }
-
-            int[] values = new int[n.preds.size() + n.succs.size()];
-            int i = 0;
-
-            for (LayoutEdge e : n.preds) {
-                values[i] = e.from.x + e.relativeFrom - e.relativeTo;
-                i++;
-            }
-
-            for (LayoutEdge e : n.succs) {
-                values[i] = e.to.x + e.relativeTo - e.relativeFrom;
-                i++;
-            }
-
-            return median(values);
-        }
-
-        private int calculateOptimalUp(LayoutNode n) {
-            int size = n.succs.size();
-            if (size == 0) {
-                return n.x;
-            }
-            int[] values = new int[size];
-            for (int i = 0; i < size; i++) {
-                LayoutEdge e = n.succs.get(i);
-                values[i] = e.to.x + e.relativeTo - e.relativeFrom;
-                if (e.vip) {
-                    return values[i];
-                }
-            }
-            return median(values);
-        }
-
-        private int median(int[] values) {
-            Arrays.sort(values);
-            if (values.length % 2 == 0) {
-                return (values[values.length / 2 - 1] + values[values.length / 2]) / 2;
-            } else {
-                return values[values.length / 2];
-            }
-        }
-
-        private void sweepUp() {
-            for (int i = layers.length - 1; i >= 0; i--) {
-                NodeRow r = new NodeRow(space[i]);
-                for (LayoutNode n : upProcessingOrder[i]) {
-                    int optimal = calculateOptimalUp(n);
-                    r.insert(n, optimal);
-                }
-            }
-        }
-
-        private void sweepDown() {
-            for (int i = 1; i < layers.length; i++) {
-                NodeRow r = new NodeRow(space[i]);
-                for (LayoutNode n : downProcessingOrder[i]) {
-                    int optimal = calculateOptimalDown(n);
-                    r.insert(n, optimal);
+                    Arrays.sort(values);
+                    int optimalX;
+                    if (values.length % 2 == 0) {
+                        optimalX = (values[values.length / 2 - 1] + values[values.length / 2]) / 2;
+                    } else {
+                        optimalX = values[values.length / 2];
+                    }
+                    nodeRow.insert(layoutNode, optimalX);
                 }
             }
         }
     }
 
+    private void sweepDown(boolean sort) {
+        for (int i = 1; i < layers.length; i++) {
+            ArrayList<LayoutNode> downProcessingOrder = new ArrayList<>(layers[i]);
+            if (sort) downProcessingOrder.sort(nodeProcessingDownComparator);
+
+            int curX = 0;
+            for (LayoutNode n : layers[i]) {
+                n.x = curX;
+                curX += n.width + xOffset;
+            }
+
+            NodeRow nodeRow = new NodeRow(xOffset);
+            for (LayoutNode layoutNode : downProcessingOrder) {
+                int optimal;
+                int size = layoutNode.preds.size();
+                if (size == 0) {
+                    optimal = layoutNode.x;
+                } else {
+                    int[] values = new int[size];
+                    for (int j = 0; j < size; j++) {
+                        LayoutEdge e = layoutNode.preds.get(j);
+                        values[j] = e.from.x + e.relativeFrom - e.relativeTo;
+                    }
+                    Arrays.sort(values);
+                    if (values.length % 2 == 0) {
+                        optimal = (values[values.length / 2 - 1] + values[values.length / 2]) / 2;
+                    } else {
+                        optimal = values[values.length / 2];
+                    }
+                }
+                nodeRow.insert(layoutNode, optimal);
+            }
+        }
+    }
+
+
     private static class NodeRow {
 
-        private final TreeSet<LayoutNode> treeSet;
-        private final ArrayList<Integer> space;
+        private final List<LayoutNode> row;
+        private final int offset;
 
-        public NodeRow(ArrayList<Integer> space) {
-            treeSet = new TreeSet<>(nodePositionComparator);
-            this.space = space;
+        public NodeRow(int offset) {
+            this.row = new ArrayList<>();
+            this.offset = offset;
         }
 
-        public int offset(LayoutNode n1, LayoutNode n2) {
-            int v1 = space.get(n1.pos) + n1.width;
-            int v2 = space.get(n2.pos);
-            return v2 - v1;
+        private void check() {
+            for (int i=1; i<row.size(); i++) {
+                LayoutNode leftNode = row.get(i-1);
+                LayoutNode rightNode = row.get(i);
+                assert leftNode.x + leftNode.width + offset <= rightNode.x;
+            }
         }
 
-        public void insert(LayoutNode n, int pos) {
+        public void insert(LayoutNode newNode) {
+            int newX = 0;
+            for (LayoutNode node : row) {
+                if ((newX + newNode.width + offset) < node.x) break;
+                newX = node.x + node.width + offset;
+            }
+            newNode.x = newX;
+            row.add(newNode);
+            row.sort(Comparator.comparingInt(n -> n.x));
+            check();
+        }
 
-            SortedSet<LayoutNode> headSet = treeSet.headSet(n);
+        private boolean canPlace(LayoutNode newNode, int preferredX) {
+            int startX = preferredX - offset;
+            int endX = preferredX + newNode.width + offset;
+            assert startX <= endX;
 
-            LayoutNode leftNeighbor;
-            int minX = Integer.MIN_VALUE;
-            if (!headSet.isEmpty()) {
-                leftNeighbor = headSet.last();
-                minX = leftNeighbor.x + leftNeighbor.width + offset(leftNeighbor, n);
+            if (row.size()==0) {
+                return true;
+            } else if (row.size()==1) {
+                LayoutNode layoutNode = row.get(0);
+                int start = layoutNode.x;
+                int end = layoutNode.x + layoutNode.width;
+                return endX <= start || end <= startX;
+            } else {
+                for (int i=1; i<row.size(); i++) {
+                    LayoutNode leftNode = row.get(i-1);
+                    LayoutNode rightNode = row.get(i);
+                    int left = leftNode.x + leftNode.width;
+                    int right = rightNode.x;
+                    assert left <= right;
+                    if (left <= startX && endX <= right) return true;
+                }
+                return false;
+            }
+        }
+
+        private void insertClose(LayoutNode newNode, int preferredX) {
+            assert row.size()>0;
+            final int centerX = preferredX + newNode.width / 2;
+
+            // place on the very left
+            int closestX = row.get(0).x - offset - newNode.width;;
+            int minDist = Math.abs(closestX + newNode.width / 2 - centerX);
+
+            // place on the very right
+            int startX = row.get(row.size()-1).x + row.get(row.size()-1).width + offset;
+            int newDist = Math.abs(startX + newNode.width / 2 - centerX);
+            if (newDist < minDist) {
+                minDist = newDist;
+                closestX = startX;
             }
 
-            if (pos < minX) {
-                n.x = minX;
-            } else {
-
-                LayoutNode rightNeighbor;
-                SortedSet<LayoutNode> tailSet = treeSet.tailSet(n);
-                int maxX = Integer.MAX_VALUE;
-                if (!tailSet.isEmpty()) {
-                    rightNeighbor = tailSet.first();
-                    maxX = rightNeighbor.x - offset(n, rightNeighbor) - n.width;
+            for (int i=1; i<row.size(); i++) {
+                int left = row.get(i-1).x + row.get(i-1).width;
+                int right = row.get(i).x;
+                startX = left + offset;
+                if (startX + newNode.width + offset <= right) {
+                    // save
+                    newDist = Math.abs(startX + newNode.width / 2 - centerX);
+                    if (newDist < minDist) {
+                        minDist = newDist;
+                        closestX = startX;
+                    }
                 }
 
-                n.x = Math.min(pos, maxX);
-
-                assert minX <= maxX : minX + " vs " + maxX;
+                startX = right - offset - newNode.width;
+                if (left + offset <= startX) {
+                    // save
+                    newDist = Math.abs(startX + newNode.width / 2 - centerX);
+                    if (newDist < minDist) {
+                        minDist = newDist;
+                        closestX = startX;
+                    }
+                }
             }
 
-            treeSet.add(n);
+            newNode.x = closestX;
+            row.add(newNode);
+            row.sort(Comparator.comparingInt(n -> n.x));
+            check();
+        }
+
+        public void insert(LayoutNode newNode, int preferredX) {
+            if (canPlace(newNode, preferredX)) {
+                newNode.x = preferredX;
+                row.add(newNode);
+                row.sort(Comparator.comparingInt(n -> n.x));
+                check();
+            } else {
+                insertClose(newNode, preferredX);
+            }
         }
     }
     private static final Comparator<LayoutNode> crossingNodeComparator = Comparator.comparingInt(n -> n.crossingNumber);

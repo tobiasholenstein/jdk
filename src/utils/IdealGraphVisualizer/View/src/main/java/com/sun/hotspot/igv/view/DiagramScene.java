@@ -692,7 +692,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
     private void doSeaLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
         HierarchicalLayoutManager manager = new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
-        manager.setMaxLayerLength(10);
+        //manager.setMaxLayerLength(10);
         manager.doLayout(new LayoutGraph(edges, figures));
     }
 
