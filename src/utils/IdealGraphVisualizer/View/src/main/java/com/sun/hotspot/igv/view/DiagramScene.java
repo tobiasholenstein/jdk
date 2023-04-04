@@ -854,9 +854,10 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
-    private void processBlockConnection(BlockConnection blockConnection, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
-        List<Point> controlPoints = blockConnection.getControlPoints();
-        if (controlPointIndex < controlPoints.size()) {
+    private void processBlockConnection(BlockConnection blockConnection) {
+        Point lastPoint = null;
+        LineWidget predecessor = null;
+        for (Point currentPoint :  blockConnection.getControlPoints()) {
             boolean isBold = false;
             boolean isDashed = true;
             boolean isVisible = true;
@@ -869,7 +870,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 isDashed = false;
             }
 
-            Point currentPoint = controlPoints.get(controlPointIndex);
             LineWidget newPredecessor = predecessor;
             if (currentPoint == null) { // Long connection, has been cut vertically.
                 currentPoint = specialNullPoint;
@@ -884,8 +884,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 addObject(new ConnectionSet(connectionList), newPredecessor);
                 newPredecessor.getActions().addAction(hoverAction);
             }
-
-            processBlockConnection(blockConnection, controlPointIndex + 1, currentPoint, newPredecessor);
+            lastPoint = currentPoint;
+            predecessor = newPredecessor;
         }
     }
 
@@ -1046,7 +1046,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         if (getModel().getShowCFG()) {
             for (BlockConnection blockConnection : getModel().getDiagram().getBlockConnections()) {
                 if (isVisibleBlockConnection(blockConnection)) {
-                    processBlockConnection(blockConnection, 0, null, null);
+                    processBlockConnection(blockConnection);
                 }
             }
         }
