@@ -854,62 +854,41 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
-    private void processBlockConnection(OutputSlot outputSlot, List<BlockConnection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
-        Map<Point, List<BlockConnection>> pointMap = new HashMap<>(connections.size());
-
-        for (BlockConnection connection : connections) {
-            if (!isVisibleBlockConnection(connection)) {
-                continue;
-            }
-
-            List<Point> controlPoints = connection.getControlPoints();
-            if (controlPointIndex >= controlPoints.size()) {
-                continue;
-            }
-
-            Point currentPoint = controlPoints.get(controlPointIndex);
-            if (currentPoint == null) { // Long connection, has been cut vertically.
-                currentPoint = specialNullPoint;
-            }
-
-            if (pointMap.containsKey(currentPoint)) {
-                pointMap.get(currentPoint).add(connection);
-            } else {
-                List<BlockConnection> newList = new ArrayList<>(2);
-                newList.add(connection);
-                pointMap.put(currentPoint, newList);
-            }
-        }
-
-        for (Point currentPoint : pointMap.keySet()) {
-            List<BlockConnection> connectionList = pointMap.get(currentPoint);
-            boolean isBold = false;
-            boolean isDashed = true;
-            boolean isVisible = true;
-            for (Connection c : connectionList) {
-                if (c.getStyle() == Connection.ConnectionStyle.BOLD) {
+    private void processBlockConnection(BlockConnection blockConnection, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
+        if (isVisibleBlockConnection(blockConnection)) {
+            List<Point> controlPoints = blockConnection.getControlPoints();
+            if (controlPointIndex < controlPoints.size()) {
+                boolean isBold = false;
+                boolean isDashed = true;
+                boolean isVisible = true;
+                if (blockConnection.getStyle() == Connection.ConnectionStyle.BOLD) {
                     isBold = true;
-                } else if (c.getStyle() == Connection.ConnectionStyle.INVISIBLE) {
+                } else if (blockConnection.getStyle() == Connection.ConnectionStyle.INVISIBLE) {
                     isVisible = false;
                 }
-                if (c.getStyle() != Connection.ConnectionStyle.DASHED) {
+                if (blockConnection.getStyle() != Connection.ConnectionStyle.DASHED) {
                     isDashed = false;
                 }
+
+                Point currentPoint = controlPoints.get(controlPointIndex);
+                if (currentPoint == null) { // Long connection, has been cut vertically.
+                    currentPoint = specialNullPoint;
+                }
+                LineWidget newPredecessor = predecessor;
+                if (currentPoint != specialNullPoint && lastPoint != specialNullPoint && lastPoint != null) {
+                    List<BlockConnection> connectionList = Collections.singletonList(blockConnection);
+                    Point src = new Point(lastPoint);
+                    Point dest = new Point(currentPoint);
+                    newPredecessor = new LineWidget(this, null, connectionList, src, dest, predecessor, isBold, isDashed);
+                    newPredecessor.setVisible(isVisible);
+
+                    connectionLayer.addChild(newPredecessor);
+                    addObject(new ConnectionSet(connectionList), newPredecessor);
+                    newPredecessor.getActions().addAction(hoverAction);
+                }
+
+                processBlockConnection(blockConnection, controlPointIndex + 1, currentPoint, newPredecessor);
             }
-
-            LineWidget newPredecessor = predecessor;
-            if (currentPoint != specialNullPoint && lastPoint != specialNullPoint && lastPoint != null) {
-                Point src = new Point(lastPoint);
-                Point dest = new Point(currentPoint);
-                newPredecessor = new LineWidget(this, outputSlot, connectionList, src, dest, predecessor, isBold, isDashed);
-                newPredecessor.setVisible(isVisible);
-
-                connectionLayer.addChild(newPredecessor);
-                addObject(new ConnectionSet(connectionList), newPredecessor);
-                newPredecessor.getActions().addAction(hoverAction);
-            }
-
-            processBlockConnection(outputSlot, connectionList, controlPointIndex + 1, currentPoint, newPredecessor);
         }
     }
 
@@ -1070,7 +1049,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         if (getModel().getShowCFG()) {
             for (BlockConnection blockConnection : getModel().getDiagram().getBlockConnections()) {
                 if (isVisibleBlockConnection(blockConnection)) {
-                    processBlockConnection(null, Collections.singletonList(blockConnection), 0, null, null);
+                    processBlockConnection(blockConnection, 0, null, null);
                 }
             }
         }
