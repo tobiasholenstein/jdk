@@ -802,7 +802,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     Point currentPoint = controlPoints.get(controlPointIndex);
                     if (currentPoint == null) { // Long connection, has been cut vertically.
                         currentPoint = specialNullPoint;
-                    } else if (connection.hasSlots()) {
+                    } else {
                         if (controlPointIndex == 0 && !outputSlot.shouldShowName()) {
                             currentPoint = new Point(currentPoint.x, currentPoint.y - SLOT_OFFSET);
                         } else if (controlPointIndex == controlPoints.size() - 1 &&
@@ -813,9 +813,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     if (pointMap.containsKey(currentPoint)) {
                         pointMap.get(currentPoint).add(connection);
                     } else {
-                        List<FigureConnection> newList = new ArrayList<>(2);
-                        newList.add(connection);
-                        pointMap.put(currentPoint, newList);
+                        pointMap.put(currentPoint, new ArrayList<>(Collections.singletonList(connection)));
                     }
                 }
             }
@@ -832,8 +830,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     isBold = true;
                 } else if (c.getStyle() == Connection.ConnectionStyle.INVISIBLE) {
                     isVisible = false;
-                }
-                if (c.getStyle() != Connection.ConnectionStyle.DASHED) {
+                } else if (c.getStyle() != Connection.ConnectionStyle.DASHED) {
                     isDashed = false;
                 }
             }
@@ -860,7 +857,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         boolean isVisible = blockConnection.getStyle() != Connection.ConnectionStyle.INVISIBLE;
         Point lastPoint = null;
         LineWidget predecessor = null;
-        for (Point currentPoint :  blockConnection.getControlPoints()) {
+        for (Point currentPoint : blockConnection.getControlPoints()) {
             if (currentPoint == null) { // Long connection, has been cut vertically.
                 currentPoint = specialNullPoint;
             } else if (lastPoint != specialNullPoint && lastPoint != null) {

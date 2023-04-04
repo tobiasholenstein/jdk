@@ -85,15 +85,11 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
     }
 
     public int getWidth() {
-        if (shortName == null || shortName.length() <= 1) {
-            return Figure.SLOT_WIDTH;
-        } else {
-            BufferedImage image = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
-            Graphics g = image.getGraphics();
-            g.setFont(Diagram.SLOT_FONT.deriveFont(Font.BOLD));
-            FontMetrics metrics = g.getFontMetrics();
-            return Math.max(Figure.SLOT_WIDTH, metrics.stringWidth(shortName) + 6);
-        }
+        BufferedImage image = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+        Graphics g = image.getGraphics();
+        g.setFont(Diagram.SLOT_FONT.deriveFont(Font.BOLD));
+        FontMetrics metrics = g.getFontMetrics();
+        return Math.max(Figure.SLOT_WIDTH, metrics.stringWidth(shortName) + 6);
     }
 
     public int getWantedIndex() {
@@ -111,7 +107,6 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
 
     public void setShortName(String s) {
         assert s != null;
-//        assert s.length() <= 2;
         this.shortName = s;
 
     }
@@ -138,7 +133,7 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
     }
 
     public boolean shouldShowName() {
-        return getShortName() != null && getShortName().length() > 0;
+        return getShortName().length() > 0;
     }
 
     public boolean hasSourceNodes() {
