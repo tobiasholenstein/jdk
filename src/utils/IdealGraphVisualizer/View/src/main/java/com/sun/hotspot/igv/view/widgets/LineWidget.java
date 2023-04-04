@@ -61,7 +61,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
     private final static double ZOOM_FACTOR = 0.1;
     private final OutputSlot outputSlot;
     private final DiagramScene scene;
-    private final List<Connection> connections;
+    private final List<? extends Connection> connections;
     private final Point from;
     private final Point to;
     private final Rectangle clientArea;
@@ -72,7 +72,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
     private final boolean isBold;
     private final boolean isDashed;
 
-    public LineWidget(DiagramScene scene, OutputSlot s, List<Connection> connections, Point from, Point to, LineWidget predecessor, boolean isBold, boolean isDashed) {
+    public LineWidget(DiagramScene scene, OutputSlot s, List<? extends Connection> connections, Point from, Point to, LineWidget predecessor, boolean isBold, boolean isDashed) {
         super(scene);
         this.scene = scene;
         this.outputSlot = s;
@@ -144,7 +144,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         }));
     }
 
-    private String generateToolTipText(List<Connection> conn) {
+    private String generateToolTipText(List<? extends Connection> conn) {
         StringBuilder sb = new StringBuilder();
         for (Connection c : conn) {
             sb.append(StringUtils.escapeHTML(c.getToolTipText()));
