@@ -855,21 +855,13 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private void processBlockConnection(BlockConnection blockConnection) {
+        boolean isDashed = blockConnection.getStyle() == Connection.ConnectionStyle.DASHED;;
+        boolean isBold = blockConnection.getStyle() == Connection.ConnectionStyle.BOLD;
+        boolean isVisible = blockConnection.getStyle() != Connection.ConnectionStyle.INVISIBLE;
+
         Point lastPoint = null;
         LineWidget predecessor = null;
         for (Point currentPoint :  blockConnection.getControlPoints()) {
-            boolean isBold = false;
-            boolean isDashed = true;
-            boolean isVisible = true;
-            if (blockConnection.getStyle() == Connection.ConnectionStyle.BOLD) {
-                isBold = true;
-            } else if (blockConnection.getStyle() == Connection.ConnectionStyle.INVISIBLE) {
-                isVisible = false;
-            }
-            if (blockConnection.getStyle() != Connection.ConnectionStyle.DASHED) {
-                isDashed = false;
-            }
-
             LineWidget newPredecessor = predecessor;
             if (currentPoint == null) { // Long connection, has been cut vertically.
                 currentPoint = specialNullPoint;
@@ -879,7 +871,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 Point dest = new Point(currentPoint);
                 newPredecessor = new LineWidget(this, null, connectionList, src, dest, predecessor, isBold, isDashed);
                 newPredecessor.setVisible(isVisible);
-
                 connectionLayer.addChild(newPredecessor);
                 addObject(new ConnectionSet(connectionList), newPredecessor);
                 newPredecessor.getActions().addAction(hoverAction);
