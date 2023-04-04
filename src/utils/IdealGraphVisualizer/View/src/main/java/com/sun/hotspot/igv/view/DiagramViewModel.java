@@ -372,7 +372,6 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
                 Settings.get().get(Settings.NODE_TEXT, Settings.NODE_TEXT_DEFAULT),
                 Settings.get().get(Settings.NODE_SHORT_TEXT, Settings.NODE_SHORT_TEXT_DEFAULT),
                 Settings.get().get(Settings.NODE_TINY_TEXT, Settings.NODE_TINY_TEXT_DEFAULT));
-        diagram.setCFG(getShowCFG());
         filterChain.applyInOrder(diagram, filtersOrder);
         if (graph.isDiffGraph()) {
             ColorFilter f = new ColorFilter("");
@@ -469,6 +468,7 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
     }
 
     public Diagram getDiagram() {
+        diagram.setCFG(getShowCFG());
         return diagram;
     }
 
