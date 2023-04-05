@@ -84,7 +84,7 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
 
     @Override
     protected void paintWidget() {
-
+        super.paintWidget();
         if (getScene().getZoomFactor() < ZOOM_FACTOR) {
             return;
         }

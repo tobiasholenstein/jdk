@@ -585,14 +585,10 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             figureWidget.getActions().addAction(hoverAction);
             figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
                 @Override
-                public void movementStarted(Widget widget) {
-                    System.out.println("movementStarted");
-                }
+                public void movementStarted(Widget widget) {}
 
                 @Override
-                public void movementFinished(Widget widget) {
-                    System.out.println("movementFinished");
-                }
+                public void movementFinished(Widget widget) {}
 
                 @Override
                 public Point getOriginalLocation(Widget widget) {
@@ -601,10 +597,15 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                 @Override
                 public void setNewLocation(Widget widget, Point location) {
-                    System.out.println(widget.getLocation());
                     FigureWidget fw = (FigureWidget) widget;
-                    Figure fig = fw.getFigure();
-                    List<InputSlot> inputSlots = fig.getInputSlots();
+                    if (figureToLineWidget.containsKey(fw.getFigure())) {
+                        int shiftX = location.x - widget.getLocation().x;
+                        for (LineWidget lw : figureToLineWidget.get(fw.getFigure())) {
+                            Point fromPt = lw.getFrom();
+                            lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
+                            lw.repaint();
+                        }
+                    }
                     Point newLocation = new Point(location.x, widget.getLocation().y);
                     ActionFactory.createDefaultMoveProvider().setNewLocation(widget, newLocation);
                 }
@@ -792,8 +793,19 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
     private final Point specialNullPoint = new Point(Integer.MAX_VALUE, Integer.MAX_VALUE);
 
+
+
     private void processOutputSlot(OutputSlot outputSlot, List<FigureConnection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
         Map<Point, List<FigureConnection>> pointMap = new HashMap<>(connections.size());
+
+        if (controlPointIndex == 2 && predecessor != null) {
+            Figure figure = outputSlot.getFigure();
+            if (figureToLineWidget.containsKey(figure)) {
+                figureToLineWidget.get(figure).add(predecessor);
+            } else {
+                figureToLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
+            }
+        }
 
         for (FigureConnection connection : connections) {
             if (isVisibleFigureConnection(connection)) {
@@ -841,7 +853,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 Point dest = new Point(currentPoint);
                 newPredecessor = new LineWidget(this, outputSlot, connectionList, src, dest, predecessor, isBold, isDashed);
                 newPredecessor.setVisible(isVisible);
-
                 connectionLayer.addChild(newPredecessor);
                 addObject(new ConnectionSet(connectionList), newPredecessor);
                 newPredecessor.getActions().addAction(hoverAction);
@@ -1216,8 +1227,12 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
+    Map<Figure, Set<LineWidget>> figureToLineWidget = new HashMap<>();
+
     private void relayout() {
         rebuilding = true;
+        figureToLineWidget.clear();
+
         Set<FigureWidget> oldVisibleFigureWidgets = getVisibleFigureWidgets();
         Set<BlockWidget> oldVisibleBlockWidgets = getVisibleBlockWidgets();
 

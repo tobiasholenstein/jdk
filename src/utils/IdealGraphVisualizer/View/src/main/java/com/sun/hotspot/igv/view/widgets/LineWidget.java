@@ -62,8 +62,8 @@ public class LineWidget extends Widget implements PopupMenuProvider {
     private final OutputSlot outputSlot;
     private final DiagramScene scene;
     private final List<? extends Connection> connections;
-    private final Point from;
-    private final Point to;
+    private Point from;
+    private Point to;
     private final Rectangle clientArea;
     private final LineWidget predecessor;
     private final List<LineWidget> successors;
@@ -113,7 +113,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         }
         setToolTipText("<HTML>" + generateToolTipText(this.connections) + "</HTML>");
 
-        setCheckClipping(true);
+        setCheckClipping(false);
 
         getActions().addAction(ActionFactory.createPopupMenuAction(this));
         setBackground(color);
@@ -153,6 +153,15 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         return sb.toString();
     }
 
+
+    public void setFrom(Point from) {
+         this.from = from;
+    }
+
+    public void setTo(Point to) {
+         this.to= to;
+    }
+
     public Point getFrom() {
         return from;
     }
@@ -175,8 +184,9 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         if (scene.getZoomFactor() < ZOOM_FACTOR) {
             return;
         }
+        super.paintWidget();
 
-        Graphics2D g = getScene().getGraphics();
+        Graphics2D g = this.getGraphics();
         g.setPaint(this.getBackground());
         float width = 1.0f;
 
