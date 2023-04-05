@@ -597,12 +597,15 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                 @Override
                 public void setNewLocation(Widget widget, Point location) {
+                    if (getModel().getShowCFG()) return;
+
                     FigureWidget fw = (FigureWidget) widget;
                     if (figureToInLineWidget.containsKey(fw.getFigure())) {
                         int shiftX = location.x - widget.getLocation().x;
                         for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
                             Point toPt = lw.getTo();
                             lw.setTo(new Point(toPt.x + shiftX, toPt.y));
+                            lw.revalidate();
                             lw.repaint();
                         }
                     }
@@ -611,6 +614,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                         for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
                             Point fromPt = lw.getFrom();
                             lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
+                            lw.revalidate();
                             lw.repaint();
                         }
                     }

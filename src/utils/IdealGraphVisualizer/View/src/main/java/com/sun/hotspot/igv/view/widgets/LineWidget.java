@@ -64,7 +64,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
     private final List<? extends Connection> connections;
     private Point from;
     private Point to;
-    private final Rectangle clientArea;
+    private Rectangle clientArea;
     private final LineWidget predecessor;
     private final List<LineWidget> successors;
     private boolean highlighted;
@@ -88,24 +88,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         this.isBold = isBold;
         this.isDashed = isDashed;
 
-        int minX = from.x;
-        int minY = from.y;
-        int maxX = to.x;
-        int maxY = to.y;
-        if (minX > maxX) {
-            int tmp = minX;
-            minX = maxX;
-            maxX = tmp;
-        }
-
-        if (minY > maxY) {
-            int tmp = minY;
-            minY = maxY;
-            maxY = tmp;
-        }
-
-        clientArea = new Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
-        clientArea.grow(BORDER, BORDER);
+        computeClientArea();
 
         Color color = Color.BLACK;
         if (connections.size() > 0) {
@@ -144,6 +127,28 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         }));
     }
 
+
+    private void computeClientArea() {
+        int minX = from.x;
+        int minY = from.y;
+        int maxX = to.x;
+        int maxY = to.y;
+        if (minX > maxX) {
+            int tmp = minX;
+            minX = maxX;
+            maxX = tmp;
+        }
+
+        if (minY > maxY) {
+            int tmp = minY;
+            minY = maxY;
+            maxY = tmp;
+        }
+
+        clientArea = new Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
+        clientArea.grow(BORDER, BORDER);
+    }
+
     private String generateToolTipText(List<? extends Connection> conn) {
         StringBuilder sb = new StringBuilder();
         for (Connection c : conn) {
@@ -155,11 +160,13 @@ public class LineWidget extends Widget implements PopupMenuProvider {
 
 
     public void setFrom(Point from) {
-         this.from = from;
+        this.from = from;
+        computeClientArea();
     }
 
     public void setTo(Point to) {
-         this.to= to;
+        this.to= to;
+        computeClientArea();
     }
 
     public Point getFrom() {
@@ -184,7 +191,6 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         if (scene.getZoomFactor() < ZOOM_FACTOR) {
             return;
         }
-        super.paintWidget();
 
         Graphics2D g = this.getGraphics();
         g.setPaint(this.getBackground());
@@ -244,6 +250,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
                     3);
         }
         g.setStroke(oldStroke);
+        super.paintWidget();
     }
 
     private void setPopupVisible(boolean b) {
