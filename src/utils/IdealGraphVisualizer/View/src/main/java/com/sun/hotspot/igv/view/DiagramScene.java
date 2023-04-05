@@ -598,9 +598,17 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 @Override
                 public void setNewLocation(Widget widget, Point location) {
                     FigureWidget fw = (FigureWidget) widget;
-                    if (figureToLineWidget.containsKey(fw.getFigure())) {
+                    if (figureToInLineWidget.containsKey(fw.getFigure())) {
                         int shiftX = location.x - widget.getLocation().x;
-                        for (LineWidget lw : figureToLineWidget.get(fw.getFigure())) {
+                        for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
+                            Point toPt = lw.getTo();
+                            lw.setTo(new Point(toPt.x + shiftX, toPt.y));
+                            lw.repaint();
+                        }
+                    }
+                    if (figureToOutLineWidget.containsKey(fw.getFigure())) {
+                        int shiftX = location.x - widget.getLocation().x;
+                        for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
                             Point fromPt = lw.getFrom();
                             lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
                             lw.repaint();
@@ -798,12 +806,14 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private void processOutputSlot(OutputSlot outputSlot, List<FigureConnection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
         Map<Point, List<FigureConnection>> pointMap = new HashMap<>(connections.size());
 
-        if (controlPointIndex == 2 && predecessor != null) {
-            Figure figure = outputSlot.getFigure();
-            if (figureToLineWidget.containsKey(figure)) {
-                figureToLineWidget.get(figure).add(predecessor);
-            } else {
-                figureToLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
+        if (predecessor != null) {
+            if (controlPointIndex == 2) {
+                Figure figure = outputSlot.getFigure();
+                if (figureToOutLineWidget.containsKey(figure)) {
+                    figureToOutLineWidget.get(figure).add(predecessor);
+                } else {
+                    figureToOutLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
+                }
             }
         }
 
@@ -826,6 +836,15 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                         pointMap.get(currentPoint).add(connection);
                     } else {
                         pointMap.put(currentPoint, new ArrayList<>(Collections.singletonList(connection)));
+                    }
+                } else if (controlPointIndex == controlPoints.size()) {
+                    if (predecessor != null) {
+                        Figure figure = ((Slot) connection.getTo()).getFigure();
+                        if (figureToInLineWidget.containsKey(figure)) {
+                            figureToInLineWidget.get(figure).add(predecessor);
+                        } else {
+                            figureToInLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
+                        }
                     }
                 }
             }
@@ -1030,6 +1049,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private void rebuildConnectionLayer() {
+        figureToOutLineWidget.clear();
+        figureToInLineWidget.clear();
         connectionLayer.removeChildren();
         for (Figure figure : getModel().getDiagram().getFigures()) {
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
@@ -1227,11 +1248,11 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
-    Map<Figure, Set<LineWidget>> figureToLineWidget = new HashMap<>();
+    Map<Figure, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
+    Map<Figure, Set<LineWidget>> figureToInLineWidget = new HashMap<>();
 
     private void relayout() {
         rebuilding = true;
-        figureToLineWidget.clear();
 
         Set<FigureWidget> oldVisibleFigureWidgets = getVisibleFigureWidgets();
         Set<BlockWidget> oldVisibleBlockWidgets = getVisibleBlockWidgets();
