@@ -4241,7 +4241,7 @@ bool PhaseIdealLoop::only_has_infinite_loops() {
 //----------------------------build_and_optimize-------------------------------
 // Create a PhaseLoop.  Build the ideal Loop tree.  Map each Ideal Node to
 // its corresponding LoopNode.  If 'optimize' is true, do some loop cleanups.
-void PhaseIdealLoop::build_and_optimize() {
+void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
   assert(!C->post_loop_opts_phase(), "no loop opts allowed");
 
   bool do_split_ifs = (_mode == LoopOptsDefault);
@@ -4321,7 +4321,6 @@ void PhaseIdealLoop::build_and_optimize() {
   bool stop_early = !C->has_loops() && !skip_loop_opts && !do_split_ifs && !do_max_unroll && !_verify_me &&
           !_verify_only && !bs->is_gc_specific_loop_opts_pass(_mode);
   bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
-  bool strip_mined_loops_expanded = bs->strip_mined_loops_expanded(_mode);
   if (stop_early && !do_expensive_nodes) {
     return;
   }
@@ -4398,7 +4397,7 @@ void PhaseIdealLoop::build_and_optimize() {
 
   // Given early legal placement, try finding counted loops.  This placement
   // is good enough to discover most loop invariants.
-  if (!_verify_me && !_verify_only && !strip_mined_loops_expanded) {
+  if (!_verify_me && !_verify_only && !bs->strip_mined_loops_expanded(_mode)) {
     _ltree_root->counted_loop( this );
   }
 
@@ -4409,7 +4408,7 @@ void PhaseIdealLoop::build_and_optimize() {
   worklist.push(C->root());
   NOT_PRODUCT( C->verify_graph_edges(); )
   worklist.push(C->top());
-  build_loop_late( visited, worklist, nstack );
+  build_loop_late( visited, worklist, nstack, _mode );
 
   if (_verify_only) {
     C->restore_major_progress(old_progress);
@@ -5873,7 +5872,7 @@ void PhaseIdealLoop::init_dom_lca_tags() {
 //------------------------------build_loop_late--------------------------------
 // Put Data nodes into some loop nest, by setting the _nodes[]->loop mapping.
 // Second pass finds latest legal placement, and ideal loop placement.
-void PhaseIdealLoop::build_loop_late( VectorSet &visited, Node_List &worklist, Node_Stack &nstack ) {
+void PhaseIdealLoop::build_loop_late( VectorSet &visited, Node_List &worklist, Node_Stack &nstack, LoopOptsMode _mode) {
   while (worklist.size() != 0) {
     Node *n = worklist.pop();
     // Only visit once
@@ -5909,7 +5908,7 @@ void PhaseIdealLoop::build_loop_late( VectorSet &visited, Node_List &worklist, N
         }
       } else {
         // All of n's children have been processed, complete post-processing.
-        build_loop_late_post(n);
+        build_loop_late_post(n, _mode);
         if (nstack.is_empty()) {
           // Finished all nodes on stack.
           // Process next node on the worklist.
@@ -5962,12 +5961,8 @@ void PhaseIdealLoop::verify_strip_mined_scheduling(Node *n, Node* least) {
 //------------------------------build_loop_late_post---------------------------
 // Put Data nodes into some loop nest, by setting the _nodes[]->loop mapping.
 // Second pass finds latest legal placement, and ideal loop placement.
-void PhaseIdealLoop::build_loop_late_post(Node *n) {
-  build_loop_late_post_work(n, true);
-}
-
-void PhaseIdealLoop::build_loop_late_post_work(Node *n, bool pinned) {
-
+void PhaseIdealLoop::build_loop_late_post(Node *n, LoopOptsMode _mode) {
+  bool pinned = true;
   if (n->req() == 2 && (n->Opcode() == Op_ConvI2L || n->Opcode() == Op_CastII) && !C->major_progress() && !_verify_only) {
     _igvn._worklist.push(n);  // Maybe we'll normalize it, if no more loops.
   }
@@ -6117,26 +6112,6 @@ void PhaseIdealLoop::build_loop_late_post_work(Node *n, bool pinned) {
       !n->bottom_type()->isa_rawptr()) {
     least = early;
   }
-
-#ifdef ASSERT
-  // Broken part of VerifyLoopOptimizations (F)
-  // Reason:
-  //   _verify_me->get_ctrl_no_update(n) seems to return wrong result
-  /*
-  // If verifying, verify that 'verify_me' has a legal location
-  // and choose it as our location.
-  if( _verify_me ) {
-    Node *v_ctrl = _verify_me->get_ctrl_no_update(n);
-    Node *legal = LCA;
-    while( early != legal ) {   // While not at earliest legal
-      if( legal == v_ctrl ) break;  // Check for prior good location
-      legal = idom(legal)      ;// Bump up the IDOM tree
-    }
-    // Check for prior good location
-    if( legal == v_ctrl ) least = legal; // Keep prior if found
-  }
-  */
-#endif
 
   // Assign discovered "here or above" point
   least = find_non_split_ctrl(least);

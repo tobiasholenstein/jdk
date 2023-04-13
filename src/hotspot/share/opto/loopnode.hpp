@@ -1082,10 +1082,9 @@ private:
 #endif
 
   // Place Data nodes in some loop nest
-  void build_loop_early( VectorSet &visited, Node_List &worklist, Node_Stack &nstack );
-  void build_loop_late ( VectorSet &visited, Node_List &worklist, Node_Stack &nstack );
-  void build_loop_late_post_work(Node* n, bool pinned);
-  void build_loop_late_post(Node* n);
+  void build_loop_early(VectorSet &visited, Node_List &worklist, Node_Stack &nstack);
+  void build_loop_late(VectorSet &visited, Node_List &worklist, Node_Stack &nstack, LoopOptsMode _mode);
+  void build_loop_late_post(Node* n, LoopOptsMode _mode);
   void verify_strip_mined_scheduling(Node *n, Node* least);
 
   // Array of immediate dominance info for each CFG node indexed by node idx
@@ -1094,10 +1093,9 @@ private:
   Node **_idom;                  // Array of immediate dominators
   uint *_dom_depth;              // Used for fast LCA test
   GrowableArray<uint>* _dom_stk; // For recomputation of dom depth
-  LoopOptsMode _mode;
 
   // build the loop tree and perform any requested optimizations
-  void build_and_optimize();
+  void build_and_optimize(LoopOptsMode _mode);
 
   // Dominators for the sea of nodes
   void Dominators();
@@ -1108,10 +1106,9 @@ private:
     _igvn(igvn),
     _verify_me(nullptr),
     _verify_only(false),
-    _mode(mode),
     _nodes_required(UINT_MAX) {
     assert(mode != LoopOptsVerify, "wrong constructor to verify IdealLoop");
-    build_and_optimize();
+    build_and_optimize(mode);
   }
 
 #ifndef PRODUCT
@@ -1122,9 +1119,8 @@ private:
     _igvn(igvn),
     _verify_me(verify_me),
     _verify_only(verify_me == nullptr),
-    _mode(LoopOptsVerify),
     _nodes_required(UINT_MAX) {
-    build_and_optimize();
+    build_and_optimize(LoopOptsVerify);
   }
 #endif
 
