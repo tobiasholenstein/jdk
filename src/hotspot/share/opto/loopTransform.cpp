@@ -445,8 +445,7 @@ void IdealLoopTree::reassociate_invariants(PhaseIdealLoop *phase) {
 // also requested.
 bool IdealLoopTree::policy_peeling(PhaseIdealLoop *phase) {
   uint estimate = estimate_peeling(phase);
-
-  return estimate == 0 ? false : phase->may_require_nodes(estimate);
+  return estimate != 0 && phase->may_require_nodes(estimate);
 }
 
 // Perform actual policy and size estimate for the loop peeling transform, and

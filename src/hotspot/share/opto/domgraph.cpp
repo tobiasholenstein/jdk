@@ -388,15 +388,15 @@ struct NTarjan {
 // nodes (using the is_CFG() call) and places them in a dominator tree.  Thus,
 // it needs a count of the CFG nodes for the mapping table. This is the
 // Lengauer & Tarjan O(E-alpha(E,V)) algorithm.
-void PhaseIdealLoop::Dominators() {
+void PhaseIdealLoop::Dominators(bool _verify_only) {
   ResourceMark rm;
   // Setup mappings from my Graph to Tarjan's stuff and back
   // Note: Tarjan uses 1-based arrays
   NTarjan *ntarjan = NEW_RESOURCE_ARRAY(NTarjan,C->unique()+1);
   // Initialize _control field for fast reference
-  int i;
-  for( i= C->unique()-1; i>=0; i-- )
+  for(int i= C->unique()-1; i>=0; i-- ) {
     ntarjan[i]._control = nullptr;
+  }
 
   // Store the DFS order for the main loop
   const uint fill_value = max_juint;
@@ -412,7 +412,7 @@ void PhaseIdealLoop::Dominators() {
   ntarjan[0]._size = ntarjan[0]._semi = 0;
   ntarjan[0]._label = &ntarjan[0];
 
-  for( i = dfsnum-1; i>1; i-- ) {        // For all nodes in reverse DFS order
+  for(int i = dfsnum-1; i>1; i-- ) {        // For all nodes in reverse DFS order
     NTarjan *w = &ntarjan[i];            // Get Node from DFS
     assert(w->_control != nullptr,"bad DFS walk");
 
@@ -467,7 +467,7 @@ void PhaseIdealLoop::Dominators() {
   } // End of for all Nodes in reverse DFS order
 
   // Step 4:
-  for( i=2; i < dfsnum; i++ ) { // DFS order
+  for(int i=2; i < dfsnum; i++ ) { // DFS order
     NTarjan *w = &ntarjan[i];
     assert(w->_control != nullptr,"Bad DFS walk");
     if( w->_dom != &ntarjan[w->_semi] )
@@ -481,7 +481,7 @@ void PhaseIdealLoop::Dominators() {
   w->_dom_next = w->_dom_child = nullptr;  // Initialize for building tree later
 
   // Convert the dominator tree array into my kind of graph
-  for( i=1; i<dfsnum; i++ ) {          // For all Tarjan vertices
+  for(int i=1; i<dfsnum; i++ ) {          // For all Tarjan vertices
     NTarjan *t = &ntarjan[i];          // Handy access
     assert(t->_control != nullptr,"Bad DFS walk");
     NTarjan *tdom = t->_dom;           // Handy access to immediate dominator

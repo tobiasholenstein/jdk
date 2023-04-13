@@ -847,7 +847,6 @@ class PhaseIdealLoop : public PhaseTransform {
   uint _max_preorder;
 
   const PhaseIdealLoop* _verify_me;
-  bool _verify_only;
 
   // Allocate _preorders[] array
   void allocate_preorders() {
@@ -910,7 +909,7 @@ private:
   // Helper for debugging bad dominance relationships
   bool verify_dominance(Node* n, Node* use, Node* LCA, Node* early);
 
-  Node* compute_lca_of_uses(Node* n, Node* early, bool verify = false);
+  Node* compute_lca_of_uses(Node* n, Node* early, bool verify, bool _verify_only);
 
   // Inline wrapper for frequent cases:
   // 1) only one use
@@ -977,7 +976,7 @@ public:
     return _nodes[n->_idx] != nullptr;
   }
   // check if transform created new nodes that need _ctrl recorded
-  Node *get_late_ctrl( Node *n, Node *early );
+  Node *get_late_ctrl( Node *n, Node *early, bool _verify_only);
   Node *get_early_ctrl( Node *n );
   Node *get_early_ctrl_for_expensive(Node *n, Node* earliest);
   void set_early_ctrl(Node* n, bool update_body);
@@ -1069,8 +1068,8 @@ public:
 private:
 
   // Place 'n' in some loop nest, where 'n' is a CFG node
-  void build_loop_tree();
-  int build_loop_tree_impl( Node *n, int pre_order );
+  void build_loop_tree(bool _verify_only);
+  int build_loop_tree_impl( Node *n, int pre_order, bool _verify_only);
   // Insert loop into the existing loop tree.  'innermost' is a leaf of the
   // loop tree, not the root.
   IdealLoopTree *sort( IdealLoopTree *loop, IdealLoopTree *innermost );
@@ -1082,9 +1081,9 @@ private:
 #endif
 
   // Place Data nodes in some loop nest
-  void build_loop_early(VectorSet &visited, Node_List &worklist, Node_Stack &nstack);
-  void build_loop_late(VectorSet &visited, Node_List &worklist, Node_Stack &nstack, LoopOptsMode _mode);
-  void build_loop_late_post(Node* n, LoopOptsMode _mode);
+  void build_loop_early(VectorSet &visited, Node_List &worklist, Node_Stack &nstack, bool _verify_only);
+  void build_loop_late(VectorSet &visited, Node_List &worklist, Node_Stack &nstack, bool is_gc_specific_pass, bool _verify_only);
+  void build_loop_late_post(Node* n, bool is_gc_specific_pass, bool _verify_only);
   void verify_strip_mined_scheduling(Node *n, Node* least);
 
   // Array of immediate dominance info for each CFG node indexed by node idx
@@ -1094,18 +1093,21 @@ private:
   uint *_dom_depth;              // Used for fast LCA test
   GrowableArray<uint>* _dom_stk; // For recomputation of dom depth
 
+#ifndef PRODUCT
+  void verify_only();
+#endif
+
   // build the loop tree and perform any requested optimizations
   void build_and_optimize(LoopOptsMode _mode);
 
   // Dominators for the sea of nodes
-  void Dominators();
+  void Dominators(bool _verify_only);
 
   // Compute the Ideal Node to Loop mapping
   PhaseIdealLoop(PhaseIterGVN& igvn, LoopOptsMode mode) :
     PhaseTransform(Ideal_Loop),
     _igvn(igvn),
     _verify_me(nullptr),
-    _verify_only(false),
     _nodes_required(UINT_MAX) {
     assert(mode != LoopOptsVerify, "wrong constructor to verify IdealLoop");
     build_and_optimize(mode);
@@ -1113,14 +1115,22 @@ private:
 
 #ifndef PRODUCT
   // Verify that verify_me made the same decisions as a fresh run
-  // or only verify that the graph is valid if verify_me is null.
-  PhaseIdealLoop(PhaseIterGVN& igvn, const PhaseIdealLoop* verify_me = nullptr) :
+  PhaseIdealLoop(PhaseIterGVN& igvn, const PhaseIdealLoop* verify_me) :
     PhaseTransform(Ideal_Loop),
     _igvn(igvn),
     _verify_me(verify_me),
-    _verify_only(verify_me == nullptr),
     _nodes_required(UINT_MAX) {
+    assert(verify_me != nullptr, "verify_me cannot be null");
     build_and_optimize(LoopOptsVerify);
+  }
+
+  // only verify that the graph is valid
+  PhaseIdealLoop(PhaseIterGVN& igvn) :
+    PhaseTransform(Ideal_Loop),
+    _igvn(igvn),
+    _verify_me(nullptr),
+    _nodes_required(UINT_MAX) {
+    verify_only();
   }
 #endif
 

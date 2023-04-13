@@ -980,7 +980,7 @@ void PhaseIdealLoop::try_move_store_after_loop(Node* n) {
             assert(count > 0, "inconsistent phi");
 
             // Compute latest point this store can go
-            Node* lca = get_late_ctrl(n, get_ctrl(n));
+            Node* lca = get_late_ctrl(n, get_ctrl(n), false);
             if (lca->is_OuterStripMinedLoop()) {
               lca = lca->in(LoopNode::EntryControl);
             }

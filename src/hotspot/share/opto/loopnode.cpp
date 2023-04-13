@@ -121,7 +121,7 @@ Node *PhaseIdealLoop::get_early_ctrl( Node *n ) {
       // and we want the deeper (i.e., dominated) guy.
       Node *n1 = early;
       Node *n2 = cin;
-      while (1) {
+      while (true) {
         n1 = idom(n1);          // Walk up until break cycle
         n2 = idom(n2);
         if (n1 == cin ||        // Walked early up to cin
@@ -140,7 +140,7 @@ Node *PhaseIdealLoop::get_early_ctrl( Node *n ) {
   // Return earliest legal location
   assert(early == find_non_split_ctrl(early), "unexpected early control");
 
-  if (n->is_expensive() && !_verify_only && !_verify_me) {
+  if (n->is_expensive() && !_verify_me) {
     assert(n->in(0), "should have control input");
     early = get_early_ctrl_for_expensive(n, early);
   }
@@ -167,7 +167,7 @@ Node *PhaseIdealLoop::get_early_ctrl_for_expensive(Node *n, Node* earliest) {
     return earliest;
   }
 
-  while (1) {
+  while (true) {
     Node *next = ctl;
     // Moving the node out of a loop on the projection of a If
     // confuses loop predication. So once we hit a Loop in a If branch
@@ -4236,6 +4236,123 @@ bool PhaseIdealLoop::only_has_infinite_loops() {
 }
 #endif
 
+#ifndef PRODUCT
+void PhaseIdealLoop::verify_only() {
+  assert(!C->post_loop_opts_phase(), "no loop opts allowed");
+
+  int old_progress = C->major_progress();
+  uint orig_worklist_size = _igvn._worklist.size();
+
+  // Reset major-progress flag for the driver's heuristics
+  C->clear_major_progress();
+
+  // Capture for later assert
+  uint unique = C->unique();
+  _loop_invokes++;
+  _loop_work += unique;
+
+  // True if the method has at least 1 irreducible loop
+  _has_irreducible_loops = false;
+
+  _created_loop_node = false;
+
+  // Pre-grow the mapping from Nodes to IdealLoopTrees.
+  _nodes.map(C->unique(), nullptr);
+  memset(_nodes.adr(), 0, wordSize * C->unique());
+
+  // Pre-build the top-level outermost loop tree entry
+  _ltree_root = new IdealLoopTree( this, C->root(), C->root() );
+  // Do not need a safepoint at the top level
+  _ltree_root->_has_sfpt = 1;
+
+  // Initialize Dominators.
+  // Checked in clone_loop_predicate() during beautify_loops().
+  _idom_size = 0;
+  _idom      = nullptr;
+  _dom_depth = nullptr;
+  _dom_stk   = nullptr;
+
+  // Empty pre-order array
+  allocate_preorders();
+
+  // Build a loop tree on the fly.  Build a mapping from CFG nodes to
+  // IdealLoopTree entries.  Data nodes are NOT walked.
+  build_loop_tree(true);
+  // Check for bailout, and return
+  if (C->failing()) {
+    return;
+  }
+
+  // Verify that the has_loops() flag set at parse time is consistent
+  // with the just built loop tree. With infinite loops, it could be
+  // that one pass of loop opts only finds infinite loops, clears the
+  // has_loops() flag but adds NeverBranch nodes so the next loop opts
+  // verification pass finds a non empty loop tree. When the back edge
+  // is an exception edge, parsing doesn't set has_loops().
+  assert(_ltree_root->_child == nullptr || C->has_loops() || only_has_infinite_loops() || C->has_exception_backedge(), "parsing found no loops but there are some");
+  // No loops after all
+
+  // There should always be an outer loop containing the Root and Return nodes.
+  // If not, we have a degenerate empty program.  Bail out in this case.
+  if (!has_node(C->root())) {
+    return;
+  }
+
+  BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
+  // Nothing to do, so get out
+  bool stop_early = false;
+  bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
+  if (stop_early && !do_expensive_nodes) {
+    return;
+  }
+
+  // Set loop nesting depth
+  _ltree_root->set_nest( 0 );
+
+  // Build Dominators for elision of null checks & loop finding.
+  // Since nodes do not have a slot for immediate dominator, make
+  // a persistent side array for that info indexed on node->_idx.
+  _idom_size = C->unique();
+  _idom      = NEW_RESOURCE_ARRAY( Node*, _idom_size );
+  _dom_depth = NEW_RESOURCE_ARRAY( uint,  _idom_size );
+  _dom_stk   = nullptr; // Allocated on demand in recompute_dom_depth
+  memset( _dom_depth, 0, _idom_size * sizeof(uint) );
+
+  Dominators(true);
+
+  // Walk the DATA nodes and place into loops.  Find earliest control
+  // node.  For CFG nodes, the _nodes array starts out and remains
+  // holding the associated IdealLoopTree pointer.  For DATA nodes, the
+  // _nodes array holds the earliest legal controlling CFG node.
+
+  // Allocate stack with enough space to avoid frequent realloc
+  int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
+  Node_Stack nstack(stack_size);
+
+  VectorSet visited;
+  visited.clear();
+  Node_List worklist;
+  // Don't need C->root() on worklist since
+  // it will be processed among C->top() inputs
+  worklist.push(C->top());
+  visited.set(C->top()->_idx); // Set C->top() as visited now
+  build_loop_early(visited, worklist, nstack, true);
+
+  // Find latest loop placement.  Find ideal loop placement.
+  visited.clear();
+  init_dom_lca_tags();
+  // Need C->root() on worklist when processing outs
+  worklist.push(C->root());
+  NOT_PRODUCT( C->verify_graph_edges(); )
+  worklist.push(C->top());
+  build_loop_late( visited, worklist, nstack, false, true);
+
+  C->restore_major_progress(old_progress);
+  assert(C->unique() == unique, "verification _mode made Nodes? ? ?");
+  assert(_igvn._worklist.size() == orig_worklist_size, "shouldn't push anything");
+}
+#endif
+
 
 //=============================================================================
 //----------------------------build_and_optimize-------------------------------
@@ -4267,7 +4384,6 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
 
   _created_loop_node = false;
 
-  VectorSet visited;
   // Pre-grow the mapping from Nodes to IdealLoopTrees.
   _nodes.map(C->unique(), nullptr);
   memset(_nodes.adr(), 0, wordSize * C->unique());
@@ -4289,7 +4405,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
 
   // Build a loop tree on the fly.  Build a mapping from CFG nodes to
   // IdealLoopTree entries.  Data nodes are NOT walked.
-  build_loop_tree();
+  build_loop_tree(false);
   // Check for bailout, and return
   if (C->failing()) {
     return;
@@ -4303,23 +4419,21 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
   // is an exception edge, parsing doesn't set has_loops().
   assert(_ltree_root->_child == nullptr || C->has_loops() || only_has_infinite_loops() || C->has_exception_backedge(), "parsing found no loops but there are some");
   // No loops after all
-  if( !_ltree_root->_child && !_verify_only ) C->set_has_loops(false);
+  if(!_ltree_root->_child) C->set_has_loops(false);
 
   // There should always be an outer loop containing the Root and Return nodes.
   // If not, we have a degenerate empty program.  Bail out in this case.
   if (!has_node(C->root())) {
-    if (!_verify_only) {
-      C->clear_major_progress();
-      assert(false, "empty program detected during loop optimization");
-      C->record_method_not_compilable("empty program detected during loop optimization");
-    }
+    C->clear_major_progress();
+    assert(false, "empty program detected during loop optimization");
+    C->record_method_not_compilable("empty program detected during loop optimization");
     return;
   }
 
   BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
   // Nothing to do, so get out
   bool stop_early = !C->has_loops() && !skip_loop_opts && !do_split_ifs && !do_max_unroll && !_verify_me &&
-          !_verify_only && !bs->is_gc_specific_loop_opts_pass(_mode);
+                    !bs->is_gc_specific_loop_opts_pass(_mode);
   bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
   if (stop_early && !do_expensive_nodes) {
     return;
@@ -4330,14 +4444,14 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
 
   // Split shared headers and insert loop landing pads.
   // Do not bother doing this on the Root loop of course.
-  if( !_verify_me && !_verify_only && _ltree_root->_child ) {
+  if( !_verify_me && _ltree_root->_child ) {
     C->print_method(PHASE_BEFORE_BEAUTIFY_LOOPS, 3);
     if( _ltree_root->_child->beautify_loops( this ) ) {
       // Re-build loop tree!
       _ltree_root->_child = nullptr;
       _nodes.clear();
       reallocate_preorders();
-      build_loop_tree();
+      build_loop_tree(false);
       // Check for bailout, and return
       if (C->failing()) {
         return;
@@ -4358,25 +4472,25 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
   _dom_stk   = nullptr; // Allocated on demand in recompute_dom_depth
   memset( _dom_depth, 0, _idom_size * sizeof(uint) );
 
-  Dominators();
+  Dominators(false);
 
-  if (!_verify_only) {
-    // As a side effect, Dominators removed any unreachable CFG paths
-    // into RegionNodes.  It doesn't do this test against Root, so
-    // we do it here.
-    for( uint i = 1; i < C->root()->req(); i++ ) {
-      if( !_nodes[C->root()->in(i)->_idx] ) {    // Dead path into Root?
-        _igvn.delete_input_of(C->root(), i);
-        i--;                      // Rerun same iteration on compressed edges
-      }
+  // As a side effect, Dominators removed any unreachable CFG paths
+  // into RegionNodes.  It doesn't do this test against Root, so
+  // we do it here.
+  for( uint i = 1; i < C->root()->req(); i++ ) {
+    if( !_nodes[C->root()->in(i)->_idx] ) {    // Dead path into Root?
+      _igvn.delete_input_of(C->root(), i);
+      i--;                      // Rerun same iteration on compressed edges
     }
-
-    // Given dominators, try to find inner loops with calls that must
-    // always be executed (call dominates loop tail).  These loops do
-    // not need a separate safepoint.
-    Node_List cisstack;
-    _ltree_root->check_safepts(visited, cisstack);
   }
+
+  // Given dominators, try to find inner loops with calls that must
+  // always be executed (call dominates loop tail).  These loops do
+  // not need a separate safepoint.
+  VectorSet visited;
+  Node_List cisstack;
+  _ltree_root->check_safepts(visited, cisstack);
+
 
   // Walk the DATA nodes and place into loops.  Find earliest control
   // node.  For CFG nodes, the _nodes array starts out and remains
@@ -4393,11 +4507,11 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
   // it will be processed among C->top() inputs
   worklist.push(C->top());
   visited.set(C->top()->_idx); // Set C->top() as visited now
-  build_loop_early( visited, worklist, nstack );
+  build_loop_early(visited, worklist, nstack, false);
 
   // Given early legal placement, try finding counted loops.  This placement
   // is good enough to discover most loop invariants.
-  if (!_verify_me && !_verify_only && !bs->strip_mined_loops_expanded(_mode)) {
+  if (!_verify_me && !bs->strip_mined_loops_expanded(_mode)) {
     _ltree_root->counted_loop( this );
   }
 
@@ -4408,14 +4522,8 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
   worklist.push(C->root());
   NOT_PRODUCT( C->verify_graph_edges(); )
   worklist.push(C->top());
-  build_loop_late( visited, worklist, nstack, _mode );
-
-  if (_verify_only) {
-    C->restore_major_progress(old_progress);
-    assert(C->unique() == unique, "verification _mode made Nodes? ? ?");
-    assert(_igvn._worklist.size() == orig_worklist_size, "shouldn't push anything");
-    return;
-  }
+  bool is_gc_specific_pass = BarrierSet::barrier_set()->barrier_set_c2()->is_gc_specific_loop_opts_pass(_mode);
+  build_loop_late( visited, worklist, nstack, is_gc_specific_pass, false);
 
   // clear out the dead code after build_loop_late
   while (_deadlist.size()) {
@@ -4605,7 +4713,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
               CountedLoopNode *cl = lpt_next->_head->as_CountedLoop();
               if (cl->is_post_loop() && lpt_next->range_checks_present()) {
                 if (!cl->is_multiversioned()) {
-                  if (multi_version_post_loops(lpt, lpt_next) == false) {
+                  if (!multi_version_post_loops(lpt, lpt_next)) {
                     // Cause the rce loop to be optimized away if we fail
                     cl->mark_is_multiversioned();
                     cl->set_slp_max_unroll(0);
@@ -5091,7 +5199,7 @@ IdealLoopTree *PhaseIdealLoop::sort( IdealLoopTree *loop, IdealLoopTree *innermo
 // loops.  This means I need to sort my childrens' loops by pre-order.
 // The sort is of size number-of-control-children, which generally limits
 // it to size 2 (i.e., I just choose between my 2 target loops).
-void PhaseIdealLoop::build_loop_tree() {
+void PhaseIdealLoop::build_loop_tree(bool _verify_only) {
   // Allocate stack of size C->live_nodes()/2 to avoid frequent realloc
   GrowableArray <Node *> bltstack(C->live_nodes() >> 1);
   Node *n = C->root();
@@ -5144,7 +5252,7 @@ void PhaseIdealLoop::build_loop_tree() {
       if ( bltstack.length() == stack_size ) {
         // There were no additional children, post visit node now
         (void)bltstack.pop(); // Remove node from stack
-        pre_order = build_loop_tree_impl( n, pre_order );
+        pre_order = build_loop_tree_impl( n, pre_order, _verify_only);
         // Check for bailout
         if (C->failing()) {
           return;
@@ -5162,7 +5270,7 @@ void PhaseIdealLoop::build_loop_tree() {
 }
 
 //------------------------------build_loop_tree_impl---------------------------
-int PhaseIdealLoop::build_loop_tree_impl( Node *n, int pre_order ) {
+int PhaseIdealLoop::build_loop_tree_impl( Node *n, int pre_order, bool _verify_only) {
   // ---- Post-pass Work ----
   // Pre-walked but not post-walked nodes need a pre_order number.
 
@@ -5422,13 +5530,12 @@ bool PhaseIdealLoop::is_in_irreducible_loop(RegionNode* region) {
 // Put Data nodes into some loop nest, by setting the _nodes[]->loop mapping.
 // First pass computes the earliest controlling node possible.  This is the
 // controlling input with the deepest dominating depth.
-void PhaseIdealLoop::build_loop_early( VectorSet &visited, Node_List &worklist, Node_Stack &nstack ) {
+void PhaseIdealLoop::build_loop_early( VectorSet &visited, Node_List &worklist, Node_Stack &nstack, bool _verify_only ) {
   while (worklist.size() != 0) {
     // Use local variables nstack_top_n & nstack_top_i to cache values
     // on nstack's top.
     Node *nstack_top_n = worklist.pop();
     uint  nstack_top_i = 0;
-//while_nstack_nonempty:
     while (true) {
       // Get parent node and next input's index from stack's top.
       Node  *n = nstack_top_n;
@@ -5601,7 +5708,7 @@ bool PhaseIdealLoop::verify_dominance(Node* n, Node* use, Node* LCA, Node* early
 }
 
 
-Node* PhaseIdealLoop::compute_lca_of_uses(Node* n, Node* early, bool verify) {
+Node* PhaseIdealLoop::compute_lca_of_uses(Node* n, Node* early, bool verify, bool _verify_only) {
   // Compute LCA over list of uses
   bool had_error = false;
   Node *LCA = nullptr;
@@ -5682,14 +5789,14 @@ Node* CountedLoopNode::is_canonical_loop_entry() {
 
 //------------------------------get_late_ctrl----------------------------------
 // Compute latest legal control.
-Node *PhaseIdealLoop::get_late_ctrl( Node *n, Node *early ) {
+Node *PhaseIdealLoop::get_late_ctrl( Node *n, Node *early, bool _verify_only) {
   assert(early != nullptr, "early control should not be null");
 
-  Node* LCA = compute_lca_of_uses(n, early);
+  Node* LCA = compute_lca_of_uses(n, early, false, _verify_only);
 #ifdef ASSERT
   if (LCA == C->root() && LCA != early) {
     // def doesn't dominate uses so print some useful debugging output
-    compute_lca_of_uses(n, early, true);
+    compute_lca_of_uses(n, early, true, _verify_only);
   }
 #endif
 
@@ -5872,7 +5979,7 @@ void PhaseIdealLoop::init_dom_lca_tags() {
 //------------------------------build_loop_late--------------------------------
 // Put Data nodes into some loop nest, by setting the _nodes[]->loop mapping.
 // Second pass finds latest legal placement, and ideal loop placement.
-void PhaseIdealLoop::build_loop_late( VectorSet &visited, Node_List &worklist, Node_Stack &nstack, LoopOptsMode _mode) {
+void PhaseIdealLoop::build_loop_late( VectorSet &visited, Node_List &worklist, Node_Stack &nstack, bool is_gc_specific_pass, bool _verify_only) {
   while (worklist.size() != 0) {
     Node *n = worklist.pop();
     // Only visit once
@@ -5908,7 +6015,7 @@ void PhaseIdealLoop::build_loop_late( VectorSet &visited, Node_List &worklist, N
         }
       } else {
         // All of n's children have been processed, complete post-processing.
-        build_loop_late_post(n, _mode);
+        build_loop_late_post(n, is_gc_specific_pass, _verify_only);
         if (nstack.is_empty()) {
           // Finished all nodes on stack.
           // Process next node on the worklist.
@@ -5961,7 +6068,7 @@ void PhaseIdealLoop::verify_strip_mined_scheduling(Node *n, Node* least) {
 //------------------------------build_loop_late_post---------------------------
 // Put Data nodes into some loop nest, by setting the _nodes[]->loop mapping.
 // Second pass finds latest legal placement, and ideal loop placement.
-void PhaseIdealLoop::build_loop_late_post(Node *n, LoopOptsMode _mode) {
+void PhaseIdealLoop::build_loop_late_post(Node *n, bool is_gc_specific_pass, bool _verify_only) {
   bool pinned = true;
   if (n->req() == 2 && (n->Opcode() == Op_ConvI2L || n->Opcode() == Op_CastII) && !C->major_progress() && !_verify_only) {
     _igvn._worklist.push(n);  // Maybe we'll normalize it, if no more loops.
@@ -5970,7 +6077,7 @@ void PhaseIdealLoop::build_loop_late_post(Node *n, LoopOptsMode _mode) {
 #ifdef ASSERT
   if (_verify_only && !n->is_CFG()) {
     // Check def-use domination.
-    compute_lca_of_uses(n, get_ctrl(n), true /* verify */);
+    compute_lca_of_uses(n, get_ctrl(n), true, _verify_only);
   }
 #endif
 
@@ -6034,7 +6141,7 @@ void PhaseIdealLoop::build_loop_late_post(Node *n, LoopOptsMode _mode) {
   Node *early = get_ctrl(n);// Early location already computed
 
   // Compute latest point this Node can go
-  Node *LCA = get_late_ctrl( n, early );
+  Node *LCA = get_late_ctrl( n, early, _verify_only);
   // LCA is null due to uses being dead
   if( LCA == nullptr ) {
 #ifdef ASSERT
@@ -6096,7 +6203,7 @@ void PhaseIdealLoop::build_loop_late_post(Node *n, LoopOptsMode _mode) {
   }
   // Try not to place code on a loop entry projection
   // which can inhibit range check elimination.
-  if (least != early && !BarrierSet::barrier_set()->barrier_set_c2()->is_gc_specific_loop_opts_pass(_mode)) {
+  if (least != early && !is_gc_specific_pass) {
     Node* ctrl_out = least->unique_ctrl_out_or_null();
     if (ctrl_out != nullptr && ctrl_out->is_Loop() &&
         least == ctrl_out->in(LoopNode::EntryControl) &&
