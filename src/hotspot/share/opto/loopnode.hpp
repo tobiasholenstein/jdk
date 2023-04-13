@@ -846,8 +846,6 @@ class PhaseIdealLoop : public PhaseTransform {
   uint *_preorders;
   uint _max_preorder;
 
-  const PhaseIdealLoop* _verify_me;
-
   // Allocate _preorders[] array
   void allocate_preorders() {
     _max_preorder = C->unique()+8;
@@ -1094,6 +1092,7 @@ private:
   GrowableArray<uint>* _dom_stk; // For recomputation of dom depth
 
 #ifndef PRODUCT
+  void verify_decisions(const PhaseIdealLoop* verify_me);
   void verify_only();
 #endif
 
@@ -1107,7 +1106,6 @@ private:
   PhaseIdealLoop(PhaseIterGVN& igvn, LoopOptsMode mode) :
     PhaseTransform(Ideal_Loop),
     _igvn(igvn),
-    _verify_me(nullptr),
     _nodes_required(UINT_MAX) {
     assert(mode != LoopOptsVerify, "wrong constructor to verify IdealLoop");
     build_and_optimize(mode);
@@ -1118,17 +1116,15 @@ private:
   PhaseIdealLoop(PhaseIterGVN& igvn, const PhaseIdealLoop* verify_me) :
     PhaseTransform(Ideal_Loop),
     _igvn(igvn),
-    _verify_me(verify_me),
     _nodes_required(UINT_MAX) {
     assert(verify_me != nullptr, "verify_me cannot be null");
-    build_and_optimize(LoopOptsVerify);
+    verify_decisions(verify_me);
   }
 
   // only verify that the graph is valid
   PhaseIdealLoop(PhaseIterGVN& igvn) :
     PhaseTransform(Ideal_Loop),
     _igvn(igvn),
-    _verify_me(nullptr),
     _nodes_required(UINT_MAX) {
     verify_only();
   }

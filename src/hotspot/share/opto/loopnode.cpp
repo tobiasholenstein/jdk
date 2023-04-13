@@ -140,7 +140,7 @@ Node *PhaseIdealLoop::get_early_ctrl( Node *n ) {
   // Return earliest legal location
   assert(early == find_non_split_ctrl(early), "unexpected early control");
 
-  if (n->is_expensive() && !_verify_me) {
+  if (n->is_expensive()) {
     assert(n->in(0), "should have control input");
     early = get_early_ctrl_for_expensive(n, early);
   }
@@ -4237,6 +4237,146 @@ bool PhaseIdealLoop::only_has_infinite_loops() {
 #endif
 
 #ifndef PRODUCT
+void PhaseIdealLoop::verify_decisions(const PhaseIdealLoop* verify_me) {
+  assert(verify_me != nullptr, "verify_me needs to be non-null");
+  assert(!C->post_loop_opts_phase(), "no loop opts allowed");
+
+  int old_progress = C->major_progress();
+  uint orig_worklist_size = _igvn._worklist.size();
+
+  // Reset major-progress flag for the driver's heuristics
+  C->clear_major_progress();
+
+  // Capture for later assert
+  uint unique = C->unique();
+  _loop_invokes++;
+  _loop_work += unique;
+
+  // True if the method has at least 1 irreducible loop
+  _has_irreducible_loops = false;
+
+  _created_loop_node = false;
+
+  // Pre-grow the mapping from Nodes to IdealLoopTrees.
+  _nodes.map(C->unique(), nullptr);
+  memset(_nodes.adr(), 0, wordSize * C->unique());
+
+  // Pre-build the top-level outermost loop tree entry
+  _ltree_root = new IdealLoopTree( this, C->root(), C->root() );
+  // Do not need a safepoint at the top level
+  _ltree_root->_has_sfpt = 1;
+
+  // Initialize Dominators.
+  // Checked in clone_loop_predicate() during beautify_loops().
+  _idom_size = 0;
+  _idom      = nullptr;
+  _dom_depth = nullptr;
+  _dom_stk   = nullptr;
+
+  // Empty pre-order array
+  allocate_preorders();
+
+  // Build a loop tree on the fly.  Build a mapping from CFG nodes to
+  // IdealLoopTree entries.  Data nodes are NOT walked.
+  build_loop_tree(false);
+  // Check for bailout, and return
+  if (C->failing()) {
+    return;
+  }
+
+  // Verify that the has_loops() flag set at parse time is consistent
+  // with the just built loop tree. With infinite loops, it could be
+  // that one pass of loop opts only finds infinite loops, clears the
+  // has_loops() flag but adds NeverBranch nodes so the next loop opts
+  // verification pass finds a non empty loop tree. When the back edge
+  // is an exception edge, parsing doesn't set has_loops().
+  assert(_ltree_root->_child == nullptr || C->has_loops() || only_has_infinite_loops() || C->has_exception_backedge(), "parsing found no loops but there are some");
+  // No loops after all
+  if(!_ltree_root->_child) C->set_has_loops(false);
+
+  // There should always be an outer loop containing the Root and Return nodes.
+  // If not, we have a degenerate empty program.  Bail out in this case.
+  if (!has_node(C->root())) {
+    C->clear_major_progress();
+    assert(false, "empty program detected during loop optimization");
+    C->record_method_not_compilable("empty program detected during loop optimization");
+    return;
+  }
+
+  // Set loop nesting depth
+  _ltree_root->set_nest( 0 );
+
+  // Build Dominators for elision of null checks & loop finding.
+  // Since nodes do not have a slot for immediate dominator, make
+  // a persistent side array for that info indexed on node->_idx.
+  _idom_size = C->unique();
+  _idom      = NEW_RESOURCE_ARRAY( Node*, _idom_size );
+  _dom_depth = NEW_RESOURCE_ARRAY( uint,  _idom_size );
+  _dom_stk   = nullptr; // Allocated on demand in recompute_dom_depth
+  memset( _dom_depth, 0, _idom_size * sizeof(uint) );
+
+  Dominators(false);
+
+  // As a side effect, Dominators removed any unreachable CFG paths
+  // into RegionNodes.  It doesn't do this test against Root, so
+  // we do it here.
+  for( uint i = 1; i < C->root()->req(); i++ ) {
+    if( !_nodes[C->root()->in(i)->_idx] ) {    // Dead path into Root?
+      _igvn.delete_input_of(C->root(), i);
+      i--;                      // Rerun same iteration on compressed edges
+    }
+  }
+
+  // Given dominators, try to find inner loops with calls that must
+  // always be executed (call dominates loop tail).  These loops do
+  // not need a separate safepoint.
+  VectorSet visited;
+  Node_List cisstack;
+  _ltree_root->check_safepts(visited, cisstack);
+
+
+  // Walk the DATA nodes and place into loops.  Find earliest control
+  // node.  For CFG nodes, the _nodes array starts out and remains
+  // holding the associated IdealLoopTree pointer.  For DATA nodes, the
+  // _nodes array holds the earliest legal controlling CFG node.
+
+  // Allocate stack with enough space to avoid frequent realloc
+  int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
+  Node_Stack nstack(stack_size);
+
+  visited.clear();
+  Node_List worklist;
+  // Don't need C->root() on worklist since
+  // it will be processed among C->top() inputs
+  worklist.push(C->top());
+  visited.set(C->top()->_idx); // Set C->top() as visited now
+  build_loop_early(visited, worklist, nstack, true);
+
+  // Find latest loop placement.  Find ideal loop placement.
+  visited.clear();
+  init_dom_lca_tags();
+  // Need C->root() on worklist when processing outs
+  worklist.push(C->root());
+  NOT_PRODUCT( C->verify_graph_edges(); )
+  worklist.push(C->top());
+  build_loop_late( visited, worklist, nstack, false, false);
+
+  // clear out the dead code after build_loop_late
+  while (_deadlist.size()) {
+    _igvn.remove_globally_dead_node(_deadlist.pop());
+  }
+
+  // Some parser-inserted loop predicates could never be used by loop
+  // predication or they were moved away from loop during some optimizations.
+  // For example, peeling. Eliminate them before next loop optimizations.
+  eliminate_useless_predicates();
+
+  C->verify_graph_edges();
+  // Check to see if the verify _mode is broken
+  assert(C->unique() == unique, "non-optimize _mode made Nodes? ? ?");
+}
+
+
 void PhaseIdealLoop::verify_only() {
   assert(!C->post_loop_opts_phase(), "no loop opts allowed");
 
@@ -4298,7 +4438,6 @@ void PhaseIdealLoop::verify_only() {
     return;
   }
 
-  BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
   // Nothing to do, so get out
   bool stop_early = false;
   bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
@@ -4432,7 +4571,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
 
   BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
   // Nothing to do, so get out
-  bool stop_early = !C->has_loops() && !skip_loop_opts && !do_split_ifs && !do_max_unroll && !_verify_me &&
+  bool stop_early = !C->has_loops() && !skip_loop_opts && !do_split_ifs && !do_max_unroll &&
                     !bs->is_gc_specific_loop_opts_pass(_mode);
   bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
   if (stop_early && !do_expensive_nodes) {
@@ -4444,7 +4583,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
 
   // Split shared headers and insert loop landing pads.
   // Do not bother doing this on the Root loop of course.
-  if( !_verify_me && _ltree_root->_child ) {
+  if(_ltree_root->_child ) {
     C->print_method(PHASE_BEFORE_BEAUTIFY_LOOPS, 3);
     if( _ltree_root->_child->beautify_loops( this ) ) {
       // Re-build loop tree!
@@ -4511,7 +4650,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
 
   // Given early legal placement, try finding counted loops.  This placement
   // is good enough to discover most loop invariants.
-  if (!_verify_me && !bs->strip_mined_loops_expanded(_mode)) {
+  if (!bs->strip_mined_loops_expanded(_mode)) {
     _ltree_root->counted_loop( this );
   }
 
@@ -4549,11 +4688,6 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode _mode) {
 
 #ifndef PRODUCT
   C->verify_graph_edges();
-  if (_verify_me) {             // Nested verify pass?
-    // Check to see if the verify _mode is broken
-    assert(C->unique() == unique, "non-optimize _mode made Nodes? ? ?");
-    return;
-  }
   DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
   if (TraceLoopOpts && C->has_loops()) {
     _ltree_root->dump();
@@ -5561,7 +5695,7 @@ void PhaseIdealLoop::build_loop_early( VectorSet &visited, Node_List &worklist, 
           // (the old code here would yank a 2nd safepoint after seeing a
           // first one, even though the 1st did not dominate in the loop body
           // and thus could be avoided indefinitely)
-          if( !_verify_only && !_verify_me && ilt->_has_sfpt && n->Opcode() == Op_SafePoint &&
+          if( !_verify_only && ilt->_has_sfpt && n->Opcode() == Op_SafePoint &&
               is_deleteable_safept(n)) {
             Node *in = n->in(TypeFunc::Control);
             lazy_replace(n,in);       // Pull safepoint now
