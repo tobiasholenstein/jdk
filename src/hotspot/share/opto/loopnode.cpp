@@ -4261,49 +4261,13 @@ void PhaseIdealLoop::verify_only() {
   _loop_work += unique;
 #endif
 
-  if (!initialize(verify_only)) return;
-
   VectorSet visited;
-
-  if (!verify_only) {
-    // Given dominators, try to find inner loops with calls that must
-    // always be executed (call dominates loop tail).  These loops do
-    // not need a separate safepoint.
-    Node_List cisstack;
-    _ltree_root->check_safepts(visited, cisstack);
-  }
-
-  // Walk the DATA nodes and place into loops.  Find earliest control
-  // node.  For CFG nodes, the _nodes array starts out and remains
-  // holding the associated IdealLoopTree pointer.  For DATA nodes, the
-  // _nodes array holds the earliest legal controlling CFG node.
-
+  Node_List worklist;
   // Allocate stack with enough space to avoid frequent realloc
   int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
   Node_Stack nstack(stack_size);
 
-  visited.clear();
-  Node_List worklist;
-  // Don't need C->root() on worklist since
-  // it will be processed among C->top() inputs
-  worklist.push(C->top());
-  visited.set(C->top()->_idx); // Set C->top() as visited now
-  build_loop_early(visited, worklist, nstack, verify_only);
-
-  // Given early legal placement, try finding counted loops.  This placement
-  // is good enough to discover most loop invariants.
-  if (!verify_only && !strip_mined_loops_expanded) {
-    _ltree_root->counted_loop( this );
-  }
-
-  // Find latest loop placement.  Find ideal loop placement.
-  visited.clear();
-  init_dom_lca_tags();
-  // Need C->root() on worklist when processing outs
-  worklist.push(C->root());
-  NOT_PRODUCT( C->verify_graph_edges(); )
-  worklist.push(C->top());
-  build_loop_late(visited, worklist, nstack, is_gc_specific_pass, verify_only);
+  if (!initialize(visited, worklist, nstack, verify_only)) return;
 
   C->restore_major_progress(old_progress);
   assert(C->unique() == unique, "verification mode made Nodes? ? ?");
@@ -4333,50 +4297,13 @@ void PhaseIdealLoop::verify_decisions(const PhaseIdealLoop* verify_me) {
   _loop_work += unique;
 #endif
 
-  if (!initialize(verify_only)) return;
-
   VectorSet visited;
-
-  if (!verify_only) {
-    // Given dominators, try to find inner loops with calls that must
-    // always be executed (call dominates loop tail).  These loops do
-    // not need a separate safepoint.
-    Node_List cisstack;
-    _ltree_root->check_safepts(visited, cisstack);
-  }
-
-
-  // Walk the DATA nodes and place into loops.  Find earliest control
-  // node.  For CFG nodes, the _nodes array starts out and remains
-  // holding the associated IdealLoopTree pointer.  For DATA nodes, the
-  // _nodes array holds the earliest legal controlling CFG node.
-
+  Node_List worklist;
   // Allocate stack with enough space to avoid frequent realloc
   int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
   Node_Stack nstack(stack_size);
 
-  visited.clear();
-  Node_List worklist;
-  // Don't need C->root() on worklist since
-  // it will be processed among C->top() inputs
-  worklist.push(C->top());
-  visited.set(C->top()->_idx); // Set C->top() as visited now
-  build_loop_early(visited, worklist, nstack, verify_only);
-
-  // Given early legal placement, try finding counted loops.  This placement
-  // is good enough to discover most loop invariants.
-  if (!verify_only && !strip_mined_loops_expanded) {
-    _ltree_root->counted_loop( this );
-  }
-
-  // Find latest loop placement.  Find ideal loop placement.
-  visited.clear();
-  init_dom_lca_tags();
-  // Need C->root() on worklist when processing outs
-  worklist.push(C->root());
-  NOT_PRODUCT( C->verify_graph_edges(); )
-  worklist.push(C->top());
-  build_loop_late(visited, worklist, nstack, is_gc_specific_pass, verify_only);
+  if (!initialize(visited, worklist, nstack, verify_only)) return;
 
   C->restore_major_progress(old_progress);
   assert(C->unique() == unique, "verification mode made Nodes? ? ?");
@@ -4384,7 +4311,7 @@ void PhaseIdealLoop::verify_decisions(const PhaseIdealLoop* verify_me) {
 }
 #endif
 
-bool PhaseIdealLoop::initialize(const bool verify_only) {
+bool PhaseIdealLoop::initialize(VectorSet &visited, Node_List &worklist, Node_Stack &nstack, const bool verify_only) {
   assert(!C->post_loop_opts_phase(), "no loop opts allowed");
 
   // True if the method has at least 1 irreducible loop
@@ -4486,6 +4413,43 @@ bool PhaseIdealLoop::initialize(const bool verify_only) {
       }
     }
   }
+
+
+  if (!verify_only) {
+    // Given dominators, try to find inner loops with calls that must
+    // always be executed (call dominates loop tail).  These loops do
+    // not need a separate safepoint.
+    Node_List cisstack;
+    _ltree_root->check_safepts(visited, cisstack);
+  }
+
+  // Walk the DATA nodes and place into loops.  Find earliest control
+  // node.  For CFG nodes, the _nodes array starts out and remains
+  // holding the associated IdealLoopTree pointer.  For DATA nodes, the
+  // _nodes array holds the earliest legal controlling CFG node.
+
+  visited.clear();
+  // Don't need C->root() on worklist since
+  // it will be processed among C->top() inputs
+  worklist.push(C->top());
+  visited.set(C->top()->_idx); // Set C->top() as visited now
+  build_loop_early(visited, worklist, nstack, verify_only);
+
+  // Given early legal placement, try finding counted loops.  This placement
+  // is good enough to discover most loop invariants.
+  if (!verify_only && !_strip_mined_loops_expanded) {
+    _ltree_root->counted_loop( this );
+  }
+
+  // Find latest loop placement.  Find ideal loop placement.
+  visited.clear();
+  init_dom_lca_tags();
+  // Need C->root() on worklist when processing outs
+  worklist.push(C->root());
+  NOT_PRODUCT( C->verify_graph_edges(); )
+  worklist.push(C->top());
+  build_loop_late(visited, worklist, nstack, _is_gc_specific_pass, verify_only);
+
   return true;
 }
 
@@ -4502,12 +4466,12 @@ void PhaseIdealLoop::build_and_optimize(const LoopOptsMode mode) {
   const bool do_max_unroll = (mode == LoopOptsMaxUnroll);
   const bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
   BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
-  const bool is_gc_specific_pass = bs->is_gc_specific_loop_opts_pass(mode);
-  const bool strip_mined_loops_expanded = bs->strip_mined_loops_expanded(mode);
+  _is_gc_specific_pass = bs->is_gc_specific_loop_opts_pass(mode);
+  _strip_mined_loops_expanded = bs->strip_mined_loops_expanded(mode);
   const bool stop_early = !C->has_loops() && !skip_loop_opts && !do_split_ifs && !do_max_unroll &&
-                          !is_gc_specific_pass && !do_expensive_nodes;
+                          !_is_gc_specific_pass;
 
-  if (stop_early ) {
+  if (stop_early && !do_expensive_nodes) {
     // Nothing to do, so get out
     return;
   }
@@ -4524,56 +4488,13 @@ void PhaseIdealLoop::build_and_optimize(const LoopOptsMode mode) {
   _loop_work += unique;
 #endif
 
-  if (!initialize(verify_only)) return;
-
   VectorSet visited;
-
-  if (!verify_only) {
-    // Given dominators, try to find inner loops with calls that must
-    // always be executed (call dominates loop tail).  These loops do
-    // not need a separate safepoint.
-    Node_List cisstack;
-    _ltree_root->check_safepts(visited, cisstack);
-  }
-
-  // Walk the DATA nodes and place into loops.  Find earliest control
-  // node.  For CFG nodes, the _nodes array starts out and remains
-  // holding the associated IdealLoopTree pointer.  For DATA nodes, the
-  // _nodes array holds the earliest legal controlling CFG node.
-
+  Node_List worklist;
   // Allocate stack with enough space to avoid frequent realloc
   int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
   Node_Stack nstack(stack_size);
 
-  visited.clear();
-  Node_List worklist;
-  // Don't need C->root() on worklist since
-  // it will be processed among C->top() inputs
-  worklist.push(C->top());
-  visited.set(C->top()->_idx); // Set C->top() as visited now
-  build_loop_early(visited, worklist, nstack, verify_only);
-
-  // Given early legal placement, try finding counted loops.  This placement
-  // is good enough to discover most loop invariants.
-  if (!verify_only && !strip_mined_loops_expanded) {
-    _ltree_root->counted_loop( this );
-  }
-
-  // Find latest loop placement.  Find ideal loop placement.
-  visited.clear();
-  init_dom_lca_tags();
-  // Need C->root() on worklist when processing outs
-  worklist.push(C->root());
-  NOT_PRODUCT( C->verify_graph_edges(); )
-  worklist.push(C->top());
-  build_loop_late(visited, worklist, nstack, is_gc_specific_pass, verify_only);
-
-  if (verify_only) {
-    C->restore_major_progress(old_progress);
-    assert(C->unique() == unique, "verification mode made Nodes? ? ?");
-    assert(_igvn._worklist.size() == orig_worklist_size, "shouldn't push anything");
-    return;
-  }
+  if (!initialize(visited, worklist, nstack, verify_only)) return;
 
   // clear out the dead code after build_loop_late
   while (_deadlist.size()) {

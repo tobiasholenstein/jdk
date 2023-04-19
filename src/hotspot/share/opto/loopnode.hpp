@@ -1064,6 +1064,8 @@ public:
   }
 
 private:
+  bool _is_gc_specific_pass;
+  bool _strip_mined_loops_expanded;
 
   // Place 'n' in some loop nest, where 'n' is a CFG node
   void build_loop_tree(bool _verify_only);
@@ -1776,7 +1778,7 @@ public:
 
   bool at_relevant_ctrl(Node* n, const Node* blk1, const Node* blk2);
 
-  bool initialize(const bool verify_only);
+  bool initialize(VectorSet &visited, Node_List &worklist, Node_Stack &nstack, bool verify_only);
 };
 
 
