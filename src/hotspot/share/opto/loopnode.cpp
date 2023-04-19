@@ -4401,6 +4401,13 @@ bool PhaseIdealLoop::initialize(VectorSet &visited, Node_List &worklist, Node_St
   worklist.push(C->top());
   build_loop_late(visited, worklist, nstack, _is_gc_specific_pass, verify_only);
 
+  if (!verify_only) {
+    // clear out the dead code after build_loop_late
+    while (_deadlist.size()) {
+      _igvn.remove_globally_dead_node(_deadlist.pop());
+    }
+  }
+
   return true;
 }
 
@@ -4444,11 +4451,6 @@ void PhaseIdealLoop::build_and_optimize(const LoopOptsMode mode) {
   Node_Stack nstack(stack_size);
 
   if (!initialize(visited, worklist, nstack, false)) return;
-
-  // clear out the dead code after build_loop_late
-  while (_deadlist.size()) {
-    _igvn.remove_globally_dead_node(_deadlist.pop());
-  }
 
   if (stop_early) {
     assert(do_expensive_nodes, "why are we here?");
