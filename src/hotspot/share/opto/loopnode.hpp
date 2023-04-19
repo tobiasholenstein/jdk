@@ -1097,7 +1097,7 @@ private:
 #endif
 
   // build the loop tree and perform any requested optimizations
-  void build_and_optimize(LoopOptsMode _mode);
+  void build_and_optimize(LoopOptsMode mode);
 
   // Dominators for the sea of nodes
   void Dominators(bool _verify_only);
