@@ -4238,21 +4238,15 @@ bool PhaseIdealLoop::only_has_infinite_loops() {
 
 #ifndef PRODUCT
 void PhaseIdealLoop::verify_only() {
-  const LoopOptsMode mode = LoopOptsVerify;
-  const PhaseIdealLoop* verify_me = nullptr;
-  const bool verify_only = true;
-
   int old_progress = C->major_progress();
   uint orig_worklist_size = _igvn._worklist.size();
   // Reset major-progress flag for the driver's heuristics
   C->clear_major_progress();
 
-#ifndef PRODUCT
   // Capture for later assert
   uint unique = C->unique();
   _loop_invokes++;
   _loop_work += unique;
-#endif
 
   VectorSet visited;
   Node_List worklist;
@@ -4260,7 +4254,7 @@ void PhaseIdealLoop::verify_only() {
   int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
   Node_Stack nstack(stack_size);
 
-  if (!initialize(visited, worklist, nstack, verify_only)) return;
+  if (!initialize(visited, worklist, nstack, true)) return;
 
   C->restore_major_progress(old_progress);
   assert(C->unique() == unique, "verification mode made Nodes? ? ?");
@@ -4416,8 +4410,6 @@ bool PhaseIdealLoop::initialize(VectorSet &visited, Node_List &worklist, Node_St
 // its corresponding LoopNode.  If 'optimize' is true, do some loop cleanups.
 void PhaseIdealLoop::build_and_optimize(const LoopOptsMode mode) {
   assert(mode != LoopOptsVerify, "not verifying");
-  const PhaseIdealLoop* verify_me = nullptr;
-  const bool verify_only = false;
   const bool do_split_ifs = (mode == LoopOptsDefault);
   const bool skip_loop_opts = (mode == LoopOptsNone);
   const bool do_max_unroll = (mode == LoopOptsMaxUnroll);
@@ -4451,7 +4443,7 @@ void PhaseIdealLoop::build_and_optimize(const LoopOptsMode mode) {
   int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
   Node_Stack nstack(stack_size);
 
-  if (!initialize(visited, worklist, nstack, verify_only)) return;
+  if (!initialize(visited, worklist, nstack, false)) return;
 
   // clear out the dead code after build_loop_late
   while (_deadlist.size()) {
@@ -4477,11 +4469,6 @@ void PhaseIdealLoop::build_and_optimize(const LoopOptsMode mode) {
 
 #ifndef PRODUCT
   C->verify_graph_edges();
-  if (verify_me) {             // Nested verify pass?
-    // Check to see if the verify mode is broken
-    assert(C->unique() == unique, "non-optimize mode made Nodes? ? ?");
-    return;
-  }
   DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
   if (TraceLoopOpts && C->has_loops()) {
     _ltree_root->dump();
