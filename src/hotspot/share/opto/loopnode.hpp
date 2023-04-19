@@ -1094,7 +1094,6 @@ private:
   GrowableArray<uint>* _dom_stk; // For recomputation of dom depth
 
 #ifndef PRODUCT
-  void verify_decisions(const PhaseIdealLoop* verify_me);
   void verify_only();
 #endif
 
@@ -1114,17 +1113,9 @@ private:
   }
 
 #ifndef PRODUCT
-  // Verify that verify_me made the same decisions as a fresh run
-  PhaseIdealLoop(PhaseIterGVN& igvn, const PhaseIdealLoop* verify_me) :
-    PhaseTransform(Ideal_Loop),
-    _igvn(igvn),
-    _nodes_required(UINT_MAX) {
-    assert(verify_me != nullptr, "verify_me cannot be null");
-    verify_decisions(verify_me);
-  }
-
-  // only verify that the graph is valid
-  PhaseIdealLoop(PhaseIterGVN& igvn) :
+  // Verify that the graph is valid
+  // OR that verify_me made the same decisions as a fresh run
+  PhaseIdealLoop(PhaseIterGVN& igvn, const PhaseIdealLoop* verify_me = nullptr) :
     PhaseTransform(Ideal_Loop),
     _igvn(igvn),
     _nodes_required(UINT_MAX) {

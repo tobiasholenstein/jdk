@@ -4266,35 +4266,6 @@ void PhaseIdealLoop::verify_only() {
   assert(C->unique() == unique, "verification mode made Nodes? ? ?");
   assert(_igvn._worklist.size() == orig_worklist_size, "shouldn't push anything");
 }
-
-void PhaseIdealLoop::verify_decisions(const PhaseIdealLoop* verify_me) {
-  const LoopOptsMode mode = LoopOptsVerify;
-  const bool verify_only = true;
-
-  int old_progress = C->major_progress();
-  uint orig_worklist_size = _igvn._worklist.size();
-  // Reset major-progress flag for the driver's heuristics
-  C->clear_major_progress();
-
-#ifndef PRODUCT
-  // Capture for later assert
-  uint unique = C->unique();
-  _loop_invokes++;
-  _loop_work += unique;
-#endif
-
-  VectorSet visited;
-  Node_List worklist;
-  // Allocate stack with enough space to avoid frequent realloc
-  int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
-  Node_Stack nstack(stack_size);
-
-  if (!initialize(visited, worklist, nstack, verify_only)) return;
-
-  C->restore_major_progress(old_progress);
-  assert(C->unique() == unique, "verification mode made Nodes? ? ?");
-  assert(_igvn._worklist.size() == orig_worklist_size, "shouldn't push anything");
-}
 #endif
 
 bool PhaseIdealLoop::initialize(VectorSet &visited, Node_List &worklist, Node_Stack &nstack, const bool verify_only) {
