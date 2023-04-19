@@ -4241,13 +4241,6 @@ void PhaseIdealLoop::verify_only() {
   const LoopOptsMode mode = LoopOptsVerify;
   const PhaseIdealLoop* verify_me = nullptr;
   const bool verify_only = true;
-  const bool do_split_ifs = false;
-  const bool skip_loop_opts = false;
-  const bool do_max_unroll = false;
-  const bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
-  const bool is_gc_specific_pass = false;
-  const bool strip_mined_loops_expanded = false;
-  const bool stop_early = false;
 
   int old_progress = C->major_progress();
   uint orig_worklist_size = _igvn._worklist.size();
@@ -4277,13 +4270,6 @@ void PhaseIdealLoop::verify_only() {
 void PhaseIdealLoop::verify_decisions(const PhaseIdealLoop* verify_me) {
   const LoopOptsMode mode = LoopOptsVerify;
   const bool verify_only = true;
-  const bool do_split_ifs = false;
-  const bool skip_loop_opts = false;
-  const bool do_max_unroll = false;
-  const bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
-  const bool is_gc_specific_pass = false;
-  const bool strip_mined_loops_expanded = false;
-  const bool stop_early = false;
 
   int old_progress = C->major_progress();
   uint orig_worklist_size = _igvn._worklist.size();
