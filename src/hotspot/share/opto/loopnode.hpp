@@ -1743,6 +1743,8 @@ public:
   void do_max_unroll();
 
   void verify_loop_opts();
+
+  void loop_opts_skip_split_ifs(LoopOptsMode mode);
 };
 
 
