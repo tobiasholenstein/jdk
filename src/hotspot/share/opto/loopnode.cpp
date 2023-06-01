@@ -4273,12 +4273,13 @@ bool PhaseIdealLoop::only_has_infinite_loops() {
 //----------------------------build_and_optimize-------------------------------
 // Create a PhaseLoop.  Build the ideal Loop tree.  Map each Ideal Node to
 // its corresponding LoopNode.  If 'optimize' is true, do some loop cleanups.
-void PhaseIdealLoop::build_and_optimize() {
+void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   assert(!C->post_loop_opts_phase(), "no loop opts allowed");
 
-  bool do_split_ifs = (_mode == LoopOptsDefault);
-  bool skip_loop_opts = (_mode == LoopOptsNone);
-  bool do_max_unroll = (_mode == LoopOptsMaxUnroll);
+  _is_gc_specific_loop_opts_pass = BarrierSet::barrier_set()->barrier_set_c2()->is_gc_specific_loop_opts_pass(mode);
+  bool do_split_ifs = (mode == LoopOptsDefault);
+  bool skip_loop_opts = (mode == LoopOptsNone);
+  bool do_max_unroll = (mode == LoopOptsMaxUnroll);
 
 
   int old_progress = C->major_progress();
@@ -4348,12 +4349,11 @@ void PhaseIdealLoop::build_and_optimize() {
     return;
   }
 
-  BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
   // Nothing to do, so get out
   bool stop_early = !C->has_loops() && !skip_loop_opts && !do_split_ifs && !do_max_unroll && !_verify_me &&
-          !_verify_only && !bs->is_gc_specific_loop_opts_pass(_mode);
+          !_verify_only && !_is_gc_specific_loop_opts_pass;
   bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
-  bool strip_mined_loops_expanded = bs->strip_mined_loops_expanded(_mode);
+  bool strip_mined_loops_expanded = BarrierSet::barrier_set()->barrier_set_c2()->strip_mined_loops_expanded(mode);
   if (stop_early && !do_expensive_nodes) {
     return;
   }
@@ -4513,7 +4513,7 @@ void PhaseIdealLoop::build_and_optimize() {
     return;
   }
 
-  if (bs->optimize_loops(this, _mode, visited, nstack, worklist)) {
+  if (BarrierSet::barrier_set()->barrier_set_c2()->optimize_loops(this, mode, visited, nstack, worklist)) {
     return;
   }
 
@@ -4640,7 +4640,7 @@ void PhaseIdealLoop::build_and_optimize() {
               CountedLoopNode *cl = lpt_next->_head->as_CountedLoop();
               if (cl->is_post_loop() && lpt_next->range_checks_present()) {
                 if (!cl->is_multiversioned()) {
-                  if (multi_version_post_loops(lpt, lpt_next) == false) {
+                  if (!multi_version_post_loops(lpt, lpt_next)) {
                     // Cause the rce loop to be optimized away if we fail
                     cl->mark_is_multiversioned();
                     cl->set_slp_max_unroll(0);
@@ -6139,7 +6139,7 @@ void PhaseIdealLoop::build_loop_late_post_work(Node *n, bool pinned) {
   }
   // Try not to place code on a loop entry projection
   // which can inhibit range check elimination.
-  if (least != early && !BarrierSet::barrier_set()->barrier_set_c2()->is_gc_specific_loop_opts_pass(_mode)) {
+  if (least != early && !_is_gc_specific_loop_opts_pass) {
     Node* ctrl_out = least->unique_ctrl_out_or_null();
     if (ctrl_out != nullptr && ctrl_out->is_Loop() &&
         least == ctrl_out->in(LoopNode::EntryControl) &&

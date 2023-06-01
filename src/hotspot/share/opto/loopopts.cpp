@@ -4307,3 +4307,5 @@ void PhaseIdealLoop::move_unordered_reduction_out_of_loop(IdealLoopTree* loop) {
     assert(phi->outcnt() == 1, "accumulator is the only use of phi");
   }
 }
+
+
