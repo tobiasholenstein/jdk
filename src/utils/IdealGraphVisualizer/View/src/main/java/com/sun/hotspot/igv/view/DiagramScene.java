@@ -605,6 +605,32 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             figureWidget.getActions().addAction(ActionFactory.createPopupMenuAction(figureWidget));
             figureWidget.getActions().addAction(selectAction);
             figureWidget.getActions().addAction(hoverAction);
+            figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
+                @Override
+                public void movementStarted(Widget widget) {
+                    //newLayoutManager.
+                    System.out.println("movementStarted");
+                }
+                @Override
+                public void movementFinished(Widget widget) {
+                    System.out.println("movementFinished");
+                }
+                @Override
+                public Point getOriginalLocation(Widget widget) {
+                    return ActionFactory.createDefaultMoveProvider().getOriginalLocation(widget);
+                }
+                @Override
+                public void setNewLocation(Widget widget, Point location) {
+                    System.out.println(widget.getLocation());
+                    FigureWidget fw = (FigureWidget) widget;
+                    Figure fig = fw.getFigure();
+                    List<InputSlot> inputSlots = fig.getInputSlots();
+                    Point newLocation = new Point(location.x, widget.getLocation().y);
+                    ActionFactory.createDefaultMoveProvider().setNewLocation(widget, newLocation);
+                }
+            }));
+
+
             addObject(figure, figureWidget);
             mainLayer.addChild(figureWidget);
 
@@ -716,7 +742,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
     private void doSeaLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
         HierarchicalLayoutManager manager = new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
-        manager.setMaxLayerLength(10);
+        //manager.setMaxLayerLength(10);
         manager.doLayout(new LayoutGraph(edges, figures));
     }
 
