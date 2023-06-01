@@ -4268,73 +4268,14 @@ bool PhaseIdealLoop::only_has_infinite_loops() {
 }
 #endif
 
+void PhaseIdealLoop::do_split_ifs() {
+  bool do_split_ifs = true;
+  bool skip_loop_opts = false;
+  bool do_max_unroll = false;
+  bool verify_loop_opts = false;
+  _verify_me = nullptr;
+  _verify_only = false;
 
-//=============================================================================
-//----------------------------build_and_optimize-------------------------------
-// Create a PhaseLoop.  Build the ideal Loop tree.  Map each Ideal Node to
-// its corresponding LoopNode.  If 'optimize' is true, do some loop cleanups.
-void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
-  assert(!C->post_loop_opts_phase(), "no loop opts allowed");
-
-  _is_gc_specific_loop_opts_pass = BarrierSet::barrier_set()->barrier_set_c2()->is_gc_specific_loop_opts_pass(mode);
-  bool do_split_ifs = (mode == LoopOptsDefault);
-  bool skip_loop_opts = (mode == LoopOptsNone);
-  bool do_max_unroll = (mode == LoopOptsMaxUnroll);
-
-
-  int old_progress = C->major_progress();
-  uint orig_worklist_size = _igvn._worklist.size();
-
-  // Reset major-progress flag for the driver's heuristics
-  C->clear_major_progress();
-
-#ifndef PRODUCT
-  // Capture for later assert
-  uint unique = C->unique();
-  _loop_invokes++;
-  _loop_work += unique;
-#endif
-
-  // True if the method has at least 1 irreducible loop
-  _has_irreducible_loops = false;
-
-  _created_loop_node = false;
-
-  VectorSet visited;
-  // Pre-grow the mapping from Nodes to IdealLoopTrees.
-  _loop_or_ctrl.map(C->unique(), nullptr);
-  memset(_loop_or_ctrl.adr(), 0, wordSize * C->unique());
-
-  // Pre-build the top-level outermost loop tree entry
-  _ltree_root = new IdealLoopTree( this, C->root(), C->root() );
-  // Do not need a safepoint at the top level
-  _ltree_root->_has_sfpt = 1;
-
-  // Initialize Dominators.
-  // Checked in clone_loop_predicate() during beautify_loops().
-  _idom_size = 0;
-  _idom      = nullptr;
-  _dom_depth = nullptr;
-  _dom_stk   = nullptr;
-
-  // Empty pre-order array
-  allocate_preorders();
-
-  // Build a loop tree on the fly.  Build a mapping from CFG nodes to
-  // IdealLoopTree entries.  Data nodes are NOT walked.
-  build_loop_tree();
-  // Check for bailout, and return
-  if (C->failing()) {
-    return;
-  }
-
-  // Verify that the has_loops() flag set at parse time is consistent
-  // with the just built loop tree. With infinite loops, it could be
-  // that one pass of loop opts only finds infinite loops, clears the
-  // has_loops() flag but adds NeverBranch nodes so the next loop opts
-  // verification pass finds a non empty loop tree. When the back edge
-  // is an exception edge, parsing doesn't set has_loops().
-  assert(_ltree_root->_child == nullptr || C->has_loops() || only_has_infinite_loops() || C->has_exception_backedge(), "parsing found no loops but there are some");
   // No loops after all
   if( !_ltree_root->_child && !_verify_only ) C->set_has_loops(false);
 
@@ -4351,7 +4292,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
 
   // Nothing to do, so get out
   bool stop_early = !C->has_loops() && !skip_loop_opts && !do_split_ifs && !do_max_unroll && !_verify_me &&
-          !_verify_only && !_is_gc_specific_loop_opts_pass;
+                    !_verify_only && !_is_gc_specific_loop_opts_pass;
   bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
   bool strip_mined_loops_expanded = BarrierSet::barrier_set()->barrier_set_c2()->strip_mined_loops_expanded(mode);
   if (stop_early && !do_expensive_nodes) {
@@ -4392,6 +4333,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   memset( _dom_depth, 0, _idom_size * sizeof(uint) );
 
   Dominators();
+  VectorSet visited;
 
   if (!_verify_only) {
     // As a side effect, Dominators removed any unreachable CFG paths
@@ -4456,6 +4398,9 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   }
 
   eliminate_useless_zero_trip_guard();
+  if (C->major_progress() || C->failing()) {
+    return;
+  }
 
   if (stop_early) {
     assert(do_expensive_nodes, "why are we here?");
@@ -4473,6 +4418,9 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   // predication or they were moved away from loop during some optimizations.
   // For example, peeling. Eliminate them before next loop optimizations.
   eliminate_useless_predicates();
+  if (C->major_progress() || C->failing()) {
+    return;
+  }
 
 #ifndef PRODUCT
   C->verify_graph_edges();
@@ -4513,11 +4461,12 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
     return;
   }
 
-  if (BarrierSet::barrier_set()->barrier_set_c2()->optimize_loops(this, mode, visited, nstack, worklist)) {
+  if (mode == LoopOptsShenandoahExpand || mode == LoopOptsShenandoahPostExpand) {
+    BarrierSet::barrier_set()->barrier_set_c2()->optimize_loops(this, mode, visited, nstack, worklist);
     return;
   }
 
-  if (ReassociateInvariants && !C->major_progress()) {
+  if (ReassociateInvariants) {
     // Reassociate invariants and prep for split_thru_phi
     for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
       IdealLoopTree* lpt = iter.current();
@@ -4532,7 +4481,6 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
         if (head->as_CountedLoop()->is_unroll_only()) {
           continue;
         } else {
-          AutoNodeBudget node_budget(this);
           lpt->reassociate_invariants(this);
         }
       }
@@ -4550,24 +4498,35 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
 
   // Check for aggressive application of split-if and other transforms
   // that require basic-block info (like cloning through Phi's)
-  if (!C->major_progress() && SplitIfBlocks && do_split_ifs) {
+  if (SplitIfBlocks && do_split_ifs) {
     visited.clear();
-    split_if_with_blocks( visited, nstack);
+    split_if_with_blocks( visited, nstack); // can set_major_progress()
     DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
   }
 
-  if (!C->major_progress() && do_expensive_nodes && process_expensive_nodes()) {
+  if (do_expensive_nodes && process_expensive_nodes()) {
     C->set_major_progress();
+    return;
   }
 
   // Perform loop predication before iteration splitting
-  if (C->has_loops() && !C->major_progress() && (C->parse_predicate_count() > 0)) {
+  if (C->has_loops() && (C->parse_predicate_count() > 0)) {
     _ltree_root->_child->loop_predication(this);
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
   }
 
-  if (OptimizeFill && UseLoopPredicate && C->has_loops() && !C->major_progress()) {
+  if (!C->major_progress() && OptimizeFill && UseLoopPredicate && C->has_loops()) {
     if (do_intrinsify_fill()) {
       C->set_major_progress();
+      return;
+    }
+    if (C->major_progress() || C->failing()) {
+      return;
     }
   }
 
@@ -4576,7 +4535,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
 
   // If split-if's didn't hack the graph too bad (no CFG changes)
   // then do loop opts.
-  if (C->has_loops() && !C->major_progress()) {
+  if (C->has_loops()) {
     memset( worklist.adr(), 0, worklist.max()*sizeof(Node*) );
     _ltree_root->_child->iteration_split( this, worklist );
     // No verify after peeling!  GCM has hoisted code out of the loop.
@@ -4584,11 +4543,9 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
     // The peeling code does not try to recompute the best location for
     // all the code before the peeled area, so the verify pass will always
     // complain about it.
-  }
-
-  // Check for bailout, and return
-  if (C->failing()) {
-    return;
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
   }
 
   // Do verify graph edges in any case
@@ -4603,26 +4560,29 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
     // instance-of/check-cast pattern requires at least 2 rounds of
     // Split-If to clear out.
     C->set_major_progress();
+    return;
   }
 
   // Repeat loop optimizations if new loops were seen
   if (created_loop_node()) {
     C->set_major_progress();
+    return;
   }
 
   // Keep loop predicates and perform optimizations with them
   // until no more loop optimizations could be done.
   // After that switch predicates off and do more loop optimizations.
-  if (!C->major_progress() && (C->parse_predicate_count() > 0)) {
-     C->cleanup_parse_predicates(_igvn);
-     if (TraceLoopOpts) {
-       tty->print_cr("PredicatesOff");
-     }
-     C->set_major_progress();
+  if (C->parse_predicate_count() > 0) {
+    C->cleanup_parse_predicates(_igvn);
+    if (TraceLoopOpts) {
+      tty->print_cr("PredicatesOff");
+    }
+    C->set_major_progress();
+    return;
   }
 
   // Convert scalar to superword operations at the end of all loop opts.
-  if (UseSuperWord && C->has_loops() && !C->major_progress()) {
+  if (UseSuperWord && C->has_loops()) {
     // SuperWord transform
     SuperWord sw(this);
     for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
@@ -4663,10 +4623,12 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
         }
       }
     }
-  }
 
-  // Move UnorderedReduction out of counted loop. Can be introduced by SuperWord.
-  if (C->has_loops() && !C->major_progress()) {
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+
+    // Move UnorderedReduction out of counted loop. Can be introduced by SuperWord.
     for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
       IdealLoopTree* lpt = iter.current();
       if (lpt->is_counted() && lpt->is_innermost()) {
@@ -4674,6 +4636,1200 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
       }
     }
   }
+}
+
+void PhaseIdealLoop::skip_loop_opts() {
+  bool do_split_ifs = false;
+  bool skip_loop_opts = true;
+  bool do_max_unroll = false;
+  bool verify_loop_opts = false;
+  _verify_me = nullptr;
+  _verify_only = false;
+
+  // No loops after all
+  if( !_ltree_root->_child && !_verify_only ) C->set_has_loops(false);
+
+  // There should always be an outer loop containing the Root and Return nodes.
+  // If not, we have a degenerate empty program.  Bail out in this case.
+  if (!has_node(C->root())) {
+    if (!_verify_only) {
+      C->clear_major_progress();
+      assert(false, "empty program detected during loop optimization");
+      C->record_method_not_compilable("empty program detected during loop optimization");
+    }
+    return;
+  }
+
+  // Nothing to do, so get out
+  bool stop_early = !C->has_loops() && !skip_loop_opts && !do_split_ifs && !do_max_unroll && !_verify_me &&
+                    !_verify_only && !_is_gc_specific_loop_opts_pass;
+  bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
+  bool strip_mined_loops_expanded = BarrierSet::barrier_set()->barrier_set_c2()->strip_mined_loops_expanded(mode);
+  if (stop_early && !do_expensive_nodes) {
+    return;
+  }
+
+  // Set loop nesting depth
+  _ltree_root->set_nest( 0 );
+
+  // Split shared headers and insert loop landing pads.
+  // Do not bother doing this on the Root loop of course.
+  if( !_verify_me && !_verify_only && _ltree_root->_child ) {
+    C->print_method(PHASE_BEFORE_BEAUTIFY_LOOPS, 3);
+    if( _ltree_root->_child->beautify_loops( this ) ) {
+      // Re-build loop tree!
+      _ltree_root->_child = nullptr;
+      _loop_or_ctrl.clear();
+      reallocate_preorders();
+      build_loop_tree();
+      // Check for bailout, and return
+      if (C->failing()) {
+        return;
+      }
+      // Reset loop nesting depth
+      _ltree_root->set_nest( 0 );
+
+      C->print_method(PHASE_AFTER_BEAUTIFY_LOOPS, 3);
+    }
+  }
+
+  // Build Dominators for elision of null checks & loop finding.
+  // Since nodes do not have a slot for immediate dominator, make
+  // a persistent side array for that info indexed on node->_idx.
+  _idom_size = C->unique();
+  _idom      = NEW_RESOURCE_ARRAY( Node*, _idom_size );
+  _dom_depth = NEW_RESOURCE_ARRAY( uint,  _idom_size );
+  _dom_stk   = nullptr; // Allocated on demand in recompute_dom_depth
+  memset( _dom_depth, 0, _idom_size * sizeof(uint) );
+
+  Dominators();
+  VectorSet visited;
+
+  if (!_verify_only) {
+    // As a side effect, Dominators removed any unreachable CFG paths
+    // into RegionNodes.  It doesn't do this test against Root, so
+    // we do it here.
+    for( uint i = 1; i < C->root()->req(); i++ ) {
+      if (!_loop_or_ctrl[C->root()->in(i)->_idx]) { // Dead path into Root?
+        _igvn.delete_input_of(C->root(), i);
+        i--;                      // Rerun same iteration on compressed edges
+      }
+    }
+
+    // Given dominators, try to find inner loops with calls that must
+    // always be executed (call dominates loop tail).  These loops do
+    // not need a separate safepoint.
+    Node_List cisstack;
+    _ltree_root->check_safepts(visited, cisstack);
+  }
+
+  // Walk the DATA nodes and place into loops.  Find earliest control
+  // node.  For CFG nodes, the _loop_or_ctrl array starts out and remains
+  // holding the associated IdealLoopTree pointer.  For DATA nodes, the
+  // _loop_or_ctrl array holds the earliest legal controlling CFG node.
+
+  // Allocate stack with enough space to avoid frequent realloc
+  int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
+  Node_Stack nstack(stack_size);
+
+  visited.clear();
+  Node_List worklist;
+  // Don't need C->root() on worklist since
+  // it will be processed among C->top() inputs
+  worklist.push(C->top());
+  visited.set(C->top()->_idx); // Set C->top() as visited now
+  build_loop_early( visited, worklist, nstack );
+
+  // Given early legal placement, try finding counted loops.  This placement
+  // is good enough to discover most loop invariants.
+  if (!_verify_me && !_verify_only && !strip_mined_loops_expanded) {
+    _ltree_root->counted_loop( this );
+  }
+
+  // Find latest loop placement.  Find ideal loop placement.
+  visited.clear();
+  init_dom_lca_tags();
+  // Need C->root() on worklist when processing outs
+  worklist.push(C->root());
+  NOT_PRODUCT( C->verify_graph_edges(); )
+  worklist.push(C->top());
+  build_loop_late( visited, worklist, nstack );
+
+  if (_verify_only) {
+    C->restore_major_progress(old_progress);
+    assert(C->unique() == unique, "verification _mode made Nodes? ? ?");
+    assert(_igvn._worklist.size() == orig_worklist_size, "shouldn't push anything");
+    return;
+  }
+
+  // clear out the dead code after build_loop_late
+  while (_deadlist.size()) {
+    _igvn.remove_globally_dead_node(_deadlist.pop());
+  }
+
+  eliminate_useless_zero_trip_guard();
+  if (C->major_progress() || C->failing()) {
+    return;
+  }
+
+  if (stop_early) {
+    assert(do_expensive_nodes, "why are we here?");
+    if (process_expensive_nodes()) {
+      // If we made some progress when processing expensive nodes then
+      // the IGVN may modify the graph in a way that will allow us to
+      // make some more progress: we need to try processing expensive
+      // nodes again.
+      C->set_major_progress();
+    }
+    return;
+  }
+
+  // Some parser-inserted loop predicates could never be used by loop
+  // predication or they were moved away from loop during some optimizations.
+  // For example, peeling. Eliminate them before next loop optimizations.
+  eliminate_useless_predicates();
+  if (C->major_progress() || C->failing()) {
+    return;
+  }
+
+#ifndef PRODUCT
+  C->verify_graph_edges();
+  if (_verify_me) {             // Nested verify pass?
+    // Check to see if the verify _mode is broken
+    assert(C->unique() == unique, "non-optimize _mode made Nodes? ? ?");
+    return;
+  }
+  DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
+  if (TraceLoopOpts && C->has_loops()) {
+    _ltree_root->dump();
+  }
+#endif
+
+  if (skip_loop_opts) {
+    C->restore_major_progress(old_progress);
+    return;
+  }
+
+  if (do_max_unroll) {
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (lpt->is_innermost() && lpt->_allow_optimizations && !lpt->_has_call && lpt->is_counted()) {
+        lpt->compute_trip_count(this);
+        if (!lpt->do_one_iteration_loop(this) &&
+            !lpt->do_remove_empty_loop(this)) {
+          AutoNodeBudget node_budget(this);
+          if (lpt->_head->as_CountedLoop()->is_normal_loop() &&
+              lpt->policy_maximally_unroll(this)) {
+            memset( worklist.adr(), 0, worklist.max()*sizeof(Node*) );
+            do_maximally_unroll(lpt, worklist);
+          }
+        }
+      }
+    }
+
+    C->restore_major_progress(old_progress);
+    return;
+  }
+
+  if (mode == LoopOptsShenandoahExpand || mode == LoopOptsShenandoahPostExpand) {
+    BarrierSet::barrier_set()->barrier_set_c2()->optimize_loops(this, mode, visited, nstack, worklist);
+    return;
+  }
+
+  if (ReassociateInvariants) {
+    // Reassociate invariants and prep for split_thru_phi
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (!lpt->is_loop()) {
+        continue;
+      }
+      Node* head = lpt->_head;
+      if (!head->is_BaseCountedLoop() || !lpt->is_innermost()) continue;
+
+      // check for vectorized loops, any reassociation of invariants was already done
+      if (head->is_CountedLoop()) {
+        if (head->as_CountedLoop()->is_unroll_only()) {
+          continue;
+        } else {
+          lpt->reassociate_invariants(this);
+        }
+      }
+      // Because RCE opportunities can be masked by split_thru_phi,
+      // look for RCE candidates and inhibit split_thru_phi
+      // on just their loop-phi's for this pass of loop opts
+      if (SplitIfBlocks && do_split_ifs &&
+          head->as_BaseCountedLoop()->is_valid_counted_loop(head->as_BaseCountedLoop()->bt()) &&
+          (lpt->policy_range_check(this, true, T_LONG) ||
+           (head->is_CountedLoop() && lpt->policy_range_check(this, true, T_INT)))) {
+        lpt->_rce_candidate = 1; // = true
+      }
+    }
+  }
+
+  // Check for aggressive application of split-if and other transforms
+  // that require basic-block info (like cloning through Phi's)
+  if (SplitIfBlocks && do_split_ifs) {
+    visited.clear();
+    split_if_with_blocks( visited, nstack); // can set_major_progress()
+    DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  if (do_expensive_nodes && process_expensive_nodes()) {
+    C->set_major_progress();
+    return;
+  }
+
+  // Perform loop predication before iteration splitting
+  if (C->has_loops() && (C->parse_predicate_count() > 0)) {
+    _ltree_root->_child->loop_predication(this);
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  if (!C->major_progress() && OptimizeFill && UseLoopPredicate && C->has_loops()) {
+    if (do_intrinsify_fill()) {
+      C->set_major_progress();
+      return;
+    }
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  // Perform iteration-splitting on inner loops.  Split iterations to avoid
+  // range checks or one-shot null checks.
+
+  // If split-if's didn't hack the graph too bad (no CFG changes)
+  // then do loop opts.
+  if (C->has_loops()) {
+    memset( worklist.adr(), 0, worklist.max()*sizeof(Node*) );
+    _ltree_root->_child->iteration_split( this, worklist );
+    // No verify after peeling!  GCM has hoisted code out of the loop.
+    // After peeling, the hoisted code could sink inside the peeled area.
+    // The peeling code does not try to recompute the best location for
+    // all the code before the peeled area, so the verify pass will always
+    // complain about it.
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  // Do verify graph edges in any case
+  NOT_PRODUCT( C->verify_graph_edges(); );
+
+  if (!do_split_ifs) {
+    // We saw major progress in Split-If to get here.  We forced a
+    // pass with unrolling and not split-if, however more split-if's
+    // might make progress.  If the unrolling didn't make progress
+    // then the major-progress flag got cleared and we won't try
+    // another round of Split-If.  In particular the ever-common
+    // instance-of/check-cast pattern requires at least 2 rounds of
+    // Split-If to clear out.
+    C->set_major_progress();
+    return;
+  }
+
+  // Repeat loop optimizations if new loops were seen
+  if (created_loop_node()) {
+    C->set_major_progress();
+    return;
+  }
+
+  // Keep loop predicates and perform optimizations with them
+  // until no more loop optimizations could be done.
+  // After that switch predicates off and do more loop optimizations.
+  if (C->parse_predicate_count() > 0) {
+    C->cleanup_parse_predicates(_igvn);
+    if (TraceLoopOpts) {
+      tty->print_cr("PredicatesOff");
+    }
+    C->set_major_progress();
+    return;
+  }
+
+  // Convert scalar to superword operations at the end of all loop opts.
+  if (UseSuperWord && C->has_loops()) {
+    // SuperWord transform
+    SuperWord sw(this);
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (lpt->is_counted()) {
+        CountedLoopNode *cl = lpt->_head->as_CountedLoop();
+
+        if (cl->is_rce_post_loop() && !cl->is_vectorized_loop()) {
+          assert(PostLoopMultiversioning, "multiversioning must be enabled");
+          // Check that the rce'd post loop is encountered first, multiversion after all
+          // major main loop optimization are concluded
+          if (!C->major_progress()) {
+            IdealLoopTree *lpt_next = lpt->_next;
+            if (lpt_next && lpt_next->is_counted()) {
+              CountedLoopNode *cl = lpt_next->_head->as_CountedLoop();
+              if (cl->is_post_loop() && lpt_next->range_checks_present()) {
+                if (!cl->is_multiversioned()) {
+                  if (!multi_version_post_loops(lpt, lpt_next)) {
+                    // Cause the rce loop to be optimized away if we fail
+                    cl->mark_is_multiversioned();
+                    cl->set_slp_max_unroll(0);
+                    poison_rce_post_loop(lpt);
+                  }
+                }
+              }
+            }
+            sw.transform_loop(lpt, true);
+          }
+        } else if (cl->is_main_loop()) {
+          if (!sw.transform_loop(lpt, true)) {
+            // Instigate more unrolling for optimization when vectorization fails.
+            if (cl->has_passed_slp()) {
+              C->set_major_progress();
+              cl->set_notpassed_slp();
+              cl->mark_do_unroll_only();
+            }
+          }
+        }
+      }
+    }
+
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+
+    // Move UnorderedReduction out of counted loop. Can be introduced by SuperWord.
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (lpt->is_counted() && lpt->is_innermost()) {
+        move_unordered_reduction_out_of_loop(lpt);
+      }
+    }
+  }
+}
+
+void PhaseIdealLoop::do_max_unroll() {
+  bool do_split_ifs = false;
+  bool skip_loop_opts = false;
+  bool do_max_unroll = true;
+  bool verify_loop_opts = false;
+  _verify_me = nullptr;
+  _verify_only = false;
+
+  // No loops after all
+  if( !_ltree_root->_child && !_verify_only ) C->set_has_loops(false);
+
+  // There should always be an outer loop containing the Root and Return nodes.
+  // If not, we have a degenerate empty program.  Bail out in this case.
+  if (!has_node(C->root())) {
+    if (!_verify_only) {
+      C->clear_major_progress();
+      assert(false, "empty program detected during loop optimization");
+      C->record_method_not_compilable("empty program detected during loop optimization");
+    }
+    return;
+  }
+
+  // Nothing to do, so get out
+  bool stop_early = !C->has_loops() && !skip_loop_opts && !do_split_ifs && !do_max_unroll && !_verify_me &&
+                    !_verify_only && !_is_gc_specific_loop_opts_pass;
+  bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
+  bool strip_mined_loops_expanded = BarrierSet::barrier_set()->barrier_set_c2()->strip_mined_loops_expanded(mode);
+  if (stop_early && !do_expensive_nodes) {
+    return;
+  }
+
+  // Set loop nesting depth
+  _ltree_root->set_nest( 0 );
+
+  // Split shared headers and insert loop landing pads.
+  // Do not bother doing this on the Root loop of course.
+  if( !_verify_me && !_verify_only && _ltree_root->_child ) {
+    C->print_method(PHASE_BEFORE_BEAUTIFY_LOOPS, 3);
+    if( _ltree_root->_child->beautify_loops( this ) ) {
+      // Re-build loop tree!
+      _ltree_root->_child = nullptr;
+      _loop_or_ctrl.clear();
+      reallocate_preorders();
+      build_loop_tree();
+      // Check for bailout, and return
+      if (C->failing()) {
+        return;
+      }
+      // Reset loop nesting depth
+      _ltree_root->set_nest( 0 );
+
+      C->print_method(PHASE_AFTER_BEAUTIFY_LOOPS, 3);
+    }
+  }
+
+  // Build Dominators for elision of null checks & loop finding.
+  // Since nodes do not have a slot for immediate dominator, make
+  // a persistent side array for that info indexed on node->_idx.
+  _idom_size = C->unique();
+  _idom      = NEW_RESOURCE_ARRAY( Node*, _idom_size );
+  _dom_depth = NEW_RESOURCE_ARRAY( uint,  _idom_size );
+  _dom_stk   = nullptr; // Allocated on demand in recompute_dom_depth
+  memset( _dom_depth, 0, _idom_size * sizeof(uint) );
+
+  Dominators();
+  VectorSet visited;
+
+  if (!_verify_only) {
+    // As a side effect, Dominators removed any unreachable CFG paths
+    // into RegionNodes.  It doesn't do this test against Root, so
+    // we do it here.
+    for( uint i = 1; i < C->root()->req(); i++ ) {
+      if (!_loop_or_ctrl[C->root()->in(i)->_idx]) { // Dead path into Root?
+        _igvn.delete_input_of(C->root(), i);
+        i--;                      // Rerun same iteration on compressed edges
+      }
+    }
+
+    // Given dominators, try to find inner loops with calls that must
+    // always be executed (call dominates loop tail).  These loops do
+    // not need a separate safepoint.
+    Node_List cisstack;
+    _ltree_root->check_safepts(visited, cisstack);
+  }
+
+  // Walk the DATA nodes and place into loops.  Find earliest control
+  // node.  For CFG nodes, the _loop_or_ctrl array starts out and remains
+  // holding the associated IdealLoopTree pointer.  For DATA nodes, the
+  // _loop_or_ctrl array holds the earliest legal controlling CFG node.
+
+  // Allocate stack with enough space to avoid frequent realloc
+  int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
+  Node_Stack nstack(stack_size);
+
+  visited.clear();
+  Node_List worklist;
+  // Don't need C->root() on worklist since
+  // it will be processed among C->top() inputs
+  worklist.push(C->top());
+  visited.set(C->top()->_idx); // Set C->top() as visited now
+  build_loop_early( visited, worklist, nstack );
+
+  // Given early legal placement, try finding counted loops.  This placement
+  // is good enough to discover most loop invariants.
+  if (!_verify_me && !_verify_only && !strip_mined_loops_expanded) {
+    _ltree_root->counted_loop( this );
+  }
+
+  // Find latest loop placement.  Find ideal loop placement.
+  visited.clear();
+  init_dom_lca_tags();
+  // Need C->root() on worklist when processing outs
+  worklist.push(C->root());
+  NOT_PRODUCT( C->verify_graph_edges(); )
+  worklist.push(C->top());
+  build_loop_late( visited, worklist, nstack );
+
+  if (_verify_only) {
+    C->restore_major_progress(old_progress);
+    assert(C->unique() == unique, "verification _mode made Nodes? ? ?");
+    assert(_igvn._worklist.size() == orig_worklist_size, "shouldn't push anything");
+    return;
+  }
+
+  // clear out the dead code after build_loop_late
+  while (_deadlist.size()) {
+    _igvn.remove_globally_dead_node(_deadlist.pop());
+  }
+
+  eliminate_useless_zero_trip_guard();
+  if (C->major_progress() || C->failing()) {
+    return;
+  }
+
+  if (stop_early) {
+    assert(do_expensive_nodes, "why are we here?");
+    if (process_expensive_nodes()) {
+      // If we made some progress when processing expensive nodes then
+      // the IGVN may modify the graph in a way that will allow us to
+      // make some more progress: we need to try processing expensive
+      // nodes again.
+      C->set_major_progress();
+    }
+    return;
+  }
+
+  // Some parser-inserted loop predicates could never be used by loop
+  // predication or they were moved away from loop during some optimizations.
+  // For example, peeling. Eliminate them before next loop optimizations.
+  eliminate_useless_predicates();
+  if (C->major_progress() || C->failing()) {
+    return;
+  }
+
+#ifndef PRODUCT
+  C->verify_graph_edges();
+  if (_verify_me) {             // Nested verify pass?
+    // Check to see if the verify _mode is broken
+    assert(C->unique() == unique, "non-optimize _mode made Nodes? ? ?");
+    return;
+  }
+  DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
+  if (TraceLoopOpts && C->has_loops()) {
+    _ltree_root->dump();
+  }
+#endif
+
+  if (skip_loop_opts) {
+    C->restore_major_progress(old_progress);
+    return;
+  }
+
+  if (do_max_unroll) {
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (lpt->is_innermost() && lpt->_allow_optimizations && !lpt->_has_call && lpt->is_counted()) {
+        lpt->compute_trip_count(this);
+        if (!lpt->do_one_iteration_loop(this) &&
+            !lpt->do_remove_empty_loop(this)) {
+          AutoNodeBudget node_budget(this);
+          if (lpt->_head->as_CountedLoop()->is_normal_loop() &&
+              lpt->policy_maximally_unroll(this)) {
+            memset( worklist.adr(), 0, worklist.max()*sizeof(Node*) );
+            do_maximally_unroll(lpt, worklist);
+          }
+        }
+      }
+    }
+
+    C->restore_major_progress(old_progress);
+    return;
+  }
+
+  if (mode == LoopOptsShenandoahExpand || mode == LoopOptsShenandoahPostExpand) {
+    BarrierSet::barrier_set()->barrier_set_c2()->optimize_loops(this, mode, visited, nstack, worklist);
+    return;
+  }
+
+  if (ReassociateInvariants) {
+    // Reassociate invariants and prep for split_thru_phi
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (!lpt->is_loop()) {
+        continue;
+      }
+      Node* head = lpt->_head;
+      if (!head->is_BaseCountedLoop() || !lpt->is_innermost()) continue;
+
+      // check for vectorized loops, any reassociation of invariants was already done
+      if (head->is_CountedLoop()) {
+        if (head->as_CountedLoop()->is_unroll_only()) {
+          continue;
+        } else {
+          lpt->reassociate_invariants(this);
+        }
+      }
+      // Because RCE opportunities can be masked by split_thru_phi,
+      // look for RCE candidates and inhibit split_thru_phi
+      // on just their loop-phi's for this pass of loop opts
+      if (SplitIfBlocks && do_split_ifs &&
+          head->as_BaseCountedLoop()->is_valid_counted_loop(head->as_BaseCountedLoop()->bt()) &&
+          (lpt->policy_range_check(this, true, T_LONG) ||
+           (head->is_CountedLoop() && lpt->policy_range_check(this, true, T_INT)))) {
+        lpt->_rce_candidate = 1; // = true
+      }
+    }
+  }
+
+  // Check for aggressive application of split-if and other transforms
+  // that require basic-block info (like cloning through Phi's)
+  if (SplitIfBlocks && do_split_ifs) {
+    visited.clear();
+    split_if_with_blocks( visited, nstack); // can set_major_progress()
+    DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  if (do_expensive_nodes && process_expensive_nodes()) {
+    C->set_major_progress();
+    return;
+  }
+
+  // Perform loop predication before iteration splitting
+  if (C->has_loops() && (C->parse_predicate_count() > 0)) {
+    _ltree_root->_child->loop_predication(this);
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  if (!C->major_progress() && OptimizeFill && UseLoopPredicate && C->has_loops()) {
+    if (do_intrinsify_fill()) {
+      C->set_major_progress();
+      return;
+    }
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  // Perform iteration-splitting on inner loops.  Split iterations to avoid
+  // range checks or one-shot null checks.
+
+  // If split-if's didn't hack the graph too bad (no CFG changes)
+  // then do loop opts.
+  if (C->has_loops()) {
+    memset( worklist.adr(), 0, worklist.max()*sizeof(Node*) );
+    _ltree_root->_child->iteration_split( this, worklist );
+    // No verify after peeling!  GCM has hoisted code out of the loop.
+    // After peeling, the hoisted code could sink inside the peeled area.
+    // The peeling code does not try to recompute the best location for
+    // all the code before the peeled area, so the verify pass will always
+    // complain about it.
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  // Do verify graph edges in any case
+  NOT_PRODUCT( C->verify_graph_edges(); );
+
+  if (!do_split_ifs) {
+    // We saw major progress in Split-If to get here.  We forced a
+    // pass with unrolling and not split-if, however more split-if's
+    // might make progress.  If the unrolling didn't make progress
+    // then the major-progress flag got cleared and we won't try
+    // another round of Split-If.  In particular the ever-common
+    // instance-of/check-cast pattern requires at least 2 rounds of
+    // Split-If to clear out.
+    C->set_major_progress();
+    return;
+  }
+
+  // Repeat loop optimizations if new loops were seen
+  if (created_loop_node()) {
+    C->set_major_progress();
+    return;
+  }
+
+  // Keep loop predicates and perform optimizations with them
+  // until no more loop optimizations could be done.
+  // After that switch predicates off and do more loop optimizations.
+  if (C->parse_predicate_count() > 0) {
+    C->cleanup_parse_predicates(_igvn);
+    if (TraceLoopOpts) {
+      tty->print_cr("PredicatesOff");
+    }
+    C->set_major_progress();
+    return;
+  }
+
+  // Convert scalar to superword operations at the end of all loop opts.
+  if (UseSuperWord && C->has_loops()) {
+    // SuperWord transform
+    SuperWord sw(this);
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (lpt->is_counted()) {
+        CountedLoopNode *cl = lpt->_head->as_CountedLoop();
+
+        if (cl->is_rce_post_loop() && !cl->is_vectorized_loop()) {
+          assert(PostLoopMultiversioning, "multiversioning must be enabled");
+          // Check that the rce'd post loop is encountered first, multiversion after all
+          // major main loop optimization are concluded
+          if (!C->major_progress()) {
+            IdealLoopTree *lpt_next = lpt->_next;
+            if (lpt_next && lpt_next->is_counted()) {
+              CountedLoopNode *cl = lpt_next->_head->as_CountedLoop();
+              if (cl->is_post_loop() && lpt_next->range_checks_present()) {
+                if (!cl->is_multiversioned()) {
+                  if (!multi_version_post_loops(lpt, lpt_next)) {
+                    // Cause the rce loop to be optimized away if we fail
+                    cl->mark_is_multiversioned();
+                    cl->set_slp_max_unroll(0);
+                    poison_rce_post_loop(lpt);
+                  }
+                }
+              }
+            }
+            sw.transform_loop(lpt, true);
+          }
+        } else if (cl->is_main_loop()) {
+          if (!sw.transform_loop(lpt, true)) {
+            // Instigate more unrolling for optimization when vectorization fails.
+            if (cl->has_passed_slp()) {
+              C->set_major_progress();
+              cl->set_notpassed_slp();
+              cl->mark_do_unroll_only();
+            }
+          }
+        }
+      }
+    }
+
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+
+    // Move UnorderedReduction out of counted loop. Can be introduced by SuperWord.
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (lpt->is_counted() && lpt->is_innermost()) {
+        move_unordered_reduction_out_of_loop(lpt);
+      }
+    }
+  }
+}
+
+void PhaseIdealLoop::verify_loop_opts() {
+  bool do_split_ifs = false;
+  bool skip_loop_opts = false;
+  bool do_max_unroll = false;
+  bool verify_loop_opts = true;
+  _verify_me = _verify_me;
+  _verify_only = _verify_me == nullptr;
+
+  // No loops after all
+  if( !_ltree_root->_child && !_verify_only ) C->set_has_loops(false);
+
+  // There should always be an outer loop containing the Root and Return nodes.
+  // If not, we have a degenerate empty program.  Bail out in this case.
+  if (!has_node(C->root())) {
+    if (!_verify_only) {
+      C->clear_major_progress();
+      assert(false, "empty program detected during loop optimization");
+      C->record_method_not_compilable("empty program detected during loop optimization");
+    }
+    return;
+  }
+
+  // Nothing to do, so get out
+  bool stop_early = !C->has_loops() && !skip_loop_opts && !do_split_ifs && !do_max_unroll && !_verify_me &&
+                    !_verify_only && !_is_gc_specific_loop_opts_pass;
+  bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
+  bool strip_mined_loops_expanded = BarrierSet::barrier_set()->barrier_set_c2()->strip_mined_loops_expanded(mode);
+  if (stop_early && !do_expensive_nodes) {
+    return;
+  }
+
+  // Set loop nesting depth
+  _ltree_root->set_nest( 0 );
+
+  // Split shared headers and insert loop landing pads.
+  // Do not bother doing this on the Root loop of course.
+  if( !_verify_me && !_verify_only && _ltree_root->_child ) {
+    C->print_method(PHASE_BEFORE_BEAUTIFY_LOOPS, 3);
+    if( _ltree_root->_child->beautify_loops( this ) ) {
+      // Re-build loop tree!
+      _ltree_root->_child = nullptr;
+      _loop_or_ctrl.clear();
+      reallocate_preorders();
+      build_loop_tree();
+      // Check for bailout, and return
+      if (C->failing()) {
+        return;
+      }
+      // Reset loop nesting depth
+      _ltree_root->set_nest( 0 );
+
+      C->print_method(PHASE_AFTER_BEAUTIFY_LOOPS, 3);
+    }
+  }
+
+  // Build Dominators for elision of null checks & loop finding.
+  // Since nodes do not have a slot for immediate dominator, make
+  // a persistent side array for that info indexed on node->_idx.
+  _idom_size = C->unique();
+  _idom      = NEW_RESOURCE_ARRAY( Node*, _idom_size );
+  _dom_depth = NEW_RESOURCE_ARRAY( uint,  _idom_size );
+  _dom_stk   = nullptr; // Allocated on demand in recompute_dom_depth
+  memset( _dom_depth, 0, _idom_size * sizeof(uint) );
+
+  Dominators();
+  VectorSet visited;
+
+  if (!_verify_only) {
+    // As a side effect, Dominators removed any unreachable CFG paths
+    // into RegionNodes.  It doesn't do this test against Root, so
+    // we do it here.
+    for( uint i = 1; i < C->root()->req(); i++ ) {
+      if (!_loop_or_ctrl[C->root()->in(i)->_idx]) { // Dead path into Root?
+        _igvn.delete_input_of(C->root(), i);
+        i--;                      // Rerun same iteration on compressed edges
+      }
+    }
+
+    // Given dominators, try to find inner loops with calls that must
+    // always be executed (call dominates loop tail).  These loops do
+    // not need a separate safepoint.
+    Node_List cisstack;
+    _ltree_root->check_safepts(visited, cisstack);
+  }
+
+  // Walk the DATA nodes and place into loops.  Find earliest control
+  // node.  For CFG nodes, the _loop_or_ctrl array starts out and remains
+  // holding the associated IdealLoopTree pointer.  For DATA nodes, the
+  // _loop_or_ctrl array holds the earliest legal controlling CFG node.
+
+  // Allocate stack with enough space to avoid frequent realloc
+  int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
+  Node_Stack nstack(stack_size);
+
+  visited.clear();
+  Node_List worklist;
+  // Don't need C->root() on worklist since
+  // it will be processed among C->top() inputs
+  worklist.push(C->top());
+  visited.set(C->top()->_idx); // Set C->top() as visited now
+  build_loop_early( visited, worklist, nstack );
+
+  // Given early legal placement, try finding counted loops.  This placement
+  // is good enough to discover most loop invariants.
+  if (!_verify_me && !_verify_only && !strip_mined_loops_expanded) {
+    _ltree_root->counted_loop( this );
+  }
+
+  // Find latest loop placement.  Find ideal loop placement.
+  visited.clear();
+  init_dom_lca_tags();
+  // Need C->root() on worklist when processing outs
+  worklist.push(C->root());
+  NOT_PRODUCT( C->verify_graph_edges(); )
+  worklist.push(C->top());
+  build_loop_late( visited, worklist, nstack );
+
+  if (_verify_only) {
+    C->restore_major_progress(old_progress);
+    assert(C->unique() == unique, "verification _mode made Nodes? ? ?");
+    assert(_igvn._worklist.size() == orig_worklist_size, "shouldn't push anything");
+    return;
+  }
+
+  // clear out the dead code after build_loop_late
+  while (_deadlist.size()) {
+    _igvn.remove_globally_dead_node(_deadlist.pop());
+  }
+
+  eliminate_useless_zero_trip_guard();
+  if (C->major_progress() || C->failing()) {
+    return;
+  }
+
+  if (stop_early) {
+    assert(do_expensive_nodes, "why are we here?");
+    if (process_expensive_nodes()) {
+      // If we made some progress when processing expensive nodes then
+      // the IGVN may modify the graph in a way that will allow us to
+      // make some more progress: we need to try processing expensive
+      // nodes again.
+      C->set_major_progress();
+    }
+    return;
+  }
+
+  // Some parser-inserted loop predicates could never be used by loop
+  // predication or they were moved away from loop during some optimizations.
+  // For example, peeling. Eliminate them before next loop optimizations.
+  eliminate_useless_predicates();
+  if (C->major_progress() || C->failing()) {
+    return;
+  }
+
+#ifndef PRODUCT
+  C->verify_graph_edges();
+  if (_verify_me) {             // Nested verify pass?
+    // Check to see if the verify _mode is broken
+    assert(C->unique() == unique, "non-optimize _mode made Nodes? ? ?");
+    return;
+  }
+  DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
+  if (TraceLoopOpts && C->has_loops()) {
+    _ltree_root->dump();
+  }
+#endif
+
+  if (skip_loop_opts) {
+    C->restore_major_progress(old_progress);
+    return;
+  }
+
+  if (do_max_unroll) {
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (lpt->is_innermost() && lpt->_allow_optimizations && !lpt->_has_call && lpt->is_counted()) {
+        lpt->compute_trip_count(this);
+        if (!lpt->do_one_iteration_loop(this) &&
+            !lpt->do_remove_empty_loop(this)) {
+          AutoNodeBudget node_budget(this);
+          if (lpt->_head->as_CountedLoop()->is_normal_loop() &&
+              lpt->policy_maximally_unroll(this)) {
+            memset( worklist.adr(), 0, worklist.max()*sizeof(Node*) );
+            do_maximally_unroll(lpt, worklist);
+          }
+        }
+      }
+    }
+
+    C->restore_major_progress(old_progress);
+    return;
+  }
+
+  if (mode == LoopOptsShenandoahExpand || mode == LoopOptsShenandoahPostExpand) {
+    BarrierSet::barrier_set()->barrier_set_c2()->optimize_loops(this, mode, visited, nstack, worklist);
+    return;
+  }
+
+  if (ReassociateInvariants) {
+    // Reassociate invariants and prep for split_thru_phi
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (!lpt->is_loop()) {
+        continue;
+      }
+      Node* head = lpt->_head;
+      if (!head->is_BaseCountedLoop() || !lpt->is_innermost()) continue;
+
+      // check for vectorized loops, any reassociation of invariants was already done
+      if (head->is_CountedLoop()) {
+        if (head->as_CountedLoop()->is_unroll_only()) {
+          continue;
+        } else {
+          lpt->reassociate_invariants(this);
+        }
+      }
+      // Because RCE opportunities can be masked by split_thru_phi,
+      // look for RCE candidates and inhibit split_thru_phi
+      // on just their loop-phi's for this pass of loop opts
+      if (SplitIfBlocks && do_split_ifs &&
+          head->as_BaseCountedLoop()->is_valid_counted_loop(head->as_BaseCountedLoop()->bt()) &&
+          (lpt->policy_range_check(this, true, T_LONG) ||
+           (head->is_CountedLoop() && lpt->policy_range_check(this, true, T_INT)))) {
+        lpt->_rce_candidate = 1; // = true
+      }
+    }
+  }
+
+  // Check for aggressive application of split-if and other transforms
+  // that require basic-block info (like cloning through Phi's)
+  if (SplitIfBlocks && do_split_ifs) {
+    visited.clear();
+    split_if_with_blocks( visited, nstack); // can set_major_progress()
+    DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  if (do_expensive_nodes && process_expensive_nodes()) {
+    C->set_major_progress();
+    return;
+  }
+
+  // Perform loop predication before iteration splitting
+  if (C->has_loops() && (C->parse_predicate_count() > 0)) {
+    _ltree_root->_child->loop_predication(this);
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  if (!C->major_progress() && OptimizeFill && UseLoopPredicate && C->has_loops()) {
+    if (do_intrinsify_fill()) {
+      C->set_major_progress();
+      return;
+    }
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  // Perform iteration-splitting on inner loops.  Split iterations to avoid
+  // range checks or one-shot null checks.
+
+  // If split-if's didn't hack the graph too bad (no CFG changes)
+  // then do loop opts.
+  if (C->has_loops()) {
+    memset( worklist.adr(), 0, worklist.max()*sizeof(Node*) );
+    _ltree_root->_child->iteration_split( this, worklist );
+    // No verify after peeling!  GCM has hoisted code out of the loop.
+    // After peeling, the hoisted code could sink inside the peeled area.
+    // The peeling code does not try to recompute the best location for
+    // all the code before the peeled area, so the verify pass will always
+    // complain about it.
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+  }
+
+  // Do verify graph edges in any case
+  NOT_PRODUCT( C->verify_graph_edges(); );
+
+  if (!do_split_ifs) {
+    // We saw major progress in Split-If to get here.  We forced a
+    // pass with unrolling and not split-if, however more split-if's
+    // might make progress.  If the unrolling didn't make progress
+    // then the major-progress flag got cleared and we won't try
+    // another round of Split-If.  In particular the ever-common
+    // instance-of/check-cast pattern requires at least 2 rounds of
+    // Split-If to clear out.
+    C->set_major_progress();
+    return;
+  }
+
+  // Repeat loop optimizations if new loops were seen
+  if (created_loop_node()) {
+    C->set_major_progress();
+    return;
+  }
+
+  // Keep loop predicates and perform optimizations with them
+  // until no more loop optimizations could be done.
+  // After that switch predicates off and do more loop optimizations.
+  if (C->parse_predicate_count() > 0) {
+    C->cleanup_parse_predicates(_igvn);
+    if (TraceLoopOpts) {
+      tty->print_cr("PredicatesOff");
+    }
+    C->set_major_progress();
+    return;
+  }
+
+  // Convert scalar to superword operations at the end of all loop opts.
+  if (UseSuperWord && C->has_loops()) {
+    // SuperWord transform
+    SuperWord sw(this);
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (lpt->is_counted()) {
+        CountedLoopNode *cl = lpt->_head->as_CountedLoop();
+
+        if (cl->is_rce_post_loop() && !cl->is_vectorized_loop()) {
+          assert(PostLoopMultiversioning, "multiversioning must be enabled");
+          // Check that the rce'd post loop is encountered first, multiversion after all
+          // major main loop optimization are concluded
+          if (!C->major_progress()) {
+            IdealLoopTree *lpt_next = lpt->_next;
+            if (lpt_next && lpt_next->is_counted()) {
+              CountedLoopNode *cl = lpt_next->_head->as_CountedLoop();
+              if (cl->is_post_loop() && lpt_next->range_checks_present()) {
+                if (!cl->is_multiversioned()) {
+                  if (!multi_version_post_loops(lpt, lpt_next)) {
+                    // Cause the rce loop to be optimized away if we fail
+                    cl->mark_is_multiversioned();
+                    cl->set_slp_max_unroll(0);
+                    poison_rce_post_loop(lpt);
+                  }
+                }
+              }
+            }
+            sw.transform_loop(lpt, true);
+          }
+        } else if (cl->is_main_loop()) {
+          if (!sw.transform_loop(lpt, true)) {
+            // Instigate more unrolling for optimization when vectorization fails.
+            if (cl->has_passed_slp()) {
+              C->set_major_progress();
+              cl->set_notpassed_slp();
+              cl->mark_do_unroll_only();
+            }
+          }
+        }
+      }
+    }
+
+    if (C->major_progress() || C->failing()) {
+      return;
+    }
+
+    // Move UnorderedReduction out of counted loop. Can be introduced by SuperWord.
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (lpt->is_counted() && lpt->is_innermost()) {
+        move_unordered_reduction_out_of_loop(lpt);
+      }
+    }
+  }
+}
+
+//=============================================================================
+//----------------------------build_and_optimize-------------------------------
+// Create a PhaseLoop.  Build the ideal Loop tree.  Map each Ideal Node to
+// its corresponding LoopNode.  If 'optimize' is true, do some loop cleanups.
+void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
+  assert(!C->post_loop_opts_phase(), "no loop opts allowed");
+
+  _is_gc_specific_loop_opts_pass = BarrierSet::barrier_set()->barrier_set_c2()->is_gc_specific_loop_opts_pass(mode);
+
+  int old_progress = C->major_progress();
+  uint orig_worklist_size = _igvn._worklist.size();
+
+  // Reset major-progress flag for the driver's heuristics
+  C->clear_major_progress();
+
+#ifndef PRODUCT
+  // Capture for later assert
+  uint unique = C->unique();
+  _loop_invokes++;
+  _loop_work += unique;
+#endif
+
+  // True if the method has at least 1 irreducible loop
+  _has_irreducible_loops = false;
+
+  _created_loop_node = false;
+
+  // Pre-grow the mapping from Nodes to IdealLoopTrees.
+  _loop_or_ctrl.map(C->unique(), nullptr);
+  memset(_loop_or_ctrl.adr(), 0, wordSize * C->unique());
+
+  // Pre-build the top-level outermost loop tree entry
+  _ltree_root = new IdealLoopTree( this, C->root(), C->root() );
+  // Do not need a safepoint at the top level
+  _ltree_root->_has_sfpt = 1;
+
+  // Initialize Dominators.
+  // Checked in clone_loop_predicate() during beautify_loops().
+  _idom_size = 0;
+  _idom      = nullptr;
+  _dom_depth = nullptr;
+  _dom_stk   = nullptr;
+
+  // Empty pre-order array
+  allocate_preorders();
+
+  // Build a loop tree on the fly.  Build a mapping from CFG nodes to
+  // IdealLoopTree entries.  Data nodes are NOT walked.
+  build_loop_tree();
+  // Check for bailout, and return
+  if (C->failing()) {
+    return;
+  }
+
+  // Verify that the has_loops() flag set at parse time is consistent
+  // with the just built loop tree. With infinite loops, it could be
+  // that one pass of loop opts only finds infinite loops, clears the
+  // has_loops() flag but adds NeverBranch nodes so the next loop opts
+  // verification pass finds a non empty loop tree. When the back edge
+  // is an exception edge, parsing doesn't set has_loops().
+  assert(_ltree_root->_child == nullptr || C->has_loops() || only_has_infinite_loops() || C->has_exception_backedge(), "parsing found no loops but there are some");
+
+  switch(mode) {
+    case LoopOptsDefault: {
+      do_split_ifs();
+      break;
+    }
+    case LoopOptsNone: {
+      skip_loop_opts();
+      break;
+    }
+    case LoopOptsMaxUnroll: {
+      do_max_unroll();
+      break;
+    }
+    case LoopOptsVerify: {
+      verify_loop_opts();
+      break;
+    }
+    default: ShouldNotReachHere();
+  }
+
 }
 
 #ifndef PRODUCT

@@ -1118,7 +1118,6 @@ private:
     _igvn(igvn),
     _verify_me(nullptr),
     _verify_only(false),
-    _is_gc_specific_loop_opts_pass(false),
     _nodes_required(UINT_MAX) {
     assert(mode != LoopOptsVerify, "wrong constructor to verify IdealLoop");
     build_and_optimize(mode);
@@ -1132,7 +1131,6 @@ private:
     _igvn(igvn),
     _verify_me(verify_me),
     _verify_only(verify_me == nullptr),
-    _is_gc_specific_loop_opts_pass(false),
     _nodes_required(UINT_MAX) {
     build_and_optimize(LoopOptsVerify);
   }
@@ -1737,6 +1735,14 @@ public:
   bool clone_cmp_loadklass_down(Node* n, const Node* blk1, const Node* blk2);
 
   bool at_relevant_ctrl(Node* n, const Node* blk1, const Node* blk2);
+
+  void do_split_ifs();
+
+  void skip_loop_opts();
+
+  void do_max_unroll();
+
+  void verify_loop_opts();
 };
 
 
