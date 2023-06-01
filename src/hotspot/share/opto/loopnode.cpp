@@ -4355,7 +4355,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   // is an exception edge, parsing doesn't set has_loops().
   assert(_ltree_root->_child == nullptr || C->has_loops() || only_has_infinite_loops() || C->has_exception_backedge(), "parsing found no loops but there are some");
   // No loops after all
-  if( !_ltree_root->_child && !_verify_only ) C->set_has_loops(false);
+  if( !_ltree_root->_child ) C->set_has_loops(false);
 
   // There should always be an outer loop containing the Root and Return nodes.
   // If not, we have a degenerate empty program.  Bail out in this case.
@@ -4368,12 +4368,10 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
     return;
   }
 
-  BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
   // Nothing to do, so get out
   bool stop_early = !C->has_loops() && !_skip_loop_opts && !_do_split_ifs && !_do_max_unroll && !_verify_me &&
-                    !_verify_only && !bs->is_gc_specific_loop_opts_pass(mode);
+                    !_verify_only && !_is_gc_specific_loop_opts_pass;
   bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
-  bool strip_mined_loops_expanded = bs->strip_mined_loops_expanded(mode);
   if (stop_early && !do_expensive_nodes) {
     return;
   }
@@ -4450,7 +4448,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
 
   // Given early legal placement, try finding counted loops.  This placement
   // is good enough to discover most loop invariants.
-  if (!_verify_me && !_verify_only && !strip_mined_loops_expanded) {
+  if (!_verify_me && !_verify_only && !BarrierSet::barrier_set()->barrier_set_c2()->strip_mined_loops_expanded(mode)) {
     _ltree_root->counted_loop( this );
   }
 
@@ -4533,11 +4531,11 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
     return;
   }
 
-  if (bs->optimize_loops(this, mode, visited, nstack, worklist)) {
+  if (BarrierSet::barrier_set()->barrier_set_c2()->optimize_loops(this, mode, visited, nstack, worklist)) {
     return;
   }
 
-  if (ReassociateInvariants && !C->major_progress()) {
+  if (!C->major_progress() && ReassociateInvariants) {
     // Reassociate invariants and prep for split_thru_phi
     for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
       IdealLoopTree* lpt = iter.current();
@@ -4581,11 +4579,11 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   }
 
   // Perform loop predication before iteration splitting
-  if (C->has_loops() && !C->major_progress() && (C->parse_predicate_count() > 0)) {
+  if (!C->major_progress() && C->has_loops() && (C->parse_predicate_count() > 0)) {
     _ltree_root->_child->loop_predication(this);
   }
 
-  if (OptimizeFill && UseLoopPredicate && C->has_loops() && !C->major_progress()) {
+  if (!C->major_progress() && OptimizeFill && UseLoopPredicate && C->has_loops()) {
     if (do_intrinsify_fill()) {
       C->set_major_progress();
     }
@@ -4596,7 +4594,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
 
   // If split-if's didn't hack the graph too bad (no CFG changes)
   // then do loop opts.
-  if (C->has_loops() && !C->major_progress()) {
+  if (!C->major_progress() && C->has_loops()) {
     memset( worklist.adr(), 0, worklist.max()*sizeof(Node*) );
     _ltree_root->_child->iteration_split( this, worklist );
     // No verify after peeling!  GCM has hoisted code out of the loop.
@@ -4642,7 +4640,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   }
 
   // Convert scalar to superword operations at the end of all loop opts.
-  if (UseSuperWord && C->has_loops() && !C->major_progress()) {
+  if (!C->major_progress() && UseSuperWord && C->has_loops()) {
     // SuperWord transform
     SuperWord sw(this);
     for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
@@ -4686,7 +4684,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   }
 
   // Move UnorderedReduction out of counted loop. Can be introduced by SuperWord.
-  if (C->has_loops() && !C->major_progress()) {
+  if (!C->major_progress() && C->has_loops()) {
     for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
       IdealLoopTree* lpt = iter.current();
       if (lpt->is_counted() && lpt->is_innermost()) {
