@@ -467,10 +467,8 @@ public class HierarchicalLayoutManager implements LayoutManager {
                         p.y -= minY;
                     }
                 }
-                List<Point> points2 = Arrays.asList( points.get(0), points.get(points.size() - 1));
-
-                l.setControlPoints(points2);
-
+                l.setControlPoints(points);
+                //l.setControlPoints(Arrays.asList( points.get(0), points.get(points.size() - 1)));
             }
         }
 

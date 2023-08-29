@@ -714,22 +714,21 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return rebuilding;
     }
 
-    private boolean isVisible(Connection c) {
+    private boolean isVisibleBlockConnection(BlockConnection blockConnection) {
+        Widget w1 = getWidget(blockConnection.getFromCluster().getInputBlock());
+        Widget w2 = getWidget(blockConnection.getToCluster().getInputBlock());
+        return w1.isVisible() && w2.isVisible();
+    }
+
+    private boolean isVisibleFigureConnection(FigureConnection figureConnection) {
         // Generally, a connection is visible if its source and destination
         // widgets are visible. An exception is Figure connections in the CFG
         // view, which are never shown.
-        if (getModel().getShowCFG() && c instanceof FigureConnection) {
+        if (getModel().getShowCFG()) {
             return false;
         }
-        Widget w1, w2;
-        if (c instanceof BlockConnection) {
-            w1 = getWidget(((Block)c.getFromCluster()).getInputBlock());
-            w2 = getWidget(((Block)c.getToCluster()).getInputBlock());
-        } else {
-            assert (c instanceof FigureConnection);
-            w1 = getWidget(c.getFrom().getVertex());
-            w2 = getWidget(c.getTo().getVertex());
-        }
+        Widget w1 = getWidget(figureConnection.getFrom().getVertex());
+        Widget w2 = getWidget(figureConnection.getTo().getVertex());
         return w1.isVisible() && w2.isVisible();
     }
 
@@ -739,7 +738,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
     private void doSeaLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
         HierarchicalLayoutManager manager = new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
-        manager.setMaxLayerLength(10);
+        //manager.setMaxLayerLength(10);
         manager.doLayout(new LayoutGraph(edges, figures));
         hierarchicalStableLayoutManager.setShouldRedrawLayout(true);
     }
@@ -787,7 +786,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
         // Add visible connections for CFG edges.
         for (BlockConnection c : diagram.getBlockConnections()) {
-            if (isVisible(c)) {
+            if (isVisibleBlockConnection(c)) {
                 edges.add(c);
             }
         }
@@ -817,62 +816,57 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
     private final Point specialNullPoint = new Point(Integer.MAX_VALUE, Integer.MAX_VALUE);
 
-    private void processOutputSlot(OutputSlot outputSlot, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
-        Map<Point, List<Connection>> pointMap = new HashMap<>(connections.size());
 
-        if (predecessor != null && outputSlot != null ) {
-            Figure figure = outputSlot.getFigure();
-            if (figureToOutLineWidget.containsKey(figure)) {
-                figureToOutLineWidget.get(figure).add(predecessor);
-            } else {
-                figureToOutLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
+
+    private void processOutputSlot(OutputSlot outputSlot, List<FigureConnection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
+        Map<Point, List<FigureConnection>> pointMap = new HashMap<>(connections.size());
+
+        if (predecessor != null) {
+            if (controlPointIndex == 2) {
+                Figure figure = outputSlot.getFigure();
+                if (figureToOutLineWidget.containsKey(figure)) {
+                    figureToOutLineWidget.get(figure).add(predecessor);
+                } else {
+                    figureToOutLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
+                }
             }
         }
 
-        for (Connection connection : connections) {
-            if (!isVisible(connection)) {
-                continue;
-            }
-            List<Point> controlPoints = connection.getControlPoints();
-            if (controlPointIndex == controlPoints.size()) {
-                if (predecessor != null) {
-                    Figure figure = ((Slot) connection.getTo()).getFigure();
-                    if (figureToInLineWidget.containsKey(figure)) {
-                        figureToInLineWidget.get(figure).add(predecessor);
+        for (FigureConnection connection : connections) {
+            if (isVisibleFigureConnection(connection)) {
+                List<Point> controlPoints = connection.getControlPoints();
+                if (controlPointIndex < controlPoints.size()) {
+                    Point currentPoint = controlPoints.get(controlPointIndex);
+                    if (currentPoint == null) { // Long connection, has been cut vertically.
+                        currentPoint = specialNullPoint;
                     } else {
-                        figureToInLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
+                        if (controlPointIndex == 0 && !outputSlot.shouldShowName()) {
+                            currentPoint = new Point(currentPoint.x, currentPoint.y - SLOT_OFFSET);
+                        } else if (controlPointIndex == controlPoints.size() - 1 &&
+                                !((Slot)connection.getTo()).shouldShowName()) {
+                            currentPoint = new Point(currentPoint.x, currentPoint.y + SLOT_OFFSET);
+                        }
+                    }
+                    if (pointMap.containsKey(currentPoint)) {
+                        pointMap.get(currentPoint).add(connection);
+                    } else {
+                        pointMap.put(currentPoint, new ArrayList<>(Collections.singletonList(connection)));
+                    }
+                } else if (controlPointIndex == controlPoints.size()) {
+                    if (predecessor != null) {
+                        Figure figure = ((Slot) connection.getTo()).getFigure();
+                        if (figureToInLineWidget.containsKey(figure)) {
+                            figureToInLineWidget.get(figure).add(predecessor);
+                        } else {
+                            figureToInLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
+                        }
                     }
                 }
             }
-            if (controlPointIndex >= controlPoints.size()) {
-                continue;
-            }
-
-            Point currentPoint = controlPoints.get(controlPointIndex);
-            if (currentPoint == null) { // Long connection, has been cut vertically.
-                currentPoint = specialNullPoint;
-            } else if (connection.hasSlots()) {
-                if (controlPointIndex == 0 && !outputSlot.shouldShowName()) {
-                    currentPoint = new Point(currentPoint.x, currentPoint.y - SLOT_OFFSET);
-                } else if (controlPointIndex == controlPoints.size() - 1 &&
-                           !((Slot)connection.getTo()).shouldShowName()) {
-                    currentPoint = new Point(currentPoint.x, currentPoint.y + SLOT_OFFSET);
-                }
-            }
-
-            if (pointMap.containsKey(currentPoint)) {
-                pointMap.get(currentPoint).add(connection);
-            } else {
-                List<Connection> newList = new ArrayList<>(2);
-                newList.add(connection);
-                pointMap.put(currentPoint, newList);
-            }
-
-
         }
 
         for (Point currentPoint : pointMap.keySet()) {
-            List<Connection> connectionList = pointMap.get(currentPoint);
+            List<FigureConnection> connectionList = pointMap.get(currentPoint);
 
             boolean isBold = false;
             boolean isDashed = true;
@@ -882,8 +876,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     isBold = true;
                 } else if (c.getStyle() == Connection.ConnectionStyle.INVISIBLE) {
                     isVisible = false;
-                }
-                if (c.getStyle() != Connection.ConnectionStyle.DASHED) {
+                } else if (c.getStyle() != Connection.ConnectionStyle.DASHED) {
                     isDashed = false;
                 }
             }
@@ -904,6 +897,29 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
+    private void processBlockConnection(BlockConnection blockConnection) {
+        boolean isDashed = blockConnection.getStyle() == Connection.ConnectionStyle.DASHED;;
+        boolean isBold = blockConnection.getStyle() == Connection.ConnectionStyle.BOLD;
+        boolean isVisible = blockConnection.getStyle() != Connection.ConnectionStyle.INVISIBLE;
+        Point lastPoint = null;
+        LineWidget predecessor = null;
+        for (Point currentPoint : blockConnection.getControlPoints()) {
+            if (currentPoint == null) { // Long connection, has been cut vertically.
+                currentPoint = specialNullPoint;
+            } else if (lastPoint != specialNullPoint && lastPoint != null) {
+                List<BlockConnection> connectionList = Collections.singletonList(blockConnection);
+                Point src = new Point(lastPoint);
+                Point dest = new Point(currentPoint);
+                predecessor = new LineWidget(this, null, connectionList, src, dest, predecessor, isBold, isDashed);
+                predecessor.setVisible(isVisible);
+                connectionLayer.addChild(predecessor);
+                addObject(new ConnectionSet(connectionList), predecessor);
+                predecessor.getActions().addAction(hoverAction);
+            }
+            lastPoint = currentPoint;
+        }
+    }
+
     @Override
     public void setInteractionMode(InteractionMode mode) {
         panAction.setEnabled(mode == InteractionMode.PANNING);
@@ -920,7 +936,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
         private Set<Connection> connections;
 
-        public ConnectionSet(Collection<Connection> connections) {
+        public ConnectionSet(Collection<? extends Connection> connections) {
             connections = new HashSet<>(connections);
         }
 
@@ -1054,15 +1070,15 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         connectionLayer.removeChildren();
         for (Figure figure : getModel().getDiagram().getFigures()) {
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
-                List<Connection> connectionList = new ArrayList<>(outputSlot.getConnections());
+                List<FigureConnection> connectionList = new ArrayList<>(outputSlot.getConnections());
                 processOutputSlot(outputSlot, connectionList, 0, null, null);
             }
         }
 
         if (getModel().getShowCFG()) {
             for (BlockConnection blockConnection : getModel().getDiagram().getBlockConnections()) {
-                if (isVisible(blockConnection)) {
-                    processOutputSlot(null, Collections.singletonList(blockConnection), 0, null, null);
+                if (isVisibleBlockConnection(blockConnection)) {
+                    processBlockConnection(blockConnection);
                 }
             }
         }
@@ -1178,8 +1194,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
     private HashSet<Connection> getVisibleConnections() {
         HashSet<Connection> visibleConnections = new HashSet<>();
-        for (Connection connection : getModel().getDiagram().getConnections()) {
-            if (isVisible(connection)) {
+        for (FigureConnection connection : getModel().getDiagram().getConnections()) {
+            if (isVisibleFigureConnection(connection)) {
                 visibleConnections.add(connection);
             }
         }
