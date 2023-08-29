@@ -38,8 +38,6 @@ import java.util.*;
  */
 public class HierarchicalLayoutManager implements LayoutManager {
 
-    public static final boolean TRACE = false;
-    public static final boolean CHECK = false;
     public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;
     public static final int DUMMY_HEIGHT = 1;
@@ -48,7 +46,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
     public static final int LAYER_OFFSET = 8;
     public static final int MAX_LAYER_LENGTH = -1;
     public static final int MIN_LAYER_DIFFERENCE = 1;
-    public static final int VIP_BONUS = 10;
 
     public enum Combine {
 
@@ -80,41 +77,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
     private Set<? extends Link> importantLinks;
     private final Set<Link> linksToFollow;
 
-    private abstract static class AlgorithmPart {
-
-        public void start() {
-            if (CHECK) {
-                preCheck();
-            }
-
-            long start = 0;
-            if (TRACE) {
-                System.out.println("##################################################");
-                System.out.println("Starting part " + this.getClass().getName());
-                start = System.currentTimeMillis();
-            }
-            run();
-            if (TRACE) {
-                System.out.println("Timing for " + this.getClass().getName() + " is " + (System.currentTimeMillis() - start));
-                printStatistics();
-            }
-
-            if (CHECK) {
-                postCheck();
-            }
-        }
-
-        protected abstract void run();
-
-        protected void printStatistics() {
-        }
-
-        protected void postCheck() {
-        }
-
-        protected void preCheck() {
-        }
-    }
 
     public HierarchicalLayoutManager(Combine b) {
         this.combine = b;
@@ -170,7 +132,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
     @Override
     public void doLayout(LayoutGraph graph) {
         doLayout(graph, new HashSet<>());
-
     }
 
     @Override
@@ -190,7 +151,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
         // #############################################################
         // Step 1: Build up data structure
-        new BuildDatastructure().start();
+        new BuildDatastructure().run();
 
         if (!layoutSelfEdges) {
             // Remove self-edges from the beginning.
@@ -199,7 +160,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
         // #############################################################
         // STEP 2: Reverse edges, handle backedges
-        new ReverseEdges().start();
+        new ReverseEdges().run();
 
         for (LayoutNode n : nodes) {
             ArrayList<LayoutEdge> tmpArr = new ArrayList<>();
@@ -220,23 +181,23 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
         // #############################################################
         // STEP 3: Assign layers
-        new AssignLayers().start();
+        new AssignLayers().run();
 
         // #############################################################
         // STEP 4: Create dummy nodes
-        new CreateDummyNodes().start();
+        new CreateDummyNodes().run();
 
         // #############################################################
         // STEP 5: Crossing Reduction
-        new CrossingReduction().start();
+        new CrossingReduction().run();
 
         // #############################################################
         // STEP 7: Assign X coordinates
-        new AssignXCoordinates().start();
+        new AssignXCoordinates().run();
 
         // #############################################################
         // STEP 6: Assign Y coordinates
-        new AssignYCoordinates().start();
+        new AssignYCoordinates().run();
 
         // Put saved self-edges back so that they are assigned points.
         for (LayoutEdge e : selfEdges) {
@@ -246,14 +207,13 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
         // #############################################################
         // STEP 8: Write back to interface
-        new WriteResult().start();
+        new WriteResult().run();
     }
 
-    private class WriteResult extends AlgorithmPart {
+    private class WriteResult {
 
         private int pointCount;
 
-        @Override
         protected void run() {
 
             HashMap<Vertex, Point> vertexPositions = new HashMap<>();
@@ -472,16 +432,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
             }
         }
 
-        @Override
-        protected void printStatistics() {
-            System.out.println("Number of nodes: " + nodes.size());
-            int edgeCount = 0;
-            for (LayoutNode n : nodes) {
-                edgeCount += n.succs.size();
-            }
-            System.out.println("Number of edges: " + edgeCount);
-            System.out.println("Number of points: " + pointCount);
-        }
     }
 
     public static final Comparator<LayoutNode> nodePositionComparator = Comparator.comparingInt(n -> n.pos);
@@ -540,7 +490,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
         return n1.succs.size() - n2.succs.size();
     };
 
-    private class AssignXCoordinates extends AlgorithmPart {
+    private class AssignXCoordinates {
 
         private ArrayList<Integer>[] space;
         private ArrayList<LayoutNode>[] downProcessingOrder;
@@ -559,7 +509,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
             upProcessingOrder = new ArrayList[layers.length];
         }
 
-        @Override
         protected void run() {
             createArrays();
 
@@ -740,14 +689,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
     }
     private static final Comparator<LayoutNode> crossingNodeComparator = Comparator.comparingInt(n -> n.crossingNumber);
 
-    private class CrossingReduction extends AlgorithmPart {
-
-        @Override
-        public void preCheck() {
-            for (LayoutNode n : nodes) {
-                assert n.layer < layerCount;
-            }
-        }
+    private class CrossingReduction {
 
         @SuppressWarnings("unchecked")
         private void createLayers() {
@@ -758,7 +700,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
             }
         }
 
-        @Override
         protected void run() {
             createLayers();
 
@@ -842,9 +783,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
                     for (LayoutEdge e : n.preds) {
                         int cur = e.from.x + e.relativeFrom;
                         int factor = 1;
-                        if (e.vip) {
-                            factor = VIP_BONUS;
-                        }
                         sum += cur * factor;
                         count += factor;
                     }
@@ -912,9 +850,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
                     for (LayoutEdge e : n.succs) {
                         int cur = e.to.x + e.relativeTo;
                         int factor = 1;
-                        if (e.vip) {
-                            factor = VIP_BONUS;
-                        }
                         sum += cur * factor;
                         count += factor;
                     }
@@ -938,24 +873,11 @@ public class HierarchicalLayoutManager implements LayoutManager {
             }
         }
 
-        @Override
-        public void postCheck() {
 
-            HashSet<LayoutNode> visited = new HashSet<>();
-            for (int i = 0; i < layers.length; i++) {
-                for (LayoutNode n : layers[i]) {
-                    assert !visited.contains(n);
-                    assert n.layer == i;
-                    visited.add(n);
-                }
-            }
-
-        }
     }
 
-    private class AssignYCoordinates extends AlgorithmPart {
+    private class AssignYCoordinates {
 
-        @Override
         protected void run() {
             int curY = 0;
 
@@ -992,27 +914,10 @@ public class HierarchicalLayoutManager implements LayoutManager {
         }
     }
 
-    private class CreateDummyNodes extends AlgorithmPart {
+    private class CreateDummyNodes {
 
         private int oldNodeCount;
 
-        @Override
-        protected void preCheck() {
-            for (LayoutNode n : nodes) {
-                for (LayoutEdge e : n.succs) {
-                    assert e.from != null;
-                    assert e.from == n;
-                    assert e.from.layer < e.to.layer;
-                }
-
-                for (LayoutEdge e : n.preds) {
-                    assert e.to != null;
-                    assert e.to == n;
-                }
-            }
-        }
-
-        @Override
         protected void run() {
             oldNodeCount = nodes.size();
 
@@ -1212,39 +1117,11 @@ public class HierarchicalLayoutManager implements LayoutManager {
             return result;
         }
 
-        @Override
-        public void printStatistics() {
-            System.out.println("Dummy nodes created: " + (nodes.size() - oldNodeCount));
-        }
-
-        @Override
-        public void postCheck() {
-            ArrayList<LayoutNode> currentNodes = new ArrayList<>(nodes);
-            for (LayoutNode n : currentNodes) {
-                for (LayoutEdge e : n.succs) {
-                    assert e.from.layer == e.to.layer - 1;
-                }
-            }
-
-            for (int i = 0; i < layers.length; i++) {
-                assert layers[i].size() > 0;
-                for (LayoutNode n : layers[i]) {
-                    assert n.layer == i;
-                }
-            }
-        }
     }
 
-    private class AssignLayers extends AlgorithmPart {
+    private class AssignLayers {
 
-        @Override
-        public void preCheck() {
-            for (LayoutNode n : nodes) {
-                assert n.layer == -1;
-            }
-        }
 
-        @Override
         protected void run() {
             assignLayerDownwards();
             assignLayerUpwards();
@@ -1352,24 +1229,14 @@ public class HierarchicalLayoutManager implements LayoutManager {
             }
         }
 
-        @Override
-        public void postCheck() {
-            for (LayoutNode n : nodes) {
-                assert n.layer >= 0;
-                assert n.layer < layerCount;
-                for (LayoutEdge e : n.succs) {
-                    assert e.from.layer < e.to.layer;
-                }
-            }
-        }
+
     }
 
-    private class ReverseEdges extends AlgorithmPart {
+    private class ReverseEdges {
 
         private HashSet<LayoutNode> visited;
         private HashSet<LayoutNode> active;
 
-        @Override
         protected void run() {
 
             // Reverse inputs of roots
@@ -1593,32 +1460,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
             oldTo.succs.add(e);
         }
 
-        @Override
-        public void postCheck() {
 
-            for (LayoutNode n : nodes) {
-
-                HashSet<LayoutNode> curVisited = new HashSet<>();
-                Queue<LayoutNode> queue = new LinkedList<>();
-                for (LayoutEdge e : n.succs) {
-                    LayoutNode s = e.to;
-                    queue.add(s);
-                    curVisited.add(s);
-                }
-
-                while (!queue.isEmpty()) {
-                    LayoutNode curNode = queue.remove();
-
-                    for (LayoutEdge e : curNode.succs) {
-                        assert e.to != n;
-                        if (!curVisited.contains(e.to)) {
-                            queue.add(e.to);
-                            curVisited.add(e.to);
-                        }
-                    }
-                }
-            }
-        }
     }
     private final Comparator<Link> linkComparator = (l1, l2) -> {
         if (l1.isVIP() && !l2.isVIP()) {
@@ -1645,9 +1487,8 @@ public class HierarchicalLayoutManager implements LayoutManager {
         return result;
     };
 
-    private class BuildDatastructure extends AlgorithmPart {
+    private class BuildDatastructure {
 
-        @Override
         protected void run() {
             // Set up nodes
             List<Vertex> vertices = new ArrayList<>(graph.getVertices());
@@ -1697,26 +1538,5 @@ public class HierarchicalLayoutManager implements LayoutManager {
             }
         }
 
-        @Override
-        public void postCheck() {
-
-            assert vertexToLayoutNode.keySet().size() == nodes.size();
-            assert nodes.size() == graph.getVertices().size();
-
-            for (Vertex v : graph.getVertices()) {
-
-                LayoutNode node = vertexToLayoutNode.get(v);
-                assert node != null;
-
-                for (LayoutEdge e : node.succs) {
-                    assert e.from == node;
-                }
-
-                for (LayoutEdge e : node.preds) {
-                    assert e.to == node;
-                }
-
-            }
-        }
     }
 }
