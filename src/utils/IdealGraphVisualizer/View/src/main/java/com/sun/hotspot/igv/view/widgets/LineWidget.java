@@ -61,10 +61,10 @@ public class LineWidget extends Widget implements PopupMenuProvider {
     private final static double ZOOM_FACTOR = 0.1;
     private final OutputSlot outputSlot;
     private final DiagramScene scene;
-    private final List<Connection> connections;
-    private final Point from;
-    private final Point to;
-    private final Rectangle clientArea;
+    private final List<? extends Connection> connections;
+    private Point from;
+    private Point to;
+    private Rectangle clientArea;
     private final LineWidget predecessor;
     private final List<LineWidget> successors;
     private boolean highlighted;
@@ -72,7 +72,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
     private final boolean isBold;
     private final boolean isDashed;
 
-    public LineWidget(DiagramScene scene, OutputSlot s, List<Connection> connections, Point from, Point to, LineWidget predecessor, boolean isBold, boolean isDashed) {
+    public LineWidget(DiagramScene scene, OutputSlot s, List<? extends Connection> connections, Point from, Point to, LineWidget predecessor, boolean isBold, boolean isDashed) {
         super(scene);
         this.scene = scene;
         this.outputSlot = s;
@@ -88,24 +88,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         this.isBold = isBold;
         this.isDashed = isDashed;
 
-        int minX = from.x;
-        int minY = from.y;
-        int maxX = to.x;
-        int maxY = to.y;
-        if (minX > maxX) {
-            int tmp = minX;
-            minX = maxX;
-            maxX = tmp;
-        }
-
-        if (minY > maxY) {
-            int tmp = minY;
-            minY = maxY;
-            maxY = tmp;
-        }
-
-        clientArea = new Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
-        clientArea.grow(BORDER, BORDER);
+        computeClientArea();
 
         Color color = Color.BLACK;
         if (connections.size() > 0) {
@@ -113,7 +96,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         }
         setToolTipText("<HTML>" + generateToolTipText(this.connections) + "</HTML>");
 
-        setCheckClipping(true);
+        setCheckClipping(false);
 
         getActions().addAction(ActionFactory.createPopupMenuAction(this));
         setBackground(color);
@@ -144,13 +127,46 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         }));
     }
 
-    private String generateToolTipText(List<Connection> conn) {
+
+    private void computeClientArea() {
+        int minX = from.x;
+        int minY = from.y;
+        int maxX = to.x;
+        int maxY = to.y;
+        if (minX > maxX) {
+            int tmp = minX;
+            minX = maxX;
+            maxX = tmp;
+        }
+
+        if (minY > maxY) {
+            int tmp = minY;
+            minY = maxY;
+            maxY = tmp;
+        }
+
+        clientArea = new Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
+        clientArea.grow(BORDER, BORDER);
+    }
+
+    private String generateToolTipText(List<? extends Connection> conn) {
         StringBuilder sb = new StringBuilder();
         for (Connection c : conn) {
             sb.append(StringUtils.escapeHTML(c.getToolTipText()));
             sb.append("<br>");
         }
         return sb.toString();
+    }
+
+
+    public void setFrom(Point from) {
+        this.from = from;
+        computeClientArea();
+    }
+
+    public void setTo(Point to) {
+        this.to= to;
+        computeClientArea();
     }
 
     public Point getFrom() {
@@ -176,7 +192,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
             return;
         }
 
-        Graphics2D g = getScene().getGraphics();
+        Graphics2D g = this.getGraphics();
         g.setPaint(this.getBackground());
         float width = 1.0f;
 
@@ -234,6 +250,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
                     3);
         }
         g.setStroke(oldStroke);
+        super.paintWidget();
     }
 
     private void setPopupVisible(boolean b) {

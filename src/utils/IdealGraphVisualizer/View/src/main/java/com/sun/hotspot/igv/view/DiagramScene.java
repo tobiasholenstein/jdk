@@ -583,6 +583,51 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             figureWidget.getActions().addAction(ActionFactory.createPopupMenuAction(figureWidget));
             figureWidget.getActions().addAction(selectAction);
             figureWidget.getActions().addAction(hoverAction);
+            figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
+                @Override
+                public void movementStarted(Widget widget) {}
+
+                @Override
+                public void movementFinished(Widget widget) {}
+
+                @Override
+                public Point getOriginalLocation(Widget widget) {
+                    return ActionFactory.createDefaultMoveProvider().getOriginalLocation(widget);
+                }
+
+                @Override
+                public void setNewLocation(Widget widget, Point location) {
+                    if (getModel().getShowCFG()) return;
+
+                    int shiftX = location.x - widget.getLocation().x;
+                    int shiftY = location.y - widget.getLocation().y;
+
+                    Set<Figure> selectedFigures = model.getSelectedFigures();
+                    for (Figure figure : selectedFigures) {
+                        FigureWidget fw = getWidget(figure);
+                        if (figureToInLineWidget.containsKey(fw.getFigure())) {
+                            for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
+                                Point toPt = lw.getTo();
+                                lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
+                                lw.revalidate();
+                                lw.repaint();
+                            }
+                        }
+                        if (figureToOutLineWidget.containsKey(fw.getFigure())) {
+                            for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
+                                Point fromPt = lw.getFrom();
+                                lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
+                                lw.revalidate();
+                                lw.repaint();
+                            }
+                        }
+                        Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
+                        ActionFactory.createDefaultMoveProvider().setNewLocation(fw, newLocation);
+                    }
+
+
+                }
+            }));
             addObject(figure, figureWidget);
             mainLayer.addChild(figureWidget);
 
@@ -775,12 +820,30 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private void processOutputSlot(OutputSlot outputSlot, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
         Map<Point, List<Connection>> pointMap = new HashMap<>(connections.size());
 
+        if (predecessor != null && outputSlot != null ) {
+            Figure figure = outputSlot.getFigure();
+            if (figureToOutLineWidget.containsKey(figure)) {
+                figureToOutLineWidget.get(figure).add(predecessor);
+            } else {
+                figureToOutLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
+            }
+        }
+
         for (Connection connection : connections) {
             if (!isVisible(connection)) {
                 continue;
             }
-
             List<Point> controlPoints = connection.getControlPoints();
+            if (controlPointIndex == controlPoints.size()) {
+                if (predecessor != null) {
+                    Figure figure = ((Slot) connection.getTo()).getFigure();
+                    if (figureToInLineWidget.containsKey(figure)) {
+                        figureToInLineWidget.get(figure).add(predecessor);
+                    } else {
+                        figureToInLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
+                    }
+                }
+            }
             if (controlPointIndex >= controlPoints.size()) {
                 continue;
             }
@@ -804,6 +867,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 newList.add(connection);
                 pointMap.put(currentPoint, newList);
             }
+
+
         }
 
         for (Point currentPoint : pointMap.keySet()) {
@@ -984,6 +1049,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private void rebuildConnectionLayer() {
+        figureToOutLineWidget.clear();
+        figureToInLineWidget.clear();
         connectionLayer.removeChildren();
         for (Figure figure : getModel().getDiagram().getFigures()) {
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
@@ -1180,6 +1247,9 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             }
         }
     }
+
+    Map<Figure, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
+    Map<Figure, Set<LineWidget>> figureToInLineWidget = new HashMap<>();
 
     private void relayout() {
         rebuilding = true;
