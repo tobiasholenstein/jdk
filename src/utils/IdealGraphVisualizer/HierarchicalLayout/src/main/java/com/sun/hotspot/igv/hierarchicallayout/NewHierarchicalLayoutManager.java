@@ -69,35 +69,35 @@ public class NewHierarchicalLayoutManager {
         // Step 1: Build up data structure
         buildDatastructure();
 
-        // Remove self-edges from the beginning.
+        // STEP 2: Remove self-edges from the beginning
         removeSelfEdges();
 
         // #############################################################
-        // STEP 2: Reverse edges, handle backedges
+        // STEP 3: Reverse edges, handle backedges
         reverseEdges();
 
         // #############################################################
-        // STEP 3: Assign layers
+        // STEP 4: Assign layers
         assignLayers();
 
         // #############################################################
-        // STEP 4: Create dummy nodes
+        // STEP 5: Create dummy nodes
         createDummyNodes();
 
         // #############################################################
-        // STEP 5: Crossing Reduction
+        // STEP 6: Crossing Reduction
         crossingReduction();
 
         // #############################################################
-        // STEP 6: Assign X coordinates
+        // STEP 7: Assign X coordinates
         assignXCoordinates();
 
         // #############################################################
-        // STEP 7: Assign Y coordinates
+        // STEP 8: Assign Y coordinates
         assignYCoordinates();
 
         // #############################################################
-        // STEP 8: Write back to interface
+        // STEP 9: Write back to interface
         writeResult();
     }
 
@@ -120,7 +120,11 @@ public class NewHierarchicalLayoutManager {
 
         // Set up edges
         List<Link> links = new ArrayList<>(graph.getLinks());
-        links.sort(linkComparator);
+        links.sort(Comparator.comparing((Link l) -> l.getFrom().getVertex())
+                .thenComparing(l -> l.getTo().getVertex())
+                .thenComparingInt(l -> l.getFrom().getRelativePosition().x)
+                .thenComparingInt(l -> l.getTo().getRelativePosition().x));
+
         for (Link l : links) {
             LayoutEdge edge = new LayoutEdge();
             edge.from = vertexToLayoutNode.get(l.getFrom().getVertex());
@@ -128,7 +132,6 @@ public class NewHierarchicalLayoutManager {
             edge.relativeFrom = l.getFrom().getRelativePosition().x;
             edge.relativeTo = l.getTo().getRelativePosition().x;
             edge.link = l;
-            edge.vip = l.isVIP();
             edge.from.succs.add(edge);
             edge.to.preds.add(edge);
         }
@@ -145,62 +148,6 @@ public class NewHierarchicalLayoutManager {
             }
         }
     }
-
-    private static final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
-        int n1VIP = 0;
-        for (LayoutEdge e : n1.preds) {
-            if (e.vip) {
-                n1VIP++;
-            }
-        }
-        int n2VIP = 0;
-        for (LayoutEdge e : n2.preds) {
-            if (e.vip) {
-                n2VIP++;
-            }
-        }
-        if (n1VIP != n2VIP) {
-            return n2VIP - n1VIP;
-        }
-        if (n1.vertex == null) {
-            if (n2.vertex == null) {
-                return 0;
-            }
-            return -1;
-        }
-        if (n2.vertex == null) {
-            return 1;
-        }
-        return n1.preds.size() - n2.preds.size();
-    };
-    private static final Comparator<LayoutNode> nodeProcessingUpComparator = (n1, n2) -> {
-        int n1VIP = 0;
-        for (LayoutEdge e : n1.succs) {
-            if (e.vip) {
-                n1VIP++;
-            }
-        }
-        int n2VIP = 0;
-        for (LayoutEdge e : n2.succs) {
-            if (e.vip) {
-                n2VIP++;
-            }
-        }
-        if (n1VIP != n2VIP) {
-            return n2VIP - n1VIP;
-        }
-        if (n1.vertex == null) {
-            if (n2.vertex == null) {
-                return 0;
-            }
-            return -1;
-        }
-        if (n2.vertex == null) {
-            return 1;
-        }
-        return n1.succs.size() - n2.succs.size();
-    };
-
 
     private ArrayList<Integer>[] space;
     private ArrayList<LayoutNode>[] downProcessingOrder;
@@ -224,8 +171,31 @@ public class NewHierarchicalLayoutManager {
                 upProcessingOrder[i].add(n);
             }
 
-            downProcessingOrder[i].sort(nodeProcessingDownComparator);
-            upProcessingOrder[i].sort(nodeProcessingUpComparator);
+            downProcessingOrder[i].sort((n1, n2) -> {
+                if (n1.vertex == null) {
+                    if (n2.vertex == null) {
+                        return 0;
+                    }
+                    return -1;
+                }
+                if (n2.vertex == null) {
+                    return 1;
+                }
+                return n1.preds.size() - n2.preds.size();
+            });
+
+            upProcessingOrder[i].sort((n1, n2) -> {
+                if (n1.vertex == null) {
+                    if (n2.vertex == null) {
+                        return 0;
+                    }
+                    return -1;
+                }
+                if (n2.vertex == null) {
+                    return 1;
+                }
+                return n1.succs.size() - n2.succs.size();
+            });
         }
 
         // initial positions
@@ -235,8 +205,6 @@ public class NewHierarchicalLayoutManager {
 
         sweepDown();
         sweepUp();
-        //sweepDown();
-
     }
 
     private void sweepUp() {
@@ -288,12 +256,6 @@ public class NewHierarchicalLayoutManager {
             this.space = space;
         }
 
-        public int offset(LayoutNode n1, LayoutNode n2) {
-            int v1 = space.get(n1.pos) + n1.width;
-            int v2 = space.get(n2.pos);
-            return v2 - v1;
-        }
-
         public void insert(LayoutNode n, int pos) {
 
             SortedSet<LayoutNode> headSet = treeSet.headSet(n);
@@ -302,7 +264,7 @@ public class NewHierarchicalLayoutManager {
             int minX = Integer.MIN_VALUE;
             if (!headSet.isEmpty()) {
                 leftNeighbor = headSet.last();
-                minX = leftNeighbor.x + leftNeighbor.width + offset(leftNeighbor, n);
+                minX = leftNeighbor.x + space.get(n.pos) - space.get(leftNeighbor.pos);
             }
 
             if (pos < minX) {
@@ -314,7 +276,7 @@ public class NewHierarchicalLayoutManager {
                 int maxX = Integer.MAX_VALUE;
                 if (!tailSet.isEmpty()) {
                     rightNeighbor = tailSet.first();
-                    maxX = rightNeighbor.x - offset(n, rightNeighbor) - n.width;
+                    maxX = rightNeighbor.x - space.get(rightNeighbor.pos) + space.get(n.pos);
                 }
 
                 n.x = Math.min(pos, maxX);
@@ -323,7 +285,6 @@ public class NewHierarchicalLayoutManager {
             treeSet.add(n);
         }
     }
-    private static final Comparator<LayoutNode> crossingNodeComparator = Comparator.comparingInt(n -> n.crossingNumber);
 
     private void crossingReduction() {
         layers = new List[layerCount];
@@ -389,39 +350,30 @@ public class NewHierarchicalLayoutManager {
     }
 
     private void downSweep() {
-
-        // Downsweep
         for (int i = 1; i < layerCount; i++) {
-
             for (LayoutNode n : layers[i]) {
-                n.crossingNumber = 0;
-            }
-
-            for (LayoutNode n : layers[i]) {
-
                 int sum = 0;
                 int count = 0;
                 for (LayoutEdge e : n.preds) {
-                    int cur = e.from.x + e.relativeFrom;
-                    int factor = 1;
-                    sum += cur * factor;
-                    count += factor;
+                    sum += e.from.x + e.relativeFrom;
+                    count++;
                 }
 
                 if (count > 0) {
-                    sum /= count;
-                    n.crossingNumber = sum;
+                    n.crossingNumber = sum / count;
+                } else {
+                    n.crossingNumber = 0;
                 }
             }
 
             updateCrossingNumbers(i, true);
-            layers[i].sort(crossingNodeComparator);
+            layers[i].sort(Comparator.comparingInt(n -> n.crossingNumber));
             updateXOfLayer(i);
 
-            int z = 0;
+            int pos = 0;
             for (LayoutNode n : layers[i]) {
-                n.pos = z;
-                z++;
+                n.pos = pos;
+                pos++;
             }
         }
     }
@@ -457,39 +409,30 @@ public class NewHierarchicalLayoutManager {
     }
 
     private void upSweep() {
-        // Upsweep
         for (int i = layerCount - 2; i >= 0; i--) {
-
             for (LayoutNode n : layers[i]) {
-                n.crossingNumber = 0;
-            }
-
-            for (LayoutNode n : layers[i]) {
-
                 int count = 0;
                 int sum = 0;
                 for (LayoutEdge e : n.succs) {
-                    int cur = e.to.x + e.relativeTo;
-                    int factor = 1;
-                    sum += cur * factor;
-                    count += factor;
+                    sum += e.to.x + e.relativeTo;
+                    count++;
                 }
 
                 if (count > 0) {
-                    sum /= count;
-                    n.crossingNumber = sum;
+                    n.crossingNumber = sum / count;
+                } else {
+                    n.crossingNumber = 0;
                 }
-
             }
 
             updateCrossingNumbers(i, false);
-            layers[i].sort(crossingNodeComparator);
+            layers[i].sort(Comparator.comparingInt(n -> n.crossingNumber));
             updateXOfLayer(i);
 
-            int z = 0;
+            int pos = 0;
             for (LayoutNode n : layers[i]) {
-                n.pos = z;
-                z++;
+                n.pos = pos;
+                pos++;
             }
         }
     }
@@ -530,32 +473,30 @@ public class NewHierarchicalLayoutManager {
     }
 
     private void createDummyNodes() {
-
-         Comparator<LayoutEdge> comparator = Comparator.comparingInt(e -> e.to.layer);
             HashMap<Integer, List<LayoutEdge>> portHash = new HashMap<>();
             ArrayList<LayoutNode> currentNodes = new ArrayList<>(nodes);
             for (LayoutNode n : currentNodes) {
                 portHash.clear();
 
                 ArrayList<LayoutEdge> succs = new ArrayList<>(n.succs);
-                for (LayoutEdge e : succs) {
-                    if (e.from.layer != e.to.layer - 1) {
-                        Integer i = e.relativeFrom;
+                for (LayoutEdge succEdge : succs) {
+                    if (succEdge.from.layer != succEdge.to.layer - 1) {
+                        Integer i = succEdge.relativeFrom;
                         if (!portHash.containsKey(i)) {
                             portHash.put(i, new ArrayList<>());
                         }
-                        portHash.get(i).add(e);
+                        portHash.get(i).add(succEdge);
                     }
                 }
 
                 succs = new ArrayList<>(n.succs);
-                for (LayoutEdge e : succs) {
+                for (LayoutEdge succEdge : succs) {
 
-                    Integer i = e.relativeFrom;
+                    Integer i = succEdge.relativeFrom;
                     if (portHash.containsKey(i)) {
 
                         List<LayoutEdge> list = portHash.get(i);
-                        list.sort(comparator);
+                        list.sort(Comparator.comparingInt(e -> e.to.layer));
 
                         if (list.size() == 1) {
                             processSingleEdge(list.get(0));
@@ -572,7 +513,6 @@ public class NewHierarchicalLayoutManager {
                             edges[0] = new LayoutEdge();
                             edges[0].from = n;
                             edges[0].relativeFrom = i;
-                            edges[0].vip = e.vip;
                             n.succs.add(edges[0]);
 
                             nodes[0] = new LayoutNode();
@@ -584,7 +524,6 @@ public class NewHierarchicalLayoutManager {
                             edges[0].relativeTo = 0;
                             for (int j = 1; j < cnt; j++) {
                                 edges[j] = new LayoutEdge();
-                                edges[j].vip = e.vip;
                                 edges[j].from = nodes[j - 1];
                                 edges[j].relativeFrom = nodes[j - 1].width / 2;
                                 nodes[j - 1].succs.add(edges[j]);
@@ -632,7 +571,6 @@ public class NewHierarchicalLayoutManager {
         n.succs.add(e);
         nodes.add(n);
         LayoutEdge result = new LayoutEdge();
-        result.vip = e.vip;
         n.preds.add(result);
         result.to = n;
         result.relativeTo = 0;
@@ -660,7 +598,7 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        int z = 1;
+        int layer = 1;
         while (!hull.isEmpty()) {
             ArrayList<LayoutNode> newSet = new ArrayList<>();
             for (LayoutNode n : hull) {
@@ -671,7 +609,7 @@ public class NewHierarchicalLayoutManager {
                         boolean assignedPred = true;
                         for (LayoutEdge pe : s.preds) {
                             LayoutNode p = pe.from;
-                            if (p.layer == -1 || p.layer >= z) {
+                            if (p.layer == -1 || p.layer >= layer) {
                                 // This now has an unscheduled successor or a successor that was scheduled only in this round.
                                 assignedPred = false;
                                 break;
@@ -680,7 +618,7 @@ public class NewHierarchicalLayoutManager {
 
                         if (assignedPred) {
                             // This successor node can be assigned.
-                            s.layer = z;
+                            s.layer = layer;
                             newSet.add(s);
                         }
                     }
@@ -688,10 +626,10 @@ public class NewHierarchicalLayoutManager {
             }
 
             hull = newSet;
-            z += 1;
+            layer++;
         }
 
-        layerCount = z - 1;
+        layerCount = layer - 1;
         for (LayoutNode n : nodes) {
             n.layer = (layerCount - 1 - n.layer);
         }
@@ -707,11 +645,11 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        int z = 1;
+        int layer = 1;
         while (!hull.isEmpty()) {
             ArrayList<LayoutNode> newSet = new ArrayList<>();
             for (LayoutNode n : hull) {
-                if (n.layer < z) {
+                if (n.layer < layer) {
                     for (LayoutEdge se : n.preds) {
                         LayoutNode s = se.from;
                         if (s.layer == -1) {
@@ -719,7 +657,7 @@ public class NewHierarchicalLayoutManager {
                             boolean assignedSucc = true;
                             for (LayoutEdge pe : s.succs) {
                                 LayoutNode p = pe.to;
-                                if (p.layer == -1 || p.layer >= z) {
+                                if (p.layer == -1 || p.layer >= layer) {
                                     // This now has an unscheduled successor or a successor that was scheduled only in this round.
                                     assignedSucc = false;
                                     break;
@@ -728,7 +666,7 @@ public class NewHierarchicalLayoutManager {
 
                             if (assignedSucc) {
                                 // This predecessor node can be assigned.
-                                s.layer = z;
+                                s.layer = layer;
                                 newSet.add(s);
                             }
                         }
@@ -739,10 +677,10 @@ public class NewHierarchicalLayoutManager {
             }
 
             hull = newSet;
-            z += 1;
+            layer++;
         }
 
-        layerCount = z - 1;
+        layerCount = layer - 1;
 
         for (LayoutNode n : nodes) {
             n.layer = (layerCount - 1 - n.layer);
@@ -970,31 +908,6 @@ public class NewHierarchicalLayoutManager {
         oldTo.preds.remove(e);
         oldTo.succs.add(e);
     }
-
-    private final Comparator<Link> linkComparator = (l1, l2) -> {
-        if (l1.isVIP() && !l2.isVIP()) {
-            return -1;
-        }
-
-        if (!l1.isVIP() && l2.isVIP()) {
-            return 1;
-        }
-
-        int result = l1.getFrom().getVertex().compareTo(l2.getFrom().getVertex());
-        if (result != 0) {
-            return result;
-        }
-        result = l1.getTo().getVertex().compareTo(l2.getTo().getVertex());
-        if (result != 0) {
-            return result;
-        }
-        result = l1.getFrom().getRelativePosition().x - l2.getFrom().getRelativePosition().x;
-        if (result != 0) {
-            return result;
-        }
-        result = l1.getTo().getRelativePosition().x - l2.getTo().getRelativePosition().x;
-        return result;
-    };
 
     private void writeResult() {
         HashMap<Vertex, Point> vertexPositions = new HashMap<>();
