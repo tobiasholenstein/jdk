@@ -38,11 +38,9 @@ public class NewHierarchicalLayoutManager {
     private static final int DUMMY_WIDTH = 1;
     private static final int X_OFFSET = 8;
     private static final int LAYER_OFFSET = 8;
-    private static final int MIN_LAYER_DIFFERENCE = 1;
 
     // Algorithm global datastructures
     private Set<Link> reversedLinks;
-    private Set<LayoutEdge> selfEdges;
     private List<LayoutNode> nodes;
     private HashMap<Vertex, LayoutNode> vertexToLayoutNode;
     private HashMap<Link, List<Point>> reversedLinkStartPoints;
@@ -61,7 +59,6 @@ public class NewHierarchicalLayoutManager {
 
         vertexToLayoutNode = new HashMap<>();
         reversedLinks = new HashSet<>();
-        selfEdges = new HashSet<>();
         reversedLinkStartPoints = new HashMap<>();
         reversedLinkEndPoints = new HashMap<>();
         nodes = new ArrayList<>();
@@ -73,14 +70,11 @@ public class NewHierarchicalLayoutManager {
         buildDatastructure();
 
         // Remove self-edges from the beginning.
-        removeSelfEdges(false);
+        removeSelfEdges();
 
         // #############################################################
         // STEP 2: Reverse edges, handle backedges
         reverseEdges();
-
-        // Hide self-edges from the layout algorithm and save them for later.
-        removeSelfEdges(true);
 
         // #############################################################
         // STEP 3: Assign layers
@@ -95,18 +89,12 @@ public class NewHierarchicalLayoutManager {
         crossingReduction();
 
         // #############################################################
-        // STEP 7: Assign X coordinates
+        // STEP 6: Assign X coordinates
         assignXCoordinates();
 
         // #############################################################
-        // STEP 6: Assign Y coordinates
+        // STEP 7: Assign Y coordinates
         assignYCoordinates();
-
-        // Put saved self-edges back so that they are assigned points.
-        for (LayoutEdge e : selfEdges) {
-            e.from.succs.add(e);
-            e.to.preds.add(e);
-        }
 
         // #############################################################
         // STEP 8: Write back to interface
@@ -147,15 +135,12 @@ public class NewHierarchicalLayoutManager {
     }
 
     // Remove self-edges, possibly saving them into the selfEdges set.
-    private void removeSelfEdges(boolean save) {
-        for (LayoutNode node : nodes) {
-            for (LayoutEdge e : new ArrayList<>(node.succs)) {
-                if (e.to == node) {
-                    if (save) {
-                        selfEdges.add(e);
-                    }
-                    node.succs.remove(e);
-                    node.preds.remove(e);
+    private void removeSelfEdges() {
+        for (LayoutNode layoutNode : nodes) {
+            for (LayoutEdge layoutEdge : new ArrayList<>(layoutNode.succs)) {
+                if (layoutEdge.to == layoutNode) {
+                    layoutNode.succs.remove(layoutEdge);
+                    layoutNode.preds.remove(layoutEdge);
                 }
             }
         }
@@ -221,21 +206,10 @@ public class NewHierarchicalLayoutManager {
     private ArrayList<LayoutNode>[] downProcessingOrder;
     private ArrayList<LayoutNode>[] upProcessingOrder;
 
-    private void initialPositions() {
-        for (LayoutNode n : nodes) {
-            n.x = space[n.layer].get(n.pos);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void createArrays() {
+    private void assignXCoordinates() {
         space = new ArrayList[layers.length];
         downProcessingOrder = new ArrayList[layers.length];
         upProcessingOrder = new ArrayList[layers.length];
-    }
-
-    private void assignXCoordinates() {
-        createArrays();
 
         for (int i = 0; i < layers.length; i++) {
             space[i] = new ArrayList<>();
@@ -254,101 +228,31 @@ public class NewHierarchicalLayoutManager {
             upProcessingOrder[i].sort(nodeProcessingUpComparator);
         }
 
-        initialPositions();
-        for (int i = 0; i < 1; i++) {
-            sweepDown();
-            //adjustSpace();
-            sweepUp();
-            //adjustSpace();
+        // initial positions
+        for (LayoutNode n : nodes) {
+            n.x = space[n.layer].get(n.pos);
         }
 
+        sweepDown();
+        sweepUp();
         //sweepDown();
-        //adjustSpace();
-        //sweepUp();
-    }
 
-    private void adjustSpace() {
-        for (int i = 0; i < layers.length; i++) {
-            for (LayoutNode n : layers[i]) {
-                space[i].add(n.x);
-            }
-        }
-    }
-
-    private int calculateOptimalDown(LayoutNode n) {
-        int size = n.preds.size();
-        if (size == 0) {
-            return n.x;
-        }
-        int vipCount = 0;
-        for (LayoutEdge e : n.preds) {
-            if (e.vip) {
-                vipCount++;
-            }
-        }
-
-        if (vipCount == 0) {
-            int[] values = new int[size];
-            for (int i = 0; i < size; i++) {
-                LayoutEdge e = n.preds.get(i);
-                values[i] = e.from.x + e.relativeFrom - e.relativeTo;
-            }
-            return Statistics.median(values);
-        } else {
-            int z = 0;
-            int[] values = new int[vipCount];
-            for (int i = 0; i < size; i++) {
-                LayoutEdge e = n.preds.get(i);
-                if (e.vip) {
-                    values[z++] = e.from.x + e.relativeFrom - e.relativeTo;
-                }
-            }
-            return Statistics.median(values);
-        }
-    }
-
-    private int calculateOptimalBoth(LayoutNode n) {
-        if (n.preds.size() == n.succs.size()) {
-            return n.x;
-        }
-
-        int[] values = new int[n.preds.size() + n.succs.size()];
-        int i = 0;
-
-        for (LayoutEdge e : n.preds) {
-            values[i] = e.from.x + e.relativeFrom - e.relativeTo;
-            i++;
-        }
-
-        for (LayoutEdge e : n.succs) {
-            values[i] = e.to.x + e.relativeTo - e.relativeFrom;
-            i++;
-        }
-
-        return Statistics.median(values);
-    }
-
-    private int calculateOptimalUp(LayoutNode n) {
-        int size = n.succs.size();
-        if (size == 0) {
-            return n.x;
-        }
-        int[] values = new int[size];
-        for (int i = 0; i < size; i++) {
-            LayoutEdge e = n.succs.get(i);
-            values[i] = e.to.x + e.relativeTo - e.relativeFrom;
-            if (e.vip) {
-                return values[i];
-            }
-        }
-        return Statistics.median(values);
     }
 
     private void sweepUp() {
         for (int i = layers.length - 1; i >= 0; i--) {
             NodeRow r = new NodeRow(space[i]);
             for (LayoutNode n : upProcessingOrder[i]) {
-                int optimal = calculateOptimalUp(n);
+                int size = n.succs.size();
+                int optimal = n.x;
+                if (size > 0) {
+                    int[] values = new int[size];
+                    for (int j = 0; j < size; j++) {
+                        LayoutEdge e = n.succs.get(j);
+                        values[j] = e.to.x + e.relativeTo - e.relativeFrom;
+                    }
+                    optimal = Statistics.median(values);
+                }
                 r.insert(n, optimal);
             }
         }
@@ -358,7 +262,16 @@ public class NewHierarchicalLayoutManager {
         for (int i = 1; i < layers.length; i++) {
             NodeRow r = new NodeRow(space[i]);
             for (LayoutNode n : downProcessingOrder[i]) {
-                int optimal = calculateOptimalDown(n);
+                int size = n.preds.size();
+                int optimal = n.x;
+                if (size > 0) {
+                    int[] values = new int[size];
+                    for (int j = 0; j < size; j++) {
+                        LayoutEdge e = n.preds.get(j);
+                        values[j] = e.from.x + e.relativeFrom - e.relativeTo;
+                    }
+                    optimal = Statistics.median(values);
+                }
                 r.insert(n, optimal);
             }
         }
@@ -412,18 +325,12 @@ public class NewHierarchicalLayoutManager {
     }
     private static final Comparator<LayoutNode> crossingNodeComparator = Comparator.comparingInt(n -> n.crossingNumber);
 
-
-    @SuppressWarnings("unchecked")
-    private void createLayers() {
+    private void crossingReduction() {
         layers = new List[layerCount];
 
         for (int i = 0; i < layerCount; i++) {
             layers[i] = new ArrayList<>();
         }
-    }
-
-    private void crossingReduction() {
-        createLayers();
 
         // Generate initial ordering
         HashSet<LayoutNode> visited = new HashSet<>();
@@ -451,9 +358,19 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        updatePositions();
+        // update positions
+        for (List<LayoutNode> layer : layers) {
+            int z = 0;
+            for (LayoutNode n : layer) {
+                n.pos = z;
+                z++;
+            }
+        }
 
-        initX();
+        // init x
+        for (int i = 0; i < layers.length; i++) {
+            updateXOfLayer(i);
+        }
 
         // Optimize
         for (int i = 0; i < 2; i++) {
@@ -463,28 +380,11 @@ public class NewHierarchicalLayoutManager {
         downSweep();
     }
 
-    private void initX() {
-        for (int i = 0; i < layers.length; i++) {
-            updateXOfLayer(i);
-        }
-    }
-
     private void updateXOfLayer(int index) {
         int x = 0;
-
         for (LayoutNode n : layers[index]) {
             n.x = x;
             x += n.width + X_OFFSET;
-        }
-    }
-
-    private void updatePositions() {
-        for (List<LayoutNode> layer : layers) {
-            int z = 0;
-            for (LayoutNode n : layer) {
-                n.pos = z;
-                z++;
-            }
         }
     }
 
@@ -760,7 +660,7 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        int z = MIN_LAYER_DIFFERENCE;
+        int z = 1;
         while (!hull.isEmpty()) {
             ArrayList<LayoutNode> newSet = new ArrayList<>();
             for (LayoutNode n : hull) {
@@ -788,10 +688,10 @@ public class NewHierarchicalLayoutManager {
             }
 
             hull = newSet;
-            z += MIN_LAYER_DIFFERENCE;
+            z += 1;
         }
 
-        layerCount = z - MIN_LAYER_DIFFERENCE;
+        layerCount = z - 1;
         for (LayoutNode n : nodes) {
             n.layer = (layerCount - 1 - n.layer);
         }
@@ -807,7 +707,7 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        int z = MIN_LAYER_DIFFERENCE;
+        int z = 1;
         while (!hull.isEmpty()) {
             ArrayList<LayoutNode> newSet = new ArrayList<>();
             for (LayoutNode n : hull) {
@@ -839,17 +739,18 @@ public class NewHierarchicalLayoutManager {
             }
 
             hull = newSet;
-            z += MIN_LAYER_DIFFERENCE;
+            z += 1;
         }
 
-        layerCount = z - MIN_LAYER_DIFFERENCE;
+        layerCount = z - 1;
 
         for (LayoutNode n : nodes) {
             n.layer = (layerCount - 1 - n.layer);
         }
     }
 
-    private HashSet<LayoutNode> visited;private HashSet<LayoutNode> active;
+    private HashSet<LayoutNode> visited;
+    private HashSet<LayoutNode> active;
 
     private void reverseEdges() {
         // Reverse inputs of roots
@@ -1162,11 +1063,6 @@ public class NewHierarchicalLayoutManager {
                     } else {
                         if (reversedLinks.contains(e.link)) {
                             Collections.reverse(points);
-                            if (selfEdges.contains(e)) {
-                                // For self edges, it is enough with the
-                                // start and end points computed by ReverseEdges.
-                                points.clear();
-                            }
                         }
                         if (reversedLinkStartPoints.containsKey(e.link)) {
                             for (Point p1 : reversedLinkStartPoints.get(e.link)) {
