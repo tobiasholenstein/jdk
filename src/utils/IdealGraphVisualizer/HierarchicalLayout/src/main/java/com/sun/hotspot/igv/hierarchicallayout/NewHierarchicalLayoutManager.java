@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,6 @@
 package com.sun.hotspot.igv.hierarchicallayout;
 
 import com.sun.hotspot.igv.layout.LayoutGraph;
-import com.sun.hotspot.igv.layout.LayoutManager;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
 import com.sun.hotspot.igv.util.Statistics;
@@ -32,36 +31,17 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.util.*;
 
-/**
- *
- * @author Thomas Wuerthinger
- */
-public class NewHierarchicalLayoutManager implements LayoutManager {
 
-    public static final int SWEEP_ITERATIONS = 1;
-    public static final int CROSSING_ITERATIONS = 2;
+public class NewHierarchicalLayoutManager {
+
     public static final int DUMMY_HEIGHT = 1;
     public static final int DUMMY_WIDTH = 1;
     public static final int X_OFFSET = 8;
     public static final int LAYER_OFFSET = 8;
-    public static final int MAX_LAYER_LENGTH = -1;
-    public static final int MIN_LAYER_DIFFERENCE = 1;
 
-    public enum Combine {
-
-        NONE,
-        SAME_INPUTS,
-        SAME_OUTPUTS
-    }
     // Options
-    private final Combine combine;
-    private final int dummyWidth;
-    private final int dummyHeight;
-    private int xOffset;
-    private int layerOffset;
-    private int maxLayerLength;
-    private int minLayerDifference;
-    private boolean layoutSelfEdges;
+    private final int maxLayerLength;
+    private final int minLayerDifference;
     // Algorithm global datastructures
     private Set<Link> reversedLinks;
     private Set<LayoutEdge> selfEdges;
@@ -74,44 +54,11 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
     private LayoutGraph graph;
     private List<LayoutNode>[] layers;
     private int layerCount;
-    private Set<? extends Link> importantLinks;
-    private final Set<Link> linksToFollow;
 
 
-    public NewHierarchicalLayoutManager(Combine b) {
-        this.combine = b;
-        this.dummyWidth = DUMMY_WIDTH;
-        this.dummyHeight = DUMMY_HEIGHT;
-        this.xOffset = X_OFFSET;
-        this.layerOffset = LAYER_OFFSET;
-        this.maxLayerLength = MAX_LAYER_LENGTH;
-        this.minLayerDifference = MIN_LAYER_DIFFERENCE;
-        this.layoutSelfEdges = false;
-        this.linksToFollow = new HashSet<>();
-    }
-
-    public void setXOffset(int xOffset) {
-        this.xOffset = xOffset;
-    }
-
-    public void setLayerOffset(int layerOffset) {
-        this.layerOffset = layerOffset;
-    }
-
-    public void setMaxLayerLength(int v) {
-        maxLayerLength = v;
-    }
-
-    public void setMinLayerDifference(int v) {
-        minLayerDifference = v;
-    }
-
-    public void setLayoutSelfEdges(boolean layoutSelfEdges) {
-        this.layoutSelfEdges = layoutSelfEdges;
-    }
-
-    public List<LayoutNode> getNodes() {
-        return nodes;
+    public NewHierarchicalLayoutManager() {
+        this.maxLayerLength = -1;
+        this.minLayerDifference = 1;
     }
 
     // Remove self-edges, possibly saving them into the selfEdges set.
@@ -129,14 +76,8 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
         }
     }
 
-    @Override
-    public void doLayout(LayoutGraph graph) {
-        doLayout(graph, new HashSet<>());
-    }
 
-    @Override
-    public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
-        this.importantLinks = importantLinks;
+    public void doLayout(LayoutGraph graph) {
         this.graph = graph;
 
         vertexToLayoutNode = new HashMap<>();
@@ -152,28 +93,12 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
         // Step 1: Build up data structure
         buildDatastructure();
 
-        if (!layoutSelfEdges) {
-            // Remove self-edges from the beginning.
-            removeSelfEdges(false);
-        }
+        // Remove self-edges from the beginning.
+        removeSelfEdges(false);
 
         // #############################################################
         // STEP 2: Reverse edges, handle backedges
         reverseEdges();
-
-        for (LayoutNode n : nodes) {
-            ArrayList<LayoutEdge> tmpArr = new ArrayList<>();
-            for (LayoutEdge e : n.succs) {
-                if (importantLinks.contains(e.link)) {
-                    tmpArr.add(e);
-                }
-            }
-
-            for (LayoutEdge e : tmpArr) {
-                e.from.succs.remove(e);
-                e.to.preds.remove(e);
-            }
-        }
 
         // Hide self-edges from the layout algorithm and save them for later.
         removeSelfEdges(true);
@@ -502,7 +427,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
             int curX = 0;
             for (LayoutNode n : layers[i]) {
                 space[i].add(curX);
-                curX += n.width + xOffset;
+                curX += n.width + X_OFFSET;
                 downProcessingOrder[i].add(n);
                 upProcessingOrder[i].add(n);
             }
@@ -512,7 +437,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
         }
 
         initialPositions();
-        for (int i = 0; i < SWEEP_ITERATIONS; i++) {
+        for (int i = 0; i < 1; i++) {
             sweepDown();
             adjustSpace();
             sweepUp();
@@ -713,7 +638,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
         initX();
 
         // Optimize
-        for (int i = 0; i < CROSSING_ITERATIONS; i++) {
+        for (int i = 0; i < 2; i++) {
             downSweep();
             upSweep();
         }
@@ -731,7 +656,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
 
         for (LayoutNode n : layers[index]) {
             n.x = x;
-            x += n.width + xOffset;
+            x += n.width + X_OFFSET;
         }
     }
 
@@ -882,170 +807,159 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
             }
 
             curY += maxHeight + baseLine + bottomBaseLine;
-            curY += layerOffset + ((int) (Math.sqrt(maxXOffset) * 1.5));
+            curY += LAYER_OFFSET + ((int) (Math.sqrt(maxXOffset) * 1.5));
         }
     }
 
     private void createDummyNodes() {
 
-            if (combine == Combine.SAME_OUTPUTS) {
+         Comparator<LayoutEdge> comparator = Comparator.comparingInt(e -> e.to.layer);
+            HashMap<Integer, List<LayoutEdge>> portHash = new HashMap<>();
+            ArrayList<LayoutNode> currentNodes = new ArrayList<>(nodes);
+            for (LayoutNode n : currentNodes) {
+                portHash.clear();
 
-                Comparator<LayoutEdge> comparator = Comparator.comparingInt(e -> e.to.layer);
-                HashMap<Integer, List<LayoutEdge>> portHash = new HashMap<>();
-                ArrayList<LayoutNode> currentNodes = new ArrayList<>(nodes);
-                for (LayoutNode n : currentNodes) {
-                    portHash.clear();
+                ArrayList<LayoutEdge> succs = new ArrayList<>(n.succs);
+                HashMap<Integer, LayoutNode> topNodeHash = new HashMap<>();
+                HashMap<Integer, HashMap<Integer, LayoutNode>> bottomNodeHash = new HashMap<>();
+                for (LayoutEdge e : succs) {
+                    if (e.from.layer != e.to.layer - 1) {
+                        if (maxLayerLength != -1 && e.to.layer - e.from.layer > maxLayerLength) {
+                            e.to.preds.remove(e);
+                            e.from.succs.remove(e);
 
-                    ArrayList<LayoutEdge> succs = new ArrayList<>(n.succs);
-                    HashMap<Integer, LayoutNode> topNodeHash = new HashMap<>();
-                    HashMap<Integer, HashMap<Integer, LayoutNode>> bottomNodeHash = new HashMap<>();
-                    for (LayoutEdge e : succs) {
-                        if (e.from.layer != e.to.layer - 1) {
-                            if (maxLayerLength != -1 && e.to.layer - e.from.layer > maxLayerLength) {
-                                e.to.preds.remove(e);
-                                e.from.succs.remove(e);
+                            LayoutEdge topEdge;
 
-                                LayoutEdge topEdge;
-
-                                if (combine == Combine.SAME_OUTPUTS && topNodeHash.containsKey(e.relativeFrom)) {
-                                    LayoutNode topNode = topNodeHash.get(e.relativeFrom);
-                                    topEdge = new LayoutEdge();
-                                    topEdge.relativeFrom = e.relativeFrom;
-                                    topEdge.from = e.from;
-                                    topEdge.relativeTo = topNode.width / 2;
-                                    topEdge.to = topNode;
-                                    topEdge.link = e.link;
-                                    topEdge.vip = e.vip;
-                                    e.from.succs.add(topEdge);
-                                    topNode.preds.add(topEdge);
-                                } else {
-
-                                    LayoutNode topNode = new LayoutNode();
-                                    topNode.layer = e.from.layer + 1;
-                                    topNode.width = DUMMY_WIDTH;
-                                    topNode.height = DUMMY_HEIGHT;
-                                    nodes.add(topNode);
-                                    topEdge = new LayoutEdge();
-                                    topEdge.relativeFrom = e.relativeFrom;
-                                    topEdge.from = e.from;
-                                    topEdge.relativeTo = 0;
-                                    topEdge.to = topNode;
-                                    topEdge.link = e.link;
-                                    topEdge.vip = e.vip;
-                                    e.from.succs.add(topEdge);
-                                    topNode.preds.add(topEdge);
-                                    topNodeHash.put(e.relativeFrom, topNode);
-                                    bottomNodeHash.put(e.relativeFrom, new HashMap<>());
-                                }
-
-                                HashMap<Integer, LayoutNode> hash = bottomNodeHash.get(e.relativeFrom);
-
-                                LayoutNode bottomNode;
-                                if (hash.containsKey(e.to.layer)) {
-                                    bottomNode = hash.get(e.to.layer);
-                                } else {
-
-                                    bottomNode = new LayoutNode();
-                                    bottomNode.layer = e.to.layer - 1;
-                                    bottomNode.width = DUMMY_WIDTH;
-                                    bottomNode.height = DUMMY_HEIGHT;
-                                    nodes.add(bottomNode);
-                                    hash.put(e.to.layer, bottomNode);
-                                }
-
-                                LayoutEdge bottomEdge = new LayoutEdge();
-                                bottomEdge.relativeTo = e.relativeTo;
-                                bottomEdge.to = e.to;
-                                bottomEdge.relativeFrom = bottomNode.width / 2;
-                                bottomEdge.from = bottomNode;
-                                bottomEdge.link = e.link;
-                                bottomEdge.vip = e.vip;
-                                e.to.preds.add(bottomEdge);
-                                bottomNode.succs.add(bottomEdge);
-
-                            } else {
-                                Integer i = e.relativeFrom;
-                                if (!portHash.containsKey(i)) {
-                                    portHash.put(i, new ArrayList<>());
-                                }
-                                portHash.get(i).add(e);
-                            }
-                        }
-                    }
-
-                    succs = new ArrayList<>(n.succs);
-                    for (LayoutEdge e : succs) {
-
-                        Integer i = e.relativeFrom;
-                        if (portHash.containsKey(i)) {
-
-                            List<LayoutEdge> list = portHash.get(i);
-                            list.sort(comparator);
-
-                            if (list.size() == 1) {
-                                processSingleEdge(list.get(0));
+                            if (topNodeHash.containsKey(e.relativeFrom)) {
+                                LayoutNode topNode = topNodeHash.get(e.relativeFrom);
+                                topEdge = new LayoutEdge();
+                                topEdge.relativeFrom = e.relativeFrom;
+                                topEdge.from = e.from;
+                                topEdge.relativeTo = topNode.width / 2;
+                                topEdge.to = topNode;
+                                topEdge.link = e.link;
+                                topEdge.vip = e.vip;
+                                e.from.succs.add(topEdge);
+                                topNode.preds.add(topEdge);
                             } else {
 
-                                int maxLayer = list.get(0).to.layer;
-                                for (LayoutEdge curEdge : list) {
-                                    maxLayer = Math.max(maxLayer, curEdge.to.layer);
-                                }
-
-                                int cnt = maxLayer - n.layer - 1;
-                                LayoutEdge[] edges = new LayoutEdge[cnt];
-                                LayoutNode[] nodes = new LayoutNode[cnt];
-                                edges[0] = new LayoutEdge();
-                                edges[0].from = n;
-                                edges[0].relativeFrom = i;
-                                edges[0].vip = e.vip;
-                                n.succs.add(edges[0]);
-
-                                nodes[0] = new LayoutNode();
-                                nodes[0].width = dummyWidth;
-                                nodes[0].height = dummyHeight;
-                                nodes[0].layer = n.layer + 1;
-                                nodes[0].preds.add(edges[0]);
-                                edges[0].to = nodes[0];
-                                edges[0].relativeTo = nodes[0].width / 2;
-                                for (int j = 1; j < cnt; j++) {
-                                    edges[j] = new LayoutEdge();
-                                    edges[j].vip = e.vip;
-                                    edges[j].from = nodes[j - 1];
-                                    edges[j].relativeFrom = nodes[j - 1].width / 2;
-                                    nodes[j - 1].succs.add(edges[j]);
-                                    nodes[j] = new LayoutNode();
-                                    nodes[j].width = dummyWidth;
-                                    nodes[j].height = dummyHeight;
-                                    nodes[j].layer = n.layer + j + 1;
-                                    nodes[j].preds.add(edges[j]);
-                                    edges[j].to = nodes[j];
-                                    edges[j].relativeTo = nodes[j].width / 2;
-                                }
-
-                                for (LayoutEdge curEdge : list) {
-                                    LayoutNode anchor = nodes[curEdge.to.layer - n.layer - 2];
-                                    anchor.succs.add(curEdge);
-                                    curEdge.from = anchor;
-                                    curEdge.relativeFrom = anchor.width / 2;
-                                    n.succs.remove(curEdge);
-                                }
-
+                                LayoutNode topNode = new LayoutNode();
+                                topNode.layer = e.from.layer + 1;
+                                topNode.width = DUMMY_WIDTH;
+                                topNode.height = DUMMY_HEIGHT;
+                                nodes.add(topNode);
+                                topEdge = new LayoutEdge();
+                                topEdge.relativeFrom = e.relativeFrom;
+                                topEdge.from = e.from;
+                                topEdge.relativeTo = 0;
+                                topEdge.to = topNode;
+                                topEdge.link = e.link;
+                                topEdge.vip = e.vip;
+                                e.from.succs.add(topEdge);
+                                topNode.preds.add(topEdge);
+                                topNodeHash.put(e.relativeFrom, topNode);
+                                bottomNodeHash.put(e.relativeFrom, new HashMap<>());
                             }
 
-                            portHash.remove(i);
+                            HashMap<Integer, LayoutNode> hash = bottomNodeHash.get(e.relativeFrom);
+
+                            LayoutNode bottomNode;
+                            if (hash.containsKey(e.to.layer)) {
+                                bottomNode = hash.get(e.to.layer);
+                            } else {
+
+                                bottomNode = new LayoutNode();
+                                bottomNode.layer = e.to.layer - 1;
+                                bottomNode.width = DUMMY_WIDTH;
+                                bottomNode.height = DUMMY_HEIGHT;
+                                nodes.add(bottomNode);
+                                hash.put(e.to.layer, bottomNode);
+                            }
+
+                            LayoutEdge bottomEdge = new LayoutEdge();
+                            bottomEdge.relativeTo = e.relativeTo;
+                            bottomEdge.to = e.to;
+                            bottomEdge.relativeFrom = bottomNode.width / 2;
+                            bottomEdge.from = bottomNode;
+                            bottomEdge.link = e.link;
+                            bottomEdge.vip = e.vip;
+                            e.to.preds.add(bottomEdge);
+                            bottomNode.succs.add(bottomEdge);
+
+                        } else {
+                            Integer i = e.relativeFrom;
+                            if (!portHash.containsKey(i)) {
+                                portHash.put(i, new ArrayList<>());
+                            }
+                            portHash.get(i).add(e);
                         }
                     }
                 }
-            } else if (combine == Combine.SAME_INPUTS) {
-                throw new UnsupportedOperationException("Currently not supported");
-            } else {
-                ArrayList<LayoutNode> currentNodes = new ArrayList<>(nodes);
-                for (LayoutNode n : currentNodes) {
-                    for (LayoutEdge e : List.copyOf(n.succs)) {
-                        processSingleEdge(e);
+
+                succs = new ArrayList<>(n.succs);
+                for (LayoutEdge e : succs) {
+
+                    Integer i = e.relativeFrom;
+                    if (portHash.containsKey(i)) {
+
+                        List<LayoutEdge> list = portHash.get(i);
+                        list.sort(comparator);
+
+                        if (list.size() == 1) {
+                            processSingleEdge(list.get(0));
+                        } else {
+
+                            int maxLayer = list.get(0).to.layer;
+                            for (LayoutEdge curEdge : list) {
+                                maxLayer = Math.max(maxLayer, curEdge.to.layer);
+                            }
+
+                            int cnt = maxLayer - n.layer - 1;
+                            LayoutEdge[] edges = new LayoutEdge[cnt];
+                            LayoutNode[] nodes = new LayoutNode[cnt];
+                            edges[0] = new LayoutEdge();
+                            edges[0].from = n;
+                            edges[0].relativeFrom = i;
+                            edges[0].vip = e.vip;
+                            n.succs.add(edges[0]);
+
+                            nodes[0] = new LayoutNode();
+                            nodes[0].width = DUMMY_WIDTH;
+                            nodes[0].height = DUMMY_HEIGHT;
+                            nodes[0].layer = n.layer + 1;
+                            nodes[0].preds.add(edges[0]);
+                            edges[0].to = nodes[0];
+                            edges[0].relativeTo = 0;
+                            for (int j = 1; j < cnt; j++) {
+                                edges[j] = new LayoutEdge();
+                                edges[j].vip = e.vip;
+                                edges[j].from = nodes[j - 1];
+                                edges[j].relativeFrom = nodes[j - 1].width / 2;
+                                nodes[j - 1].succs.add(edges[j]);
+                                nodes[j] = new LayoutNode();
+                                nodes[j].width = DUMMY_WIDTH;
+                                nodes[j].height = DUMMY_HEIGHT;
+                                nodes[j].layer = n.layer + j + 1;
+                                nodes[j].preds.add(edges[j]);
+                                edges[j].to = nodes[j];
+                                edges[j].relativeTo = nodes[j].width / 2;
+                            }
+
+                            for (LayoutEdge curEdge : list) {
+                                LayoutNode anchor = nodes[curEdge.to.layer - n.layer - 2];
+                                anchor.succs.add(curEdge);
+                                curEdge.from = anchor;
+                                curEdge.relativeFrom = anchor.width / 2;
+                                n.succs.remove(curEdge);
+                            }
+
+                        }
+
+                        portHash.remove(i);
                     }
                 }
             }
+
         }
 
     private void processSingleEdge(LayoutEdge e) {
@@ -1100,22 +1014,20 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
             for (LayoutNode n : hull) {
                 for (LayoutEdge se : n.succs) {
                     LayoutNode s = se.to;
-                    if (s.layer != -1) {
-                        // This node was assigned before.
-                    } else {
-                        boolean unassignedPred = false;
+                    if (s.layer == -1) {
+                        // This node was not assigned before.
+                        boolean assignedPred = true;
                         for (LayoutEdge pe : s.preds) {
                             LayoutNode p = pe.from;
                             if (p.layer == -1 || p.layer >= z) {
                                 // This now has an unscheduled successor or a successor that was scheduled only in this round.
-                                unassignedPred = true;
+                                assignedPred = false;
                                 break;
                             }
                         }
 
-                        if (unassignedPred) {
-                            // This successor node can not yet be assigned.
-                        } else {
+                        if (assignedPred) {
+                            // This successor node can be assigned.
                             s.layer = z;
                             newSet.add(s);
                         }
@@ -1150,22 +1062,20 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
                 if (n.layer < z) {
                     for (LayoutEdge se : n.preds) {
                         LayoutNode s = se.from;
-                        if (s.layer != -1) {
-                            // This node was assigned before.
-                        } else {
-                            boolean unassignedSucc = false;
+                        if (s.layer == -1) {
+                            // This node was not assigned before.
+                            boolean assignedSucc = true;
                             for (LayoutEdge pe : s.succs) {
                                 LayoutNode p = pe.to;
                                 if (p.layer == -1 || p.layer >= z) {
                                     // This now has an unscheduled successor or a successor that was scheduled only in this round.
-                                    unassignedSucc = true;
+                                    assignedSucc = false;
                                     break;
                                 }
                             }
 
-                            if (unassignedSucc) {
-                                // This predecessor node can not yet be assigned.
-                            } else {
+                            if (assignedSucc) {
+                                // This predecessor node can be assigned.
                                 s.layer = z;
                                 newSet.add(s);
                             }
@@ -1190,7 +1100,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
     private HashSet<LayoutNode> visited;private HashSet<LayoutNode> active;
 
     private void reverseEdges() {
-
         // Reverse inputs of roots
         for (LayoutNode node : nodes) {
             if (node.vertex.isRoot()) {
@@ -1247,7 +1156,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
                 }
             }
 
-            final int offset = xOffset + DUMMY_WIDTH;
+            final int offset = X_OFFSET + DUMMY_WIDTH;
 
             int curY = 0;
             int curWidth = node.width + reversedDown.size() * offset;
@@ -1367,7 +1276,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
                 if (active.contains(e.to)) {
                     // Encountered back edge
                     reverseEdge(e);
-                } else if (!visited.contains(e.to) && (linksToFollow.size() == 0 || linksToFollow.contains(e.link))) {
+                } else if (!visited.contains(e.to)) {
                     stack.push(e.to);
                 }
             }
@@ -1464,20 +1373,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager {
             edge.vip = l.isVIP();
             edge.from.succs.add(edge);
             edge.to.preds.add(edge);
-        }
-
-        for (Link l : importantLinks) {
-            if (!vertexToLayoutNode.containsKey(l.getFrom().getVertex())
-                    || vertexToLayoutNode.containsKey(l.getTo().getVertex())) {
-                continue;
-            }
-            LayoutNode from = vertexToLayoutNode.get(l.getFrom().getVertex());
-            LayoutNode to = vertexToLayoutNode.get(l.getTo().getVertex());
-            for (LayoutEdge e : from.succs) {
-                if (e.to == to) {
-                    linksToFollow.add(e.link);
-                }
-            }
         }
     }
 }
