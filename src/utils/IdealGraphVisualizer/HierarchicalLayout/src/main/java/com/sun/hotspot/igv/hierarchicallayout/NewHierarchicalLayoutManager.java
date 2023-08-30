@@ -34,14 +34,12 @@ import java.util.*;
 
 public class NewHierarchicalLayoutManager {
 
-    public static final int DUMMY_HEIGHT = 1;
-    public static final int DUMMY_WIDTH = 1;
-    public static final int X_OFFSET = 8;
-    public static final int LAYER_OFFSET = 8;
+    private static final int DUMMY_HEIGHT = 1;
+    private static final int DUMMY_WIDTH = 1;
+    private static final int X_OFFSET = 8;
+    private static final int LAYER_OFFSET = 8;
+    private static final int MIN_LAYER_DIFFERENCE = 1;
 
-    // Options
-    private final int maxLayerLength;
-    private final int minLayerDifference;
     // Algorithm global datastructures
     private Set<Link> reversedLinks;
     private Set<LayoutEdge> selfEdges;
@@ -56,26 +54,7 @@ public class NewHierarchicalLayoutManager {
     private int layerCount;
 
 
-    public NewHierarchicalLayoutManager() {
-        this.maxLayerLength = -1;
-        this.minLayerDifference = 1;
-    }
-
-    // Remove self-edges, possibly saving them into the selfEdges set.
-    private void removeSelfEdges(boolean save) {
-        for (LayoutNode node : nodes) {
-            for (LayoutEdge e : new ArrayList<>(node.succs)) {
-                if (e.to == node) {
-                    if (save) {
-                        selfEdges.add(e);
-                    }
-                    node.succs.remove(e);
-                    node.preds.remove(e);
-                }
-            }
-        }
-    }
-
+    public NewHierarchicalLayoutManager() {}
 
     public void doLayout(LayoutGraph graph) {
         this.graph = graph;
@@ -134,216 +113,55 @@ public class NewHierarchicalLayoutManager {
         writeResult();
     }
 
-    private void writeResult() {
-        HashMap<Vertex, Point> vertexPositions = new HashMap<>();
-        HashMap<Link, List<Point>> linkPositions = new HashMap<>();
-        for (Vertex v : graph.getVertices()) {
-            LayoutNode n = vertexToLayoutNode.get(v);
-            vertexPositions.put(v, new Point(n.x + n.xOffset, n.y + n.yOffset));
+    private void buildDatastructure() {
+        // Set up nodes
+        List<Vertex> vertices = new ArrayList<>(graph.getVertices());
+        // Order roots first to create more natural layer assignments.
+        vertices.sort((Vertex a, Vertex b) ->
+                a.isRoot() == b.isRoot() ? a.compareTo(b) : Boolean.compare(b.isRoot(), a.isRoot()));
+
+        for (Vertex v : vertices) {
+            LayoutNode node = new LayoutNode();
+            Dimension size = v.getSize();
+            node.width = (int) size.getWidth();
+            node.height = (int) size.getHeight();
+            node.vertex = v;
+            nodes.add(node);
+            vertexToLayoutNode.put(v, node);
         }
 
-        for (LayoutNode n : nodes) {
-
-            for (LayoutEdge e : n.preds) {
-                if (e.link != null && !linkPositions.containsKey(e.link)) {
-                    ArrayList<Point> points = new ArrayList<>();
-
-                    Point p = new Point(e.to.x + e.relativeTo, e.to.y + e.to.yOffset + e.link.getTo().getRelativePosition().y);
-                    points.add(p);
-                    if (e.to.inOffsets.containsKey(e.relativeTo)) {
-                        points.add(new Point(p.x, p.y + e.to.inOffsets.get(e.relativeTo) + e.link.getTo().getRelativePosition().y));
-                    }
-
-                    LayoutNode cur = e.from;
-                    LayoutNode other = e.to;
-                    LayoutEdge curEdge = e;
-                    while (cur.vertex == null && cur.preds.size() != 0) {
-                        if (points.size() > 1 && points.get(points.size() - 1).x == cur.x + cur.width / 2 && points.get(points.size() - 2).x == cur.x + cur.width / 2) {
-                            points.remove(points.size() - 1);
-                        }
-                        points.add(new Point(cur.x + cur.width / 2, cur.y + cur.height));
-                        if (points.size() > 1 && points.get(points.size() - 1).x == cur.x + cur.width / 2 && points.get(points.size() - 2).x == cur.x + cur.width / 2) {
-                            points.remove(points.size() - 1);
-                        }
-                        points.add(new Point(cur.x + cur.width / 2, cur.y));
-                        curEdge = cur.preds.get(0);
-                        cur = curEdge.from;
-                    }
-
-                    p = new Point(cur.x + curEdge.relativeFrom, cur.y + cur.height - cur.bottomYOffset + (curEdge.link == null ? 0 : curEdge.link.getFrom().getRelativePosition().y));
-                    if (curEdge.from.outOffsets.containsKey(curEdge.relativeFrom)) {
-                        points.add(new Point(p.x, p.y + curEdge.from.outOffsets.get(curEdge.relativeFrom) + (curEdge.link == null ? 0 : curEdge.link.getFrom().getRelativePosition().y)));
-                    }
-                    points.add(p);
-
-                    Collections.reverse(points);
-
-                    if (cur.vertex == null && cur.preds.size() == 0) {
-
-                        if (reversedLinkEndPoints.containsKey(e.link)) {
-                            for (Point p1 : reversedLinkEndPoints.get(e.link)) {
-                                points.add(new Point(p1.x + e.to.x, p1.y + e.to.y));
-                            }
-                        }
-
-                        if (splitStartPoints.containsKey(e.link)) {
-                            points.add(0, null);
-                            points.addAll(0, splitStartPoints.get(e.link));
-
-                            if (reversedLinks.contains(e.link)) {
-                                Collections.reverse(points);
-                            }
-                            linkPositions.put(e.link, points);
-                        } else {
-                            splitEndPoints.put(e.link, points);
-                        }
-
-                    } else {
-                        if (reversedLinks.contains(e.link)) {
-                            Collections.reverse(points);
-                            if (selfEdges.contains(e)) {
-                                // For self edges, it is enough with the
-                                // start and end points computed by ReverseEdges.
-                                points.clear();
-                            }
-                        }
-                        if (reversedLinkStartPoints.containsKey(e.link)) {
-                            for (Point p1 : reversedLinkStartPoints.get(e.link)) {
-                                points.add(new Point(p1.x + cur.x, p1.y + cur.y));
-                            }
-                        }
-
-                        if (reversedLinkEndPoints.containsKey(e.link)) {
-                            for (Point p1 : reversedLinkEndPoints.get(e.link)) {
-                                points.add(0, new Point(p1.x + other.x, p1.y + other.y));
-                            }
-                        }
-
-                        linkPositions.put(e.link, points);
-                    }
-                }
-            }
-
-            for (LayoutEdge e : n.succs) {
-                if (e.link != null && !linkPositions.containsKey(e.link)) {
-                    ArrayList<Point> points = new ArrayList<>();
-                    Point p = new Point(e.from.x + e.relativeFrom, e.from.y + e.from.height - e.from.bottomYOffset + e.link.getFrom().getRelativePosition().y);
-                    points.add(p);
-                    if (e.from.outOffsets.containsKey(e.relativeFrom)) {
-                        Point pOffset = new Point(p.x, p.y + e.from.outOffsets.get(e.relativeFrom) +
-                                                  e.link.getFrom().getRelativePosition().y + e.from.yOffset);
-                        if (!pOffset.equals(p)) {
-                            points.add(pOffset);
-                        }
-                    }
-
-                    LayoutNode cur = e.to;
-                    LayoutNode other = e.from;
-                    LayoutEdge curEdge = e;
-                    while (cur.vertex == null && !cur.succs.isEmpty()) {
-                        if (points.size() > 1 && points.get(points.size() - 1).x == cur.x + cur.width / 2 && points.get(points.size() - 2).x == cur.x + cur.width / 2) {
-                            points.remove(points.size() - 1);
-                        }
-                        points.add(new Point(cur.x + cur.width / 2, cur.y));
-                        if (points.size() > 1 && points.get(points.size() - 1).x == cur.x + cur.width / 2 && points.get(points.size() - 2).x == cur.x + cur.width / 2) {
-                            points.remove(points.size() - 1);
-                        }
-                        points.add(new Point(cur.x + cur.width / 2, cur.y + cur.height));
-                        if (cur.succs.isEmpty()) {
-                            break;
-                        }
-                        curEdge = cur.succs.get(0);
-                        cur = curEdge.to;
-                    }
-
-                    p = new Point(cur.x + curEdge.relativeTo, cur.y + cur.yOffset + ((curEdge.link == null) ? 0 : curEdge.link.getTo().getRelativePosition().y));
-                    points.add(p);
-                    if (curEdge.to.inOffsets.containsKey(curEdge.relativeTo)) {
-                        points.add(new Point(p.x, p.y + curEdge.to.inOffsets.get(curEdge.relativeTo) + ((curEdge.link == null) ? 0 : curEdge.link.getTo().getRelativePosition().y)));
-                    }
-
-                    if (cur.succs.isEmpty() && cur.vertex == null) {
-                        if (reversedLinkStartPoints.containsKey(e.link)) {
-                            for (Point p1 : reversedLinkStartPoints.get(e.link)) {
-                                points.add(0, new Point(p1.x + other.x, p1.y + other.y));
-                            }
-                        }
-
-                        if (splitEndPoints.containsKey(e.link)) {
-                            points.add(null);
-                            points.addAll(splitEndPoints.get(e.link));
-
-                            if (reversedLinks.contains(e.link)) {
-                                Collections.reverse(points);
-                            }
-                            linkPositions.put(e.link, points);
-                        } else {
-                            splitStartPoints.put(e.link, points);
-                        }
-                    } else {
-
-                        if (reversedLinkStartPoints.containsKey(e.link)) {
-                            for (Point p1 : reversedLinkStartPoints.get(e.link)) {
-                                points.add(0, new Point(p1.x + other.x + other.xOffset, p1.y + other.y));
-                            }
-                        }
-                        if (reversedLinkEndPoints.containsKey(e.link)) {
-                            for (Point p1 : reversedLinkEndPoints.get(e.link)) {
-                                points.add(new Point(p1.x + cur.x + cur.xOffset, p1.y + cur.y));
-                            }
-                        }
-                        if (reversedLinks.contains(e.link)) {
-                            Collections.reverse(points);
-                        }
-                        linkPositions.put(e.link, points);
-                    }
-
-                }
-            }
-        }
-
-        int minX = Integer.MAX_VALUE;
-        int minY = Integer.MAX_VALUE;
-        for (Vertex v : vertexPositions.keySet()) {
-            Point p = vertexPositions.get(v);
-            minX = Math.min(minX, p.x);
-            minY = Math.min(minY, p.y);
-        }
-
-        for (Link l : linkPositions.keySet()) {
-            List<Point> points = linkPositions.get(l);
-            for (Point p : points) {
-                if (p != null) {
-                    minX = Math.min(minX, p.x);
-                    minY = Math.min(minY, p.y);
-                }
-            }
-
-        }
-
-        for (Vertex v : vertexPositions.keySet()) {
-            Point p = vertexPositions.get(v);
-            p.x -= minX;
-            p.y -= minY;
-            v.setPosition(p);
-        }
-
-        for (Link l : linkPositions.keySet()) {
-            List<Point> points = linkPositions.get(l);
-            for (Point p : points) {
-                if (p != null) {
-                    p.x -= minX;
-                    p.y -= minY;
-                }
-            }
-            l.setControlPoints(points);
-            //l.setControlPoints(Arrays.asList( points.get(0), points.get(points.size() - 1)));
+        // Set up edges
+        List<Link> links = new ArrayList<>(graph.getLinks());
+        links.sort(linkComparator);
+        for (Link l : links) {
+            LayoutEdge edge = new LayoutEdge();
+            edge.from = vertexToLayoutNode.get(l.getFrom().getVertex());
+            edge.to = vertexToLayoutNode.get(l.getTo().getVertex());
+            edge.relativeFrom = l.getFrom().getRelativePosition().x;
+            edge.relativeTo = l.getTo().getRelativePosition().x;
+            edge.link = l;
+            edge.vip = l.isVIP();
+            edge.from.succs.add(edge);
+            edge.to.preds.add(edge);
         }
     }
 
+    // Remove self-edges, possibly saving them into the selfEdges set.
+    private void removeSelfEdges(boolean save) {
+        for (LayoutNode node : nodes) {
+            for (LayoutEdge e : new ArrayList<>(node.succs)) {
+                if (e.to == node) {
+                    if (save) {
+                        selfEdges.add(e);
+                    }
+                    node.succs.remove(e);
+                    node.preds.remove(e);
+                }
+            }
+        }
+    }
 
-    public static final Comparator<LayoutNode> nodePositionComparator = Comparator.comparingInt(n -> n.pos);
-    public static final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
+    private static final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
         int n1VIP = 0;
         for (LayoutEdge e : n1.preds) {
             if (e.vip) {
@@ -370,7 +188,7 @@ public class NewHierarchicalLayoutManager {
         }
         return n1.preds.size() - n2.preds.size();
     };
-    public static final Comparator<LayoutNode> nodeProcessingUpComparator = (n1, n2) -> {
+    private static final Comparator<LayoutNode> nodeProcessingUpComparator = (n1, n2) -> {
         int n1VIP = 0;
         for (LayoutEdge e : n1.succs) {
             if (e.vip) {
@@ -416,7 +234,7 @@ public class NewHierarchicalLayoutManager {
         upProcessingOrder = new ArrayList[layers.length];
     }
 
-    protected void assignXCoordinates() {
+    private void assignXCoordinates() {
         createArrays();
 
         for (int i = 0; i < layers.length; i++) {
@@ -439,14 +257,14 @@ public class NewHierarchicalLayoutManager {
         initialPositions();
         for (int i = 0; i < 1; i++) {
             sweepDown();
-            adjustSpace();
+            //adjustSpace();
             sweepUp();
-            adjustSpace();
+            //adjustSpace();
         }
 
-        sweepDown();
-        adjustSpace();
-        sweepUp();
+        //sweepDown();
+        //adjustSpace();
+        //sweepUp();
     }
 
     private void adjustSpace() {
@@ -547,13 +365,13 @@ public class NewHierarchicalLayoutManager {
     }
 
 
-    public static class NodeRow {
+    private static class NodeRow {
 
         private final TreeSet<LayoutNode> treeSet;
         private final ArrayList<Integer> space;
 
         public NodeRow(ArrayList<Integer> space) {
-            treeSet = new TreeSet<>(nodePositionComparator);
+            treeSet = new TreeSet<>(Comparator.comparingInt(n -> n.pos));
             this.space = space;
         }
 
@@ -604,7 +422,7 @@ public class NewHierarchicalLayoutManager {
         }
     }
 
-    protected void crossingReduction() {
+    private void crossingReduction() {
         createLayers();
 
         // Generate initial ordering
@@ -820,79 +638,13 @@ public class NewHierarchicalLayoutManager {
                 portHash.clear();
 
                 ArrayList<LayoutEdge> succs = new ArrayList<>(n.succs);
-                HashMap<Integer, LayoutNode> topNodeHash = new HashMap<>();
-                HashMap<Integer, HashMap<Integer, LayoutNode>> bottomNodeHash = new HashMap<>();
                 for (LayoutEdge e : succs) {
                     if (e.from.layer != e.to.layer - 1) {
-                        if (maxLayerLength != -1 && e.to.layer - e.from.layer > maxLayerLength) {
-                            e.to.preds.remove(e);
-                            e.from.succs.remove(e);
-
-                            LayoutEdge topEdge;
-
-                            if (topNodeHash.containsKey(e.relativeFrom)) {
-                                LayoutNode topNode = topNodeHash.get(e.relativeFrom);
-                                topEdge = new LayoutEdge();
-                                topEdge.relativeFrom = e.relativeFrom;
-                                topEdge.from = e.from;
-                                topEdge.relativeTo = topNode.width / 2;
-                                topEdge.to = topNode;
-                                topEdge.link = e.link;
-                                topEdge.vip = e.vip;
-                                e.from.succs.add(topEdge);
-                                topNode.preds.add(topEdge);
-                            } else {
-
-                                LayoutNode topNode = new LayoutNode();
-                                topNode.layer = e.from.layer + 1;
-                                topNode.width = DUMMY_WIDTH;
-                                topNode.height = DUMMY_HEIGHT;
-                                nodes.add(topNode);
-                                topEdge = new LayoutEdge();
-                                topEdge.relativeFrom = e.relativeFrom;
-                                topEdge.from = e.from;
-                                topEdge.relativeTo = 0;
-                                topEdge.to = topNode;
-                                topEdge.link = e.link;
-                                topEdge.vip = e.vip;
-                                e.from.succs.add(topEdge);
-                                topNode.preds.add(topEdge);
-                                topNodeHash.put(e.relativeFrom, topNode);
-                                bottomNodeHash.put(e.relativeFrom, new HashMap<>());
-                            }
-
-                            HashMap<Integer, LayoutNode> hash = bottomNodeHash.get(e.relativeFrom);
-
-                            LayoutNode bottomNode;
-                            if (hash.containsKey(e.to.layer)) {
-                                bottomNode = hash.get(e.to.layer);
-                            } else {
-
-                                bottomNode = new LayoutNode();
-                                bottomNode.layer = e.to.layer - 1;
-                                bottomNode.width = DUMMY_WIDTH;
-                                bottomNode.height = DUMMY_HEIGHT;
-                                nodes.add(bottomNode);
-                                hash.put(e.to.layer, bottomNode);
-                            }
-
-                            LayoutEdge bottomEdge = new LayoutEdge();
-                            bottomEdge.relativeTo = e.relativeTo;
-                            bottomEdge.to = e.to;
-                            bottomEdge.relativeFrom = bottomNode.width / 2;
-                            bottomEdge.from = bottomNode;
-                            bottomEdge.link = e.link;
-                            bottomEdge.vip = e.vip;
-                            e.to.preds.add(bottomEdge);
-                            bottomNode.succs.add(bottomEdge);
-
-                        } else {
-                            Integer i = e.relativeFrom;
-                            if (!portHash.containsKey(i)) {
-                                portHash.put(i, new ArrayList<>());
-                            }
-                            portHash.get(i).add(e);
+                        Integer i = e.relativeFrom;
+                        if (!portHash.containsKey(i)) {
+                            portHash.put(i, new ArrayList<>());
                         }
+                        portHash.get(i).add(e);
                     }
                 }
 
@@ -1008,7 +760,7 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        int z = minLayerDifference;
+        int z = MIN_LAYER_DIFFERENCE;
         while (!hull.isEmpty()) {
             ArrayList<LayoutNode> newSet = new ArrayList<>();
             for (LayoutNode n : hull) {
@@ -1036,10 +788,10 @@ public class NewHierarchicalLayoutManager {
             }
 
             hull = newSet;
-            z += minLayerDifference;
+            z += MIN_LAYER_DIFFERENCE;
         }
 
-        layerCount = z - minLayerDifference;
+        layerCount = z - MIN_LAYER_DIFFERENCE;
         for (LayoutNode n : nodes) {
             n.layer = (layerCount - 1 - n.layer);
         }
@@ -1055,7 +807,7 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        int z = minLayerDifference;
+        int z = MIN_LAYER_DIFFERENCE;
         while (!hull.isEmpty()) {
             ArrayList<LayoutNode> newSet = new ArrayList<>();
             for (LayoutNode n : hull) {
@@ -1087,10 +839,10 @@ public class NewHierarchicalLayoutManager {
             }
 
             hull = newSet;
-            z += minLayerDifference;
+            z += MIN_LAYER_DIFFERENCE;
         }
 
-        layerCount = z - minLayerDifference;
+        layerCount = z - MIN_LAYER_DIFFERENCE;
 
         for (LayoutNode n : nodes) {
             n.layer = (layerCount - 1 - n.layer);
@@ -1343,36 +1095,210 @@ public class NewHierarchicalLayoutManager {
         return result;
     };
 
-    private void buildDatastructure() {
-        // Set up nodes
-        List<Vertex> vertices = new ArrayList<>(graph.getVertices());
-        // Order roots first to create more natural layer assignments.
-        vertices.sort((Vertex a, Vertex b) ->
-                a.isRoot() == b.isRoot() ? a.compareTo(b) : Boolean.compare(b.isRoot(), a.isRoot()));
-
-        for (Vertex v : vertices) {
-            LayoutNode node = new LayoutNode();
-            Dimension size = v.getSize();
-            node.width = (int) size.getWidth();
-            node.height = (int) size.getHeight();
-            node.vertex = v;
-            nodes.add(node);
-            vertexToLayoutNode.put(v, node);
+    private void writeResult() {
+        HashMap<Vertex, Point> vertexPositions = new HashMap<>();
+        HashMap<Link, List<Point>> linkPositions = new HashMap<>();
+        for (Vertex v : graph.getVertices()) {
+            LayoutNode n = vertexToLayoutNode.get(v);
+            vertexPositions.put(v, new Point(n.x + n.xOffset, n.y + n.yOffset));
         }
 
-        // Set up edges
-        List<Link> links = new ArrayList<>(graph.getLinks());
-        links.sort(linkComparator);
-        for (Link l : links) {
-            LayoutEdge edge = new LayoutEdge();
-            edge.from = vertexToLayoutNode.get(l.getFrom().getVertex());
-            edge.to = vertexToLayoutNode.get(l.getTo().getVertex());
-            edge.relativeFrom = l.getFrom().getRelativePosition().x;
-            edge.relativeTo = l.getTo().getRelativePosition().x;
-            edge.link = l;
-            edge.vip = l.isVIP();
-            edge.from.succs.add(edge);
-            edge.to.preds.add(edge);
+        for (LayoutNode n : nodes) {
+
+            for (LayoutEdge e : n.preds) {
+                if (e.link != null && !linkPositions.containsKey(e.link)) {
+                    ArrayList<Point> points = new ArrayList<>();
+
+                    Point p = new Point(e.to.x + e.relativeTo, e.to.y + e.to.yOffset + e.link.getTo().getRelativePosition().y);
+                    points.add(p);
+                    if (e.to.inOffsets.containsKey(e.relativeTo)) {
+                        points.add(new Point(p.x, p.y + e.to.inOffsets.get(e.relativeTo) + e.link.getTo().getRelativePosition().y));
+                    }
+
+                    LayoutNode cur = e.from;
+                    LayoutNode other = e.to;
+                    LayoutEdge curEdge = e;
+                    while (cur.vertex == null && cur.preds.size() != 0) {
+                        if (points.size() > 1 && points.get(points.size() - 1).x == cur.x + cur.width / 2 && points.get(points.size() - 2).x == cur.x + cur.width / 2) {
+                            points.remove(points.size() - 1);
+                        }
+                        points.add(new Point(cur.x + cur.width / 2, cur.y + cur.height));
+                        if (points.size() > 1 && points.get(points.size() - 1).x == cur.x + cur.width / 2 && points.get(points.size() - 2).x == cur.x + cur.width / 2) {
+                            points.remove(points.size() - 1);
+                        }
+                        points.add(new Point(cur.x + cur.width / 2, cur.y));
+                        curEdge = cur.preds.get(0);
+                        cur = curEdge.from;
+                    }
+
+                    p = new Point(cur.x + curEdge.relativeFrom, cur.y + cur.height - cur.bottomYOffset + (curEdge.link == null ? 0 : curEdge.link.getFrom().getRelativePosition().y));
+                    if (curEdge.from.outOffsets.containsKey(curEdge.relativeFrom)) {
+                        points.add(new Point(p.x, p.y + curEdge.from.outOffsets.get(curEdge.relativeFrom) + (curEdge.link == null ? 0 : curEdge.link.getFrom().getRelativePosition().y)));
+                    }
+                    points.add(p);
+
+                    Collections.reverse(points);
+
+                    if (cur.vertex == null && cur.preds.size() == 0) {
+
+                        if (reversedLinkEndPoints.containsKey(e.link)) {
+                            for (Point p1 : reversedLinkEndPoints.get(e.link)) {
+                                points.add(new Point(p1.x + e.to.x, p1.y + e.to.y));
+                            }
+                        }
+
+                        if (splitStartPoints.containsKey(e.link)) {
+                            points.add(0, null);
+                            points.addAll(0, splitStartPoints.get(e.link));
+
+                            if (reversedLinks.contains(e.link)) {
+                                Collections.reverse(points);
+                            }
+                            linkPositions.put(e.link, points);
+                        } else {
+                            splitEndPoints.put(e.link, points);
+                        }
+
+                    } else {
+                        if (reversedLinks.contains(e.link)) {
+                            Collections.reverse(points);
+                            if (selfEdges.contains(e)) {
+                                // For self edges, it is enough with the
+                                // start and end points computed by ReverseEdges.
+                                points.clear();
+                            }
+                        }
+                        if (reversedLinkStartPoints.containsKey(e.link)) {
+                            for (Point p1 : reversedLinkStartPoints.get(e.link)) {
+                                points.add(new Point(p1.x + cur.x, p1.y + cur.y));
+                            }
+                        }
+
+                        if (reversedLinkEndPoints.containsKey(e.link)) {
+                            for (Point p1 : reversedLinkEndPoints.get(e.link)) {
+                                points.add(0, new Point(p1.x + other.x, p1.y + other.y));
+                            }
+                        }
+
+                        linkPositions.put(e.link, points);
+                    }
+                }
+            }
+
+            for (LayoutEdge e : n.succs) {
+                if (e.link != null && !linkPositions.containsKey(e.link)) {
+                    ArrayList<Point> points = new ArrayList<>();
+                    Point p = new Point(e.from.x + e.relativeFrom, e.from.y + e.from.height - e.from.bottomYOffset + e.link.getFrom().getRelativePosition().y);
+                    points.add(p);
+                    if (e.from.outOffsets.containsKey(e.relativeFrom)) {
+                        Point pOffset = new Point(p.x, p.y + e.from.outOffsets.get(e.relativeFrom) +
+                                e.link.getFrom().getRelativePosition().y + e.from.yOffset);
+                        if (!pOffset.equals(p)) {
+                            points.add(pOffset);
+                        }
+                    }
+
+                    LayoutNode cur = e.to;
+                    LayoutNode other = e.from;
+                    LayoutEdge curEdge = e;
+                    while (cur.vertex == null && !cur.succs.isEmpty()) {
+                        if (points.size() > 1 && points.get(points.size() - 1).x == cur.x + cur.width / 2 && points.get(points.size() - 2).x == cur.x + cur.width / 2) {
+                            points.remove(points.size() - 1);
+                        }
+                        points.add(new Point(cur.x + cur.width / 2, cur.y));
+                        if (points.size() > 1 && points.get(points.size() - 1).x == cur.x + cur.width / 2 && points.get(points.size() - 2).x == cur.x + cur.width / 2) {
+                            points.remove(points.size() - 1);
+                        }
+                        points.add(new Point(cur.x + cur.width / 2, cur.y + cur.height));
+                        if (cur.succs.isEmpty()) {
+                            break;
+                        }
+                        curEdge = cur.succs.get(0);
+                        cur = curEdge.to;
+                    }
+
+                    p = new Point(cur.x + curEdge.relativeTo, cur.y + cur.yOffset + ((curEdge.link == null) ? 0 : curEdge.link.getTo().getRelativePosition().y));
+                    points.add(p);
+                    if (curEdge.to.inOffsets.containsKey(curEdge.relativeTo)) {
+                        points.add(new Point(p.x, p.y + curEdge.to.inOffsets.get(curEdge.relativeTo) + ((curEdge.link == null) ? 0 : curEdge.link.getTo().getRelativePosition().y)));
+                    }
+
+                    if (cur.succs.isEmpty() && cur.vertex == null) {
+                        if (reversedLinkStartPoints.containsKey(e.link)) {
+                            for (Point p1 : reversedLinkStartPoints.get(e.link)) {
+                                points.add(0, new Point(p1.x + other.x, p1.y + other.y));
+                            }
+                        }
+
+                        if (splitEndPoints.containsKey(e.link)) {
+                            points.add(null);
+                            points.addAll(splitEndPoints.get(e.link));
+
+                            if (reversedLinks.contains(e.link)) {
+                                Collections.reverse(points);
+                            }
+                            linkPositions.put(e.link, points);
+                        } else {
+                            splitStartPoints.put(e.link, points);
+                        }
+                    } else {
+
+                        if (reversedLinkStartPoints.containsKey(e.link)) {
+                            for (Point p1 : reversedLinkStartPoints.get(e.link)) {
+                                points.add(0, new Point(p1.x + other.x + other.xOffset, p1.y + other.y));
+                            }
+                        }
+                        if (reversedLinkEndPoints.containsKey(e.link)) {
+                            for (Point p1 : reversedLinkEndPoints.get(e.link)) {
+                                points.add(new Point(p1.x + cur.x + cur.xOffset, p1.y + cur.y));
+                            }
+                        }
+                        if (reversedLinks.contains(e.link)) {
+                            Collections.reverse(points);
+                        }
+                        linkPositions.put(e.link, points);
+                    }
+
+                }
+            }
+        }
+
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        for (Vertex v : vertexPositions.keySet()) {
+            Point p = vertexPositions.get(v);
+            minX = Math.min(minX, p.x);
+            minY = Math.min(minY, p.y);
+        }
+
+        for (Link l : linkPositions.keySet()) {
+            List<Point> points = linkPositions.get(l);
+            for (Point p : points) {
+                if (p != null) {
+                    minX = Math.min(minX, p.x);
+                    minY = Math.min(minY, p.y);
+                }
+            }
+
+        }
+
+        for (Vertex v : vertexPositions.keySet()) {
+            Point p = vertexPositions.get(v);
+            p.x -= minX;
+            p.y -= minY;
+            v.setPosition(p);
+        }
+
+        for (Link l : linkPositions.keySet()) {
+            List<Point> points = linkPositions.get(l);
+            for (Point p : points) {
+                if (p != null) {
+                    p.x -= minX;
+                    p.y -= minY;
+                }
+            }
+            l.setControlPoints(points);
+            //l.setControlPoints(Arrays.asList( points.get(0), points.get(points.size() - 1)));
         }
     }
 }
