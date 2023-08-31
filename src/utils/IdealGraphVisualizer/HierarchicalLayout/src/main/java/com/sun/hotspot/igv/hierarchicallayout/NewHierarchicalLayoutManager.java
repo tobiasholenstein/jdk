@@ -149,8 +149,6 @@ public class NewHierarchicalLayoutManager {
         }
     }
 
-    private ArrayList<Integer>[] space;
-    private ArrayList<LayoutNode>[] downProcessingOrder;
     private void reverseEdges() {
         // Reverse inputs of roots
         for (LayoutNode node : nodes) {
