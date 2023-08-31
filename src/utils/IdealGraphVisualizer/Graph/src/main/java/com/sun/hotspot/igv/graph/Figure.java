@@ -378,6 +378,24 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     @Override
+    public int getPrority() {
+        String category = getInputNode().getProperties().get("category");
+        if (category.equals("control")) {
+            return 5;
+        } else if (category.equals("mixed")) {
+            return 4;
+        } else if (category.equals("data")) {
+            return 3;
+        } else if (category.equals("memory")) {
+            return 2;
+        } else if (category.equals("other")) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    @Override
     public Dimension getSize() {
         int width = Math.max(getWidth(), Figure.SLOT_WIDTH * (Math.max(inputSlots.size(), outputSlots.size()) + 1));
         int height = getHeight() + (diagram.isCFG() ? 0 : 2 * Figure.SLOT_WIDTH - 2 * Figure.OVERLAPPING);

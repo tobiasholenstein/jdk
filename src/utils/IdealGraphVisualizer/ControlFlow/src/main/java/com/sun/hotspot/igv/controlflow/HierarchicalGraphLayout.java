@@ -109,6 +109,11 @@ public class HierarchicalGraphLayout<N, E> extends GraphLayout<N, E> {
             return null;
         }
 
+        @Override
+        public int getPrority() {
+            return 0;
+        }
+
         public Dimension getSize() {
             Widget w = graph.getScene().findWidget(node);
             assert w.getBounds() != null;

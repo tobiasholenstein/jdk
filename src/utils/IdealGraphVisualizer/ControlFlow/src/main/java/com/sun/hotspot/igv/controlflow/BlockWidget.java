@@ -100,6 +100,11 @@ public class BlockWidget extends LabelWidget implements Vertex {
         }
     }
 
+    @Override
+    public int getPrority() {
+        return 0;
+    }
+
     public void setPosition(Point p) {
         this.setPreferredLocation(p);
     }

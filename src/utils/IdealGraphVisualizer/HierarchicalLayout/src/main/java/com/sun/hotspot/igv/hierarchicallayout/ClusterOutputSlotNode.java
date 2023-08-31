@@ -101,6 +101,11 @@ public class ClusterOutputSlotNode implements Vertex {
         };
     }
 
+    @Override
+    public int getPrority() {
+        return 0;
+    }
+
     public Dimension getSize() {
         return new Dimension(0, 0);
     }
