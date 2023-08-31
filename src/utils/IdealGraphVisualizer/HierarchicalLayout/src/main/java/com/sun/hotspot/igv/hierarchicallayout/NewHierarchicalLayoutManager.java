@@ -179,8 +179,56 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        // Start DFS and reverse back edges
         HashSet<LayoutNode> visited = new HashSet<>();
+        ArrayList<LayoutNode> workingList = new ArrayList<>();
+        for (LayoutNode node : nodes) {
+            if (node.preds.isEmpty()) {
+                workingList.add(node);
+            }
+        }
+        // detect back-edges in control-flow
+        while (!workingList.isEmpty()) {
+            ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
+            for (LayoutNode node : workingList) {
+                if (node.vertex.getPrority() < 4 && !node.vertex.isRoot()) {
+                    continue;
+                }
+                visited.add(node);
+                ArrayList<LayoutEdge> succs = new ArrayList<>(node.succs);
+                for (LayoutEdge edge : succs) {
+                    if (reversedLinks.contains(edge.link)) {
+                        continue;
+                    }
+
+                    LayoutNode succNode = edge.to;
+                    if (visited.contains(succNode)) {
+                        // we found a back edge, reverse it
+                        reversedLinks.add(edge.link);
+
+                        LayoutNode oldFrom = edge.from;
+                        LayoutNode oldTo = edge.to;
+                        int oldRelativeFrom = edge.relativeFrom;
+                        int oldRelativeTo = edge.relativeTo;
+
+                        edge.from = oldTo;
+                        edge.to = oldFrom;
+                        edge.relativeFrom = oldRelativeTo;
+                        edge.relativeTo = oldRelativeFrom;
+
+                        oldFrom.succs.remove(edge);
+                        oldTo.preds.remove(edge);
+                        edge.from.succs.add(edge);
+                        edge.to.preds.add(edge);
+                    } else {
+                        newWorkingList.add(succNode);
+                    }
+                }
+            }
+            workingList = newWorkingList;
+        }
+
+        // Start DFS and reverse back edges
+        visited.clear();
         HashSet<LayoutNode> active = new HashSet<>();
         Stack<LayoutNode> stack = new Stack<>();
 
@@ -403,10 +451,10 @@ public class NewHierarchicalLayoutManager {
 
 
         // assign layer upwards starting from leaves
+        // sinks non-leave nodes down as much as possible
         layer = 1;
         while (!workingList.isEmpty()) {
             ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
-            workingList.sort(Comparator.comparingInt(v -> v.vertex.getPrority()));
             for (LayoutNode node : workingList) {
                 if (node.layer < layer) {
                     for (LayoutEdge predEdge : node.preds) {

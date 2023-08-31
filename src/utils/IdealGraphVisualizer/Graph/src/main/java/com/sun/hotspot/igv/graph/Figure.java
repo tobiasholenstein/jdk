@@ -384,11 +384,11 @@ public class Figure extends Properties.Entity implements Vertex {
             return 5;
         } else if (category.equals("mixed")) {
             return 4;
-        } else if (category.equals("data")) {
-            return 3;
-        } else if (category.equals("memory")) {
-            return 2;
         } else if (category.equals("other")) {
+            return 3;
+        } else if (category.equals("data")) {
+            return 2;
+        } else if (category.equals("memory")) {
             return 1;
         } else {
             return 0;
