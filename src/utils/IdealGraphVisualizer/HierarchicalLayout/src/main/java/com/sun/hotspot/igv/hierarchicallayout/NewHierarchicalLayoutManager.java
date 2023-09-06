@@ -140,6 +140,15 @@ public class NewHierarchicalLayoutManager {
         public boolean isDummy() {
             return vertex == null;
         }
+
+        @Override
+        public String toString() {
+            if (vertex != null) {
+                return vertex.toString();
+            } else {
+                return "dummy";
+            }
+        }
     }
 
     private class LayoutEdge {
@@ -673,12 +682,12 @@ public class NewHierarchicalLayoutManager {
 
             for (int i = 0; i < layers.length; i++) {
                 LayoutLayer layer = layers[i];
-                int[] layerSpace = space[i] = new int[layer.size()];
+                space[i] = new int[layer.size()];
                 int curX = 0;
                 for (int y = 0; y < layer.size(); ++y) {
-                    layerSpace[y] = curX;
+                    space[i][y] = curX;
                     LayoutNode node = layer.get(y);
-                    curX += node.getWholeWidth() + (node.isDummy() ? X_OFFSET : offset);
+                    curX += node.getWholeWidth() + X_OFFSET;
                 }
 
                 downProcessingOrder[i] = layer.toArray(new LayoutNode[0]);
@@ -697,8 +706,6 @@ public class NewHierarchicalLayoutManager {
                 sweepDown();
                 sweepUp();
             }
-            sweepDown();
-            sweepUp();
         }
 
         public void getOptimalPositions(LayoutEdge edge, int layer, List<Integer> vals, int correction, boolean up) {
@@ -762,6 +769,7 @@ public class NewHierarchicalLayoutManager {
         private void sweepUp() {
             for (int i = layers.length - 2; i >= 0; i--) {
                 NodeRow row = new NodeRow(space[i]);
+                System.out.println(Arrays.toString(upProcessingOrder[i]));
                 for (LayoutNode n : upProcessingOrder[i]) {
                     int optimal = calculateOptimalUp(n);
                     row.insert(n, optimal);
@@ -836,28 +844,32 @@ public class NewHierarchicalLayoutManager {
         }
 
         public void insert(LayoutNode n, int pos) {
-            SortedSet<LayoutNode> headSet = treeSet.headSet(n);
-            LayoutNode leftNeighbor;
+            System.out.println("optimal " + pos);
             int minX = Integer.MIN_VALUE;
+            SortedSet<LayoutNode> headSet = treeSet.headSet(n, false);
             if (!headSet.isEmpty()) {
-                leftNeighbor = headSet.last();
+                LayoutNode leftNeighbor = headSet.last();
                 minX = leftNeighbor.getRightSide() + offset(leftNeighbor, n);
             }
 
-            if (pos < minX) {
-                n.x = minX;
-            } else {
-                LayoutNode rightNeighbor;
-                SortedSet<LayoutNode> tailSet = treeSet.tailSet(n);
-                int maxX = Integer.MAX_VALUE;
-                if (!tailSet.isEmpty()) {
-                    rightNeighbor = tailSet.first();
-                    maxX = rightNeighbor.x - offset(n, rightNeighbor) - n.getWholeWidth();
-                }
-
-                n.x = Math.min(pos, maxX);
-                assert minX <= maxX : minX + " vs " + maxX;
+            int maxX = Integer.MAX_VALUE;
+            SortedSet<LayoutNode> tailSet = treeSet.tailSet(n, false);
+            if (!tailSet.isEmpty()) {
+                LayoutNode rightNeighbor = tailSet.first();
+                maxX = rightNeighbor.x - offset(n, rightNeighbor) - n.getWholeWidth();
             }
+
+            assert minX <= maxX : minX + " vs " + maxX;
+            System.out.println("minX/maxX " + minX + ", " + maxX);
+
+            if (pos < minX) {
+                pos = minX;
+            } else if (pos > maxX) {
+                pos = maxX;
+            }
+            n.x = pos;
+            System.out.println("n.x " + n.x);
+            System.out.println();
             treeSet.add(n);
         }
     }

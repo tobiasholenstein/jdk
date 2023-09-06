@@ -417,7 +417,7 @@ public class Figure extends Properties.Entity implements Vertex {
 
     @Override
     public String toString() {
-        return idString;
+        return inputNode.getProperties().get("idx");
     }
 
     public static int getVerticalOffset() {
