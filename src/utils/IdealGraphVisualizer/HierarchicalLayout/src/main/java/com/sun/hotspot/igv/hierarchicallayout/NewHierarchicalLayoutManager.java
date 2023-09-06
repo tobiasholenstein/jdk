@@ -660,8 +660,6 @@ public class NewHierarchicalLayoutManager {
         private LayoutNode[][] downProcessingOrder;
         private LayoutNode[][] upProcessingOrder;
 
-        private final Map<LayoutNode, NodeRow> dangling = new HashMap<>();
-
         private void initialPositions() {
             for (LayoutNode n : nodes) {
                 n.x = space[n.layer][n.pos];
@@ -707,43 +705,39 @@ public class NewHierarchicalLayoutManager {
         public void getOptimalPositions(LayoutEdge edge, int layer, List<Integer> vals, int correction, boolean up) {
             if (up) {
                 if (edge.from.layer <= layer) {
-                    if (!dangling.containsKey(edge.from)) {
-                        vals.add(edge.getStartPoint() - correction);
-                    }
+                    vals.add(edge.getStartPoint() - correction);
                 } else if (edge.from.isDummy()) {
                     edge.from.preds.forEach(x -> getOptimalPositions(x, layer, vals, correction, up));
                 }
             } else {
                 if (edge.to.layer >= layer) {
-                    if (!dangling.containsKey(edge.to)) {
-                        vals.add(edge.getEndPoint() - correction);
-                    }
+                    vals.add(edge.getEndPoint() - correction);
                 } else if (edge.to.isDummy()) {
                     edge.to.succs.forEach(x -> getOptimalPositions(x, layer, vals, correction, up));
                 }
             }
         }
 
-        private int calculateOptimalDown(LayoutNode n, LayoutNode last) {
+        private int calculateOptimalDown(LayoutNode n) {
             List<Integer> values = new ArrayList<>();
             int layer = n.layer - 1;
             for (LayoutEdge e : n.preds) {
                 getOptimalPositions(e, layer, values, e.relativeTo, true);
             }
-            return median(values, n, last, true);
+            return median(values, n, true);
         }
 
-        private int calculateOptimalUp(LayoutNode n, LayoutNode last) {
+        private int calculateOptimalUp(LayoutNode n) {
             List<Integer> values = new ArrayList<>();
             int layer = n.layer + 1;
 
             for (LayoutEdge e : n.succs) {
                 getOptimalPositions(e, layer, values, e.relativeFrom, false);
             }
-            return median(values, n, last, false);
+            return median(values, n, false);
         }
 
-        private int median(List<Integer> values, LayoutNode n, LayoutNode last, boolean up) {
+        private int median(List<Integer> values, LayoutNode n, boolean up) {
             if (values.isEmpty()) {
                 return n.x;
             }
@@ -768,66 +762,29 @@ public class NewHierarchicalLayoutManager {
 
         private void sweepUp() {
             for (int i = layers.length - 2; i >= 0; i--) {
-                NodeRow r = new NodeRow(space[i]);
+                NodeRow row = new NodeRow(space[i]);
                 LayoutNode last = null;
                 System.out.println(Arrays.toString(upProcessingOrder[i]));
                 for (LayoutNode n : upProcessingOrder[i]) {
-                    int optimal = calculateOptimalUp(n, last);
-                    r.insert(n, optimal);
+                    int optimal = calculateOptimalUp(n);
+                    row.insert(n, optimal);
                     last = n;
                 }
             }
-            resolveDanglingNodes(true);
         }
 
         private void sweepDown() {
             for (int i = 1; i < layers.length; i++) {
-                NodeRow r = new NodeRow(space[i]);
+                NodeRow row = new NodeRow(space[i]);
                 LayoutNode last = null;
                 for (LayoutNode n : downProcessingOrder[i]) {
-                    int optimal = calculateOptimalDown(n, last);
-                    r.insert(n, optimal);
+                    int optimal = calculateOptimalDown(n);
+                    row.insert(n, optimal);
                     last = n;
                 }
             }
-            resolveDanglingNodes(false);
         }
 
-        private void resolveDanglingNodes(boolean up) {
-            boolean dir = up;
-            boolean force = false;
-            while (!dangling.isEmpty()) {
-                int newResolved = 0;
-                List<LayoutNode> nodes = new ArrayList<>(dangling.keySet());
-                if (up) {
-                    nodes.sort(DANGLING_UP_NODE_COMPARATOR);
-                    for (LayoutNode n : nodes) {
-                        NodeRow r = dangling.get(n);
-                        if (r != null && (!(n.preds.isEmpty() || n.preds.stream().allMatch(e -> dangling.containsKey(e.from))) || (force && n.preds.isEmpty()))) {
-                            int optimal = calculateOptimalDown(n, null);
-                            r.insert(n, optimal);
-                            dangling.remove(n);
-                            newResolved++;
-                        }
-                    }
-                } else {
-                    nodes.sort(DANGLING_DOWN_NODE_COMPARATOR);
-                    for (LayoutNode n : nodes) {
-                        NodeRow r = dangling.get(n);
-                        if (r != null && (!(n.succs.isEmpty() || n.succs.stream().allMatch(e -> dangling.containsKey(e.to))) || (force && n.succs.isEmpty()))) {
-                            int optimal = calculateOptimalUp(n, null);
-                            r.insert(n, optimal);
-                            dangling.remove(n);
-                            newResolved++;
-                        }
-                    }
-                }
-                if (newResolved == 0 && !dangling.isEmpty()) {
-                    up = !up;
-                    force = up == dir;
-                }
-            }
-        }
     }
 
     /*
