@@ -50,4 +50,8 @@ public class LayoutNode {
         public String toString() {
             return "Node " + vertex;
         }
+
+        public boolean isDummy() {
+                return vertex == null;
+        }
     }
