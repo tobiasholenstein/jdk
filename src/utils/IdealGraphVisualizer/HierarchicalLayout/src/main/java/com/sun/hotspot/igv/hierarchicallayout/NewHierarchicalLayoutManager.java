@@ -864,11 +864,10 @@ public class NewHierarchicalLayoutManager {
 
     private class CrossingReduction {
 
-        private LayoutLayer[] toMove;
 
         public CrossingReduction() {}
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
+        @SuppressWarnings({"unchecked"})
         private void createLayers() {
             layers = new LayoutLayer[layerCount];
             for (int i = 0; i < layerCount; i++) {
@@ -897,7 +896,6 @@ public class NewHierarchicalLayoutManager {
                     }
                 }
             }
-            toMove = layers;
         }
 
         private void run() {
@@ -943,7 +941,7 @@ public class NewHierarchicalLayoutManager {
 
         private void downSweep() {
             for (int i = 0; i < layerCount; i++) {
-                for (LayoutNode n : toMove[i]) {
+                for (LayoutNode n : layers[i]) {
                     n.loadCrossingNumber(false);
                 }
 
@@ -956,7 +954,7 @@ public class NewHierarchicalLayoutManager {
 
         private void upSweep() {
             for (int i = layerCount - 1; i >= 0; i--) {
-                for (LayoutNode n : toMove[i]) {
+                for (LayoutNode n : layers[i]) {
                     n.loadCrossingNumber(true);
                 }
 
