@@ -681,9 +681,7 @@ public class NewHierarchicalLayoutManager {
                 for (int y = 0; y < layer.size(); ++y) {
                     layerSpace[y] = curX;
                     LayoutNode node = layer.get(y);
-
                     curX += node.getWholeWidth() + (node.isDummy() ? X_OFFSET : offset);
-
                 }
 
                 downProcessingOrder[i] = layer.toArray(new LayoutNode[layer.size()]);
@@ -1213,8 +1211,103 @@ public class NewHierarchicalLayoutManager {
 
 
         private void run() {
-            assignLayerDownwards();
-            assignLayerUpwards();
+            //assignLayerDownwards();
+            //assignLayerUpwards();
+
+            ArrayList<LayoutNode> workingList = new ArrayList<>();
+
+            // add all root nodes to layer 0
+            for (LayoutNode node : nodes) {
+                if (node.preds.isEmpty()) {
+                    workingList.add(node);
+                    node.layer = 0;
+                }
+            }
+
+            // assign layers downwards starting from roots
+            int layer = 1;
+            while (!workingList.isEmpty()) {
+                ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
+                // workingList.sort(Comparator.comparingInt(v -> v.vertex.getPrority()));
+                // System.out.println("after:" + workingList);
+                for (LayoutNode node : workingList) {
+                    for (LayoutEdge succEdge : node.succs) {
+                        LayoutNode succNode = succEdge.to;
+                        if (succNode.layer == -1) {
+                            // This node was not assigned before.
+                            boolean assignedPred = true;
+                            for (LayoutEdge predEdge : succNode.preds) {
+                                LayoutNode predNode = predEdge.from;
+                                if (predNode.layer == -1 || predNode.layer >= layer) {
+                                    // This now has an unscheduled successor or a successor that was scheduled only in this round.
+                                    assignedPred = false;
+                                    break;
+                                }
+                            }
+                            if (assignedPred) {
+                                // This successor node can be assigned.
+                                succNode.layer = layer;
+                                newWorkingList.add(succNode);
+                            }
+                        }
+                    }
+                }
+                workingList = newWorkingList;
+                layer++;
+            }
+
+// add all leaves to working list, reset layer of non-leave nodes
+            for (LayoutNode node : nodes) {
+                if (node.succs.isEmpty()) {
+                    node.layer = (layer - 2 - node.layer);
+                    workingList.add(node);
+                } else {
+                    node.layer = -1;
+                }
+            }
+
+
+            // assign layer upwards starting from leaves
+            // sinks non-leave nodes down as much as possible
+            layer = 1;
+            while (!workingList.isEmpty()) {
+                ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
+                for (LayoutNode node : workingList) {
+                    if (node.layer < layer) {
+                        for (LayoutEdge predEdge : node.preds) {
+                            LayoutNode predNode = predEdge.from;
+                            if (predNode.layer == -1) {
+                                // This node was not assigned before.
+                                boolean assignedSucc = true;
+                                for (LayoutEdge succEdge : predNode.succs) {
+                                    LayoutNode succNode = succEdge.to;
+                                    if (succNode.layer == -1 || succNode.layer >= layer) {
+                                        // This now has an unscheduled successor or a successor that was scheduled only in this round.
+                                        assignedSucc = false;
+                                        break;
+                                    }
+                                }
+
+                                if (assignedSucc) {
+                                    // This predecessor node can be assigned.
+                                    predNode.layer = layer;
+                                    newWorkingList.add(predNode);
+                                }
+                            }
+                        }
+                    } else {
+                        newWorkingList.add(node);
+                    }
+                }
+
+                workingList = newWorkingList;
+                layer++;
+            }
+
+            layerCount = layer - 1;
+            for (LayoutNode n : nodes) {
+                n.layer = (layerCount - 1 - n.layer);
+            }
         }
 
         private void assignLayerDownwards() {
@@ -1356,11 +1449,54 @@ public class NewHierarchicalLayoutManager {
                 }
             }
 
-            // Start DFS and reverse back edges
             visited = new HashSet<>();
             active = new HashSet<>();
+
+            // detect back-edges in control-flow
+            controlFlowBackEdges();
+
+            visited.clear();
+            active.clear();
+
+            // Start DFS and reverse back edges
             DFS();
             resolveInsOuts();
+        }
+
+        private void controlFlowBackEdges() {
+            ArrayList<LayoutNode> workingList = new ArrayList<>();
+            for (LayoutNode node : nodes) {
+                if (node.preds.isEmpty()) {
+                    workingList.add(node);
+                }
+            }
+            // detect back-edges in control-flow
+            while (!workingList.isEmpty()) {
+                ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
+                for (LayoutNode node : workingList) {
+                    if (node.vertex.getPrority() < 4 && !node.vertex.isRoot()) {
+                        continue;
+                    }
+                    visited.add(node);
+                    ArrayList<LayoutEdge> succs = new ArrayList<>(node.succs);
+                    for (LayoutEdge edge : succs) {
+                        if (reversedLinks.contains(edge.link)) {
+                            continue;
+                        }
+
+                        LayoutNode succNode = edge.to;
+                        if (visited.contains(succNode)) {
+                            // we found a back edge, reverse it
+                            reverseEdge(edge);
+
+                        } else {
+                            newWorkingList.add(succNode);
+                        }
+                    }
+                }
+                workingList = newWorkingList;
+            }
+
         }
 
         private void DFS(LayoutNode startNode) {
@@ -1368,11 +1504,11 @@ public class NewHierarchicalLayoutManager {
                 return;
             }
 
-            Stack<LayoutNode> stack = new Stack<>();
-            stack.push(startNode);
+            Stack<LayoutNode> workingList = new Stack<>();
+            workingList.push(startNode);
 
-            while (!stack.empty()) {
-                LayoutNode node = stack.pop();
+            while (!workingList.empty()) {
+                LayoutNode node = workingList.pop();
 
                 if (visited.contains(node)) {
                     // Node no longer active
@@ -1381,7 +1517,7 @@ public class NewHierarchicalLayoutManager {
                 }
 
                 // Repush immediately to know when no longer active
-                stack.push(node);
+                workingList.push(node);
                 visited.add(node);
                 active.add(node);
 
@@ -1392,7 +1528,7 @@ public class NewHierarchicalLayoutManager {
                         // Encountered back edge
                         reverseEdge(e);
                     } else if (!visited.contains(e.to)) {
-                        stack.push(e.to);
+                        workingList.push(e.to);
                     }
                 }
             }
