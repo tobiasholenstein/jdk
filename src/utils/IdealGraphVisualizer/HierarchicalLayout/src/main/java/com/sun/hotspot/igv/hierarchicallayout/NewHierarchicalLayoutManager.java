@@ -666,7 +666,6 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        @SuppressWarnings({"rawtypes", "unchecked"})
         private void createArrays() {
             space = new int[layers.length][];
             downProcessingOrder = new LayoutNode[layers.length][];
@@ -682,8 +681,8 @@ public class NewHierarchicalLayoutManager {
                     curX += node.getWholeWidth() + (node.isDummy() ? X_OFFSET : offset);
                 }
 
-                downProcessingOrder[i] = layer.toArray(new LayoutNode[layer.size()]);
-                upProcessingOrder[i] = layer.toArray(new LayoutNode[layer.size()]);
+                downProcessingOrder[i] = layer.toArray(new LayoutNode[0]);
+                upProcessingOrder[i] = layer.toArray(new LayoutNode[0]);
                 Arrays.sort(downProcessingOrder[i], NODE_PROCESSING_DUMMY_DOWN_COMPARATOR);
                 Arrays.sort(upProcessingOrder[i], NODE_PROCESSING_DUMMY_UP_COMPARATOR);
 
@@ -763,12 +762,9 @@ public class NewHierarchicalLayoutManager {
         private void sweepUp() {
             for (int i = layers.length - 2; i >= 0; i--) {
                 NodeRow row = new NodeRow(space[i]);
-                LayoutNode last = null;
-                System.out.println(Arrays.toString(upProcessingOrder[i]));
                 for (LayoutNode n : upProcessingOrder[i]) {
                     int optimal = calculateOptimalUp(n);
                     row.insert(n, optimal);
-                    last = n;
                 }
             }
         }
@@ -776,11 +772,9 @@ public class NewHierarchicalLayoutManager {
         private void sweepDown() {
             for (int i = 1; i < layers.length; i++) {
                 NodeRow row = new NodeRow(space[i]);
-                LayoutNode last = null;
                 for (LayoutNode n : downProcessingOrder[i]) {
                     int optimal = calculateOptimalDown(n);
                     row.insert(n, optimal);
-                    last = n;
                 }
             }
         }
@@ -1186,7 +1180,6 @@ public class NewHierarchicalLayoutManager {
             while (!workingList.isEmpty()) {
                 ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
                 // workingList.sort(Comparator.comparingInt(v -> v.vertex.getPrority()));
-                // System.out.println("after:" + workingList);
                 for (LayoutNode node : workingList) {
                     for (LayoutEdge succEdge : node.succs) {
                         LayoutNode succNode = succEdge.to;
@@ -1213,7 +1206,7 @@ public class NewHierarchicalLayoutManager {
                 layer++;
             }
 
-// add all leaves to working list, reset layer of non-leave nodes
+            // add all leaves to working list, reset layer of non-leave nodes
             for (LayoutNode node : nodes) {
                 if (node.succs.isEmpty()) {
                     node.layer = (layer - 2 - node.layer);
