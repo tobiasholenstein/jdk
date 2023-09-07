@@ -693,8 +693,8 @@ public class NewHierarchicalLayoutManager {
 
                 downProcessingOrder[i] = layer.toArray(new LayoutNode[0]);
                 upProcessingOrder[i] = layer.toArray(new LayoutNode[0]);
-                Arrays.sort(downProcessingOrder[i], NODE_PROCESSING_DUMMY_DOWN_COMPARATOR);
-                Arrays.sort(upProcessingOrder[i], NODE_PROCESSING_DUMMY_UP_COMPARATOR);
+                Arrays.sort(downProcessingOrder[i], NODE_PROCESSING_DOWN_COMPARATOR);
+                Arrays.sort(upProcessingOrder[i], NODE_PROCESSING_UP_COMPARATOR);
 
             }
         }
@@ -774,7 +774,7 @@ public class NewHierarchicalLayoutManager {
                     n.optimal_x = calculateOptimalUp(n);
                 }
                 Arrays.sort(upProcessingOrder[i], (n1, n2) -> {
-                    int ret = IS_NODE_DUMMY.reversed().compare(n1, n2);
+                    int ret = DUMMY_NODES_FIRST.compare(n1, n2);
                     if (ret != 0) {
                         return ret;
                     }
@@ -1636,7 +1636,6 @@ public class NewHierarchicalLayoutManager {
 
     private class BuildDatastructure {
 
-
         private void run() {
             // Set up nodes
             for (Vertex v : graph.getVertices()) {
@@ -1648,9 +1647,7 @@ public class NewHierarchicalLayoutManager {
             // Set up edges
             List<? extends Link> links = new ArrayList<>(graph.getLinks());
 
-            links.sort(LINK_NOVIP_COMPARATOR);
-
-
+            links.sort(LINK_COMPARATOR);
             for (Link l : links) {
                 LayoutEdge edge = new LayoutEdge(
                         vertexToLayoutNode.get(l.getFrom().getVertex()),
@@ -1666,61 +1663,27 @@ public class NewHierarchicalLayoutManager {
 
     }
 
-    private interface PartialComparator<T> {
-
-        Integer partiallyCompare(T o1, T o2);
-    }
-
-    private static class NestedComparator<T> implements Comparator<T> {
-
-        private final PartialComparator<T>[] partials;
-        private final Comparator<T> nested;
-
-        public NestedComparator(Comparator<T> comparator, PartialComparator<T>... partials) {
-            this.partials = partials;
-            nested = comparator;
-        }
-
-        @Override
-        public int compare(T o1, T o2) {
-            Integer part;
-            for (PartialComparator<T> partial : partials) {
-                part = partial.partiallyCompare(o1, o2);
-                if (part != null) {
-                    return part;
-                }
-            }
-            return nested.compare(o1, o2);
-        }
-    }
 
     private static final Comparator<LayoutNode> NODE_POSITION_COMPARATOR = Comparator.comparingInt(n -> n.pos);
 
-
-
     private static final Comparator<LayoutNode> NODE_POSITION_OPTIMAL = Comparator.comparingInt(n -> n.optimal_x);
 
-    private static final Comparator<LayoutNode> IS_NODE_DUMMY= Comparator.comparing(LayoutNode::isDummy);
-
-    private static final PartialComparator<LayoutNode> NODE_RDUMMY = (n1, n2) -> {
-        if (n1.isDummy()) {
-            return n2.isDummy() ? 0 : -1;
-        }
-        return n2.isDummy() ? 1 : null;
-    };
+    private static final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
 
     private static final Comparator<LayoutNode> NODE_DOWN = Comparator.comparingInt(n -> n.preds.size());
     private static final Comparator<LayoutNode> NODE_UP = Comparator.comparingInt(n -> n.succs.size());
 
-    private static final Comparator<LayoutNode> NODE_PROCESSING_DUMMY_DOWN_COMPARATOR = new NestedComparator<>(
-            NODE_DOWN, NODE_RDUMMY);
+    private static final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(NODE_DOWN);
 
-    private static final Comparator<LayoutNode> NODE_PROCESSING_DUMMY_UP_COMPARATOR = new NestedComparator<>(
-            NODE_UP, NODE_RDUMMY);
+    private static final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(NODE_UP);
 
     private static final Comparator<LayoutNode> CROSSING_NODE_COMPARATOR = (n1, n2) -> Float.compare(n1.crossingNumber, n2.crossingNumber);
 
     private static final Comparator<LayoutEdge> LAYER_COMPARATOR = Comparator.comparingInt(e -> e.to.layer);
 
-    private static final Comparator<Link> LINK_NOVIP_COMPARATOR = Comparator.comparing((Link l) -> l.getFrom().getVertex()).thenComparing(l -> l.getTo().getVertex()).thenComparingInt(l -> l.getFrom().getRelativePosition().x).thenComparingInt(l -> l.getTo().getRelativePosition().x);
+    private static final Comparator<Link> LINK_COMPARATOR =
+            Comparator.comparing((Link l) -> l.getFrom().getVertex())
+                    .thenComparing(l -> l.getTo().getVertex())
+                    .thenComparingInt(l -> l.getFrom().getRelativePosition().x)
+                    .thenComparingInt(l -> l.getTo().getRelativePosition().x);
 }
