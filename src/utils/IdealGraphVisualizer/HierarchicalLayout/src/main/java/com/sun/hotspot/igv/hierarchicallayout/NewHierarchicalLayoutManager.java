@@ -61,6 +61,7 @@ public class NewHierarchicalLayoutManager {
 
     private class LayoutNode {
 
+        public int optimal_x;
         public int x;
         public int y;
         public int width;
@@ -769,10 +770,18 @@ public class NewHierarchicalLayoutManager {
         private void sweepUp() {
             for (int i = layers.length - 2; i >= 0; i--) {
                 NodeRow row = new NodeRow(space[i]);
-                System.out.println(Arrays.toString(upProcessingOrder[i]));
                 for (LayoutNode n : upProcessingOrder[i]) {
-                    int optimal = calculateOptimalUp(n);
-                    row.insert(n, optimal);
+                    n.optimal_x = calculateOptimalUp(n);
+                }
+                Arrays.sort(upProcessingOrder[i], (n1, n2) -> {
+                    int ret = IS_NODE_DUMMY.reversed().compare(n1, n2);
+                    if (ret != 0) {
+                        return ret;
+                    }
+                    return NODE_POSITION_OPTIMAL.compare(n1, n2);
+                });
+                for (LayoutNode n : upProcessingOrder[i]) {
+                    row.insert(n, n.optimal_x);
                 }
             }
         }
@@ -844,7 +853,6 @@ public class NewHierarchicalLayoutManager {
         }
 
         public void insert(LayoutNode n, int pos) {
-            System.out.println("optimal " + pos);
             int minX = Integer.MIN_VALUE;
             SortedSet<LayoutNode> headSet = treeSet.headSet(n, false);
             if (!headSet.isEmpty()) {
@@ -860,16 +868,12 @@ public class NewHierarchicalLayoutManager {
             }
 
             assert minX <= maxX : minX + " vs " + maxX;
-            System.out.println("minX/maxX " + minX + ", " + maxX);
-
             if (pos < minX) {
                 pos = minX;
             } else if (pos > maxX) {
                 pos = maxX;
             }
             n.x = pos;
-            System.out.println("n.x " + n.x);
-            System.out.println();
             treeSet.add(n);
         }
     }
@@ -1692,12 +1696,12 @@ public class NewHierarchicalLayoutManager {
 
     private static final Comparator<LayoutNode> NODE_POSITION_COMPARATOR = Comparator.comparingInt(n -> n.pos);
 
-    private static final PartialComparator<LayoutNode> NODE_DUMMY = (n1, n2) -> {
-        if (n1.isDummy()) {
-            return n2.isDummy() ? 0 : 1;
-        }
-        return n2.isDummy() ? -1 : null;
-    };
+
+
+    private static final Comparator<LayoutNode> NODE_POSITION_OPTIMAL = Comparator.comparingInt(n -> n.optimal_x);
+
+    private static final Comparator<LayoutNode> IS_NODE_DUMMY= Comparator.comparing(LayoutNode::isDummy);
+
     private static final PartialComparator<LayoutNode> NODE_RDUMMY = (n1, n2) -> {
         if (n1.isDummy()) {
             return n2.isDummy() ? 0 : -1;
@@ -1708,12 +1712,6 @@ public class NewHierarchicalLayoutManager {
     private static final Comparator<LayoutNode> NODE_DOWN = Comparator.comparingInt(n -> n.preds.size());
     private static final Comparator<LayoutNode> NODE_UP = Comparator.comparingInt(n -> n.succs.size());
 
-    private static final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = new NestedComparator<>(
-            NODE_DOWN, NODE_DUMMY);
-
-    private static final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = new NestedComparator<>(
-            NODE_UP, NODE_DUMMY);
-
     private static final Comparator<LayoutNode> NODE_PROCESSING_DUMMY_DOWN_COMPARATOR = new NestedComparator<>(
             NODE_DOWN, NODE_RDUMMY);
 
@@ -1721,30 +1719,6 @@ public class NewHierarchicalLayoutManager {
             NODE_UP, NODE_RDUMMY);
 
     private static final Comparator<LayoutNode> CROSSING_NODE_COMPARATOR = (n1, n2) -> Float.compare(n1.crossingNumber, n2.crossingNumber);
-
-    private static final Comparator<LayoutNode> DANGLING_UP_NODE_COMPARATOR = (n1, n2) -> {
-        int ret = Integer.compare(n1.layer, n2.layer);
-        if (ret != 0) {
-            return ret;
-        }
-        ret = NODE_PROCESSING_UP_COMPARATOR.compare(n1, n2);
-        if (ret != 0) {
-            return ret;
-        }
-        return NODE_POSITION_COMPARATOR.compare(n1, n2);
-    };
-
-    private static final Comparator<LayoutNode> DANGLING_DOWN_NODE_COMPARATOR = (n1, n2) -> {
-        int ret = Integer.compare(n2.layer, n1.layer);
-        if (ret != 0) {
-            return ret;
-        }
-        ret = NODE_PROCESSING_DOWN_COMPARATOR.compare(n1, n2);
-        if (ret != 0) {
-            return ret;
-        }
-        return NODE_POSITION_COMPARATOR.compare(n1, n2);
-    };
 
     private static final Comparator<LayoutEdge> LAYER_COMPARATOR = Comparator.comparingInt(e -> e.to.layer);
 
