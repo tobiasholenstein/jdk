@@ -59,6 +59,64 @@ public class NewHierarchicalLayoutManager {
     private LayoutLayer[] layers;
     private int layerCount;
 
+    public void moveFigureTo(Vertex movedVertex, Point newLocation) {
+        LayoutNode movedNode = vertexToLayoutNode.get(movedVertex);
+        System.out.println("old layer " + movedNode.layer);
+        System.out.println("old pos " + movedNode.pos);
+        System.out.println("old x " + movedNode.x);
+        System.out.println("old y " + movedNode.y);
+        System.out.println("newLocation " + newLocation);
+
+        for (int i = 0; i < layerCount; i++) {
+            LayoutLayer newLayer = layers[i];
+            if (newLayer.y <= newLocation.y && newLocation.y <= newLayer.getBottom()) {
+
+                // find the position in the new layer
+                int newPos = 0;
+                System.out.println("newLayer " + newLayer);
+                for (int j = 0; j < newLayer.size()-1; j++) {
+                    LayoutNode n = newLayer.get(j);
+                    LayoutNode nNext = newLayer.get(j+1);
+                    if (n.getLeftSide() <= newLocation.x && newLocation.x <= n.getRightSide()) {
+                        newPos = n.pos;
+                        break;
+                    } else if (n.getRightSide() <= newLocation.x && newLocation.x <= nNext.getLeftSide()) {
+                        newPos = nNext.pos;
+                        break;
+                    } else if (nNext.getRightSide() <=newLocation.x) {
+                        newPos = nNext.pos + 1;
+                    }
+                }
+
+                System.out.print("Move to layer " + i);
+                System.out.println(" at pos " + newPos);
+
+
+                // remove from old layer and update positions in old layer
+                LayoutLayer oldLayer = layers[movedNode.layer];
+                oldLayer.remove(movedNode);
+                int pos = 0;
+                for (LayoutNode n : oldLayer) {
+                    n.pos = pos;
+                    pos++;
+                }
+
+                // set the new layer
+                movedNode.layer = i;
+
+                // insert into newPos in newLayer and update pos of the other nodes
+                for (LayoutNode n : newLayer) {
+                    if (n.pos >= newPos) {
+                        n.pos += 1;
+                    }
+                }
+                movedNode.pos = newPos;
+                newLayer.add(newPos, movedNode);
+                break;
+            }
+        }
+    }
+
     private class LayoutNode {
 
         public int optimal_x;
@@ -844,10 +902,10 @@ public class NewHierarchicalLayoutManager {
         }
 
         private void updateLayerPositions(int index) {
-            int z = 0;
+            int pos = 0;
             for (LayoutNode n : layers[index]) {
-                n.pos = z;
-                z++;
+                n.pos = pos;
+                pos++;
             }
         }
 
@@ -1238,11 +1296,21 @@ public class NewHierarchicalLayoutManager {
 
             }
 
+            // shift vertices by minX/minY
             for (Map.Entry<Vertex, Point> entry : vertexPositions.entrySet()) {
                 Point p = entry.getValue();
                 p.x -= minX;
                 p.y -= minY;
-                entry.getKey().setPosition(p);
+                Vertex vertex = entry.getKey();
+                vertex.setPosition(p);
+                //LayoutNode n = vertexToLayoutNode.get(vertex);
+            }
+
+            for (LayoutLayer layer : layers) {
+                for (LayoutNode node : layer) {
+                    node.x -= minX;
+                    node.y -= minY;
+                }
             }
 
             for (LayoutEdge e : longEdges) {
@@ -1251,6 +1319,7 @@ public class NewHierarchicalLayoutManager {
                 linkPositions.put(e.link, makeLongEnding(e));
             }
 
+            // shift links by minX/minY
             Map<Port, List<Map.Entry<Link, List<Point>>>> coLinks = new HashMap<>();
             for (Map.Entry<Link, List<Point>> entry : linkPositions.entrySet()) {
                 Link l = entry.getKey();

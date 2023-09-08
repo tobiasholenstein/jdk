@@ -85,6 +85,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private ModelState modelState;
     private boolean rebuilding;
     private final HierarchicalStableLayoutManager hierarchicalStableLayoutManager;
+    private final NewHierarchicalLayoutManager seaLayoutManager;
+
 
     /**
      * The alpha level of partially visible figures.
@@ -487,6 +489,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         });
 
         hierarchicalStableLayoutManager = new HierarchicalStableLayoutManager();
+        seaLayoutManager = new NewHierarchicalLayoutManager();
     }
 
     @Override
@@ -585,10 +588,30 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             figureWidget.getActions().addAction(hoverAction);
             figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
                 @Override
-                public void movementStarted(Widget widget) {}
+                public void movementStarted(Widget widget) {
+                    widget.bringToFront();
+                }
 
                 @Override
-                public void movementFinished(Widget widget) {}
+                public void movementFinished(Widget widget) {
+                    rebuilding = true;
+                    Set<FigureWidget> oldVisibleFigureWidgets = getVisibleFigureWidgets();
+                    Set<BlockWidget> oldVisibleBlockWidgets = getVisibleBlockWidgets();
+
+                    Set<Figure> selectedFigures = model.getSelectedFigures();
+                    for (Figure figure : selectedFigures) {
+                        FigureWidget fw = getWidget(figure);
+                        Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
+                        seaLayoutManager.moveFigureTo(figure, newLocation);
+                    }
+
+                    rebuildConnectionLayer();
+                    updateFigureWidgetLocations(oldVisibleFigureWidgets);
+                    updateBlockWidgetBounds(oldVisibleBlockWidgets);
+                    validateAll();
+                    centerSingleSelectedFigure();
+                    rebuilding = false;
+                }
 
                 @Override
                 public Point getOriginalLocation(Widget widget) {
@@ -737,8 +760,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private void doSeaLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
-        NewHierarchicalLayoutManager manager = new NewHierarchicalLayoutManager();
-        manager.doLayout(new LayoutGraph(edges, figures));
+        seaLayoutManager.doLayout(new LayoutGraph(edges, figures));
         hierarchicalStableLayoutManager.setShouldRedrawLayout(true);
     }
 
