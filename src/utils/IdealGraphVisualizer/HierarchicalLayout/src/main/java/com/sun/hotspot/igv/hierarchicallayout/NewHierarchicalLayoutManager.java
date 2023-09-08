@@ -59,12 +59,54 @@ public class NewHierarchicalLayoutManager {
     private LayoutLayer[] layers;
     private int layerCount;
 
+    private void removeNode(LayoutNode node) {
+
+        int layer = node.layer;
+        int pos = node.pos;
+        List<LayoutNode> remainingLayerNodes = layers[layer];
+        assert remainingLayerNodes.contains(node);
+        remainingLayerNodes.remove(node);
+
+        // Update position of remaining nodes on the same layer
+        for (LayoutNode n : remainingLayerNodes) {
+            if (n.pos > pos) {
+                n.pos -= 1;
+            }
+        }
+
+        //adjustXCoordinates(layer);
+
+        // Remove node from graph layout
+        nodes.remove(node);
+    }
+
+
+    private void removeSuccDummyNodes(LayoutNode node) {
+        if (node.isDummy()) {
+            for (LayoutEdge succEdge : node.succs) {
+                removeSuccDummyNodes(succEdge.to);
+            }
+            removeNode(node);
+        }
+    }
+
+    private void removePredDummyNodes(LayoutNode node) {
+        if (node.isDummy()) {
+            for (LayoutEdge predEdge : node.preds) {
+                removePredDummyNodes(predEdge.from);
+            }
+            removeNode(node);
+        }
+    }
+
     public void moveFigureTo(Vertex movedVertex, Point newLocation) {
         LayoutNode movedNode = vertexToLayoutNode.get(movedVertex);
-        System.out.println("old layer " + movedNode.layer);
-        System.out.println("old pos " + movedNode.pos);
-        System.out.println("old x " + movedNode.x);
-        System.out.println("old y " + movedNode.y);
+        System.out.println("[old] layer " + movedNode.layer);
+        System.out.print(" at pos " + movedNode.pos);
+
+        removeSuccDummyNodes(movedNode);
+        removePredDummyNodes(movedNode);
+
         System.out.println("newLocation " + newLocation);
 
         for (int i = 0; i < layerCount; i++) {
@@ -88,18 +130,19 @@ public class NewHierarchicalLayoutManager {
                     }
                 }
 
-                System.out.print("Move to layer " + i);
-                System.out.println(" at pos " + newPos);
+
 
 
                 // remove from old layer and update positions in old layer
+                removeNode(movedNode);
+                /*
                 LayoutLayer oldLayer = layers[movedNode.layer];
                 oldLayer.remove(movedNode);
                 int pos = 0;
                 for (LayoutNode n : oldLayer) {
                     n.pos = pos;
                     pos++;
-                }
+                }*/
 
                 // set the new layer
                 movedNode.layer = i;
@@ -112,9 +155,40 @@ public class NewHierarchicalLayoutManager {
                 }
                 movedNode.pos = newPos;
                 newLayer.add(newPos, movedNode);
+
+                System.out.print("   -> Move to layer " + i);
+                System.out.println(" at pos " + newPos);
                 break;
             }
         }
+
+
+        // remove link connected to movedNode
+        for (Link link : graph.getLinks()) {
+            if (link.getTo().getVertex()==movedNode.vertex) {
+                link.setControlPoints(new ArrayList<>());
+            } else if (link.getFrom().getVertex()==movedNode.vertex) {
+                link.setControlPoints(new ArrayList<>());
+            }
+        }
+
+
+        // adjust Y of movedNode
+        movedNode.y = layers[movedNode.layer].y;
+
+        // set X of movedNode
+        movedNode.x = newLocation.x;
+
+        for (LayoutLayer layer : layers) {
+            for (LayoutNode n : layer) {
+                if (!n.isDummy()) {
+                    n.vertex.setPosition(new Point(n.x, n.y));
+                }
+            }
+        }
+
+
+
     }
 
     private class LayoutNode {
@@ -717,7 +791,6 @@ public class NewHierarchicalLayoutManager {
                             e.to.preds.remove(e);
                             e.from.succs.remove(e);
 
-                            LayoutEdge topEdge;
 
                             LayoutNode topNode = topNodeHash.get(e.relativeFrom);
                             if (topNode == null) {
@@ -727,9 +800,11 @@ public class NewHierarchicalLayoutManager {
                                 topNodeHash.put(e.relativeFrom, topNode);
                                 bottomNodeHash.put(e.relativeFrom, new HashMap<>());
                             }
-                            topEdge = new LayoutEdge(e.from, topNode, e.relativeFrom, topNode.width / 2, e.link);
+                            assert e.link != null;
+                            LayoutEdge topEdge = new LayoutEdge(e.from, topNode, e.relativeFrom, topNode.width / 2, e.link);
                             e.from.succs.add(topEdge);
                             topNode.preds.add(topEdge);
+                            assert topNode.isDummy();
 
                             HashMap<Integer, LayoutNode> hash = bottomNodeHash.get(e.relativeFrom);
 
@@ -742,10 +817,11 @@ public class NewHierarchicalLayoutManager {
                                 nodes.add(bottomNode);
                                 hash.put(e.to.layer, bottomNode);
                             }
-
+                            assert e.link != null;
                             LayoutEdge bottomEdge = new LayoutEdge(bottomNode, e.to, bottomNode.width / 2, e.relativeTo, e.link);
                             e.to.preds.add(bottomEdge);
                             bottomNode.succs.add(bottomEdge);
+                            assert bottomNode.isDummy();
 
                         } else {
                             Integer i = e.relativeFrom;
@@ -755,6 +831,9 @@ public class NewHierarchicalLayoutManager {
                             portHash.get(i).add(e);
                         }
                     }
+                }
+                for (LayoutEdge e : succs) {
+                    assert e.link != null;
                 }
 
                 for (LayoutEdge e : succs) {
@@ -778,6 +857,7 @@ public class NewHierarchicalLayoutManager {
                             nodes[0].layer = n.layer + 1;
                             edges[0] = new LayoutEdge(n, nodes[0], i, nodes[0].width / 2, null);
                             nodes[0].preds.add(edges[0]);
+                            assert nodes[0].isDummy();
                             n.succs.add(edges[0]);
                             for (int j = 1; j < cnt; j++) {
                                 nodes[j] = new LayoutNode();
@@ -785,6 +865,7 @@ public class NewHierarchicalLayoutManager {
                                 edges[j] = new LayoutEdge(nodes[j - 1], nodes[j], nodes[j - 1].width / 2, nodes[j].width / 2, null);
                                 nodes[j - 1].succs.add(edges[j]);
                                 nodes[j].preds.add(edges[j]);
+                                assert nodes[j].isDummy();
                             }
                             for (LayoutEdge curEdge : list) {
                                 assert curEdge.to.layer - n.layer - 2 >= 0;
@@ -812,7 +893,11 @@ public class NewHierarchicalLayoutManager {
                 for (int i = n.layer + 1; i < last.to.layer; i++) {
                     last = addBetween(last, i);
                 }
+                last.link = e.link;
+                assert last.link != null;
             }
+            assert e.link != null;
+
         }
 
         private LayoutEdge addBetween(LayoutEdge e, int layer) {
@@ -822,6 +907,7 @@ public class NewHierarchicalLayoutManager {
             nodes.add(n);
             LayoutEdge result = new LayoutEdge(n, e.to, n.width / 2, e.relativeTo, null);
             n.succs.add(result);
+            assert n.isDummy();
             e.relativeTo = n.width / 2;
             e.to.preds.remove(e);
             e.to.preds.add(result);
@@ -1164,7 +1250,7 @@ public class NewHierarchicalLayoutManager {
 
                         Collections.reverse(points);
 
-                        if (cur.isDummy() && cur.preds.isEmpty()) {
+                        if (cur.isDummy()) {
                             if (reversedLinkEndPoints.containsKey(e.link)) {
                                 for (Point p1 : reversedLinkEndPoints.get(e.link)) {
                                     points.add(new Point(p1.x + other.getLeftSide(), p1.y + other.y));
