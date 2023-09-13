@@ -40,13 +40,13 @@ public class NewHierarchicalLayoutManager {
     public static final int CROSSING_ITERATIONS = 2;
     public static final int DUMMY_HEIGHT = 1;
     public static final int DUMMY_WIDTH = 1;
-    public static final int MAX_LAYER_LENGTH = -1;
     public static final int X_OFFSET = 8;
     public static final int LAYER_OFFSET = 8;
+    public final int OFFSET = X_OFFSET + DUMMY_WIDTH;
+
 
 
     // Options
-    private final int offset;
     private final int maxLayerLength;
     // Algorithm global datastructures
     private final Set<Link> reversedLinks;
@@ -104,7 +104,16 @@ public class NewHierarchicalLayoutManager {
         System.out.println("[old] layer " + movedNode.layer);
         System.out.print(" at pos " + movedNode.pos);
 
+        for (LayoutEdge e : movedNode.preds) {
+           // assert e.link != null;
+        }
+
+        for (LayoutEdge e : movedNode.succs) {
+            //assert e.link != null;
+        }
+
         removeSuccDummyNodes(movedNode);
+
         removePredDummyNodes(movedNode);
 
         System.out.println("newLocation " + newLocation);
@@ -135,14 +144,6 @@ public class NewHierarchicalLayoutManager {
 
                 // remove from old layer and update positions in old layer
                 removeNode(movedNode);
-                /*
-                LayoutLayer oldLayer = layers[movedNode.layer];
-                oldLayer.remove(movedNode);
-                int pos = 0;
-                for (LayoutNode n : oldLayer) {
-                    n.pos = pos;
-                    pos++;
-                }*/
 
                 // set the new layer
                 movedNode.layer = i;
@@ -212,22 +213,17 @@ public class NewHierarchicalLayoutManager {
 
         public void loadCrossingNumber(boolean up) {
             crossingNumber = 0;
-            int count = loadCrossingNumber(up, this);
+            int count = 0;
+            if (up) {
+                count = succs.stream().map((e) -> e.loadCrossingNumber(up, this)).reduce(count, Integer::sum);
+            } else {
+                count = preds.stream().map((e) -> e.loadCrossingNumber(up, this)).reduce(count, Integer::sum);
+            }
             if (count > 0) {
                 crossingNumber /= count;
             } else {
                 crossingNumber = 0;
             }
-        }
-
-        public int loadCrossingNumber(boolean up, LayoutNode source) {
-            int count = 0;
-            if (up) {
-                count = succs.stream().map((e) -> e.loadCrossingNumber(up, source)).reduce(count, Integer::sum);
-            } else {
-                count = preds.stream().map((e) -> e.loadCrossingNumber(up, source)).reduce(count, Integer::sum);
-            }
-            return count;
         }
 
         public LayoutNode(Vertex v) {
@@ -293,15 +289,14 @@ public class NewHierarchicalLayoutManager {
         public Link link;
 
         public int loadCrossingNumber(boolean up, LayoutNode source) {
-            int factor = 1;
             int nr;
             if (up) {
-                nr = getEndPoint() * factor;
+                nr = getEndPoint();
             } else {
-                nr = getStartPoint() * factor;
+                nr = getStartPoint();
             }
             source.crossingNumber += nr;
-            return factor;
+            return 1;
         }
 
         public int getStartPoint() {
@@ -326,11 +321,7 @@ public class NewHierarchicalLayoutManager {
     }
 
     public NewHierarchicalLayoutManager() {
-        //when default value 1 is used, the calculated RelativeTo and relativeFrom
-        //of dummyNodes are 0 which negatively affects calculations
-        this.maxLayerLength = MAX_LAYER_LENGTH;
-
-        offset = X_OFFSET + DUMMY_WIDTH;
+        this.maxLayerLength = -1;
 
         vertexToLayoutNode = new HashMap<>();
         reversedLinks = new HashSet<>();
@@ -356,22 +347,32 @@ public class NewHierarchicalLayoutManager {
 
         // #############################################################
         // Step 1: Build up data structure
+        // creates:
+        //  - LayoutNodes : nodes, vertexToLayoutNode
+        //  - LayoutEdge :  LayoutNode.preds, LayoutNode.succs
         new BuildDatastructure().run();
 
         // #############################################################
         // STEP 2: Reverse edges, handle backedges
+        // - LayoutEdge e : reverse backedges
+        // - add Link : reversedLinks.add(e.link);
         new ReverseEdges().run();
 
         // #############################################################
         // STEP 3: Assign layers
+        // - sets LayoutNode.layer
         new AssignLayers().run();
 
         // #############################################################
         // STEP 4: Create dummy nodes
+        // - takes List<LayoutNode> nodes
+        // - replaces single LayoutEdge between LayoutNodes with a chain of new LayoutEdges and dummy LayoutNodes
+        // - adds the new dummy LayoutNodes to nodes
         new CreateDummyNodes().run();
 
         // #############################################################
         // STEP 5: Crossing Reduction
+        // creates layers = new LayoutLayer[layerCount];
         new CrossingReduction().run();
 
         // #############################################################
@@ -380,6 +381,11 @@ public class NewHierarchicalLayoutManager {
 
         // #############################################################
         // STEP 7: Assign Y coordinates
+        // sets:
+        //  - layer.y;
+        //  - node.y
+        //  - node.yOffset
+        //  - node.bottomYOffset
         new AssignYCoordinates().run();
 
         // #############################################################
@@ -487,8 +493,8 @@ public class NewHierarchicalLayoutManager {
                     }
                 }
 
-                int cur = -reversedDown.size() * offset;
-                int curWidth = node.width + reversedDown.size() * offset;
+                int cur = -reversedDown.size() * OFFSET;
+                int curWidth = node.width + reversedDown.size() * OFFSET;
                 for (int pos : reversedDown) {
                     ArrayList<LayoutEdge> reversedSuccs = new ArrayList<>();
                     for (LayoutEdge e : node.succs) {
@@ -507,23 +513,23 @@ public class NewHierarchicalLayoutManager {
                         reversedLinkStartPoints.put(e.link, startPoints);
                     }
 
-                    cur += offset;
-                    node.yOffset += offset;
-                    curWidth -= offset;
+                    cur += OFFSET;
+                    node.yOffset += OFFSET;
+                    curWidth -= OFFSET;
                 }
-                node.width += reversedDown.size() * offset;
+                node.width += reversedDown.size() * OFFSET;
 
                 if (reversedDown.isEmpty()) {
-                    cur = offset;
+                    cur = OFFSET;
                 } else {
-                    cur = -offset;
+                    cur = -OFFSET;
                 }
                 for (int pos : reversedUp) {
                     ArrayList<LayoutEdge> reversedPreds = new ArrayList<>();
                     for (LayoutEdge e : node.preds) {
                         if (e.relativeTo == pos && reversedLinks.contains(e.link)) {
                             if (reversedDown.isEmpty()) {
-                                e.relativeTo = node.width + offset;
+                                e.relativeTo = node.width + OFFSET;
                             } else {
                                 e.relativeTo = cur;
                             }
@@ -531,15 +537,15 @@ public class NewHierarchicalLayoutManager {
                             reversedPreds.add(e);
                         }
                     }
-                    node.bottomYOffset += offset;
+                    node.bottomYOffset += OFFSET;
                     ArrayList<Point> endPoints = new ArrayList<>();
 
-                    node.width += offset;
+                    node.width += OFFSET;
                     if (reversedDown.isEmpty()) {
                         endPoints.add(new Point(node.width, node.height + node.bottomYOffset));
                     } else {
                         endPoints.add(new Point(cur, node.height + node.bottomYOffset));
-                        cur -= offset;
+                        cur -= OFFSET;
                     }
 
                     endPoints.add(new Point(pos, node.height + node.bottomYOffset));
@@ -551,7 +557,7 @@ public class NewHierarchicalLayoutManager {
                 }
 
                 if (!reversedDown.isEmpty()) {
-                    node.xOffset = reversedUp.size() * offset;
+                    node.xOffset = reversedUp.size() * OFFSET;
                 }
             }
         }
@@ -773,116 +779,116 @@ public class NewHierarchicalLayoutManager {
     private class CreateDummyNodes {
 
 
-        private void run() {
-
+        public void createDummiesForNode(LayoutNode n) {
             HashMap<Integer, List<LayoutEdge>> portHash = new HashMap<>();
+            ArrayList<LayoutEdge> succs = new ArrayList<>(n.succs);
+            HashMap<Integer, LayoutNode> topNodeHash = new HashMap<>();
+            HashMap<Integer, HashMap<Integer, LayoutNode>> bottomNodeHash = new HashMap<>();
+            for (LayoutEdge e : succs) {
+                assert e.from.layer < e.to.layer;
+                if (e.from.layer != e.to.layer - 1) {
+                    if (maxLayerLength != -1 && e.to.layer - e.from.layer > maxLayerLength) {
+                        assert maxLayerLength > 2;
+                        e.to.preds.remove(e);
+                        e.from.succs.remove(e);
+
+                        LayoutNode topNode = topNodeHash.get(e.relativeFrom);
+                        if (topNode == null) {
+                            topNode = new LayoutNode();
+                            topNode.layer = e.from.layer + 1;
+                            nodes.add(topNode);
+                            topNodeHash.put(e.relativeFrom, topNode);
+                            bottomNodeHash.put(e.relativeFrom, new HashMap<>());
+                        }
+                        assert e.link != null;
+                        LayoutEdge topEdge = new LayoutEdge(e.from, topNode, e.relativeFrom, topNode.width / 2, e.link);
+                        e.from.succs.add(topEdge);
+                        topNode.preds.add(topEdge);
+                        assert topNode.isDummy();
+
+                        HashMap<Integer, LayoutNode> hash = bottomNodeHash.get(e.relativeFrom);
+
+                        LayoutNode bottomNode;
+                        if (hash.containsKey(e.to.layer)) {
+                            bottomNode = hash.get(e.to.layer);
+                        } else {
+                            bottomNode = new LayoutNode();
+                            bottomNode.layer = e.to.layer - 1;
+                            nodes.add(bottomNode);
+                            hash.put(e.to.layer, bottomNode);
+                        }
+                        assert e.link != null;
+                        LayoutEdge bottomEdge = new LayoutEdge(bottomNode, e.to, bottomNode.width / 2, e.relativeTo, e.link);
+                        e.to.preds.add(bottomEdge);
+                        bottomNode.succs.add(bottomEdge);
+                        assert bottomNode.isDummy();
+
+                    } else {
+                        Integer i = e.relativeFrom;
+                        if (!portHash.containsKey(i)) {
+                            portHash.put(i, new ArrayList<>());
+                        }
+                        portHash.get(i).add(e);
+                    }
+                }
+            }
+            for (LayoutEdge e : succs) {
+                assert e.link != null;
+            }
+            for (LayoutEdge e : succs) {
+                Integer i = e.relativeFrom;
+                if (portHash.containsKey(i)) {
+
+                    List<LayoutEdge> list = portHash.get(i);
+                    list.sort(LAYER_COMPARATOR);
+
+                    if (list.size() == 1) {
+                        processSingleEdge(list.get(0));
+                    } else {
+
+                        int maxLayer = list.get(list.size() - 1).to.layer;
+
+                        int cnt = maxLayer - n.layer - 1;
+                        LayoutEdge[] edges = new LayoutEdge[cnt];
+                        LayoutNode[] nodes = new LayoutNode[cnt];
+
+                        nodes[0] = new LayoutNode();
+                        nodes[0].layer = n.layer + 1;
+                        edges[0] = new LayoutEdge(n, nodes[0], i, nodes[0].width / 2, null);
+                        nodes[0].preds.add(edges[0]);
+                        assert nodes[0].isDummy();
+                        n.succs.add(edges[0]);
+                        for (int j = 1; j < cnt; j++) {
+                            nodes[j] = new LayoutNode();
+                            nodes[j].layer = n.layer + j + 1;
+                            edges[j] = new LayoutEdge(nodes[j - 1], nodes[j], nodes[j - 1].width / 2, nodes[j].width / 2, null);
+                            nodes[j - 1].succs.add(edges[j]);
+                            nodes[j].preds.add(edges[j]);
+                            assert nodes[j].isDummy();
+                        }
+                        for (LayoutEdge curEdge : list) {
+                            assert curEdge.to.layer - n.layer - 2 >= 0;
+                            assert curEdge.to.layer - n.layer - 2 < cnt;
+                            LayoutNode anchor = nodes[curEdge.to.layer - n.layer - 2];
+                            for (int l = 0; l < curEdge.to.layer - n.layer - 1; ++l) {
+                                anchor = nodes[l];
+                            }
+                            anchor.succs.add(curEdge);
+                            curEdge.from = anchor;
+                            curEdge.relativeFrom = anchor.width / 2;
+                            n.succs.remove(curEdge);
+                        }
+                    }
+                    portHash.remove(i);
+                }
+            }
+        }
+
+
+        private void run() {
             ArrayList<LayoutNode> currentNodes = new ArrayList<>(nodes);
             for (LayoutNode n : currentNodes) {
-                portHash.clear();
-
-                ArrayList<LayoutEdge> succs = new ArrayList<>(n.succs);
-                HashMap<Integer, LayoutNode> topNodeHash = new HashMap<>();
-                HashMap<Integer, HashMap<Integer, LayoutNode>> bottomNodeHash = new HashMap<>();
-                for (LayoutEdge e : succs) {
-                    assert e.from.layer < e.to.layer;
-                    if (e.from.layer != e.to.layer - 1) {
-                        if (maxLayerLength != -1 && e.to.layer - e.from.layer > maxLayerLength) {
-                            assert maxLayerLength > 2;
-                            e.to.preds.remove(e);
-                            e.from.succs.remove(e);
-
-
-                            LayoutNode topNode = topNodeHash.get(e.relativeFrom);
-                            if (topNode == null) {
-                                topNode = new LayoutNode();
-                                topNode.layer = e.from.layer + 1;
-                                nodes.add(topNode);
-                                topNodeHash.put(e.relativeFrom, topNode);
-                                bottomNodeHash.put(e.relativeFrom, new HashMap<>());
-                            }
-                            assert e.link != null;
-                            LayoutEdge topEdge = new LayoutEdge(e.from, topNode, e.relativeFrom, topNode.width / 2, e.link);
-                            e.from.succs.add(topEdge);
-                            topNode.preds.add(topEdge);
-                            assert topNode.isDummy();
-
-                            HashMap<Integer, LayoutNode> hash = bottomNodeHash.get(e.relativeFrom);
-
-                            LayoutNode bottomNode;
-                            if (hash.containsKey(e.to.layer)) {
-                                bottomNode = hash.get(e.to.layer);
-                            } else {
-                                bottomNode = new LayoutNode();
-                                bottomNode.layer = e.to.layer - 1;
-                                nodes.add(bottomNode);
-                                hash.put(e.to.layer, bottomNode);
-                            }
-                            assert e.link != null;
-                            LayoutEdge bottomEdge = new LayoutEdge(bottomNode, e.to, bottomNode.width / 2, e.relativeTo, e.link);
-                            e.to.preds.add(bottomEdge);
-                            bottomNode.succs.add(bottomEdge);
-                            assert bottomNode.isDummy();
-
-                        } else {
-                            Integer i = e.relativeFrom;
-                            if (!portHash.containsKey(i)) {
-                                portHash.put(i, new ArrayList<>());
-                            }
-                            portHash.get(i).add(e);
-                        }
-                    }
-                }
-                for (LayoutEdge e : succs) {
-                    assert e.link != null;
-                }
-
-                for (LayoutEdge e : succs) {
-                    Integer i = e.relativeFrom;
-                    if (portHash.containsKey(i)) {
-
-                        List<LayoutEdge> list = portHash.get(i);
-                        list.sort(LAYER_COMPARATOR);
-
-                        if (list.size() == 1) {
-                            processSingleEdge(list.get(0));
-                        } else {
-
-                            int maxLayer = list.get(list.size() - 1).to.layer;
-
-                            int cnt = maxLayer - n.layer - 1;
-                            LayoutEdge[] edges = new LayoutEdge[cnt];
-                            LayoutNode[] nodes = new LayoutNode[cnt];
-
-                            nodes[0] = new LayoutNode();
-                            nodes[0].layer = n.layer + 1;
-                            edges[0] = new LayoutEdge(n, nodes[0], i, nodes[0].width / 2, null);
-                            nodes[0].preds.add(edges[0]);
-                            assert nodes[0].isDummy();
-                            n.succs.add(edges[0]);
-                            for (int j = 1; j < cnt; j++) {
-                                nodes[j] = new LayoutNode();
-                                nodes[j].layer = n.layer + j + 1;
-                                edges[j] = new LayoutEdge(nodes[j - 1], nodes[j], nodes[j - 1].width / 2, nodes[j].width / 2, null);
-                                nodes[j - 1].succs.add(edges[j]);
-                                nodes[j].preds.add(edges[j]);
-                                assert nodes[j].isDummy();
-                            }
-                            for (LayoutEdge curEdge : list) {
-                                assert curEdge.to.layer - n.layer - 2 >= 0;
-                                assert curEdge.to.layer - n.layer - 2 < cnt;
-                                LayoutNode anchor = nodes[curEdge.to.layer - n.layer - 2];
-                                for (int l = 0; l < curEdge.to.layer - n.layer - 1; ++l) {
-                                    anchor = nodes[l];
-                                }
-                                anchor.succs.add(curEdge);
-                                curEdge.from = anchor;
-                                curEdge.relativeFrom = anchor.width / 2;
-                                n.succs.remove(curEdge);
-                            }
-                        }
-                        portHash.remove(i);
-                    }
-                }
+                createDummiesForNode(n);
             }
         }
 
@@ -977,7 +983,7 @@ public class NewHierarchicalLayoutManager {
             int x = 0;
             for (LayoutNode n : layers[index]) {
                 n.x = x;
-                x += n.getWholeWidth() + offset;
+                x += n.getWholeWidth() + OFFSET;
             }
         }
 
