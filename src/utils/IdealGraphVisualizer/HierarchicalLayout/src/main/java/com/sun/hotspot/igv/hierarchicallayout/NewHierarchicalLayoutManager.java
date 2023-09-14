@@ -31,7 +31,6 @@ import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 public class NewHierarchicalLayoutManager {
@@ -311,7 +310,7 @@ public class NewHierarchicalLayoutManager {
     }
 
     public NewHierarchicalLayoutManager() {
-        this.maxLayerLength = -1;
+        maxLayerLength = -1;
 
         vertexToLayoutNode = new HashMap<>();
         reversedLinks = new HashSet<>();
@@ -1228,22 +1227,24 @@ public class NewHierarchicalLayoutManager {
 
     private class WriteResult {
 
-        private HashMap<Point, Point> pointsIdentity;
-
-        public void run() {
-            HashMap<Link, List<Point>> splitStartPoints = new HashMap<>();
-            HashMap<Link, List<Point>> splitEndPoints = new HashMap<>();
-            pointsIdentity = new HashMap<>();
+        private HashMap<Vertex, Point> computeVertexPositions() {
             HashMap<Vertex, Point> vertexPositions = new HashMap<>();
-            HashMap<Link, List<Point>> linkPositions = new HashMap<>();
             for (Vertex v : graph.getVertices()) {
                 LayoutNode n = vertexToLayoutNode.get(v);
                 vertexPositions.put(v, new Point(n.getLeftSide(), n.y));
             }
+            return vertexPositions;
+        }
 
+        private HashMap<Link, List<Point>> computeLinkPositions() {
+            HashMap<Link, List<Point>> splitStartPoints = new HashMap<>();
+            HashMap<Link, List<Point>> splitEndPoints = new HashMap<>();
+            HashMap<Link, List<Point>> linkPositions = new HashMap<>();
+
+            HashSet<Link> visited_edges = new HashSet<>();
             for (LayoutNode n : nodes) {
                 for (LayoutEdge e : n.preds) {
-                    if (e.link != null) {
+                    if (e.link != null && !visited_edges.contains(e.link)) {
                         ArrayList<Point> points = new ArrayList<>();
 
                         points.add(new Point(e.getEndPoint(), e.to.y));
@@ -1279,7 +1280,6 @@ public class NewHierarchicalLayoutManager {
                                 if (reversedLinks.contains(e.link)) {
                                     Collections.reverse(points);
                                 }
-                                assert !linkPositions.containsKey(e.link);
                                 linkPositions.put(e.link, points);
                             } else {
                                 splitEndPoints.put(e.link, points);
@@ -1304,13 +1304,12 @@ public class NewHierarchicalLayoutManager {
                             linkPositions.put(e.link, points);
                         }
 
-                        // No longer needed!
-                        e.link = null;
+                        visited_edges.add(e.link);
                     }
                 }
 
                 for (LayoutEdge e : n.succs) {
-                    if (e.link != null) {
+                    if (e.link != null && !visited_edges.contains(e.link)) {
                         ArrayList<Point> points = new ArrayList<>();
                         points.add(new Point(e.getStartPoint(), e.from.getBottom()));
                         points.add(new Point(e.getStartPoint(), layers[e.from.layer].getBottom() + LAYER_OFFSET));
@@ -1365,45 +1364,38 @@ public class NewHierarchicalLayoutManager {
                             linkPositions.put(e.link, points);
                         }
 
-                        e.link = null;
+                        visited_edges.add(e.link);
                     }
                 }
             }
+            return linkPositions;
+        }
+
+        public void run() {
+            HashMap<Vertex, Point> vertexPositions = computeVertexPositions();
+            HashMap<Link, List<Point>> linkPositions = computeLinkPositions();
 
             int minX = Integer.MAX_VALUE;
             int minY = Integer.MAX_VALUE;
-            int maxX = Integer.MIN_VALUE;
-            int maxY = Integer.MIN_VALUE;
-            for (Map.Entry<Vertex, Point> entry : vertexPositions.entrySet()) {
-                Vertex v = entry.getKey();
-                Point p = entry.getValue();
-                Dimension s = v.getSize();
-                minX = Math.min(minX, p.x);
-                minY = Math.min(minY, p.y);
-                maxX = Math.max(maxX, p.x + s.width);
-                maxY = Math.max(maxY, p.y + s.height);
-
+            for (Point point : vertexPositions.values()) {
+                minX = Math.min(minX, point.x);
+                minY = Math.min(minY, point.y);
             }
 
-            for (Map.Entry<Link, List<Point>> entry : linkPositions.entrySet()) {
-                for (Point p : entry.getValue()) {
-                    if (p != null) {
-                        minX = Math.min(minX, p.x);
-                        minY = Math.min(minY, p.y);
-                        maxX = Math.max(maxX, p.x);
-                        maxY = Math.max(maxY, p.y);
-                    }
+            for (List<Point> points : linkPositions.values()) {
+                for (Point point : points) {
+                    minX = Math.min(minX, point.x);
+                    minY = Math.min(minY, point.y);
                 }
-
             }
 
             // shift vertices by minX/minY
             for (Map.Entry<Vertex, Point> entry : vertexPositions.entrySet()) {
-                Point p = entry.getValue();
-                p.x -= minX;
-                p.y -= minY;
+                Point point = entry.getValue();
+                point.x -= minX;
+                point.y -= minY;
                 Vertex vertex = entry.getKey();
-                vertex.setPosition(p);
+                vertex.setPosition(point);
             }
 
             for (LayoutLayer layer : layers) {
@@ -1414,10 +1406,11 @@ public class NewHierarchicalLayoutManager {
             }
 
             // shift links by minX/minY
-            Map<Port, List<Map.Entry<Link, List<Point>>>> coLinks = new HashMap<>();
+            Map<Port, List<Map.Entry<Link, List<Point>>>> portToCoLinks = new HashMap<>();
             for (Map.Entry<Link, List<Point>> entry : linkPositions.entrySet()) {
-                Link l = entry.getKey();
-                coLinks.computeIfAbsent(l.getFrom(), p -> new ArrayList<>()).add(entry);
+                Link link = entry.getKey();
+                Port startingPort = link.getFrom();
+                portToCoLinks.computeIfAbsent(startingPort, p -> new ArrayList<>()).add(entry);
 
                 List<Point> points = entry.getValue();
                 for (Point p : points) {
@@ -1428,7 +1421,7 @@ public class NewHierarchicalLayoutManager {
                 }
             }
 
-            for (List<Map.Entry<Link, List<Point>>> links : coLinks.values()) {
+            for (List<Map.Entry<Link, List<Point>>> links : portToCoLinks.values()) {
                 // write points back to links
                 links.forEach(e -> e.getKey().setControlPoints(e.getValue()));
             }
