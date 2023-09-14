@@ -353,7 +353,6 @@ public class NewHierarchicalLayoutManager {
         // - LayoutNode n with reversed edges:
         //      - n.yOffset
         //      - n.xOffset
-        //      - n.bottomYOffset
         //      - n.width
         new ReverseEdges().run();
 
@@ -535,6 +534,8 @@ public class NewHierarchicalLayoutManager {
                 } else {
                     cur = -OFFSET;
                 }
+                int bottomYOffset = 0;
+
                 for (int pos : reversedUp) {
                     ArrayList<LayoutEdge> reversedPreds = new ArrayList<>();
                     for (LayoutEdge e : node.preds) {
@@ -548,19 +549,19 @@ public class NewHierarchicalLayoutManager {
                             reversedPreds.add(e);
                         }
                     }
-                    node.bottomYOffset += OFFSET;
+                    bottomYOffset += OFFSET;
                     ArrayList<Point> endPoints = new ArrayList<>();
 
                     node.width += OFFSET;
                     if (reversedDown.isEmpty()) {
-                        endPoints.add(new Point(node.width, node.height + node.bottomYOffset));
+                        endPoints.add(new Point(node.width, node.height + bottomYOffset));
                     } else {
-                        endPoints.add(new Point(cur, node.height + node.bottomYOffset));
+                        endPoints.add(new Point(cur, node.height + bottomYOffset));
                         cur -= OFFSET;
                     }
 
-                    endPoints.add(new Point(pos, node.height + node.bottomYOffset));
-                    endPoints.add(new Point(pos, node.height + node.bottomYOffset));
+                    endPoints.add(new Point(pos, node.height + bottomYOffset));
+                    endPoints.add(new Point(pos, node.height + bottomYOffset));
                     endPoints.add(new Point(pos, node.height));
                     for (LayoutEdge e : reversedPreds) {
                         reversedLinkEndPoints.put(e.link, endPoints);
