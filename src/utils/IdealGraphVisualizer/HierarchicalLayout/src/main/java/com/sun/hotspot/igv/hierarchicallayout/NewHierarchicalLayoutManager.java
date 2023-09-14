@@ -396,6 +396,12 @@ public class NewHierarchicalLayoutManager {
 
     private class BuildDatastructure {
 
+        private final Comparator<Link> LINK_COMPARATOR =
+                Comparator.comparing((Link l) -> l.getFrom().getVertex())
+                        .thenComparing(l -> l.getTo().getVertex())
+                        .thenComparingInt(l -> l.getFrom().getRelativePosition().x)
+                        .thenComparingInt(l -> l.getTo().getRelativePosition().x);
+
         private void run() {
             // cleanup
             vertexToLayoutNode.clear();
@@ -844,15 +850,15 @@ public class NewHierarchicalLayoutManager {
                     }
                 }
             }
-            for (LayoutEdge e : succs) {
-                assert e.link != null;
+            for (LayoutEdge succEdge : succs) {
+                assert succEdge.link != null;
             }
-            for (LayoutEdge e : succs) {
-                Integer i = e.relativeFrom;
+            for (LayoutEdge succEdge : succs) {
+                Integer i = succEdge.relativeFrom;
                 if (portHash.containsKey(i)) {
 
                     List<LayoutEdge> list = portHash.get(i);
-                    list.sort(LAYER_COMPARATOR);
+                    list.sort(Comparator.comparingInt(e -> e.to.layer));
 
                     if (list.size() == 1) {
                         processSingleEdge(list.get(0));
@@ -938,6 +944,7 @@ public class NewHierarchicalLayoutManager {
 
     private class CrossingReduction {
 
+        private final Comparator<LayoutNode> CROSSING_NODE_COMPARATOR = (n1, n2) -> Float.compare(n1.crossingNumber, n2.crossingNumber);
 
         public CrossingReduction() {}
 
@@ -1069,11 +1076,11 @@ public class NewHierarchicalLayoutManager {
         private LayoutNode[][] downProcessingOrder;
         private LayoutNode[][] upProcessingOrder;
 
-        private void initialPositions() {
-            for (LayoutNode n : nodes) {
-                n.x = space[n.layer][n.pos];
-            }
-        }
+        private final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
+
+        private final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(n -> n.preds.size());
+
+        private final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(n -> n.succs.size());
 
         private void createArrays() {
             space = new int[layers.length][];
@@ -1094,7 +1101,12 @@ public class NewHierarchicalLayoutManager {
                 upProcessingOrder[i] = layer.toArray(new LayoutNode[0]);
                 Arrays.sort(downProcessingOrder[i], NODE_PROCESSING_DOWN_COMPARATOR);
                 Arrays.sort(upProcessingOrder[i], NODE_PROCESSING_UP_COMPARATOR);
+            }
+        }
 
+        private void initialPositions() {
+            for (LayoutNode n : nodes) {
+                n.x = space[n.layer][n.pos];
             }
         }
 
@@ -1173,11 +1185,11 @@ public class NewHierarchicalLayoutManager {
                     n.optimal_x = calculateOptimalUp(n);
                 }
                 Arrays.sort(upProcessingOrder[i], (n1, n2) -> {
-                    int ret = DUMMY_NODES_FIRST.compare(n1, n2);
-                    if (ret != 0) {
-                        return ret;
+                    int dummy_nodes_first = Boolean.compare(n2.isDummy(), n1.isDummy());
+                    if (dummy_nodes_first != 0) {
+                        return dummy_nodes_first;
                     }
-                    return NODE_POSITION_OPTIMAL.compare(n1, n2);
+                    return Integer.compare(n1.optimal_x, n2.optimal_x);
                 });
                 for (LayoutNode n : upProcessingOrder[i]) {
                     row.insert(n, n.optimal_x);
@@ -1463,7 +1475,7 @@ public class NewHierarchicalLayoutManager {
         private final int[] space;
 
         public NodeRow(int[] space) {
-            treeSet = new TreeSet<>(NODE_POSITION_COMPARATOR);
+            treeSet = new TreeSet<>(Comparator.comparingInt(n -> n.pos));
             this.space = space;
         }
 
@@ -1499,26 +1511,4 @@ public class NewHierarchicalLayoutManager {
         }
     }
 
-    private static final Comparator<LayoutNode> NODE_POSITION_COMPARATOR = Comparator.comparingInt(n -> n.pos);
-
-    private static final Comparator<LayoutNode> NODE_POSITION_OPTIMAL = Comparator.comparingInt(n -> n.optimal_x);
-
-    private static final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
-
-    private static final Comparator<LayoutNode> NODE_DOWN = Comparator.comparingInt(n -> n.preds.size());
-    private static final Comparator<LayoutNode> NODE_UP = Comparator.comparingInt(n -> n.succs.size());
-
-    private static final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(NODE_DOWN);
-
-    private static final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(NODE_UP);
-
-    private static final Comparator<LayoutNode> CROSSING_NODE_COMPARATOR = (n1, n2) -> Float.compare(n1.crossingNumber, n2.crossingNumber);
-
-    private static final Comparator<LayoutEdge> LAYER_COMPARATOR = Comparator.comparingInt(e -> e.to.layer);
-
-    private static final Comparator<Link> LINK_COMPARATOR =
-            Comparator.comparing((Link l) -> l.getFrom().getVertex())
-                    .thenComparing(l -> l.getTo().getVertex())
-                    .thenComparingInt(l -> l.getFrom().getRelativePosition().x)
-                    .thenComparingInt(l -> l.getTo().getRelativePosition().x);
 }
