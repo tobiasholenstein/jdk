@@ -350,7 +350,11 @@ public class NewHierarchicalLayoutManager {
         // - add Link : reversedLinks.add(e.link);
         // - set reversedLinkEndPoints.put(link, endpoints);
         // - set reversedLinkStartPoints.put(link, start-points);
-
+        // - LayoutNode n with reversed edges:
+        //      - n.yOffset
+        //      - n.xOffset
+        //      - n.bottomYOffset
+        //      - n.width
         new ReverseEdges().run();
 
         // #############################################################
@@ -431,6 +435,8 @@ public class NewHierarchicalLayoutManager {
 
         private void run() {
             reversedLinks.clear();
+            reversedLinkStartPoints.clear();
+            reversedLinkEndPoints.clear();
 
             // Remove self-edges
             for (LayoutNode node : nodes) {
@@ -475,9 +481,6 @@ public class NewHierarchicalLayoutManager {
         }
 
         private void resolveInsOuts() {
-            // reset
-            reversedLinkStartPoints.clear();
-            reversedLinkEndPoints.clear();
 
             for (LayoutNode node : nodes) {
                 SortedSet<Integer> reversedDown = new TreeSet<>();
