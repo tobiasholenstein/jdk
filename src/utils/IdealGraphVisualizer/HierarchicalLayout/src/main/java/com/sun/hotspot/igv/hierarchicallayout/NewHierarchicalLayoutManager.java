@@ -1389,16 +1389,6 @@ public class NewHierarchicalLayoutManager {
                 }
             }
 
-            // shift vertices by minX/minY
-            for (Map.Entry<Vertex, Point> entry : vertexPositions.entrySet()) {
-                Point point = entry.getValue();
-                point.x -= minX;
-                point.y -= minY;
-                Vertex vertex = entry.getKey();
-                vertex.setPosition(point);
-            }
-
-
             for (LayoutNode node : nodes) {
                 node.x -= minX;
                 node.y -= minY;
@@ -1408,7 +1398,14 @@ public class NewHierarchicalLayoutManager {
                 layer.y -= minY;
             }
 
-            // TODO shift layoutedges?
+            // shift vertices by minX/minY
+            for (Map.Entry<Vertex, Point> entry : vertexPositions.entrySet()) {
+                Point point = entry.getValue();
+                point.x -= minX;
+                point.y -= minY;
+                Vertex vertex = entry.getKey();
+                vertex.setPosition(point);
+            }
 
             // shift links by minX/minY
             for (Map.Entry<Link, List<Point>> entry : linkPositions.entrySet()) {
