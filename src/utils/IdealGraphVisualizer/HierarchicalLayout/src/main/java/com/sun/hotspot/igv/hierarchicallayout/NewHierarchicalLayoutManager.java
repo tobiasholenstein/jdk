@@ -103,16 +103,7 @@ public class NewHierarchicalLayoutManager {
         System.out.println("[old] layer " + movedNode.layer);
         System.out.print(" at pos " + movedNode.pos);
 
-        for (LayoutEdge e : movedNode.preds) {
-           // assert e.link != null;
-        }
-
-        for (LayoutEdge e : movedNode.succs) {
-            //assert e.link != null;
-        }
-
         removeSuccDummyNodes(movedNode);
-
         removePredDummyNodes(movedNode);
 
         System.out.println("newLocation " + newLocation);
@@ -1082,6 +1073,9 @@ public class NewHierarchicalLayoutManager {
 
         private final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(n -> n.succs.size());
 
+        private final Comparator<LayoutNode> DUMMY_NODES_THEN_OPTMMAL_X = DUMMY_NODES_FIRST.thenComparing(n -> n.optimal_x);
+
+
         private void createArrays() {
             space = new int[layers.length][];
             downProcessingOrder = new LayoutNode[layers.length][];
@@ -1180,17 +1174,12 @@ public class NewHierarchicalLayoutManager {
 
         private void sweepUp() {
             for (int i = layers.length - 2; i >= 0; i--) {
-                NodeRow row = new NodeRow(space[i]);
                 for (LayoutNode n : upProcessingOrder[i]) {
                     n.optimal_x = calculateOptimalUp(n);
                 }
-                Arrays.sort(upProcessingOrder[i], (n1, n2) -> {
-                    int dummy_nodes_first = Boolean.compare(n2.isDummy(), n1.isDummy());
-                    if (dummy_nodes_first != 0) {
-                        return dummy_nodes_first;
-                    }
-                    return Integer.compare(n1.optimal_x, n2.optimal_x);
-                });
+                Arrays.sort(upProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
+
+                NodeRow row = new NodeRow(space[i]);
                 for (LayoutNode n : upProcessingOrder[i]) {
                     row.insert(n, n.optimal_x);
                 }
@@ -1199,10 +1188,14 @@ public class NewHierarchicalLayoutManager {
 
         private void sweepDown() {
             for (int i = 1; i < layers.length; i++) {
+                for (LayoutNode n : downProcessingOrder[i]) {
+                    n.optimal_x = calculateOptimalDown(n);
+                }
+                Arrays.sort(downProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
+
                 NodeRow row = new NodeRow(space[i]);
                 for (LayoutNode n : downProcessingOrder[i]) {
-                    int optimal = calculateOptimalDown(n);
-                    row.insert(n, optimal);
+                    row.insert(n, n.optimal_x);
                 }
             }
         }
