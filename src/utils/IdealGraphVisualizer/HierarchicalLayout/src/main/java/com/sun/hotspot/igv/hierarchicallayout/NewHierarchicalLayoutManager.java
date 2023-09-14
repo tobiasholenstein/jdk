@@ -1408,13 +1408,11 @@ public class NewHierarchicalLayoutManager {
                 layer.y -= minY;
             }
 
+            // TODO shift layoutedges?
+
             // shift links by minX/minY
-            Map<Port, List<Map.Entry<Link, List<Point>>>> portToCoLinks = new HashMap<>();
             for (Map.Entry<Link, List<Point>> entry : linkPositions.entrySet()) {
                 Link link = entry.getKey();
-                Port startingPort = link.getFrom();
-                portToCoLinks.computeIfAbsent(startingPort, p -> new ArrayList<>()).add(entry);
-
                 List<Point> points = entry.getValue();
                 for (Point p : points) {
                     if (p != null) {
@@ -1422,13 +1420,10 @@ public class NewHierarchicalLayoutManager {
                         p.y -= minY;
                     }
                 }
-            }
 
-            for (List<Map.Entry<Link, List<Point>>> links : portToCoLinks.values()) {
                 // write points back to links
-                links.forEach(e -> e.getKey().setControlPoints(e.getValue()));
+                link.setControlPoints(points);
             }
-
         }
     }
 
