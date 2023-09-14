@@ -1399,7 +1399,6 @@ public class NewHierarchicalLayoutManager {
                 p.y -= minY;
                 Vertex vertex = entry.getKey();
                 vertex.setPosition(p);
-                //LayoutNode n = vertexToLayoutNode.get(vertex);
             }
 
             for (LayoutLayer layer : layers) {
@@ -1425,169 +1424,10 @@ public class NewHierarchicalLayoutManager {
             }
 
             for (List<Map.Entry<Link, List<Point>>> links : coLinks.values()) {
-                //reduce links points identified by their Output Port
-                reduceLinksPoints(links);
-                //write reduced lists of points to links
+                // write points back to links
                 links.forEach(e -> e.getKey().setControlPoints(e.getValue()));
             }
-        }
 
-        private class ReductionEntry {
-
-            final Point lastPoint;
-            final int nextPointIndex;
-            final Point nextPoint;
-            final List<Point> reducedPoints;
-            final List<Map.Entry<Link, List<Point>>> entries;
-
-            public ReductionEntry(Point lastPoint, int nextPointIndex, Point nextPoint, List<Map.Entry<Link, List<Point>>> entries, List<Point> reducedPoints) {
-                this.lastPoint = lastPoint;
-                this.nextPointIndex = nextPointIndex;
-                this.nextPoint = nextPoint;
-                this.entries = entries;
-                this.reducedPoints = reducedPoints;
-            }
-        }
-
-        /**
-         * This algorithm reduces number of points on correlating edges to their
-         * identities and removes any unnecessary points along the edges.
-         *
-         * Algorithm expects Links to begin at the same point. Reduced points
-         * are written back to its corresponding Map.Entry. Middle points in
-         * line are omitted. Equal points are replaced by single identity.
-         *
-         * @param links List of Map.Entries of Points on Link.
-         */
-        private void reduceLinksPoints(List<Map.Entry<Link, List<Point>>> links) {
-            Point firstPoint = links.get(0).getValue().get(0);
-            ArrayList<Point> points = new ArrayList<>();
-            //first Point is always the same
-            points.add(firstPoint);
-            //Avoiding SOE by not using recursion
-            //prepare entries for reduction
-            Queue<ReductionEntry> tasks = new ArrayDeque<>(makeReductionEntries(links, points, firstPoint, 0));
-            while (!tasks.isEmpty()) {
-                tasks.addAll(reducePoints(tasks.remove()));
-            }
-            //overwrite Points at same place by "identity"
-            //needed for ClusterNodes setPosition() as it moves points by "identity!
-            for (Map.Entry<Link, List<Point>> pnts : links) {
-                List<Point> newPoints = new ArrayList<>(pnts.getValue().size());
-                for (Point p : pnts.getValue()) {
-                    newPoints.add(pointsIdentity.computeIfAbsent(p, x -> x));
-                }
-                pnts.setValue(newPoints);
-            }
-        }
-
-        /**
-         * Creates List of ReductionEntries, for the algorithm to process. This
-         * method creates separate ReductionEntries for edges that has same
-         * direction. Also this method writes reduced points back to Map.Entry.
-         *
-         * @param entries List of mapping of Link to its points.
-         * @param reducedPoints Current already reduced points.
-         * @param lastPoint Last Point that was saved as reduced Point.
-         * @param lastPointIndex Last Point index in unreduced Points list.
-         * @return List of ReductionEntries.
-         */
-        private List<ReductionEntry> makeReductionEntries(List<Map.Entry<Link, List<Point>>> entries, List<Point> reducedPoints, Point lastPoint, int lastPointIndex) {
-            assert assertCorrectPointAtIndex(entries, reducedPoints, lastPoint, lastPointIndex);
-            int nextIndex = lastPointIndex + 1;
-            Map<Point, List<Map.Entry<Link, List<Point>>>> nexts = new HashMap<>();
-            //separate edges by their direction and write back finished edges.
-            for (Map.Entry<Link, List<Point>> entry : entries) {
-                List<Point> controlPoints = entry.getValue();
-                if (controlPoints.size() > nextIndex) {
-                    //collect links by their next points (separate branches)
-                    nexts.computeIfAbsent(controlPoints.get(nextIndex), p -> new ArrayList<>()).add(entry);
-                } else {
-                    assert reducedPoints.size() > 1;
-                    //write complete reduced points to its Map.Entry
-                    entry.setValue(reducedPoints);
-                }
-            }
-            //collect edges to ReductionEntries (copy reduced Points list if there is branching)
-            boolean branching = nexts.size() > 1;
-            return nexts.entrySet().stream().map(e
-                            -> new ReductionEntry(lastPoint, nextIndex, e.getKey(), e.getValue(),
-                            branching ? new ArrayList<>(reducedPoints) : reducedPoints))
-                    .collect(Collectors.toList());
-        }
-
-        /**
-         * Returns if points are in line.
-         *
-         * @return {@code true} if points are in line.
-         */
-        private boolean pointsInLine(Point p1, Point p2, Point p3) {
-            return p1 != null && p2 != null && p3 != null
-                    && (p1.x - p2.x) * (p2.y - p3.y) == (p1.y - p2.y) * (p2.x - p3.x);
-        }
-
-        /**
-         * Method processes ReductionEntry to minimize Points on correlating
-         * edges. Algorithm expects that current points are the same for all
-         * edges. (lastP-currentP-nextP)
-         * <p>
-         * It then scans for next point and determines if edges branches, turns
-         * or stays at line. If edges stays at line, it skips current Point and
-         * moves to next. If edges turns, it saves current Point as last Point
-         * and scans again. If edges branches it just saves current point and
-         * let makeReductionEntries() separate the branches.
-         *
-         * @param task
-         * @return List of ReductionEntries for further reduction.
-         */
-        private List<ReductionEntry> reducePoints(ReductionEntry task) {
-            //lastPoint is already saved in reduced edges
-            Point lastPoint = task.lastPoint;
-            //currentPoint can be omited as middle point if in line with lastPoint and nextPoint
-            Point currentPoint = task.nextPoint;
-            int currentIndex = task.nextPointIndex;
-            //null must stay where it is, save and move on
-            if (currentPoint == null || lastPoint == null) {
-                task.reducedPoints.add(currentPoint);
-                return makeReductionEntries(task.entries, task.reducedPoints, currentPoint, currentIndex);
-            }
-            List<Point> points = task.entries.get(0).getValue();
-            //if we are processing multiple edges at once - check for branching
-            boolean multiple = task.entries.size() > 1;
-            //process edges till we are done or we found branching (only single edges ends)
-            while (points.size() > currentIndex + 1) {
-                final int nextIndex = currentIndex + 1;
-                final Point nextPoint = points.get(nextIndex);
-                //branching check (next points of all edges are equal)
-                if (multiple && !task.entries.stream().map(Map.Entry::getValue).allMatch(pts -> Objects.equals(nextPoint, pts.get(nextIndex)))) {
-                    break;
-                }
-                //if edges turns save current point as last point (turning point)
-                if (!pointsInLine(lastPoint, currentPoint, nextPoint)) {
-                    task.reducedPoints.add(currentPoint);
-                    lastPoint = currentPoint;
-                }
-                //move points by a step
-                currentPoint = nextPoint;
-                currentIndex = nextIndex;
-            }
-            task.reducedPoints.add(currentPoint);
-            //prepare branched or finished edges for future processing or writeback
-            return makeReductionEntries(task.entries, task.reducedPoints, currentPoint, currentIndex);
-        }
-
-        private boolean assertCorrectPointAtIndex(List<Map.Entry<Link, List<Point>>> entries, List<Point> reducedPoints, Point lastPoint, int lastPointIndex) {
-            //assert that last point in reduced points is indeed the lastPoint (it was already added to list)
-            if (!Objects.equals(reducedPoints.get(reducedPoints.size() - 1), lastPoint)) {
-                return false;
-            }
-            //assert that all entries has the lastPoint at lastPointIndex position (no stray edges)
-            for (Map.Entry<Link, List<Point>> entry : entries) {
-                if (!Objects.equals(entry.getValue().get(lastPointIndex), lastPoint)) {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 
@@ -1598,27 +1438,18 @@ public class NewHierarchicalLayoutManager {
 
         @Override
         public boolean addAll(Collection<? extends LayoutNode> c) {
-            c.forEach(this::add0);
+            c.forEach(this::setHeight);
             return super.addAll(c);
         }
 
-        private void add0(LayoutNode n) {
+        private void setHeight(LayoutNode n) {
             height = Math.max(height, n.getWholeHeight());
         }
 
         @Override
         public boolean add(LayoutNode n) {
-            add0(n);
+            setHeight(n);
             return super.add(n);
-        }
-
-        private boolean remove0(LayoutNode n) {
-            return true;
-        }
-
-        @Override
-        public boolean remove(Object o) {
-            return (o instanceof LayoutNode) && super.remove(o) && remove0((LayoutNode) o);
         }
 
         public int getBottom() {
