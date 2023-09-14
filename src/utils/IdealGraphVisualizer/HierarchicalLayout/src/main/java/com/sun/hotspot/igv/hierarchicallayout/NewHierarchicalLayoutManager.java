@@ -50,7 +50,6 @@ public class NewHierarchicalLayoutManager {
     private final int maxLayerLength;
     // Algorithm global datastructures
     private final Set<Link> reversedLinks;
-    private final Set<LayoutEdge> longEdges;
     private final List<LayoutNode> nodes;
     private final HashMap<Vertex, LayoutNode> vertexToLayoutNode;
     private final HashMap<Link, List<Point>> reversedLinkStartPoints;
@@ -328,34 +327,30 @@ public class NewHierarchicalLayoutManager {
         reversedLinkStartPoints = new HashMap<>();
         reversedLinkEndPoints = new HashMap<>();
         nodes = new ArrayList<>();
-        longEdges = new HashSet<>();
-    }
-
-    private void cleanup() {
-        vertexToLayoutNode.clear();
-        reversedLinks.clear();
-        reversedLinkStartPoints.clear();
-        reversedLinkEndPoints.clear();
-        nodes.clear();
-        longEdges.clear();
     }
 
     public void doLayout(LayoutGraph graph) {
         this.graph = graph;
 
-        cleanup();
-
         // #############################################################
         // Step 1: Build up data structure
         // creates:
+        // resets vertexToLayoutNode.clear();
+        //        nodes.clear();
         //  - LayoutNodes : nodes, vertexToLayoutNode
         //  - LayoutEdge :  LayoutNode.preds, LayoutNode.succs
         new BuildDatastructure().run();
 
         // #############################################################
         // STEP 2: Reverse edges, handle backedges
+        // resets reversedLinks
+        // resets reversedLinkStartPoints
+        // resets reversedLinkEndPoints
         // - LayoutEdge e : reverse backedges
         // - add Link : reversedLinks.add(e.link);
+        // - set reversedLinkEndPoints.put(link, endpoints);
+        // - set reversedLinkStartPoints.put(link, start-points);
+
         new ReverseEdges().run();
 
         // #############################################################
@@ -373,16 +368,19 @@ public class NewHierarchicalLayoutManager {
         // #############################################################
         // STEP 5: Crossing Reduction
         // creates layers = new LayoutLayer[layerCount];
+        // - sets for each LayoutNode n,und n.pos
         new CrossingReduction().run();
 
         // #############################################################
         // STEP 6: Assign X coordinates
+        // for all LayoutNode n in nodes
+        // - sets n.x =
         new AssignXCoordinates().run();
 
         // #############################################################
         // STEP 7: Assign Y coordinates
-        // sets:
-        //  - layer.y;
+        // sets for LayoutLayer layer: layer.y;
+        // for each LayoutNode n
         //  - node.y
         //  - node.yOffset
         //  - node.bottomYOffset
@@ -396,6 +394,10 @@ public class NewHierarchicalLayoutManager {
     private class BuildDatastructure {
 
         private void run() {
+            // cleanup
+            vertexToLayoutNode.clear();
+            nodes.clear();
+
             // Set up nodes
             for (Vertex v : graph.getVertices()) {
                 LayoutNode node = new LayoutNode(v);
@@ -428,6 +430,8 @@ public class NewHierarchicalLayoutManager {
         private HashSet<LayoutNode> active;
 
         private void run() {
+            reversedLinks.clear();
+
             // Remove self-edges
             for (LayoutNode node : nodes) {
                 ArrayList<LayoutEdge> succs = new ArrayList<>(node.succs);
@@ -471,6 +475,10 @@ public class NewHierarchicalLayoutManager {
         }
 
         private void resolveInsOuts() {
+            // reset
+            reversedLinkStartPoints.clear();
+            reversedLinkEndPoints.clear();
+
             for (LayoutNode node : nodes) {
                 SortedSet<Integer> reversedDown = new TreeSet<>();
 
@@ -962,9 +970,7 @@ public class NewHierarchicalLayoutManager {
 
         private void run() {
             createLayers();
-            //will be reassigned
-            initX();
-            // Optimize
+
             for (int i = 0; i < CROSSING_ITERATIONS; i++) {
                 downSweep();
                 upSweep();
@@ -973,11 +979,6 @@ public class NewHierarchicalLayoutManager {
             updatePositions();
         }
 
-        private void initX() {
-            for (int i = 0; i < layers.length; i++) {
-                updateXOfLayer(i);
-            }
-        }
 
         private void updateXOfLayer(int index) {
             int x = 0;
@@ -1219,7 +1220,6 @@ public class NewHierarchicalLayoutManager {
     private class WriteResult {
 
         private HashMap<Point, Point> pointsIdentity;
-        private final int addition = LAYER_OFFSET / 2;
 
         public void run() {
             HashMap<Link, List<Point>> splitStartPoints = new HashMap<>();
@@ -1405,12 +1405,6 @@ public class NewHierarchicalLayoutManager {
                 }
             }
 
-            for (LayoutEdge e : longEdges) {
-                e.from.succs.add(e);
-                e.to.preds.add(e);
-                linkPositions.put(e.link, makeLongEnding(e));
-            }
-
             // shift links by minX/minY
             Map<Port, List<Map.Entry<Link, List<Point>>>> coLinks = new HashMap<>();
             for (Map.Entry<Link, List<Point>> entry : linkPositions.entrySet()) {
@@ -1591,50 +1585,6 @@ public class NewHierarchicalLayoutManager {
             }
             return true;
         }
-
-        private List<Point> makeLongEnding(LayoutEdge e) {
-            List<Point> points = new ArrayList<>();
-            if (!reversedLinks.contains(e.link)) {
-                points.add(new Point(e.getStartPoint(), e.from.getBottom()));
-                makeLongEndingStart(points);
-                points.add(null);
-                makeLongEndingEnd(points, new Point(e.getEndPoint(), e.to.y));
-            } else {
-                int diffX = e.from.getLeftSide();
-                int diffY = e.from.y;
-                for (Point p : reversedLinkStartPoints.get(e.link)) {
-                    points.add(new Point(p.x + diffX, p.y + diffY));
-                }
-                Collections.reverse(points);
-                points.add(new Point(points.get(points.size() - 1).x, diffY + e.from.height));
-                makeLongEndingStart(points);
-                points.add(null);
-                List<Point> ends = reversedLinkEndPoints.get(e.link);
-                diffX = e.to.getLeftSide();
-                diffY = e.to.y;
-                makeLongEndingEnd(points, new Point(ends.get(0).x + diffX, diffY));
-                for (Point p : ends) {
-                    points.add(new Point(p.x + diffX, p.y + diffY));
-                }
-                Collections.reverse(points);
-            }
-            return points;
-        }
-
-        private void makeLongEndingStart(List<Point> points) {
-            Point last = points.get(points.size() - 1);
-            points.add(last = new Point(last.x, last.y + addition));
-            points.add(last = new Point(last.x + addition, last.y + addition));
-            points.add(new Point(last.x, last.y + (addition * 2)));
-        }
-
-        private void makeLongEndingEnd(List<Point> points, Point last) {
-            points.add(last = new Point(last.x - addition, last.y - (addition * 3)));
-            points.add(last = new Point(last.x, last.y + addition));
-            points.add(last = new Point(last.x + addition, last.y + addition));
-            points.add(new Point(last.x, last.y + addition));
-        }
-
     }
 
     private class LayoutLayer extends ArrayList<LayoutNode> {
