@@ -1398,11 +1398,14 @@ public class NewHierarchicalLayoutManager {
                 vertex.setPosition(point);
             }
 
+
+            for (LayoutNode node : nodes) {
+                node.x -= minX;
+                node.y -= minY;
+            }
+
             for (LayoutLayer layer : layers) {
-                for (LayoutNode node : layer) {
-                    node.x -= minX;
-                    node.y -= minY;
-                }
+                layer.y -= minY;
             }
 
             // shift links by minX/minY
