@@ -58,21 +58,17 @@ public class NewHierarchicalLayoutManager {
     private int layerCount;
 
     private void removeNode(LayoutNode node) {
-
         int layer = node.layer;
         int pos = node.pos;
-        List<LayoutNode> remainingLayerNodes = layers[layer];
-        assert remainingLayerNodes.contains(node);
-        remainingLayerNodes.remove(node);
+        layers[layer].remove(node);
 
         // Update position of remaining nodes on the same layer
-        for (LayoutNode n : remainingLayerNodes) {
+        for (LayoutNode n : layers[layer]) {
             if (n.pos > pos) {
                 n.pos -= 1;
+                n.x -= node.getWholeWidth() + X_OFFSET;
             }
         }
-
-        //adjustXCoordinates(layer);
 
         // Remove node from graph layout
         nodes.remove(node);
@@ -105,15 +101,12 @@ public class NewHierarchicalLayoutManager {
         removeSuccDummyNodes(movedNode);
         removePredDummyNodes(movedNode);
 
-        System.out.println("newLocation " + newLocation);
-
         for (int i = 0; i < layerCount; i++) {
             LayoutLayer newLayer = layers[i];
             if (newLayer.y <= newLocation.y && newLocation.y <= newLayer.getBottom()) {
 
                 // find the position in the new layer
                 int newPos = 0;
-                System.out.println("newLayer " + newLayer);
                 for (int j = 0; j < newLayer.size()-1; j++) {
                     LayoutNode n = newLayer.get(j);
                     LayoutNode nNext = newLayer.get(j+1);
@@ -128,9 +121,6 @@ public class NewHierarchicalLayoutManager {
                     }
                 }
 
-
-
-
                 // remove from old layer and update positions in old layer
                 removeNode(movedNode);
 
@@ -141,6 +131,7 @@ public class NewHierarchicalLayoutManager {
                 for (LayoutNode n : newLayer) {
                     if (n.pos >= newPos) {
                         n.pos += 1;
+                        n.x += movedNode.getWholeWidth() + X_OFFSET;
                     }
                 }
                 movedNode.pos = newPos;
@@ -177,6 +168,7 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
+        new WriteResult().run();
 
 
     }
@@ -1056,8 +1048,6 @@ public class NewHierarchicalLayoutManager {
                 }
             }
         }
-
-
     }
 
     private class AssignXCoordinates {
@@ -1206,21 +1196,21 @@ public class NewHierarchicalLayoutManager {
         private void run() {
             int curY = 0;
             for (LayoutLayer layer : layers) {
-                int maxHeight = layer.height;
+                int layerHeight = layer.height;
                 layer.y = curY;
                 int maxXOffset = 0;
                 for (LayoutNode n : layer) {
                     n.y = curY;
                     if (!n.isDummy()) {
-                        n.yOffset = (maxHeight - n.getWholeHeight()) / 2 + n.yOffset;
+                        n.yOffset = (layerHeight - n.getWholeHeight()) / 2 + n.yOffset;
                         n.y += n.yOffset;
-                        n.bottomYOffset = maxHeight - n.yOffset - n.height;
+                        n.bottomYOffset = layerHeight - n.yOffset - n.height;
                     }
                     for (LayoutEdge e : n.succs) {
                         maxXOffset = Math.max(Math.abs(e.getStartPoint() - e.getEndPoint()), maxXOffset);
                     }
                 }
-                curY += maxHeight + Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
+                curY += layerHeight + Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
             }
         }
     }
