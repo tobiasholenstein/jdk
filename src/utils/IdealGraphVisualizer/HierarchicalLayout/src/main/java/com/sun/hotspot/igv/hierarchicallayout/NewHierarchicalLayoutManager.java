@@ -93,8 +93,9 @@ public class NewHierarchicalLayoutManager {
         }
     }
 
-    public void moveFigureTo(Vertex movedVertex, Point newLocation) {
+    public void moveFigureTo(Vertex movedVertex, Point loc) {
         LayoutNode movedNode = vertexToLayoutNode.get(movedVertex);
+        Point newLocation = new Point(loc.x, loc.y + movedNode.height/2);
         System.out.println("[old] layer " + movedNode.layer);
         System.out.print(" at pos " + movedNode.pos);
 
@@ -168,9 +169,10 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
+
+        new AssignXCoordinates().run(false);
+        new AssignYCoordinates().run();
         new WriteResult().run();
-
-
     }
 
     private class LayoutNode {
@@ -360,7 +362,7 @@ public class NewHierarchicalLayoutManager {
         // STEP 6: Assign X coordinates
         // for all LayoutNode n in nodes
         // - sets n.x =
-        new AssignXCoordinates().run();
+        new AssignXCoordinates().run(true);
 
         // #############################################################
         // STEP 7: Assign Y coordinates
@@ -1093,13 +1095,13 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        private void run() {
+        private void run(boolean canReorder) {
             createArrays();
             initialPositions();
 
             for (int i = 0; i < SWEEP_ITERATIONS; i++) {
-                sweepDown();
-                sweepUp();
+                sweepDown(canReorder);
+                sweepUp(canReorder);
             }
         }
 
@@ -1161,12 +1163,14 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        private void sweepUp() {
+        private void sweepUp(boolean canReorder) {
             for (int i = layers.length - 2; i >= 0; i--) {
                 for (LayoutNode n : upProcessingOrder[i]) {
                     n.optimal_x = calculateOptimalUp(n);
                 }
-                Arrays.sort(upProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
+                if (canReorder) {
+                    Arrays.sort(upProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
+                }
 
                 NodeRow row = new NodeRow(space[i]);
                 for (LayoutNode n : upProcessingOrder[i]) {
@@ -1175,12 +1179,14 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        private void sweepDown() {
+        private void sweepDown(boolean canReorder) {
             for (int i = 1; i < layers.length; i++) {
                 for (LayoutNode n : downProcessingOrder[i]) {
                     n.optimal_x = calculateOptimalDown(n);
                 }
-                Arrays.sort(downProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
+                if (canReorder) {
+                    Arrays.sort(downProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
+                }
 
                 NodeRow row = new NodeRow(space[i]);
                 for (LayoutNode n : downProcessingOrder[i]) {
