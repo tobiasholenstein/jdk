@@ -177,8 +177,9 @@ public class NewHierarchicalLayoutManager {
                     }
 
                     // the node did not change position withing the layer
-                    if (leftBound < newX && newX + movedNode.getWholeWidth() < rightBound) {
-                        // TODO: adjust x
+                    if (leftBound < newX && newX < rightBound) {
+                        newX = Math.max(newX, leftBound + X_OFFSET);
+                        newX = Math.min(newX, rightBound - X_OFFSET - movedNode.getWholeWidth());
                         // same layer and position, just adjust x pos
                         movedNode.x = newX;
                         assertOrder();
