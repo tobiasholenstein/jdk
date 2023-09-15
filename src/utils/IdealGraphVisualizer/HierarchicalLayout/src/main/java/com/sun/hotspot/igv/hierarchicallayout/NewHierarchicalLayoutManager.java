@@ -134,17 +134,17 @@ public class NewHierarchicalLayoutManager {
     private int findPosInLayer(LayoutLayer layer, int xLoc) {
         // find the position in the new layer at location
         int newPos = 0;
-        for (int j = 0; j < layer.size()-1; j++) {
-            LayoutNode node = layer.get(j);
-            LayoutNode nNext = layer.get(j+1);
-            if (node.getLeftSide() <= xLoc && xLoc <= node.getRightSide()) {
-                newPos = node.pos;
+        for (int j = 1; j < layer.size(); j++) {
+            LayoutNode leftNode = layer.get(j-1);
+            LayoutNode rightNode = layer.get(j);
+            if (leftNode.getLeftSide() <= xLoc && xLoc <= leftNode.getRightSide()) {
+                newPos = leftNode.pos;
                 break;
-            } else if (node.getRightSide() <= xLoc && xLoc <= nNext.getLeftSide()) {
-                newPos = nNext.pos;
+            } else if (rightNode.getRightSide() <= xLoc && xLoc <= rightNode.getLeftSide()) {
+                newPos = rightNode.pos;
                 break;
-            } else if (nNext.getRightSide() <= xLoc) {
-                newPos = nNext.pos + 1;
+            } else if (rightNode.getRightSide() <= xLoc) {
+                newPos = rightNode.pos + 1;
             }
         }
         return newPos;
@@ -159,17 +159,36 @@ public class NewHierarchicalLayoutManager {
 
         for (int i = 0; i < layerCount; i++) {
             LayoutLayer newLayer = layers[i];
-            if (newLayer.y <= newLocation.y && newLocation.y <= newLayer.getBottom()) {
-                int newPos = findPosInLayer(newLayer, newLocation.x);
+            assert newLayer.size()>0;
 
-                if (movedNode.layer == i && movedNode.pos == newPos) {
-                    // same layer and position, just adjust x pos
-                    movedNode.x = newLocation.x;
-                    assertOrder();
-                    new WriteResult().run();
-                    assertOrder();
-                    return;
+            if (newLayer.y <= newLocation.y && newLocation.y <= newLayer.getBottom()) {
+
+                if (movedNode.layer == i) { // we move the node in the same layer
+                    int newX = newLocation.x;
+                    int leftBound = Integer.MIN_VALUE;
+                    int rightBound = Integer.MAX_VALUE;
+                    if (movedNode.pos > 0) {
+                        LayoutNode leftNode = newLayer.get(movedNode.pos-1);
+                        leftBound = leftNode.getRightSide();
+                    }
+                    if (movedNode.pos < newLayer.size()-1) {
+                        LayoutNode rightNode = newLayer.get(movedNode.pos+1);
+                        rightBound = rightNode.getLeftSide();
+                    }
+
+                    // the node did not change position withing the layer
+                    if (leftBound < newX && newX + movedNode.getWholeWidth() < rightBound) {
+                        // TODO: adjust x
+                        // same layer and position, just adjust x pos
+                        movedNode.x = newX;
+                        assertOrder();
+                        new WriteResult().run();
+                        assertOrder();
+                        return;
+                    }
+
                 }
+                int newPos = findPosInLayer(newLayer, newLocation.x);
 
                 // remove from old layer and update positions in old layer
                 removeNode(movedNode);
