@@ -137,13 +137,13 @@ public class NewHierarchicalLayoutManager {
         for (int j = 1; j < layer.size(); j++) {
             LayoutNode leftNode = layer.get(j-1);
             LayoutNode rightNode = layer.get(j);
-            if (leftNode.getLeftSide() <= xLoc && xLoc <= leftNode.getRightSide()) {
+            if (xLoc <= leftNode.getRightSide()) {
                 newPos = leftNode.pos;
                 break;
-            } else if (rightNode.getRightSide() <= xLoc && xLoc <= rightNode.getLeftSide()) {
+            } else if (xLoc <= rightNode.getRightSide()) {
                 newPos = rightNode.pos;
                 break;
-            } else if (rightNode.getRightSide() <= xLoc) {
+            } else {
                 newPos = rightNode.pos + 1;
             }
         }
@@ -162,6 +162,7 @@ public class NewHierarchicalLayoutManager {
             assert newLayer.size()>0;
 
             if (newLayer.y <= newLocation.y && newLocation.y <= newLayer.getBottom()) {
+                System.out.println("from layer " + movedNode.layer + " to layer " + i);
 
                 if (movedNode.layer == i) { // we move the node in the same layer
                     int newX = newLocation.x;
@@ -190,6 +191,7 @@ public class NewHierarchicalLayoutManager {
 
                 }
                 int newPos = findPosInLayer(newLayer, newLocation.x);
+                System.out.println("from pos " + movedNode.pos + " to pos " + newPos);
 
                 // remove from old layer and update positions in old layer
                 removeNode(movedNode);
