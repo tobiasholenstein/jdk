@@ -39,9 +39,9 @@ public class NewHierarchicalLayoutManager {
     public static final int DUMMY_HEIGHT = 1;
     public static final int DUMMY_WIDTH = 1;
     public static final int X_OFFSET = 8;
-    public static final int LAYER_OFFSET = 8;
+    public static final int LAYER_OFFSET = 4;
     public final int OFFSET = X_OFFSET + DUMMY_WIDTH;
-
+    public static final double SCALE_LAYER_PADDING = 1.5;
 
 
     // Options
@@ -113,25 +113,11 @@ public class NewHierarchicalLayoutManager {
     }
 
     private void removeSuccDummyNodes(LayoutNode node) {
-        if (node.isDummy()) {
-            assert node.succs.size() == 1;
-            for (LayoutEdge succEdge : node.succs) {
-                removeSuccDummyNodes(succEdge.to);
-            }
-            removeNode(node);
-            node.succs.clear();
-        }
+
     }
 
     private void removePredDummyNodes(LayoutNode node) {
-        if (node.isDummy()) {
-            assert node.preds.size() == 1;
-            for (LayoutEdge predEdge : node.preds) {
-                removePredDummyNodes(predEdge.from);
-            }
-            removeNode(node);
-            node.preds.clear();
-        }
+
     }
 
     private int findPosInLayer(LayoutLayer layer, int xLoc) {
@@ -156,9 +142,6 @@ public class NewHierarchicalLayoutManager {
     public void moveFigureTo(Vertex movedVertex, Point loc) {
         LayoutNode movedNode = vertexToLayoutNode.get(movedVertex);
         Point newLocation = new Point(loc.x, loc.y + movedNode.height/2);
-
-        removeSuccDummyNodes(movedNode);
-        removePredDummyNodes(movedNode);
 
         for (int i = 0; i < layerCount; i++) {
             LayoutLayer newLayer = layers[i];
@@ -191,7 +174,10 @@ public class NewHierarchicalLayoutManager {
                         return;
                     }
 
-                }
+                } //else {
+                    removeSuccDummyNodes(movedNode);
+                    removePredDummyNodes(movedNode);
+                //}
                 int newPos = findPosInLayer(newLayer, newLocation.x);
 
                 // remove from old layer and update positions in old layer
@@ -232,6 +218,7 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
+        //assertEdgesRemoved(movedNode);
         assertOrder();
         new AssignXCoordinates().run();
         assertOrder();
@@ -239,6 +226,17 @@ public class NewHierarchicalLayoutManager {
         assertOrder();
         new WriteResult().run();
         assertOrder();
+    }
+
+    private void assertEdgesRemoved(LayoutNode node) {
+        for (LayoutNode n: allNodes) {
+            for (LayoutEdge succ :n.succs) {
+                assert succ.to != node;
+            }
+            for (LayoutEdge pred :n.preds) {
+                assert pred.from != node;
+            }
+        }
     }
 
     private class LayoutNode {
@@ -849,9 +847,9 @@ public class NewHierarchicalLayoutManager {
     private class CreateDummyNodes {
 
 
-        public void createDummiesForNode(LayoutNode n) {
+        public void createDummiesForNode(LayoutNode layoutNode) {
             HashMap<Integer, List<LayoutEdge>> portHash = new HashMap<>();
-            ArrayList<LayoutEdge> succs = new ArrayList<>(n.succs);
+            ArrayList<LayoutEdge> succs = new ArrayList<>(layoutNode.succs);
             HashMap<Integer, LayoutNode> topNodeHash = new HashMap<>();
             HashMap<Integer, HashMap<Integer, LayoutNode>> bottomNodeHash = new HashMap<>();
             for (LayoutEdge e : succs) {
@@ -918,35 +916,35 @@ public class NewHierarchicalLayoutManager {
 
                         int maxLayer = list.get(list.size() - 1).to.layer;
 
-                        int cnt = maxLayer - n.layer - 1;
+                        int cnt = maxLayer - layoutNode.layer - 1;
                         LayoutEdge[] edges = new LayoutEdge[cnt];
                         LayoutNode[] nodes = new LayoutNode[cnt];
 
                         nodes[0] = new LayoutNode();
-                        nodes[0].layer = n.layer + 1;
-                        edges[0] = new LayoutEdge(n, nodes[0], i, nodes[0].width / 2, null);
+                        nodes[0].layer = layoutNode.layer + 1;
+                        edges[0] = new LayoutEdge(layoutNode, nodes[0], i, nodes[0].width / 2, null);
                         nodes[0].preds.add(edges[0]);
                         assert nodes[0].isDummy();
-                        n.succs.add(edges[0]);
+                        layoutNode.succs.add(edges[0]);
                         for (int j = 1; j < cnt; j++) {
                             nodes[j] = new LayoutNode();
-                            nodes[j].layer = n.layer + j + 1;
+                            nodes[j].layer = layoutNode.layer + j + 1;
                             edges[j] = new LayoutEdge(nodes[j - 1], nodes[j], nodes[j - 1].width / 2, nodes[j].width / 2, null);
                             nodes[j - 1].succs.add(edges[j]);
                             nodes[j].preds.add(edges[j]);
                             assert nodes[j].isDummy();
                         }
                         for (LayoutEdge curEdge : list) {
-                            assert curEdge.to.layer - n.layer - 2 >= 0;
-                            assert curEdge.to.layer - n.layer - 2 < cnt;
-                            LayoutNode anchor = nodes[curEdge.to.layer - n.layer - 2];
-                            for (int l = 0; l < curEdge.to.layer - n.layer - 1; ++l) {
+                            assert curEdge.to.layer - layoutNode.layer - 2 >= 0;
+                            assert curEdge.to.layer - layoutNode.layer - 2 < cnt;
+                            LayoutNode anchor = nodes[curEdge.to.layer - layoutNode.layer - 2];
+                            for (int l = 0; l < curEdge.to.layer - layoutNode.layer - 1; ++l) {
                                 anchor = nodes[l];
                             }
                             anchor.succs.add(curEdge);
                             curEdge.from = anchor;
                             curEdge.relativeFrom = anchor.width / 2;
-                            n.succs.remove(curEdge);
+                            layoutNode.succs.remove(curEdge);
                         }
                         allNodes.addAll(Arrays.asList(nodes));
                     }
@@ -1284,7 +1282,7 @@ public class NewHierarchicalLayoutManager {
                         maxXOffset = Math.max(Math.abs(e.getStartPoint() - e.getEndPoint()), maxXOffset);
                     }
                 }
-                curY += layerHeight + Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
+                curY += layerHeight + SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
             }
         }
     }
