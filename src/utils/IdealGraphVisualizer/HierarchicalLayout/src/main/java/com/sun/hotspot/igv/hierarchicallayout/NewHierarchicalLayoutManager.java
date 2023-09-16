@@ -162,7 +162,6 @@ public class NewHierarchicalLayoutManager {
             assert newLayer.size()>0;
 
             if (newLayer.y <= newLocation.y && newLocation.y <= newLayer.getBottom()) {
-                System.out.println("from layer " + movedNode.layer + " to layer " + i);
 
                 if (movedNode.layer == i) { // we move the node in the same layer
                     int newX = newLocation.x;
@@ -191,7 +190,6 @@ public class NewHierarchicalLayoutManager {
 
                 }
                 int newPos = findPosInLayer(newLayer, newLocation.x);
-                System.out.println("from pos " + movedNode.pos + " to pos " + newPos);
 
                 // remove from old layer and update positions in old layer
                 removeNode(movedNode);
@@ -231,7 +229,9 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        new AssignXCoordinates().run(false);
+        assertOrder();
+        new AssignXCoordinates().run();
+        assertOrder();
         new AssignYCoordinates().run();
         assertOrder();
         new WriteResult().run();
@@ -426,7 +426,7 @@ public class NewHierarchicalLayoutManager {
         // STEP 6: Assign X coordinates
         // for all LayoutNode n in nodes
         // - sets n.x =
-        new AssignXCoordinates().run(false);
+        new AssignXCoordinates().run();
         assertOrder();
 
         // #############################################################
@@ -1162,20 +1162,18 @@ public class NewHierarchicalLayoutManager {
 
 
 
-        private void run(boolean canReorder) {
+        private void run() {
             //assertOrder();
             createArrays();
-            if (canReorder) {
-                initialPositions();
-            }
+            initialPositions();
+
+            assertOrder();
 
             for (int i = 0; i < SWEEP_ITERATIONS; i++) {
-                sweepDown(canReorder);
-                sweepUp(canReorder);
+                sweepDown();
+                sweepUp();
             }
-            if (!canReorder) {
-                //assertOrder();
-            }
+            assertOrder();
         }
 
         public void getOptimalPositions(LayoutEdge edge, int layer, List<Integer> vals, int correction, boolean up) {
@@ -1236,15 +1234,12 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        private void sweepUp(boolean canReorder) {
+        private void sweepUp() {
             for (int i = layers.length - 2; i >= 0; i--) {
                 for (LayoutNode n : upProcessingOrder[i]) {
                     n.optimal_x = calculateOptimalUp(n);
                 }
-                if (canReorder) {
-                    Arrays.sort(upProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
-                }
-
+                Arrays.sort(upProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
                 NodeRow row = new NodeRow(space[i]);
                 for (LayoutNode n : upProcessingOrder[i]) {
                     row.insert(n, n.optimal_x);
@@ -1252,15 +1247,12 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        private void sweepDown(boolean canReorder) {
+        private void sweepDown() {
             for (int i = 1; i < layers.length; i++) {
                 for (LayoutNode n : downProcessingOrder[i]) {
                     n.optimal_x = calculateOptimalDown(n);
                 }
-                if (canReorder) {
-                    Arrays.sort(downProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
-                }
-
+                Arrays.sort(downProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
                 NodeRow row = new NodeRow(space[i]);
                 for (LayoutNode n : downProcessingOrder[i]) {
                     row.insert(n, n.optimal_x);
