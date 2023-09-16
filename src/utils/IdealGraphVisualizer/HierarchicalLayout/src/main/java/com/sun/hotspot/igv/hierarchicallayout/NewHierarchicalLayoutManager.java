@@ -65,26 +65,9 @@ public class NewHierarchicalLayoutManager {
                 LayoutNode leftNode = layer.get(pos-1);
                 LayoutNode rightNode = layer.get(pos);
                 assert leftNode.pos + 1 == rightNode.pos;
-                assert leftNode.x < rightNode.x;
+                assert leftNode.x <= rightNode.x;
             }
         }
-    }
-
-    private void removeNode(LayoutNode node) {
-        int layer = node.layer;
-        int pos = node.pos;
-        layers[layer].remove(node);
-
-        // Update position of remaining nodes on the same layer
-        for (LayoutNode n : layers[layer]) {
-            if (n.pos > pos) {
-                n.pos -= 1;
-                n.x -= node.getWholeWidth() + X_OFFSET;
-            }
-        }
-
-        // Remove node from graph layout
-        allNodes.remove(node);
     }
 
     private void addNode(LayoutNode node) {
@@ -112,22 +95,42 @@ public class NewHierarchicalLayoutManager {
         allNodes.add(node);
     }
 
+    private void removeNode(LayoutNode node) {
+        int layer = node.layer;
+        int pos = node.pos;
+        layers[layer].remove(node);
+
+        // Update position of remaining nodes on the same layer
+        for (LayoutNode n : layers[layer]) {
+            if (n.pos > pos) {
+                n.pos -= 1;
+                n.x -= node.getWholeWidth() + X_OFFSET;
+            }
+        }
+
+        // Remove node from graph layout
+        allNodes.remove(node);
+    }
 
     private void removeSuccDummyNodes(LayoutNode node) {
         if (node.isDummy()) {
+            assert node.succs.size() == 1;
             for (LayoutEdge succEdge : node.succs) {
                 removeSuccDummyNodes(succEdge.to);
             }
             removeNode(node);
+            node.succs.clear();
         }
     }
 
     private void removePredDummyNodes(LayoutNode node) {
         if (node.isDummy()) {
+            assert node.preds.size() == 1;
             for (LayoutEdge predEdge : node.preds) {
                 removePredDummyNodes(predEdge.from);
             }
             removeNode(node);
+            node.preds.clear();
         }
     }
 
@@ -137,10 +140,10 @@ public class NewHierarchicalLayoutManager {
         for (int j = 1; j < layer.size(); j++) {
             LayoutNode leftNode = layer.get(j-1);
             LayoutNode rightNode = layer.get(j);
-            if (xLoc <= leftNode.getRightSide()) {
+            if (xLoc < leftNode.getRightSide()) {
                 newPos = leftNode.pos;
                 break;
-            } else if (xLoc <= rightNode.getRightSide()) {
+            } else if (xLoc < rightNode.getRightSide()) {
                 newPos = rightNode.pos;
                 break;
             } else {
