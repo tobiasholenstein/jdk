@@ -113,7 +113,15 @@ public class NewHierarchicalLayoutManager {
     }
 
     private void removeSuccDummyNodes(LayoutNode node) {
-
+        List<LayoutEdge> previousSuccEdges = List.copyOf(node.succs);
+        for (LayoutEdge succEdge : previousSuccEdges) {
+            LayoutNode succNode = succEdge.to;
+            if (succNode.isDummy()) {
+                removeSuccDummyNodes(succNode);
+            }
+            succNode.preds.remove(succEdge);
+        }
+        node.succs.clear();
     }
 
     private void removePredDummyNodes(LayoutNode node) {
