@@ -963,7 +963,7 @@ public class NewHierarchicalLayoutManager {
                 if (unprocessedEdges.size() == 1) {
                     // process a single edge
                     LayoutEdge singleEdge = unprocessedEdges.get(0);
-                    assert singleEdge != null;
+                    assert singleEdge.link != null;
                     LayoutNode fromNode = singleEdge.from;
                     if (singleEdge.to.layer > fromNode.layer + 1) {
                         LayoutEdge previousEdge = singleEdge;
@@ -972,7 +972,7 @@ public class NewHierarchicalLayoutManager {
                             dummyNode.layer = i;
                             dummyNode.preds.add(previousEdge);
                             allNodes.add(dummyNode);
-                            LayoutEdge dummyEdge = new LayoutEdge(dummyNode, previousEdge.to, dummyNode.width / 2, previousEdge.relativeTo, null);
+                            LayoutEdge dummyEdge = new LayoutEdge(dummyNode, previousEdge.to, dummyNode.width / 2, previousEdge.relativeTo, singleEdge.link);
                             dummyNode.succs.add(dummyEdge);
                             previousEdge.relativeTo = dummyNode.width / 2;
                             previousEdge.to.preds.remove(previousEdge);
@@ -1021,25 +1021,20 @@ public class NewHierarchicalLayoutManager {
                 createDummiesForNode(layoutNode);
             }
 
-
             for (LayoutNode node : allNodes) {
                 if (!node.isDummy()) {
                     for (LayoutEdge predEdge : node.preds) {
-                        //assert predEdge.link != null;
+                        assert predEdge.link != null;
                     }
 
                     for (LayoutEdge succEdge : node.succs) {
                         if (succEdge.to.isDummy()) {
-                            //assert !succEdge.to.succs.isEmpty() || succEdge.link != null;
+                            assert !succEdge.to.succs.isEmpty() || succEdge.link != null;
                         } else {
-                            //assert succEdge.link != null;
+                            assert succEdge.link != null;
                         }
-                        //assert predEdge.link != null;
                     }
-                } else {
-
                 }
-
             }
         }
     }
