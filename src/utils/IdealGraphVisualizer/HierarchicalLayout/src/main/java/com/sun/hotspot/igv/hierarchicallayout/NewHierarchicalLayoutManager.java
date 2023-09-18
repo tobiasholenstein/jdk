@@ -1481,7 +1481,26 @@ public class NewHierarchicalLayoutManager {
             return linkPositions;
         }
 
+        private void assertLinks() {
+            for (LayoutNode node : allNodes) {
+                if (!node.isDummy()) {
+                    for (LayoutEdge predEdge : node.preds) {
+                        assert predEdge.link != null;
+                    }
+
+                    for (LayoutEdge succEdge : node.succs) {
+                        if (succEdge.to.isDummy()) {
+                            assert !succEdge.to.succs.isEmpty() || succEdge.link != null;
+                        } else {
+                            assert succEdge.link != null;
+                        }
+                    }
+                }
+            }
+        }
+
         public void run() {
+            assertLinks();
             assertOrder();
 
             HashMap<Vertex, Point> vertexPositions = computeVertexPositions();
