@@ -903,17 +903,15 @@ public class NewHierarchicalLayoutManager {
 
 
         public void createDummiesForNode(LayoutNode layoutNode) {
-            HashMap<Integer, List<LayoutEdge>> portToEdges = new HashMap<>();
+            HashMap<Integer, List<LayoutEdge>> portsToUnprocessedEdges = new HashMap<>();
             ArrayList<LayoutEdge> succs = new ArrayList<>(layoutNode.succs);
             HashMap<Integer, LayoutNode> portToTopNode = new HashMap<>();
             HashMap<Integer, HashMap<Integer, LayoutNode>> portToBottomNodeMapping = new HashMap<>();
             for (LayoutEdge succEdge : succs) {
                 int startPort = succEdge.relativeFrom;
-                int endPort = succEdge.relativeTo;
                 LayoutNode fromNode = succEdge.from;
                 LayoutNode toNode = succEdge.to;
                 assert fromNode.layer < toNode.layer;
-
 
                 // edge is longer than one layer => needs dummy nodes
                 if (fromNode.layer != toNode.layer - 1) {
@@ -932,121 +930,118 @@ public class NewHierarchicalLayoutManager {
                             portToTopNode.put(startPort, topCutNode);
                             portToBottomNodeMapping.put(startPort, new HashMap<>());
                         }
-                        LayoutEdge edgeToTopCut = new LayoutEdge(fromNode, topCutNode, startPort, topCutNode.width / 2, succEdge.link);
+                        LayoutEdge edgeToTopCut = new LayoutEdge(fromNode, topCutNode, succEdge.relativeFrom, topCutNode.width / 2, succEdge.link);
                         fromNode.succs.add(edgeToTopCut);
                         topCutNode.preds.add(edgeToTopCut);
                         assert topCutNode.isDummy();
 
                         HashMap<Integer, LayoutNode> layerToBottomNode = portToBottomNodeMapping.get(startPort);
-
-                        LayoutNode bottomCutNode;
-                        if (layerToBottomNode.containsKey(toNode.layer)) {
-                            bottomCutNode = layerToBottomNode.get(toNode.layer);
-                        } else {
+                        LayoutNode bottomCutNode = layerToBottomNode.get(toNode.layer);
+                        if (bottomCutNode == null) {
                             bottomCutNode = new LayoutNode();
                             bottomCutNode.layer = toNode.layer - 1;
                             allNodes.add(bottomCutNode);
-                            layerToBottomNode.put(succEdge.to.layer, bottomCutNode);
+                            layerToBottomNode.put(toNode.layer, bottomCutNode);
                         }
-                        LayoutEdge bottomEdge = new LayoutEdge(bottomCutNode, toNode, bottomCutNode.width / 2, endPort, succEdge.link);
+                        LayoutEdge bottomEdge = new LayoutEdge(bottomCutNode, toNode, bottomCutNode.width / 2, succEdge.relativeTo, succEdge.link);
                         toNode.preds.add(bottomEdge);
                         bottomCutNode.succs.add(bottomEdge);
                         assert bottomCutNode.isDummy();
 
                     } else { // the edge is not cut, but needs dummy nodes
-                        if (!portToEdges.containsKey(startPort)) {
-                            portToEdges.put(startPort, new ArrayList<>());
-                        }
-                        portToEdges.get(startPort).add(succEdge);
+                        portsToUnprocessedEdges.putIfAbsent(startPort, new ArrayList<>());
+                        portsToUnprocessedEdges.get(startPort).add(succEdge);
                     }
                 }
             }
 
-            for (LayoutEdge succEdge : succs) {
-                Integer i = succEdge.relativeFrom;
-                if (portToEdges.containsKey(i)) {
+            for (Map.Entry<Integer, List<LayoutEdge>> portToUnprocessedEdges : portsToUnprocessedEdges.entrySet()) {
+                Integer startPort = portToUnprocessedEdges.getKey();
+                List<LayoutEdge> unprocessedEdges = portToUnprocessedEdges.getValue();
+                unprocessedEdges.sort(Comparator.comparingInt(e -> e.to.layer));
 
-                    List<LayoutEdge> list = portToEdges.get(i);
-                    list.sort(Comparator.comparingInt(e -> e.to.layer));
-
-                    if (list.size() == 1) {
-                        processSingleEdge(list.get(0));
-                    } else {
-
-                        int maxLayer = list.get(list.size() - 1).to.layer;
-
-                        int cnt = maxLayer - layoutNode.layer - 1;
-                        LayoutEdge[] edges = new LayoutEdge[cnt];
-                        LayoutNode[] nodes = new LayoutNode[cnt];
-
-                        nodes[0] = new LayoutNode();
-                        nodes[0].layer = layoutNode.layer + 1;
-                        edges[0] = new LayoutEdge(layoutNode, nodes[0], i, nodes[0].width / 2, null);
-                        nodes[0].preds.add(edges[0]);
-                        assert nodes[0].isDummy();
-                        layoutNode.succs.add(edges[0]);
-                        for (int j = 1; j < cnt; j++) {
-                            nodes[j] = new LayoutNode();
-                            nodes[j].layer = layoutNode.layer + j + 1;
-                            edges[j] = new LayoutEdge(nodes[j - 1], nodes[j], nodes[j - 1].width / 2, nodes[j].width / 2, null);
-                            nodes[j - 1].succs.add(edges[j]);
-                            nodes[j].preds.add(edges[j]);
+                if (unprocessedEdges.size() == 1) {
+                    // process a single edge
+                    LayoutEdge singleEdge = unprocessedEdges.get(0);
+                    assert singleEdge != null;
+                    LayoutNode fromNode = singleEdge.from;
+                    if (singleEdge.to.layer > fromNode.layer + 1) {
+                        LayoutEdge previousEdge = singleEdge;
+                        for (int i = fromNode.layer + 1; i < previousEdge.to.layer; i++) {
+                            LayoutNode dummyNode = new LayoutNode();
+                            dummyNode.layer = i;
+                            dummyNode.preds.add(previousEdge);
+                            allNodes.add(dummyNode);
+                            LayoutEdge dummyEdge = new LayoutEdge(dummyNode, previousEdge.to, dummyNode.width / 2, previousEdge.relativeTo, null);
+                            dummyNode.succs.add(dummyEdge);
+                            previousEdge.relativeTo = dummyNode.width / 2;
+                            previousEdge.to.preds.remove(previousEdge);
+                            previousEdge.to.preds.add(dummyEdge);
+                            previousEdge.to = dummyNode;
+                            previousEdge = dummyEdge;
                         }
-                        for (LayoutEdge curEdge : list) {
-                            assert curEdge.to.layer - layoutNode.layer - 2 >= 0;
-                            assert curEdge.to.layer - layoutNode.layer - 2 < cnt;
-                            LayoutNode anchor = nodes[curEdge.to.layer - layoutNode.layer - 2];
-                            for (int l = 0; l < curEdge.to.layer - layoutNode.layer - 1; ++l) {
-                                anchor = nodes[l];
-                            }
-                            anchor.succs.add(curEdge);
-                            curEdge.from = anchor;
-                            curEdge.relativeFrom = anchor.width / 2;
-                            layoutNode.succs.remove(curEdge);
-                        }
-                        allNodes.addAll(Arrays.asList(nodes));
                     }
-                    portToEdges.remove(i);
+                } else {
+                    int lastLayer = unprocessedEdges.get(unprocessedEdges.size() - 1).to.layer;
+                    int dummyCnt = lastLayer - layoutNode.layer - 1;
+                    LayoutEdge[] dummyEdges = new LayoutEdge[dummyCnt];
+                    LayoutNode[] dummyNodes = new LayoutNode[dummyCnt];
+
+                    dummyNodes[0] = new LayoutNode();
+                    dummyNodes[0].layer = layoutNode.layer + 1;
+                    dummyEdges[0] = new LayoutEdge(layoutNode, dummyNodes[0], startPort, dummyNodes[0].width / 2, null);
+                    dummyNodes[0].preds.add(dummyEdges[0]);
+                    layoutNode.succs.add(dummyEdges[0]);
+                    for (int j = 1; j < dummyCnt; j++) {
+                        dummyNodes[j] = new LayoutNode();
+                        dummyNodes[j].layer = layoutNode.layer + j + 1;
+                        dummyEdges[j] = new LayoutEdge(dummyNodes[j - 1], dummyNodes[j], dummyNodes[j - 1].width / 2, dummyNodes[j].width / 2, null);
+                        dummyNodes[j].preds.add(dummyEdges[j]);
+                        dummyNodes[j - 1].succs.add(dummyEdges[j]);
+                    }
+                    for (LayoutEdge unprocessedEdge : unprocessedEdges) {
+                        assert unprocessedEdge.link != null;
+                        assert unprocessedEdge.to.layer - layoutNode.layer - 2 >= 0;
+                        assert unprocessedEdge.to.layer - layoutNode.layer - 2 < dummyCnt;
+                        LayoutNode anchorNode = dummyNodes[unprocessedEdge.to.layer - layoutNode.layer - 2];
+                        anchorNode.succs.add(unprocessedEdge);
+                        unprocessedEdge.from = anchorNode;
+                        unprocessedEdge.relativeFrom = anchorNode.width / 2;
+                        layoutNode.succs.remove(unprocessedEdge);
+                    }
+                    allNodes.addAll(Arrays.asList(dummyNodes));
                 }
             }
         }
-
-
-
 
         private void run() {
             ArrayList<LayoutNode> currentNodes = new ArrayList<>(allNodes);
-            for (LayoutNode n : currentNodes) {
-                assert !n.isDummy();
-                createDummiesForNode(n);
+            for (LayoutNode layoutNode : currentNodes) {
+                assert !layoutNode.isDummy();
+                createDummiesForNode(layoutNode);
             }
-        }
 
-        private void processSingleEdge(LayoutEdge e) {
-            LayoutNode n = e.from;
-            if (e.to.layer > n.layer + 1) {
-                LayoutEdge last = e;
-                for (int i = n.layer + 1; i < last.to.layer; i++) {
-                    last = addBetween(last, i);
+
+            for (LayoutNode node : allNodes) {
+                if (!node.isDummy()) {
+                    for (LayoutEdge predEdge : node.preds) {
+                        //assert predEdge.link != null;
+                    }
+
+                    for (LayoutEdge succEdge : node.succs) {
+                        if (succEdge.to.isDummy()) {
+                            //assert !succEdge.to.succs.isEmpty() || succEdge.link != null;
+                        } else {
+                            //assert succEdge.link != null;
+                        }
+                        //assert predEdge.link != null;
+                    }
+                } else {
+
                 }
+
             }
         }
-
-        private LayoutEdge addBetween(LayoutEdge e, int layer) {
-            LayoutNode n = new LayoutNode();
-            n.layer = layer;
-            n.preds.add(e);
-            allNodes.add(n);
-            LayoutEdge result = new LayoutEdge(n, e.to, n.width / 2, e.relativeTo, null);
-            n.succs.add(result);
-            e.relativeTo = n.width / 2;
-            e.to.preds.remove(e);
-            e.to.preds.add(result);
-            e.to = n;
-            return result;
-        }
-
-
     }
 
     private class CrossingReduction {
