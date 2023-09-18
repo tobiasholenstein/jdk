@@ -1351,17 +1351,17 @@ public class NewHierarchicalLayoutManager {
             HashMap<Link, List<Point>> splitEndPoints = new HashMap<>();
             HashMap<Link, List<Point>> linkPositions = new HashMap<>();
 
-            for (LayoutNode n : allNodes) {
-                for (LayoutEdge e : n.preds) {
-                    if (e.link != null) {
+            for (LayoutNode layoutNode : allNodes) {
+                for (LayoutEdge predEdge : layoutNode.preds) {
+                    if (predEdge.link != null) {
                         ArrayList<Point> points = new ArrayList<>();
 
-                        points.add(new Point(e.getEndPoint(), e.to.y));
-                        points.add(new Point(e.getEndPoint(), layers[e.to.layer].y - LAYER_OFFSET));
+                        points.add(new Point(predEdge.getEndPoint(), predEdge.to.y));
+                        points.add(new Point(predEdge.getEndPoint(), layers[predEdge.to.layer].y - LAYER_OFFSET));
 
-                        LayoutNode cur = e.from;
-                        LayoutNode other = e.to;
-                        LayoutEdge curEdge = e;
+                        LayoutNode cur = predEdge.from;
+                        LayoutNode other = predEdge.to;
+                        LayoutEdge curEdge = predEdge;
                         while (cur.isDummy() && !cur.preds.isEmpty()) {
                             points.add(new Point(cur.getCenterX(), layers[cur.layer].getBottom() + LAYER_OFFSET));
                             points.add(new Point(cur.getCenterX(), cur.y - LAYER_OFFSET));
@@ -1376,57 +1376,57 @@ public class NewHierarchicalLayoutManager {
                         Collections.reverse(points);
 
                         if (cur.isDummy()) {
-                            if (reversedLinkEndPoints.containsKey(e.link)) {
-                                for (Point p1 : reversedLinkEndPoints.get(e.link)) {
+                            if (reversedLinkEndPoints.containsKey(predEdge.link)) {
+                                for (Point p1 : reversedLinkEndPoints.get(predEdge.link)) {
                                     points.add(new Point(p1.x + other.getLeftSide(), p1.y + other.y));
                                 }
                             }
 
-                            if (splitStartPoints.containsKey(e.link)) {
+                            if (splitStartPoints.containsKey(predEdge.link)) {
                                 points.add(0, null);
-                                points.addAll(0, splitStartPoints.get(e.link));
+                                points.addAll(0, splitStartPoints.get(predEdge.link));
 
-                                if (reversedLinks.contains(e.link)) {
+                                if (reversedLinks.contains(predEdge.link)) {
                                     Collections.reverse(points);
                                 }
-                                linkPositions.put(e.link, points);
+                                linkPositions.put(predEdge.link, points);
                             } else {
-                                splitEndPoints.put(e.link, points);
+                                splitEndPoints.put(predEdge.link, points);
                             }
 
                         } else {
-                            if (reversedLinks.contains(e.link)) {
+                            if (reversedLinks.contains(predEdge.link)) {
                                 Collections.reverse(points);
-                                if (reversedLinkStartPoints.containsKey(e.link)) {
-                                    for (Point p1 : reversedLinkStartPoints.get(e.link)) {
+                                if (reversedLinkStartPoints.containsKey(predEdge.link)) {
+                                    for (Point p1 : reversedLinkStartPoints.get(predEdge.link)) {
                                         points.add(new Point(p1.x + cur.getLeftSide(), p1.y + cur.y));
                                     }
                                 }
 
-                                if (reversedLinkEndPoints.containsKey(e.link)) {
-                                    for (Point p1 : reversedLinkEndPoints.get(e.link)) {
+                                if (reversedLinkEndPoints.containsKey(predEdge.link)) {
+                                    for (Point p1 : reversedLinkEndPoints.get(predEdge.link)) {
                                         points.add(0, new Point(p1.x + other.getLeftSide(), p1.y + other.y));
                                     }
                                 }
                             }
-                            linkPositions.put(e.link, points);
+                            linkPositions.put(predEdge.link, points);
                         }
 
                         // No longer needed!
-                        e.link = null;
+                        predEdge.link = null;
                         //visited_edges.add(e.link);
                     }
                 }
 
-                for (LayoutEdge e : n.succs) {
-                    if (e.link != null) {
+                for (LayoutEdge succEdge : layoutNode.succs) {
+                    if (succEdge.link != null) {
                         ArrayList<Point> points = new ArrayList<>();
-                        points.add(new Point(e.getStartPoint(), e.from.getBottom()));
-                        points.add(new Point(e.getStartPoint(), layers[e.from.layer].getBottom() + LAYER_OFFSET));
+                        points.add(new Point(succEdge.getStartPoint(), succEdge.from.getBottom()));
+                        points.add(new Point(succEdge.getStartPoint(), layers[succEdge.from.layer].getBottom() + LAYER_OFFSET));
 
-                        LayoutNode cur = e.to;
-                        LayoutNode other = e.from;
-                        LayoutEdge curEdge = e;
+                        LayoutNode cur = succEdge.to;
+                        LayoutNode other = succEdge.from;
+                        LayoutEdge curEdge = succEdge;
                         while (cur.isDummy() && !cur.succs.isEmpty()) {
                             points.add(new Point(cur.getCenterX(), layers[cur.layer].y - LAYER_OFFSET));
                             points.add(new Point(cur.getCenterX(), layers[cur.layer].getBottom() + LAYER_OFFSET));
@@ -1439,42 +1439,42 @@ public class NewHierarchicalLayoutManager {
                         points.add(new Point(curEdge.getEndPoint(), cur.y));
 
                         if (cur.succs.isEmpty() && cur.isDummy()) {
-                            if (reversedLinkStartPoints.containsKey(e.link)) {
-                                for (Point p1 : reversedLinkStartPoints.get(e.link)) {
+                            if (reversedLinkStartPoints.containsKey(succEdge.link)) {
+                                for (Point p1 : reversedLinkStartPoints.get(succEdge.link)) {
                                     points.add(0, new Point(p1.x + other.getLeftSide(), p1.y + other.y));
                                 }
                             }
 
-                            if (splitEndPoints.containsKey(e.link)) {
+                            if (splitEndPoints.containsKey(succEdge.link)) {
                                 points.add(null);
-                                points.addAll(splitEndPoints.get(e.link));
+                                points.addAll(splitEndPoints.get(succEdge.link));
 
-                                if (reversedLinks.contains(e.link)) {
+                                if (reversedLinks.contains(succEdge.link)) {
                                     Collections.reverse(points);
                                 }
-                                assert !linkPositions.containsKey(e.link);
-                                linkPositions.put(e.link, points);
+                                assert !linkPositions.containsKey(succEdge.link);
+                                linkPositions.put(succEdge.link, points);
                             } else {
-                                splitStartPoints.put(e.link, points);
+                                splitStartPoints.put(succEdge.link, points);
                             }
                         } else {
-                            if (reversedLinks.contains(e.link)) {
-                                if (reversedLinkStartPoints.containsKey(e.link)) {
-                                    for (Point p1 : reversedLinkStartPoints.get(e.link)) {
+                            if (reversedLinks.contains(succEdge.link)) {
+                                if (reversedLinkStartPoints.containsKey(succEdge.link)) {
+                                    for (Point p1 : reversedLinkStartPoints.get(succEdge.link)) {
                                         points.add(0, new Point(p1.x + other.getLeftSide(), p1.y + other.y));
                                     }
                                 }
-                                if (reversedLinkEndPoints.containsKey(e.link)) {
-                                    for (Point p1 : reversedLinkEndPoints.get(e.link)) {
+                                if (reversedLinkEndPoints.containsKey(succEdge.link)) {
+                                    for (Point p1 : reversedLinkEndPoints.get(succEdge.link)) {
                                         points.add(new Point(p1.x + cur.getLeftSide(), p1.y + cur.y));
                                     }
                                 }
                                 Collections.reverse(points);
                             }
-                            linkPositions.put(e.link, points);
+                            linkPositions.put(succEdge.link, points);
                         }
 
-                        e.link = null;
+                        succEdge.link = null;
                         //visited_edges.add(e.link);
 
                     }
@@ -1484,6 +1484,8 @@ public class NewHierarchicalLayoutManager {
         }
 
         private void assertLinks() {
+
+
             for (LayoutNode node : allNodes) {
                 if (!node.isDummy()) {
                     for (LayoutEdge predEdge : node.preds) {
@@ -1500,6 +1502,7 @@ public class NewHierarchicalLayoutManager {
                 }
             }
         }
+
 
         public void run() {
             assertLinks();
