@@ -423,7 +423,7 @@ public class NewHierarchicalLayoutManager {
     }
 
     public NewHierarchicalLayoutManager() {
-        maxLayerLength = -1;
+        maxLayerLength = 8; //-1;
 
         vertexToLayoutNode = new HashMap<>();
         reversedLinks = new HashSet<>();
@@ -1358,10 +1358,9 @@ public class NewHierarchicalLayoutManager {
             HashMap<Link, List<Point>> splitEndPoints = new HashMap<>();
             HashMap<Link, List<Point>> linkPositions = new HashMap<>();
 
-            HashSet<Link> visited_edges = new HashSet<>();
             for (LayoutNode n : allNodes) {
                 for (LayoutEdge e : n.preds) {
-                    if (e.link != null && !visited_edges.contains(e.link)) {
+                    if (e.link != null) {
                         ArrayList<Point> points = new ArrayList<>();
 
                         points.add(new Point(e.getEndPoint(), e.to.y));
@@ -1417,16 +1416,16 @@ public class NewHierarchicalLayoutManager {
                                     }
                                 }
                             }
-
                             linkPositions.put(e.link, points);
                         }
 
-                        visited_edges.add(e.link);
+                        // No longer needed!
+                        e.link = null;
                     }
                 }
 
                 for (LayoutEdge e : n.succs) {
-                    if (e.link != null && !visited_edges.contains(e.link)) {
+                    if (e.link != null) {
                         ArrayList<Point> points = new ArrayList<>();
                         points.add(new Point(e.getStartPoint(), e.from.getBottom()));
                         points.add(new Point(e.getStartPoint(), layers[e.from.layer].getBottom() + LAYER_OFFSET));
@@ -1481,7 +1480,7 @@ public class NewHierarchicalLayoutManager {
                             linkPositions.put(e.link, points);
                         }
 
-                        visited_edges.add(e.link);
+                        e.link = null;
                     }
                 }
             }
@@ -1507,8 +1506,10 @@ public class NewHierarchicalLayoutManager {
 
             for (List<Point> points : linkPositions.values()) {
                 for (Point point : points) {
-                    minX = Math.min(minX, point.x);
-                    minY = Math.min(minY, point.y);
+                    if (point != null) {
+                        minX = Math.min(minX, point.x);
+                        minY = Math.min(minY, point.y);
+                    }
                 }
             }
 
