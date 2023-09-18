@@ -972,7 +972,7 @@ public class NewHierarchicalLayoutManager {
                             dummyNode.layer = i;
                             dummyNode.preds.add(previousEdge);
                             allNodes.add(dummyNode);
-                            LayoutEdge dummyEdge = new LayoutEdge(dummyNode, previousEdge.to, dummyNode.width / 2, previousEdge.relativeTo, singleEdge.link);
+                            LayoutEdge dummyEdge = new LayoutEdge(dummyNode, previousEdge.to, dummyNode.width / 2, previousEdge.relativeTo, null);
                             dummyNode.succs.add(dummyEdge);
                             previousEdge.relativeTo = dummyNode.width / 2;
                             previousEdge.to.preds.remove(previousEdge);
@@ -980,6 +980,8 @@ public class NewHierarchicalLayoutManager {
                             previousEdge.to = dummyNode;
                             previousEdge = dummyEdge;
                         }
+                        previousEdge.link = singleEdge.link;
+                        singleEdge.link = null;
                     }
                 } else {
                     int lastLayer = unprocessedEdges.get(unprocessedEdges.size() - 1).to.layer;
