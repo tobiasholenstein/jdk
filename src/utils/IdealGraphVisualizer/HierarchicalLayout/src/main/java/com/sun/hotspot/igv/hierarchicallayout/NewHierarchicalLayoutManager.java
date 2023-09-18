@@ -1358,9 +1358,10 @@ public class NewHierarchicalLayoutManager {
             HashMap<Link, List<Point>> splitEndPoints = new HashMap<>();
             HashMap<Link, List<Point>> linkPositions = new HashMap<>();
 
+            HashSet<Link> visited_edges = new HashSet<>();
             for (LayoutNode n : allNodes) {
                 for (LayoutEdge e : n.preds) {
-                    if (e.link != null) {
+                    if (e.link != null  && !visited_edges.contains(e.link)) {
                         ArrayList<Point> points = new ArrayList<>();
 
                         points.add(new Point(e.getEndPoint(), e.to.y));
@@ -1420,12 +1421,13 @@ public class NewHierarchicalLayoutManager {
                         }
 
                         // No longer needed!
-                        e.link = null;
+                        //e.link = null;
+                        visited_edges.add(e.link);
                     }
                 }
 
                 for (LayoutEdge e : n.succs) {
-                    if (e.link != null) {
+                    if (e.link != null && !visited_edges.contains(e.link)) {
                         ArrayList<Point> points = new ArrayList<>();
                         points.add(new Point(e.getStartPoint(), e.from.getBottom()));
                         points.add(new Point(e.getStartPoint(), layers[e.from.layer].getBottom() + LAYER_OFFSET));
@@ -1480,7 +1482,9 @@ public class NewHierarchicalLayoutManager {
                             linkPositions.put(e.link, points);
                         }
 
-                        e.link = null;
+                        //e.link = null;
+                        visited_edges.add(e.link);
+
                     }
                 }
             }
@@ -1542,20 +1546,6 @@ public class NewHierarchicalLayoutManager {
                 point.y -= minY;
                 Vertex vertex = entry.getKey();
                 vertex.setPosition(point);
-            }
-
-            for ( List<Point> endPoints : reversedLinkEndPoints.values()) {
-                for (Point p : endPoints) {
-                    p.x -= minX;
-                    p.y -= minY;
-                }
-            }
-
-            for ( List<Point> endPoints : reversedLinkStartPoints.values()) {
-                for (Point p : endPoints) {
-                    p.x -= minX;
-                    p.y -= minY;
-                }
             }
 
             assertOrder();
