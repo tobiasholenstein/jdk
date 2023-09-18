@@ -112,19 +112,82 @@ public class NewHierarchicalLayoutManager {
         allNodes.remove(node);
     }
 
-    private void removeSuccDummyNodes(LayoutNode node) {
-        List<LayoutEdge> previousSuccEdges = List.copyOf(node.succs);
-        for (LayoutEdge succEdge : previousSuccEdges) {
-            LayoutNode succNode = succEdge.to;
-            if (succNode.isDummy()) {
-                removeSuccDummyNodes(succNode);
-            }
-            succNode.preds.remove(succEdge);
-        }
-        node.succs.clear();
-    }
+    private void applyRemoveLinkAction(Link l) {
+        Vertex from = l.getFrom().getVertex();
+        Vertex to = l.getTo().getVertex();
+        LayoutNode toNode = vertexToLayoutNode.get(to);
+        LayoutNode fromNode = vertexToLayoutNode.get(from);
 
-    private void removePredDummyNodes(LayoutNode node) {
+        if (toNode.layer < fromNode.layer) {
+            // Reversed edge
+            toNode = fromNode;
+            reversedLinks.remove(l);
+            reversedLinkEndPoints.remove(l);
+            reversedLinkStartPoints.remove(l);
+        }
+
+        // Remove preds-edges bottom up, starting at "to" node
+        // Cannot start from "from" node since there might be joint edges
+        List<LayoutEdge> toNodePredsEdges = List.copyOf(toNode.preds);
+        for (LayoutEdge edge : toNodePredsEdges) {
+            LayoutNode n = edge.from;
+            LayoutEdge edgeToRemove;
+
+            if (edge.link != null && edge.link.equals(l)) {
+                toNode.preds.remove(edge);
+                edgeToRemove = edge;
+            } else {
+                // Wrong edge, look at next
+                continue;
+            }
+
+            if (n.vertex != null && n.vertex.equals(from)) {
+                // No dummy nodes inbetween 'from' and 'to' vertex
+                n.succs.remove(edgeToRemove);
+                break;
+            } else {
+                // Must remove edges between dummy nodes
+                boolean found = true;
+                LayoutNode prev = toNode;
+                while (n.vertex == null && found) {
+                    found = false;
+
+                    if (n.succs.size() <= 1 && n.preds.size() <= 1) {
+                        // Dummy node used only for this link, remove if not already removed
+                        if (allNodes.contains(n)) {
+                            removeNode(n);
+                        }
+                    } else {
+                        // anchor node, should not be removed
+                        break;
+                    }
+
+                    if (n.preds.size() == 1) {
+                        n.succs.remove(edgeToRemove);
+                        prev = n;
+                        edgeToRemove = n.preds.get(0);
+                        n = edgeToRemove.from;
+                        found = true;
+                    }
+                }
+
+                n.succs.remove(edgeToRemove);
+                prev.preds.remove(edgeToRemove);
+            }
+            break;
+        }
+
+        // ensure neighbor edge consistency
+        for (LayoutNode n : allNodes) {
+            for (LayoutEdge e : n.succs) {
+                assert allNodes.contains(e.from);
+                assert allNodes.contains(e.to);
+            }
+            for (LayoutEdge e : n.preds) {
+                assert allNodes.contains(e.from);
+                assert allNodes.contains(e.to);
+            }
+        }
 
     }
 
@@ -182,10 +245,15 @@ public class NewHierarchicalLayoutManager {
                         return;
                     }
 
-                } //else {
-                    removeSuccDummyNodes(movedNode);
-                    removePredDummyNodes(movedNode);
-                //}
+                } else { // only remove links if we moved the node to a new layer
+                    for (Link inputLink : graph.getInputLinks(movedVertex)) {
+                        applyRemoveLinkAction(inputLink);
+                    }
+                    for (Link inputLink : graph.getOutputLinks(movedVertex)) {
+                        applyRemoveLinkAction(inputLink);
+                    }
+                }
+
                 int newPos = findPosInLayer(newLayer, newLocation.x);
 
                 // remove from old layer and update positions in old layer
