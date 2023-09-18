@@ -1544,6 +1544,20 @@ public class NewHierarchicalLayoutManager {
                 vertex.setPosition(point);
             }
 
+            for ( List<Point> endPoints : reversedLinkEndPoints.values()) {
+                for (Point p : endPoints) {
+                    p.x -= minX;
+                    p.y -= minY;
+                }
+            }
+
+            for ( List<Point> endPoints : reversedLinkStartPoints.values()) {
+                for (Point p : endPoints) {
+                    p.x -= minX;
+                    p.y -= minY;
+                }
+            }
+
             assertOrder();
 
 
