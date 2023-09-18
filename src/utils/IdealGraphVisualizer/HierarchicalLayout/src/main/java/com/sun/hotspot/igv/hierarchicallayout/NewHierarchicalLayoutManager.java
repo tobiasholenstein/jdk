@@ -285,16 +285,6 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        // remove link connected to movedNode
-        for (Link link : graph.getLinks()) {
-            if (link.getTo().getVertex()==movedNode.vertex) {
-                link.setControlPoints(new ArrayList<>());
-            } else if (link.getFrom().getVertex()==movedNode.vertex) {
-                link.setControlPoints(new ArrayList<>());
-            }
-        }
-
-        //assertEdgesRemoved(movedNode);
         assertOrder();
         new AssignXCoordinates().run();
         assertOrder();
@@ -302,17 +292,6 @@ public class NewHierarchicalLayoutManager {
         assertOrder();
         new WriteResult().run();
         assertOrder();
-    }
-
-    private void assertEdgesRemoved(LayoutNode node) {
-        for (LayoutNode n: allNodes) {
-            for (LayoutEdge succ :n.succs) {
-                assert succ.to != node;
-            }
-            for (LayoutEdge pred :n.preds) {
-                assert pred.from != node;
-            }
-        }
     }
 
     private class LayoutNode {
