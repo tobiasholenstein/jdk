@@ -48,6 +48,7 @@ public class NewHierarchicalLayoutManager {
     private final int maxLayerLength;
     // Algorithm global datastructures
     private final Set<Link> reversedLinks;
+    //private final Set<LayoutNode> allNodes;
     private final List<LayoutNode> allNodes;
     private final HashMap<Vertex, LayoutNode> vertexToLayoutNode;
     private final HashMap<Link, List<Point>> reversedLinkStartPoints;
@@ -423,7 +424,7 @@ public class NewHierarchicalLayoutManager {
     }
 
     public NewHierarchicalLayoutManager() {
-        maxLayerLength = -1; //-1;
+        maxLayerLength = 8; //-1;
 
         vertexToLayoutNode = new HashMap<>();
         reversedLinks = new HashSet<>();
@@ -464,12 +465,15 @@ public class NewHierarchicalLayoutManager {
         // - sets LayoutNode.layer
         new AssignLayers().run();
 
+        assertEdgesConnected();
         // #############################################################
         // STEP 4: Create dummy nodes
         // - takes List<LayoutNode> nodes
         // - replaces single LayoutEdge between LayoutNodes with a chain of new LayoutEdges and dummy LayoutNodes
         // - adds the new dummy LayoutNodes to nodes
         new CreateDummyNodes().run();
+
+        assertEdgesConnected();
 
         // #############################################################
         // STEP 5: Crossing Reduction
@@ -1345,7 +1349,9 @@ public class NewHierarchicalLayoutManager {
             HashMap<Link, List<Point>> linkToSplitEndPoints = new HashMap<>();
             HashMap<Link, List<Point>> linkPositions = new HashMap<>();
 
+            // Collections.shuffle(allNodes); // TODO does not work, order matters! why?
             HashSet<LayoutEdge> visited_edges = new HashSet<>();
+            //for (LayoutNode layoutNode : new HashSet<>(allNodes)) { // TODO does not work
             for (LayoutNode layoutNode : allNodes) {
                 for (LayoutEdge predEdge : layoutNode.preds) {
                     if (predEdge.link != null && !visited_edges.contains(predEdge)) {
@@ -1470,6 +1476,9 @@ public class NewHierarchicalLayoutManager {
         }
 
         public void run() {
+            assert allNodes.size() == (new HashSet<>(allNodes)).size();
+
+            assertEdgesConnected();
             assertOrder();
 
             HashMap<Vertex, Point> vertexPositions = computeVertexPositions();
@@ -1477,6 +1486,7 @@ public class NewHierarchicalLayoutManager {
 
             HashMap<Link, List<Point>> linkPositions = computeLinkPositions();
             assertOrder();
+            assertEdgesConnected();
 
             int minX = Integer.MAX_VALUE;
             int minY = Integer.MAX_VALUE;
@@ -1607,6 +1617,35 @@ public class NewHierarchicalLayoutManager {
             }
             n.x = pos;
             treeSet.add(n);
+        }
+    }
+
+    private void assertEdgesConnected() {
+        for (LayoutNode layoutNode : allNodes) {
+            if (layoutNode.isDummy()) continue;
+            assert layoutNode.vertex != null;
+            for (LayoutEdge predEdge : layoutNode.preds) {
+                Link link = predEdge.link;
+                assert link != null;
+                LayoutNode fromNode = predEdge.from;
+                LayoutNode toNode = predEdge.to;
+                assert toNode == layoutNode;
+
+                assert link.getTo().getVertex() != null;
+                assert link.getFrom().getVertex() != null;
+
+                LayoutEdge curEdge;
+                while (fromNode.isDummy() && !fromNode.preds.isEmpty()) {
+                    curEdge = fromNode.preds.get(0);
+                    fromNode = curEdge.from;
+                }
+                if (fromNode.vertex != null) {
+                    assert !fromNode.isDummy();
+                    assert fromNode.vertex != toNode.vertex;
+                    assert link.getTo().getVertex() == toNode.vertex || link.getTo().getVertex() == fromNode.vertex;
+                    assert link.getFrom().getVertex() == fromNode.vertex || link.getFrom().getVertex() == toNode.vertex;
+                }
+            }
         }
     }
 
