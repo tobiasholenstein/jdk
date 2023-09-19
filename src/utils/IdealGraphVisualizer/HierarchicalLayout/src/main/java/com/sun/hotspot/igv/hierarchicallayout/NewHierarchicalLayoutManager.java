@@ -854,7 +854,6 @@ public class NewHierarchicalLayoutManager {
                 }
             }
 
-
             // assign layer upwards starting from leaves
             // sinks non-leave nodes down as much as possible
             layer = 1;
@@ -900,7 +899,6 @@ public class NewHierarchicalLayoutManager {
     }
 
     private class CreateDummyNodes {
-
 
         public void createDummiesForNode(LayoutNode layoutNode) {
             HashMap<Integer, List<LayoutEdge>> portsToUnprocessedEdges = new HashMap<>();
@@ -1028,7 +1026,6 @@ public class NewHierarchicalLayoutManager {
                     for (LayoutEdge predEdge : node.preds) {
                         assert predEdge.link != null;
                     }
-
                     for (LayoutEdge succEdge : node.succs) {
                         if (succEdge.to.isDummy()) {
                             assert !succEdge.to.succs.isEmpty() || succEdge.link != null;
@@ -1212,12 +1209,9 @@ public class NewHierarchicalLayoutManager {
 
 
         private void run() {
-            //assertOrder();
             createArrays();
             initialPositions();
-
             assertOrder();
-
             for (int i = 0; i < SWEEP_ITERATIONS; i++) {
                 sweepDown();
                 sweepUp();
@@ -1484,7 +1478,6 @@ public class NewHierarchicalLayoutManager {
             HashMap<Link, List<Point>> linkPositions = computeLinkPositions();
             assertOrder();
 
-
             int minX = Integer.MAX_VALUE;
             int minY = Integer.MAX_VALUE;
             for (Point point : vertexPositions.values()) {
@@ -1503,9 +1496,6 @@ public class NewHierarchicalLayoutManager {
 
             assertOrder();
 
-
-
-
             for (LayoutNode node : allNodes) {
                 node.x -= minX;
                 assert node.x>=0;
@@ -1522,7 +1512,6 @@ public class NewHierarchicalLayoutManager {
 
             assertOrder();
 
-
             // shift vertices by minX/minY
             for (Map.Entry<Vertex, Point> entry : vertexPositions.entrySet()) {
                 Point point = entry.getValue();
@@ -1533,7 +1522,6 @@ public class NewHierarchicalLayoutManager {
             }
 
             assertOrder();
-
 
             // shift links by minX/minY
             for (Map.Entry<Link, List<Point>> entry : linkPositions.entrySet()) {
@@ -1551,7 +1539,6 @@ public class NewHierarchicalLayoutManager {
             }
 
             assertOrder();
-
         }
     }
 
