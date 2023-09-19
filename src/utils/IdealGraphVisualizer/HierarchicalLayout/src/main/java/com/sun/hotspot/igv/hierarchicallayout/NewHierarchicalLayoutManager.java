@@ -423,7 +423,7 @@ public class NewHierarchicalLayoutManager {
     }
 
     public NewHierarchicalLayoutManager() {
-        maxLayerLength = 8; //-1;
+        maxLayerLength = -1; //-1;
 
         vertexToLayoutNode = new HashMap<>();
         reversedLinks = new HashSet<>();
@@ -1351,9 +1351,10 @@ public class NewHierarchicalLayoutManager {
             HashMap<Link, List<Point>> linkToSplitEndPoints = new HashMap<>();
             HashMap<Link, List<Point>> linkPositions = new HashMap<>();
 
+            HashSet<LayoutEdge> visited_edges = new HashSet<>();
             for (LayoutNode layoutNode : allNodes) {
                 for (LayoutEdge predEdge : layoutNode.preds) {
-                    if (predEdge.link != null) {
+                    if (predEdge.link != null && !visited_edges.contains(predEdge)) {
                         ArrayList<Point> linkPoints = new ArrayList<>();
                         linkPoints.add(new Point(predEdge.getEndPoint(), predEdge.to.y));
                         linkPoints.add(new Point(predEdge.getEndPoint(), layers[predEdge.to.layer].y - LAYER_OFFSET));
@@ -1408,36 +1409,33 @@ public class NewHierarchicalLayoutManager {
                             linkPositions.put(predEdge.link, linkPoints);
                         }
 
-                        // No longer needed!
-                        predEdge.link = null;
-                        //visited_edges.add(e.link);
+                        visited_edges.add(predEdge);
                     }
                 }
 
                 for (LayoutEdge succEdge : layoutNode.succs) {
-                    if (succEdge.link != null) {
+                    if (succEdge.link != null && !visited_edges.contains(succEdge)) {
                         ArrayList<Point> points = new ArrayList<>();
                         points.add(new Point(succEdge.getStartPoint(), succEdge.from.getBottom()));
                         points.add(new Point(succEdge.getStartPoint(), layers[succEdge.from.layer].getBottom() + LAYER_OFFSET));
 
-                        LayoutNode cur = succEdge.to;
-                        LayoutNode other = succEdge.from;
+                        LayoutNode toNode = succEdge.to;
+                        LayoutNode fromNode = succEdge.from;
                         LayoutEdge curEdge = succEdge;
-                        while (cur.isDummy() && !cur.succs.isEmpty()) {
-                            points.add(new Point(cur.getCenterX(), layers[cur.layer].y - LAYER_OFFSET));
-                            points.add(new Point(cur.getCenterX(), layers[cur.layer].getBottom() + LAYER_OFFSET));
-
-                            curEdge = cur.succs.get(0);
-                            cur = curEdge.to;
+                        while (toNode.isDummy() && !toNode.succs.isEmpty()) {
+                            points.add(new Point(toNode.getCenterX(), layers[toNode.layer].y - LAYER_OFFSET));
+                            points.add(new Point(toNode.getCenterX(), layers[toNode.layer].getBottom() + LAYER_OFFSET));
+                            curEdge = toNode.succs.get(0);
+                            toNode = curEdge.to;
                         }
 
-                        points.add(new Point(curEdge.getEndPoint(), layers[cur.layer].y - LAYER_OFFSET));
-                        points.add(new Point(curEdge.getEndPoint(), cur.y));
+                        points.add(new Point(curEdge.getEndPoint(), layers[toNode.layer].y - LAYER_OFFSET));
+                        points.add(new Point(curEdge.getEndPoint(), toNode.y));
 
-                        if (cur.succs.isEmpty() && cur.isDummy()) {
+                        if (toNode.isDummy()) { // a dummy node without successor is a split start-point
                             if (reversedLinkStartPoints.containsKey(succEdge.link)) {
-                                for (Point p1 : reversedLinkStartPoints.get(succEdge.link)) {
-                                    points.add(0, new Point(p1.x + other.getLeftSide(), p1.y + other.y));
+                                for (Point startPoint : reversedLinkStartPoints.get(succEdge.link)) {
+                                    points.add(0, new Point(startPoint.x + fromNode.getLeftSide(), startPoint.y + fromNode.y));
                                 }
                             }
 
@@ -1456,13 +1454,13 @@ public class NewHierarchicalLayoutManager {
                         } else {
                             if (reversedLinks.contains(succEdge.link)) {
                                 if (reversedLinkStartPoints.containsKey(succEdge.link)) {
-                                    for (Point p1 : reversedLinkStartPoints.get(succEdge.link)) {
-                                        points.add(0, new Point(p1.x + other.getLeftSide(), p1.y + other.y));
+                                    for (Point startPoint : reversedLinkStartPoints.get(succEdge.link)) {
+                                        points.add(0, new Point(startPoint.x + fromNode.getLeftSide(), startPoint.y + fromNode.y));
                                     }
                                 }
                                 if (reversedLinkEndPoints.containsKey(succEdge.link)) {
-                                    for (Point p1 : reversedLinkEndPoints.get(succEdge.link)) {
-                                        points.add(new Point(p1.x + cur.getLeftSide(), p1.y + cur.y));
+                                    for (Point endPoint : reversedLinkEndPoints.get(succEdge.link)) {
+                                        points.add(new Point(endPoint.x + toNode.getLeftSide(), endPoint.y + toNode.y));
                                     }
                                 }
                                 Collections.reverse(points);
@@ -1470,38 +1468,14 @@ public class NewHierarchicalLayoutManager {
                             linkPositions.put(succEdge.link, points);
                         }
 
-                        succEdge.link = null;
-                        //visited_edges.add(e.link);
-
+                        visited_edges.add(succEdge);
                     }
                 }
             }
             return linkPositions;
         }
 
-        private void assertLinks() {
-
-
-            for (LayoutNode node : allNodes) {
-                if (!node.isDummy()) {
-                    for (LayoutEdge predEdge : node.preds) {
-                        assert predEdge.link != null;
-                    }
-
-                    for (LayoutEdge succEdge : node.succs) {
-                        if (succEdge.to.isDummy()) {
-                            assert !succEdge.to.succs.isEmpty() || succEdge.link != null;
-                        } else {
-                            assert succEdge.link != null;
-                        }
-                    }
-                }
-            }
-        }
-
-
         public void run() {
-            assertLinks();
             assertOrder();
 
             HashMap<Vertex, Point> vertexPositions = computeVertexPositions();
