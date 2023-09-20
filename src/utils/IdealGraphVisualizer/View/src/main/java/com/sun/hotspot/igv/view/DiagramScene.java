@@ -649,7 +649,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     shadowWidget.setVisible(false);
                     pointerWidget.setVisible(false);
                     validateAll();
-                    centerSingleSelectedFigure();
                     rebuilding = false;
                 }
 
