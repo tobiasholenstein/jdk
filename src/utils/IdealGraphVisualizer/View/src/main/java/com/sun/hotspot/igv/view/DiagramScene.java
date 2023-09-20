@@ -702,7 +702,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     if (selectedFigures.size() == 1) {
                         FigureWidget fw = getWidget(selectedFigures.iterator().next());
                         pointerWidget.setVisible(true);
-                        Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
+                        Point newLocation = new Point(fw.getLocation().x + shiftX -3, fw.getLocation().y + shiftY);
                         ActionFactory.createDefaultMoveProvider().setNewLocation(pointerWidget, newLocation);
                     }
 
