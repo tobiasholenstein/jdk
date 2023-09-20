@@ -1363,13 +1363,14 @@ public class NewHierarchicalLayoutManager {
                 if (layoutNode.isDummy()) continue;
 
                 for (LayoutEdge predEdge : layoutNode.preds) {
+                    if (visited_edges.contains(predEdge)) continue;
                     if (reversedLinks.contains(predEdge.link)) continue;
                     assert predEdge.link != null;
 
                     ArrayList<Point> linkPoints = new ArrayList<>();
                     // input edge stub
                     linkPoints.add(new Point(predEdge.getEndPoint(), predEdge.to.getTop()));
-                    linkPoints.add(new Point(predEdge.getEndPoint(), layers[predEdge.to.layer].y - LAYER_OFFSET));
+                    linkPoints.add(new Point(predEdge.getEndPoint(), layers[predEdge.to.layer].getTop() - LAYER_OFFSET));
 
                     LayoutNode fromNode = predEdge.from;
                     LayoutEdge curEdge = predEdge;
@@ -1383,36 +1384,39 @@ public class NewHierarchicalLayoutManager {
                     // output edge stub
                     linkPoints.add(new Point(curEdge.getStartPoint(), fromNode.getBottom()));
                     Collections.reverse(linkPoints);
-                    //assert !fromNode.isDummy();
-                    if (!fromNode.isDummy() ) {
+                    //if (!fromNode.isDummy() ) {
                         linkPositions.put(predEdge.link, linkPoints);
-                    }
+                    //}
+                    visited_edges.add(predEdge);
                 }
 
-                /*
+
                 for (LayoutEdge succEdge : layoutNode.succs) {
-                    if (succEdge.link != null && !visited_edges.contains(succEdge)) {
-                        ArrayList<Point> points = new ArrayList<>();
-                        points.add(new Point(succEdge.getStartPoint(), succEdge.from.getBottom()));
-                        points.add(new Point(succEdge.getStartPoint(), layers[succEdge.from.layer].getBottom() + LAYER_OFFSET));
+                    if (visited_edges.contains(succEdge)) continue;
+                    if (succEdge.link == null) continue;
+                    if (reversedLinks.contains(succEdge.link)) continue;
 
-                        LayoutNode toNode = succEdge.to;
-                        LayoutEdge curEdge = succEdge;
-                        while (toNode.isDummy() && !toNode.succs.isEmpty()) {
-                            points.add(new Point(toNode.getCenterX(), layers[toNode.layer].y - LAYER_OFFSET));
-                            points.add(new Point(toNode.getCenterX(), layers[toNode.layer].getBottom() + LAYER_OFFSET));
-                            curEdge = toNode.succs.get(0);
-                            toNode = curEdge.to;
-                        }
-                        points.add(new Point(curEdge.getEndPoint(), layers[toNode.layer].y - LAYER_OFFSET));
-                        points.add(new Point(curEdge.getEndPoint(), toNode.y));
+                    ArrayList<Point> points = new ArrayList<>();
+                    points.add(new Point(succEdge.getStartPoint(), succEdge.from.getBottom()));
+                    points.add(new Point(succEdge.getStartPoint(), layers[succEdge.from.layer].getBottom() + LAYER_OFFSET));
 
-                        if (!toNode.isDummy() && !reversedLinks.contains(succEdge.link)) {
-                            linkPositions.put(succEdge.link, points);
-                        }
-                        visited_edges.add(succEdge);
+                    LayoutNode toNode = succEdge.to;
+                    LayoutEdge curEdge = succEdge;
+                    while (toNode.isDummy() && !toNode.succs.isEmpty()) {
+                        points.add(new Point(toNode.getCenterX(), layers[toNode.layer].getTop() - LAYER_OFFSET));
+                        points.add(new Point(toNode.getCenterX(), layers[toNode.layer].getBottom() + LAYER_OFFSET));
+                        curEdge = toNode.succs.get(0);
+                        toNode = curEdge.to;
                     }
-                }*/
+                    points.add(new Point(curEdge.getEndPoint(), layers[toNode.layer].getTop() - LAYER_OFFSET));
+                    points.add(new Point(curEdge.getEndPoint(), toNode.getTop()));
+
+                    //if (!toNode.isDummy() && !reversedLinks.contains(succEdge.link)) {
+                    linkPositions.put(succEdge.link, points);
+                    //}
+                    visited_edges.add(succEdge);
+
+                }
             }
             return linkPositions;
         }
