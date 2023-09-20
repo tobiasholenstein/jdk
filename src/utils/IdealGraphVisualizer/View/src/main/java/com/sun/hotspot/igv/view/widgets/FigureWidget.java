@@ -62,13 +62,11 @@ import org.openide.util.ImageUtilities;
 public class FigureWidget extends Widget implements Properties.Provider, PopupMenuProvider, DoubleClickHandler {
 
     private static final double LABEL_ZOOM_FACTOR = 0.3;
-    private Figure figure;
-    private Widget middleWidget;
-    private ArrayList<LabelWidget> labelWidgets;
-    private DiagramScene diagramScene;
+    private final Figure figure;
+    private final Widget middleWidget;
+    private final ArrayList<LabelWidget> labelWidgets;
+    private final DiagramScene diagramScene;
     private boolean boundary;
-    private final Node node;
-    private Widget dummyTop;
     private static final Image warningSign = ImageUtilities.loadImage("com/sun/hotspot/igv/view/images/warning.png");
 
     public void setBoundary(boolean b) {
@@ -118,7 +116,7 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         middleWidget.getActions().addAction(new DoubleClickAction(this));
         middleWidget.setCheckClipping(false);
 
-        dummyTop = new Widget(scene);
+        Widget dummyTop = new Widget(scene);
         int extraTopHeight =
             getFigure().getDiagram().isCFG() && getFigure().hasNamedInputSlot() ?
             Figure.TOP_CFG_HEIGHT : 0;
@@ -166,11 +164,11 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         dummyBottom.setMinimumSize(new Dimension(Figure.INSET / 2, 1  + extraBottomHeight));
         middleWidget.addChild(dummyBottom);
 
-        middleWidget.setPreferredBounds(new Rectangle(0, Figure.getVerticalOffset(), f.getWidth(), f.getHeight()));
+        middleWidget.setPreferredBounds(new Rectangle(0, 0, f.getWidth(), f.getHeight()));
         this.addChild(middleWidget);
 
         // Initialize node for property sheet
-        node = new AbstractNode(Children.LEAF) {
+        Node node = new AbstractNode(Children.LEAF) {
 
             @Override
             protected Sheet createSheet() {

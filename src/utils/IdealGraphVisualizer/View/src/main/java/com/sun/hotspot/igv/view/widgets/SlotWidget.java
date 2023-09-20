@@ -44,11 +44,11 @@ import org.netbeans.api.visual.widget.Widget;
  */
 public abstract class SlotWidget extends Widget implements DoubleClickHandler {
 
-    private Slot slot;
-    private FigureWidget figureWidget;
+    private final Slot slot;
+    private final FigureWidget figureWidget;
     protected static double TEXT_ZOOM_FACTOR = 0.9;
     protected static double ZOOM_FACTOR = 0.6;
-    private DiagramScene diagramScene;
+    private final DiagramScene diagramScene;
 
     public SlotWidget(Slot slot, DiagramScene scene, Widget parent, FigureWidget fw) {
         super(scene);
@@ -64,6 +64,7 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
 
         Point p = slot.getRelativePosition();
         p.x -= this.calculateClientArea().width / 2;
+        p.y -=  this.calculateClientArea().height / 2;
         p.y += yOffset();
         this.setPreferredLocation(p);
     }
@@ -141,9 +142,9 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
                 }
                 int r = 2;
                 if (slot instanceof OutputSlot) {
-                    g.fillOval(w / 2 - r, Figure.SLOT_WIDTH - Figure.SLOT_START - r, 2 * r, 2 * r);
+                    g.fillOval(w / 2 - r, Figure.SLOT_WIDTH - Figure.DOT_OFFSET - r, 2 * r, 2 * r);
                 } else {
-                    g.fillOval(w / 2 - r, Figure.SLOT_START - r, 2 * r, 2 * r);
+                    g.fillOval(w / 2 - r, Figure.DOT_OFFSET - r, 2 * r, 2 * r);
                 }
             } else {
                 // Do not paint a slot with connections.

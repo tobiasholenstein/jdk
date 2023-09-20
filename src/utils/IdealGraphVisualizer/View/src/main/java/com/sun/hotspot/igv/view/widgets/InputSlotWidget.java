@@ -42,8 +42,8 @@ import org.netbeans.api.visual.widget.Widget;
  */
 public class InputSlotWidget extends SlotWidget {
 
-    private InputSlot inputSlot;
-    private DiagramScene scene;
+    private final InputSlot inputSlot;
+    private final DiagramScene scene;
 
     public InputSlotWidget(InputSlot slot, DiagramScene scene, Widget parent, FigureWidget fw) {
         super(slot, scene, parent, fw);
@@ -65,7 +65,7 @@ public class InputSlotWidget extends SlotWidget {
     @Override
     protected int yOffset() {
         return getFigureWidget().getFigure().getDiagram().isCFG() ?
-            calculateClientArea().height - 1 : Figure.SLOT_START;
+            calculateClientArea().height / 2 : 0;
     }
 
     @Override

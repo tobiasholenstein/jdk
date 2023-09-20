@@ -35,7 +35,7 @@ import org.netbeans.api.visual.widget.Widget;
  */
 public class OutputSlotWidget extends SlotWidget {
 
-    private OutputSlot outputSlot;
+    private final OutputSlot outputSlot;
 
     public OutputSlotWidget(OutputSlot slot, DiagramScene scene, Widget parent, FigureWidget fw) {
         super(slot, scene, parent, fw);
@@ -57,7 +57,7 @@ public class OutputSlotWidget extends SlotWidget {
     @Override
     protected int yOffset() {
         int overlap = getFigureWidget().getFigure().getDiagram().isCFG() ?
-            calculateClientArea().height : Figure.SLOT_START;
+            calculateClientArea().height / 2 : 0;
         return getSlot().getFigure().getHeight() - overlap;
     }
 }

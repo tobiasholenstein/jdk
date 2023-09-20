@@ -27,7 +27,6 @@ package com.sun.hotspot.igv.hierarchicallayout;
 import com.sun.hotspot.igv.layout.LayoutGraph;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
-import com.sun.hotspot.igv.util.Statistics;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.util.*;
@@ -1369,7 +1368,7 @@ public class NewHierarchicalLayoutManager {
 
                     ArrayList<Point> linkPoints = new ArrayList<>();
                     // input edge stub
-                    linkPoints.add(new Point(predEdge.getEndPoint(), predEdge.to.y));
+                    linkPoints.add(new Point(predEdge.getEndPoint(), predEdge.to.getTop()));
                     linkPoints.add(new Point(predEdge.getEndPoint(), layers[predEdge.to.layer].y - LAYER_OFFSET));
 
                     LayoutNode fromNode = predEdge.from;
@@ -1381,6 +1380,7 @@ public class NewHierarchicalLayoutManager {
                         fromNode = curEdge.from;
                     }
                     linkPoints.add(new Point(curEdge.getStartPoint(), layers[fromNode.layer].getBottom() + LAYER_OFFSET));
+                    // output edge stub
                     linkPoints.add(new Point(curEdge.getStartPoint(), fromNode.getBottom()));
                     Collections.reverse(linkPoints);
                     //assert !fromNode.isDummy();

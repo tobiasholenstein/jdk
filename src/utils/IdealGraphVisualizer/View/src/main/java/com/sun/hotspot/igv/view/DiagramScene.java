@@ -602,7 +602,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     shadowWidget.setBackground(new Color(c.getRed(), c.getGreen(), c.getBlue(), 50));
                     shadowWidget.setBorder(BorderFactory.createLineBorder(new Color(0,0,0, 50)));
                     shadowWidget.setPreferredLocation(fw.getPreferredLocation());
-                    shadowWidget.setPreferredBounds(new Rectangle(0, Figure.getVerticalOffset(), f.getWidth(), f.getHeight()));
+                    shadowWidget.setPreferredBounds(new Rectangle(0, 0, f.getWidth(), f.getHeight()));
                     shadowWidget.setVisible(true);
                     shadowWidget.setOpaque(true);
                     shadowWidget.revalidate();
@@ -611,7 +611,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                 private void setMovePointer(Figure f) {
                     pointerWidget.setBackground(Color.RED);
-                    pointerWidget.setPreferredBounds(new Rectangle(0, Figure.getVerticalOffset(), 3, f.getHeight()));
+                    pointerWidget.setPreferredBounds(new Rectangle(0, 0, 3, f.getHeight()));
                     pointerWidget.setVisible(false);
                     pointerWidget.setOpaque(true);
                 }
@@ -918,12 +918,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     if (currentPoint == null) { // Long connection, has been cut vertically.
                         currentPoint = specialNullPoint;
                     } else {
-                        if (controlPointIndex == 0 && !outputSlot.shouldShowName()) {
-                            currentPoint = new Point(currentPoint.x, currentPoint.y - SLOT_OFFSET);
-                        } else if (controlPointIndex == controlPoints.size() - 1 &&
-                                !((Slot)connection.getTo()).shouldShowName()) {
-                            currentPoint = new Point(currentPoint.x, currentPoint.y + SLOT_OFFSET);
-                        }
+                        currentPoint = new Point(currentPoint.x, currentPoint.y);
                     }
                     if (pointMap.containsKey(currentPoint)) {
                         pointMap.get(currentPoint).add(connection);

@@ -35,8 +35,7 @@ public class Figure extends Properties.Entity implements Vertex {
 
     public static final int INSET = 8;
     public static final int SLOT_WIDTH = 10;
-    public static final int OVERLAPPING = 6;
-    public static final int SLOT_START = 4;
+    public static final int DOT_OFFSET = 5;
     public static final int SLOT_OFFSET = 8;
     public static final int TOP_CFG_HEIGHT = 7;
     public static final int BOTTOM_CFG_HEIGHT = 6;
@@ -342,7 +341,6 @@ public class Figure extends Properties.Entity implements Vertex {
                     }
                     inputLabel = nodeTinyLabel;
                 }
-                assert(inputLabel != null);
                 int gapSize = is.gapSize();
                 if (gapSize == 1) {
                     inputs.add("_");
@@ -398,8 +396,8 @@ public class Figure extends Properties.Entity implements Vertex {
 
     @Override
     public Dimension getSize() {
-        int width = Math.max(getWidth(), Figure.SLOT_WIDTH * (Math.max(inputSlots.size(), outputSlots.size()) + 1));
-        int height = getHeight() + (diagram.isCFG() ? 0 : 2 * Figure.SLOT_WIDTH - 2 * Figure.OVERLAPPING);
+        int width = getWidth();
+        int height = getHeight();
         return new Dimension(width, height);
     }
 
@@ -422,7 +420,7 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     public static int getVerticalOffset() {
-        return Figure.SLOT_WIDTH - Figure.OVERLAPPING;
+        return Figure.SLOT_WIDTH;
     }
 
     public Cluster getCluster() {
