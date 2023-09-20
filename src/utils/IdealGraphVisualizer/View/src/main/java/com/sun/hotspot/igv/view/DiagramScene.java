@@ -81,6 +81,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private final LayerWidget mainLayer;
     private final LayerWidget blockLayer;
     private final LayerWidget connectionLayer;
+    private final Widget shadowWidget;
+    private final Widget pointerWidget;
     private final DiagramViewModel model;
     private ModelState modelState;
     private boolean rebuilding;
@@ -319,11 +321,17 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         blockLayer = new LayerWidget(this);
         addChild(blockLayer);
 
+        shadowWidget = new Widget(DiagramScene.this);
+        addChild(shadowWidget);
+
         connectionLayer = new LayerWidget(this);
         addChild(connectionLayer);
 
         mainLayer = new LayerWidget(this);
         addChild(mainLayer);
+
+        pointerWidget = new Widget(DiagramScene.this);
+        addChild(pointerWidget);
 
         setBorder(BorderFactory.createLineBorder(Color.white, BORDER_SIZE));
         setLayout(LayoutFactory.createAbsoluteLayout());
@@ -587,9 +595,36 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             figureWidget.getActions().addAction(selectAction);
             figureWidget.getActions().addAction(hoverAction);
             figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
+
+                private void setFigureShadow(Figure f) {
+                    FigureWidget fw = getWidget(f);
+                    Color c = f.getColor();
+                    shadowWidget.setBackground(new Color(c.getRed(), c.getGreen(), c.getBlue(), 50));
+                    shadowWidget.setBorder(BorderFactory.createLineBorder(new Color(0,0,0, 50)));
+                    shadowWidget.setPreferredLocation(fw.getPreferredLocation());
+                    shadowWidget.setPreferredBounds(new Rectangle(0, Figure.getVerticalOffset(), f.getWidth(), f.getHeight()));
+                    shadowWidget.setVisible(true);
+                    shadowWidget.setOpaque(true);
+                    shadowWidget.revalidate();
+                    shadowWidget.repaint();
+                }
+
+                private void setMovePointer(Figure f) {
+                    pointerWidget.setBackground(Color.RED);
+                    pointerWidget.setPreferredBounds(new Rectangle(0, Figure.getVerticalOffset(), 3, f.getHeight()));
+                    pointerWidget.setVisible(false);
+                    pointerWidget.setOpaque(true);
+                }
+
                 @Override
                 public void movementStarted(Widget widget) {
                     widget.bringToFront();
+                    Set<Figure> selectedFigures = model.getSelectedFigures();
+                    if (selectedFigures.size() == 1) {
+                        Figure selectedFigure = selectedFigures.iterator().next();
+                        setFigureShadow(selectedFigure);
+                        setMovePointer(selectedFigure);
+                    }
                 }
 
                 @Override
@@ -608,6 +643,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     rebuildConnectionLayer();
                     updateFigureWidgetLocations(oldVisibleFigureWidgets);
                     updateBlockWidgetBounds(oldVisibleBlockWidgets);
+                    shadowWidget.setVisible(false);
+                    pointerWidget.setVisible(false);
                     validateAll();
                     centerSingleSelectedFigure();
                     rebuilding = false;
@@ -648,6 +685,12 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                         ActionFactory.createDefaultMoveProvider().setNewLocation(fw, newLocation);
                     }
 
+                    if (selectedFigures.size() == 1) {
+                        FigureWidget fw = getWidget(selectedFigures.iterator().next());
+                        pointerWidget.setVisible(true);
+                        Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
+                        ActionFactory.createDefaultMoveProvider().setNewLocation(pointerWidget, newLocation);
+                    }
 
                 }
             }));
