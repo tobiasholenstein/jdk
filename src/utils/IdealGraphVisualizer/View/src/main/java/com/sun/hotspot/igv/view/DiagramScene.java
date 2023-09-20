@@ -616,9 +616,12 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     pointerWidget.setOpaque(true);
                 }
 
+                private int startLayerY;
+
                 @Override
                 public void movementStarted(Widget widget) {
                     widget.bringToFront();
+                    startLayerY = widget.getLocation().y;
                     Set<Figure> selectedFigures = model.getSelectedFigures();
                     if (selectedFigures.size() == 1) {
                         Figure selectedFigure = selectedFigures.iterator().next();
@@ -650,6 +653,18 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     rebuilding = false;
                 }
 
+                private int magnetToStartLayerY(Widget widget, Point location, int magnetSize) {
+                    int shiftY = location.y - widget.getLocation().y;
+                    if (Math.abs(location.y - startLayerY) <= magnetSize) {
+                        if (Math.abs(widget.getLocation().y - startLayerY) > magnetSize) {
+                            shiftY = startLayerY - widget.getLocation().y;
+                        } else {
+                            shiftY = 0;
+                        }
+                    }
+                    return shiftY;
+                }
+
                 @Override
                 public Point getOriginalLocation(Widget widget) {
                     return ActionFactory.createDefaultMoveProvider().getOriginalLocation(widget);
@@ -660,7 +675,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     if (getModel().getShowCFG()) return;
 
                     int shiftX = location.x - widget.getLocation().x;
-                    int shiftY = location.y - widget.getLocation().y;
+                    int shiftY = magnetToStartLayerY(widget, location, 5);
 
                     Set<Figure> selectedFigures = model.getSelectedFigures();
                     for (Figure figure : selectedFigures) {
