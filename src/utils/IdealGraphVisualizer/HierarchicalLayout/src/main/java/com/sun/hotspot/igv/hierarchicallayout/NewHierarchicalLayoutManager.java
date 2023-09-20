@@ -27,6 +27,7 @@ package com.sun.hotspot.igv.hierarchicallayout;
 import com.sun.hotspot.igv.layout.LayoutGraph;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
+import com.sun.hotspot.igv.util.Statistics;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.util.*;
@@ -365,8 +366,12 @@ public class NewHierarchicalLayoutManager {
             return getLeftSide() + (width / 2);
         }
 
+        public int getTop() {
+            return y + yOffset;
+        }
+
         public int getBottom() {
-            return y + height;
+            return y + yOffset + height;
         }
 
         public boolean isDummy() {
@@ -444,6 +449,7 @@ public class NewHierarchicalLayoutManager {
         //  - LayoutNodes : nodes, vertexToLayoutNode
         //  - LayoutEdge :  LayoutNode.preds, LayoutNode.succs
         new BuildDatastructure().run();
+        assertNodePos();
 
         // #############################################################
         // STEP 2: Reverse edges, handle backedges
@@ -459,12 +465,13 @@ public class NewHierarchicalLayoutManager {
         //      - n.xOffset
         //      - n.width
         new ReverseEdges().run();
+        assertNodePos();
 
         // #############################################################
         // STEP 3: Assign layers
         // - sets LayoutNode.layer
         new AssignLayers().run();
-
+        assertNodePos();
         assertEdgesConnected();
         // #############################################################
         // STEP 4: Create dummy nodes
@@ -472,7 +479,7 @@ public class NewHierarchicalLayoutManager {
         // - replaces single LayoutEdge between LayoutNodes with a chain of new LayoutEdges and dummy LayoutNodes
         // - adds the new dummy LayoutNodes to nodes
         new CreateDummyNodes().run();
-
+        assertNodePos();
         assertEdgesConnected();
 
         // #############################################################
@@ -480,6 +487,7 @@ public class NewHierarchicalLayoutManager {
         // creates layers = new LayoutLayer[layerCount];
         // - sets for each LayoutNode n,und n.pos
         new CrossingReduction().run();
+        assertNodePos();
         assertOrder();
 
         // #############################################################
@@ -1211,7 +1219,6 @@ public class NewHierarchicalLayoutManager {
         }
 
 
-
         private void run() {
             createArrays();
             initialPositions();
@@ -1321,7 +1328,6 @@ public class NewHierarchicalLayoutManager {
                     n.y = curY;
                     if (!n.isDummy()) {
                         n.yOffset = (layerHeight - n.getWholeHeight()) / 2 + n.yOffset;
-                        n.y += n.yOffset;
                         n.bottomYOffset = layerHeight - n.yOffset - n.height;
                     }
                     for (LayoutEdge e : n.succs) {
@@ -1339,7 +1345,7 @@ public class NewHierarchicalLayoutManager {
             HashMap<Vertex, Point> vertexPositions = new HashMap<>();
             for (Vertex v : graph.getVertices()) {
                 LayoutNode n = vertexToLayoutNode.get(v);
-                vertexPositions.put(v, new Point(n.getLeftSide(), n.y));
+                vertexPositions.put(v, new Point(n.getLeftSide(), n.getTop()));
             }
             return vertexPositions;
         }
@@ -1370,7 +1376,7 @@ public class NewHierarchicalLayoutManager {
                     LayoutEdge curEdge = predEdge;
                     while (fromNode.isDummy() && !fromNode.preds.isEmpty()) {
                         linkPoints.add(new Point(fromNode.getCenterX(), layers[fromNode.layer].getBottom() + LAYER_OFFSET));
-                        linkPoints.add(new Point(fromNode.getCenterX(), fromNode.y - LAYER_OFFSET));
+                        linkPoints.add(new Point(fromNode.getCenterX(), fromNode.getTop() - LAYER_OFFSET));
                         curEdge = fromNode.preds.get(0);
                         fromNode = curEdge.from;
                     }
@@ -1443,17 +1449,26 @@ public class NewHierarchicalLayoutManager {
             assertOrder();
 
             for (LayoutNode node : allNodes) {
+                minX = Math.min(minX, node.x);
+                minY = Math.min(minY, node.y);
+            }
+
+            for (LayoutLayer layer : layers) {
+                minY = Math.min(minY, layer.y);
+            }
+
+            for (LayoutNode node : allNodes) {
                 node.x -= minX;
-                assert node.x>=0;
+                assert node.x >= 0;
                 node.y -= minY;
-                assert node.y>=0;
+                assert node.y >= 0;
             }
 
             assertOrder();
 
-
             for (LayoutLayer layer : layers) {
                 layer.y -= minY;
+                assert layer.y >= 0;
             }
 
             assertOrder();
@@ -1463,6 +1478,8 @@ public class NewHierarchicalLayoutManager {
                 Point point = entry.getValue();
                 point.x -= minX;
                 point.y -= minY;
+                assert point.x >= 0;
+                assert point.y >= 0;
                 Vertex vertex = entry.getKey();
                 vertex.setPosition(point);
             }
@@ -1477,6 +1494,8 @@ public class NewHierarchicalLayoutManager {
                     if (p != null) {
                         p.x -= minX;
                         p.y -= minY;
+                        assert p.x >= 0;
+                        assert p.y >= 0;
                     }
                 }
 
@@ -1485,6 +1504,7 @@ public class NewHierarchicalLayoutManager {
             }
 
             assertOrder();
+            assertNodePos();
         }
     }
 
@@ -1507,6 +1527,10 @@ public class NewHierarchicalLayoutManager {
         public boolean add(LayoutNode n) {
             setHeight(n);
             return super.add(n);
+        }
+
+        public int getTop() {
+            return y;
         }
 
         public int getBottom() {
@@ -1553,6 +1577,44 @@ public class NewHierarchicalLayoutManager {
             }
             n.x = pos;
             treeSet.add(n);
+        }
+    }
+
+    private void assertNodePos() {
+        for (LayoutNode n : allNodes) {
+            assert n.x >= 0;
+            assert n.y >= 0;
+            assert n.xOffset >= 0;
+            assert n.yOffset >= 0;
+            assert n.bottomYOffset >= 0;
+            assert n.height >= 0;
+            assert n.width >= 0;
+
+            for (LayoutEdge e : n.preds) {
+                assert e.from.x >= 0;
+                assert e.from.y >= 0;
+                assert e.to.x >= 0;
+                assert e.to.y >= 0;
+            }
+
+            for (LayoutEdge e : n.succs) {
+                assert e.from.x >= 0;
+                assert e.from.y >= 0;
+                assert e.to.x >= 0;
+                assert e.to.y >= 0;
+            }
+
+        }
+
+        for (Vertex v : graph.getVertices()) {
+            LayoutNode n = vertexToLayoutNode.get(v);
+            assert n.x >= 0;
+            assert n.y >= 0;
+            assert n.xOffset >= 0;
+            assert n.yOffset >= 0;
+            assert n.bottomYOffset >= 0;
+            assert n.height >= 0;
+            assert n.width >= 0;
         }
     }
 
