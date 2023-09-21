@@ -155,8 +155,7 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     public Color getColor() {
-        //return color;
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), 80);
+        return color;
     }
 
     public void setWarning(String warning) {

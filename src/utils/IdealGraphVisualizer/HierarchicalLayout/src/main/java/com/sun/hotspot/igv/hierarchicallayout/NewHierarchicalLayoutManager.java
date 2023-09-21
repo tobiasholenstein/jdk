@@ -48,7 +48,7 @@ public class NewHierarchicalLayoutManager {
     private final int maxLayerLength;
     // Algorithm global datastructures
     private final Set<Link> reversedLinks;
-    private final Set<LayoutNode> allNodes;
+    private final List<LayoutNode> allNodes;
     private final HashMap<Vertex, LayoutNode> vertexToLayoutNode;
     private final HashMap<Link, List<Point>> reversedLinkStartPoints;
     private final HashMap<Link, List<Point>> reversedLinkEndPoints;
@@ -266,7 +266,7 @@ public class NewHierarchicalLayoutManager {
                     movedNode.layer = i;
                     movedNode.pos = newPos;
                 } else { // move within the same layer
-                    assert movedNode.pos != newPos; // handled before
+                    //assert movedNode.pos != newPos; // handled before
                     if (movedNode.pos < newPos) { // moved to the right
                         // adjust because we have already removed movedNode in this layer
                         movedNode.pos = newPos - 1;
@@ -427,13 +427,13 @@ public class NewHierarchicalLayoutManager {
     }
 
     public NewHierarchicalLayoutManager() {
-        maxLayerLength = 8; //-1;
+        maxLayerLength = -1;
 
         vertexToLayoutNode = new HashMap<>();
         reversedLinks = new HashSet<>();
         reversedLinkStartPoints = new HashMap<>();
         reversedLinkEndPoints = new HashMap<>();
-        allNodes = new HashSet<>();
+        allNodes = new ArrayList<>();
     }
 
     public void doLayout(LayoutGraph graph) {
