@@ -28,6 +28,7 @@ import com.sun.hotspot.igv.data.*;
 import com.sun.hotspot.igv.graph.*;
 import com.sun.hotspot.igv.hierarchicallayout.*;
 import com.sun.hotspot.igv.layout.LayoutGraph;
+import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.selectioncoordinator.SelectionCoordinator;
 import com.sun.hotspot.igv.util.ColorIcon;
 import com.sun.hotspot.igv.util.DoubleClickAction;
@@ -680,7 +681,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     int shiftX = location.x - widget.getLocation().x;
                     int shiftY = magnetToStartLayerY(widget, location, 5);
 
-                    Set<Figure> selectedFigures = model.getSelectedFigures();
+                    List<Figure> selectedFigures = new ArrayList<>( model.getSelectedFigures());
+                    selectedFigures.sort(Comparator.comparingInt(f -> f.getPosition().x));
                     for (Figure figure : selectedFigures) {
                         FigureWidget fw = getWidget(figure);
                         if (figureToInLineWidget.containsKey(fw.getFigure())) {
