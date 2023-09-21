@@ -32,6 +32,8 @@ import com.sun.hotspot.igv.util.PropertiesConverter;
 import com.sun.hotspot.igv.util.PropertiesSheet;
 import com.sun.hotspot.igv.view.DiagramScene;
 import java.awt.*;
+import java.awt.geom.Path2D;
+import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,6 +41,8 @@ import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JMenu;
 import javax.swing.JPopupMenu;
+import javax.swing.border.Border;
+import javax.swing.border.LineBorder;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import org.netbeans.api.visual.action.PopupMenuProvider;
@@ -182,6 +186,34 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         this.setToolTipText(PropertiesConverter.convertToHTML(f.getProperties()));
     }
 
+    public static class RoundedBorder extends LineBorder {
+
+        final float RADIUS = 3f;
+
+        public RoundedBorder(Color color, int thickness)  {
+            super(color, thickness);
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            if ((this.thickness > 0) && (g instanceof Graphics2D)) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color oldColor = g2d.getColor();
+                g2d.setColor(this.lineColor);
+                int offs = this.thickness;
+                int size = offs + offs;
+                Shape outer = new RoundRectangle2D.Float(x, y, width, height, RADIUS, RADIUS);
+                Shape inner = new RoundRectangle2D.Float(x + offs, y + offs, width - size, height - size, RADIUS, RADIUS);
+                Path2D path = new Path2D.Float(Path2D.WIND_EVEN_ODD);
+                path.append(outer, false);
+                path.append(inner, false);
+                g2d.fill(path);
+                g2d.setColor(oldColor);
+            }
+        }
+    }
+
     @Override
     protected void notifyStateChanged(ObjectState previousState, ObjectState state) {
         super.notifyStateChanged(previousState, state);
@@ -199,7 +231,10 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
             innerBorderColor = borderColor = Color.BLUE;
         }
 
-        middleWidget.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(borderColor, thickness), BorderFactory.createLineBorder(innerBorderColor, 1)));
+        // Border roundedBorder = BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(borderColor, thickness, true), BorderFactory.createLineBorder(innerBorderColor, 1, true));
+        Border roundedBorder = BorderFactory.createCompoundBorder(new RoundedBorder(borderColor, thickness), new RoundedBorder(innerBorderColor, 1));
+        middleWidget.setBorder(roundedBorder);
+
         for (LabelWidget labelWidget : labelWidgets) {
             labelWidget.setFont(font);
         }

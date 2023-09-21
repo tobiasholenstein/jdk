@@ -44,6 +44,7 @@ import java.util.*;
 import javax.swing.*;
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
+import javax.swing.border.Border;
 import javax.swing.event.UndoableEditEvent;
 import javax.swing.undo.AbstractUndoableEdit;
 import javax.swing.undo.CannotRedoException;
@@ -600,7 +601,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     FigureWidget fw = getWidget(f);
                     Color c = f.getColor();
                     shadowWidget.setBackground(new Color(c.getRed(), c.getGreen(), c.getBlue(), 50));
-                    shadowWidget.setBorder(BorderFactory.createLineBorder(new Color(0,0,0, 50)));
+                    Border border = new FigureWidget.RoundedBorder(new Color(0,0,0, 50), 1);
+                    shadowWidget.setBorder(border);
                     shadowWidget.setPreferredLocation(fw.getPreferredLocation());
                     shadowWidget.setPreferredBounds(new Rectangle(0, 0, f.getWidth(), f.getHeight()));
                     shadowWidget.setVisible(true);

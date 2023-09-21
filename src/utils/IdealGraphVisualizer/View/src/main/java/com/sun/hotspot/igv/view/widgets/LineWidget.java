@@ -211,7 +211,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
                     BasicStroke.JOIN_MITER, 10,
                     dashPattern, 0));
         } else {
-            g.setStroke(new BasicStroke(width));
+            g.setStroke(new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
         }
 
         g.drawLine(from.x, from.y, to.x, to.y);

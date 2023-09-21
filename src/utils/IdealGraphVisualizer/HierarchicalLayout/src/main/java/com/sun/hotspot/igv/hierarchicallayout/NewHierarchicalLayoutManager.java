@@ -1182,6 +1182,8 @@ public class NewHierarchicalLayoutManager {
 
         private final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
 
+        private final Comparator<LayoutNode> NODE_PROCESSING_BOTH_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(n -> n.preds.size() + n.succs.size());
+
         private final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(n -> n.preds.size());
 
         private final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(n -> n.succs.size());
@@ -1208,6 +1210,8 @@ public class NewHierarchicalLayoutManager {
                 upProcessingOrder[i] = layer.toArray(new LayoutNode[0]);
                 Arrays.sort(downProcessingOrder[i], NODE_PROCESSING_DOWN_COMPARATOR);
                 Arrays.sort(upProcessingOrder[i], NODE_PROCESSING_UP_COMPARATOR);
+                //Arrays.sort(downProcessingOrder[i], NODE_PROCESSING_BOTH_COMPARATOR);
+                //Arrays.sort(upProcessingOrder[i], NODE_PROCESSING_BOTH_COMPARATOR);
             }
         }
 
