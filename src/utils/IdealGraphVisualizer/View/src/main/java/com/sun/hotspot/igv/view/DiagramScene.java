@@ -600,9 +600,9 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 private void setFigureShadow(Figure f) {
                     FigureWidget fw = getWidget(f);
                     Color c = f.getColor();
-                    shadowWidget.setBackground(new Color(c.getRed(), c.getGreen(), c.getBlue(), 50));
                     Border border = new FigureWidget.RoundedBorder(new Color(0,0,0, 50), 1);
                     shadowWidget.setBorder(border);
+                    shadowWidget.setBackground(new Color(c.getRed(), c.getGreen(), c.getBlue(), 50));
                     shadowWidget.setPreferredLocation(fw.getPreferredLocation());
                     shadowWidget.setPreferredBounds(new Rectangle(0, 0, f.getWidth(), f.getHeight()));
                     shadowWidget.setVisible(true);
@@ -612,6 +612,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 }
 
                 private void setMovePointer(Figure f) {
+                    Border border = new FigureWidget.RoundedBorder(Color.RED, 1);
+                    pointerWidget.setBorder(border);
                     pointerWidget.setBackground(Color.RED);
                     pointerWidget.setPreferredBounds(new Rectangle(0, 0, 3, f.getHeight()));
                     pointerWidget.setVisible(false);
