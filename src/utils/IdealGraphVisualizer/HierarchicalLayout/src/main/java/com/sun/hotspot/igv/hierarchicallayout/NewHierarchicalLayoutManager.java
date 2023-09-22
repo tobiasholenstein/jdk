@@ -73,12 +73,12 @@ public class NewHierarchicalLayoutManager {
     private void addNode(LayoutNode node) {
         LayoutLayer layer = layers[node.layer];
         int pos = node.pos;
+        assertOrder();
 
         // update pos of the nodes right (and including) of pos
         for (LayoutNode n : layer) {
             if (n.pos >= pos) {
                 n.pos += 1;
-                n.x += node.getWholeWidth() + X_OFFSET;
             }
         }
 
@@ -89,25 +89,35 @@ public class NewHierarchicalLayoutManager {
             layer.add(node);
         }
 
+        // update x of the nodes right of inserted node at pos
+        int prevRightSide = node.getRightSide();
+        for (LayoutNode n : layer) {
+            if (n.pos > pos) {
+                n.x = Math.max(n.x, prevRightSide + X_OFFSET);
+                prevRightSide = n.getRightSide();
+            }
+        }
         // adjust Y of movedNode
         node.y = layer.y;
 
         allNodes.add(node);
+        assertOrder();
     }
 
+    private void updateLayerPositions(int index) {
+        int pos = 0;
+        for (LayoutNode n : layers[index]) {
+            n.pos = pos;
+            pos++;
+        }
+    }
+
+
+    // remove a node : do not update x, but assert that pos withing layer is correct
     private void removeNode(LayoutNode node) {
         int layer = node.layer;
-        int pos = node.pos;
         layers[layer].remove(node);
-
-        // Update position of remaining nodes on the same layer
-        for (LayoutNode n : layers[layer]) {
-            if (n.pos > pos) {
-                n.pos -= 1;
-                n.x -= node.getWholeWidth() + X_OFFSET;
-            }
-        }
-
+        updateLayerPositions(layer);
         // Remove node from graph layout
         allNodes.remove(node);
     }
@@ -255,6 +265,7 @@ public class NewHierarchicalLayoutManager {
                 }
 
                 int newPos = findPosInLayer(newLayer, newLocation.x);
+                assertOrder();
 
                 // remove from old layer and update positions in old layer
                 removeNode(movedNode);
@@ -275,6 +286,7 @@ public class NewHierarchicalLayoutManager {
                     }
                 }
                 addNode(movedNode);
+                assertOrder();
                 break;
             }
         }
