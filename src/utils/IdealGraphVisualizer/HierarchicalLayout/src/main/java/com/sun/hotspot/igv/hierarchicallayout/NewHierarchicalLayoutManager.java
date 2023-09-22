@@ -201,16 +201,71 @@ public class NewHierarchicalLayoutManager {
 
     }
 
-    private int findPosInLayer(LayoutLayer layer, int xLoc) {
+    private boolean tryMoveNodeInSamePosition(LayoutNode node, int x, int layerNr) {
+        LayoutLayer layer = layers[layerNr];
+        assert layer.contains(node);
+        int leftBound = Integer.MIN_VALUE;
+        int rightBound = Integer.MAX_VALUE;
+        if (node.pos > 0) {
+            LayoutNode leftNode = layer.get(node.pos-1);
+            leftBound = leftNode.getRightSide();
+        }
+        if (node.pos < layer.size()-1) {
+            LayoutNode rightNode = layer.get(node.pos+1);
+            rightBound = rightNode.getLeftSide();
+        }
+
+        // the node did not change position withing the layer
+        if (leftBound < x && x < rightBound) {
+            x = Math.max(x, leftBound + X_OFFSET);
+            x = Math.min(x, rightBound - X_OFFSET - node.getWholeWidth());
+            // same layer and position, just adjust x pos
+            node.x = x;
+            return true;
+        }
+        return false;
+    }
+    public void removeEdges(LayoutNode movedNode) {
+        for (Link inputLink : graph.getInputLinks(movedNode.vertex)) {
+            applyRemoveLinkAction(inputLink);
+        }
+        for (Link inputLink : graph.getOutputLinks(movedNode.vertex)) {
+            applyRemoveLinkAction(inputLink);
+        }
+
+        // remove link connected to movedNode
+        for (Link link : graph.getLinks()) {
+            if (link.getTo().getVertex() == movedNode.vertex) {
+                link.setControlPoints(new ArrayList<>());
+            } else if (link.getFrom().getVertex() == movedNode.vertex) {
+                link.setControlPoints(new ArrayList<>());
+            }
+        }
+    }
+
+    private int findLayer(int y) {
+        for (int i = 0; i < layerCount; i++) {
+            LayoutLayer newLayer = layers[i];
+            if (newLayer.getTop() <= y && y <= newLayer.getBottom()) {
+                return i;
+            }
+        }
+        assert false : "did not find a layer to place";
+        return 0;
+    }
+
+    private int findPosInLayer(int x, int layerNr) {
+        LayoutLayer layer = layers[layerNr];
+
         // find the position in the new layer at location
         int newPos = 0;
         for (int j = 1; j < layer.size(); j++) {
             LayoutNode leftNode = layer.get(j-1);
             LayoutNode rightNode = layer.get(j);
-            if (xLoc < leftNode.getRightSide()) {
+            if (x < leftNode.getRightSide()) {
                 newPos = leftNode.pos;
                 break;
-            } else if (xLoc < rightNode.getRightSide()) {
+            } else if (x < rightNode.getRightSide()) {
                 newPos = rightNode.pos;
                 break;
             } else {
@@ -220,81 +275,49 @@ public class NewHierarchicalLayoutManager {
         return newPos;
     }
 
+    public void moveNode(LayoutNode movedNode, int newX, int newLayerNr) {
+        int newPos = findPosInLayer(newX, newLayerNr);
+
+        // remove from old layer and update positions in old layer
+        removeNode(movedNode);
+
+        // set x of movedNode
+        movedNode.x = newX;
+
+        if (movedNode.layer != newLayerNr) { // insert into a different layer
+            movedNode.layer = newLayerNr;
+            movedNode.pos = newPos;
+        } else { // move within the same layer
+            //assert movedNode.pos != newPos; // handled before
+            if (movedNode.pos < newPos) { // moved to the right
+                // adjust because we have already removed movedNode in this layer
+                movedNode.pos = newPos - 1;
+            } else { // moved to the left
+                movedNode.pos = newPos;
+            }
+        }
+        addNode(movedNode);
+    }
+
     public void moveFigureTo(Vertex movedVertex, Point loc) {
         LayoutNode movedNode = vertexToLayoutNode.get(movedVertex);
         Point newLocation = new Point(loc.x, loc.y + movedNode.height/2);
 
-        for (int i = 0; i < layerCount; i++) {
-            LayoutLayer newLayer = layers[i];
-            assert newLayer.size()>0;
-
-            if (newLayer.y <= newLocation.y && newLocation.y <= newLayer.getBottom()) {
-
-                if (movedNode.layer == i) { // we move the node in the same layer
-                    int newX = newLocation.x;
-                    int leftBound = Integer.MIN_VALUE;
-                    int rightBound = Integer.MAX_VALUE;
-                    if (movedNode.pos > 0) {
-                        LayoutNode leftNode = newLayer.get(movedNode.pos-1);
-                        leftBound = leftNode.getRightSide();
-                    }
-                    if (movedNode.pos < newLayer.size()-1) {
-                        LayoutNode rightNode = newLayer.get(movedNode.pos+1);
-                        rightBound = rightNode.getLeftSide();
-                    }
-
-                    // the node did not change position withing the layer
-                    if (leftBound < newX && newX < rightBound) {
-                        newX = Math.max(newX, leftBound + X_OFFSET);
-                        newX = Math.min(newX, rightBound - X_OFFSET - movedNode.getWholeWidth());
-                        // same layer and position, just adjust x pos
-                        movedNode.x = newX;
-                        assertOrder();
-                        new WriteResult().run();
-                        assertOrder();
-                        return;
-                    }
-
-                } else { // only remove links if we moved the node to a new layer
-                    for (Link inputLink : graph.getInputLinks(movedVertex)) {
-                        applyRemoveLinkAction(inputLink);
-                    }
-                    for (Link inputLink : graph.getOutputLinks(movedVertex)) {
-                        applyRemoveLinkAction(inputLink);
-                    }
-                }
-
-                int newPos = findPosInLayer(newLayer, newLocation.x);
-                assertOrder();
-
-                // remove from old layer and update positions in old layer
-                removeNode(movedNode);
-
-                // set x of movedNode
-                movedNode.x = newLocation.x;
-
-                if (movedNode.layer != i) { // insert into a different layer
-                    movedNode.layer = i;
-                    movedNode.pos = newPos;
-                } else { // move within the same layer
-                    //assert movedNode.pos != newPos; // handled before
-                    if (movedNode.pos < newPos) { // moved to the right
-                        // adjust because we have already removed movedNode in this layer
-                        movedNode.pos = newPos - 1;
-                    } else { // moved to the left
-                        movedNode.pos = newPos;
-                    }
-                }
-                addNode(movedNode);
-                assertOrder();
-                break;
+        int newLayerNr = findLayer(newLocation.y);
+        if (movedNode.layer == newLayerNr) { // we move the node in the same layer
+            // the node did not change position withing the layer
+            if (tryMoveNodeInSamePosition(movedNode, newLocation.x, newLayerNr)) {
+                new WriteResult().run();
+                return;
             }
+        } else { // only remove edges if we moved the node to a new layer
+            removeEdges(movedNode);
         }
 
-        for (LayoutLayer layer : layers) {
-            for (LayoutNode node : layer) {
-                assert allNodes.contains(node);
-            }
+        moveNode(movedNode, newLocation.x, newLayerNr);
+
+        if (movedNode.layer != newLayerNr) {
+            // TODO: re-add edges
         }
 
         assertOrder();
