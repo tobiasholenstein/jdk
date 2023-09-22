@@ -225,6 +225,7 @@ public class NewHierarchicalLayoutManager {
         }
         return false;
     }
+
     public void removeEdges(LayoutNode movedNode) {
         for (Link inputLink : graph.getInputLinks(movedNode.vertex)) {
             applyRemoveLinkAction(inputLink);
@@ -275,28 +276,45 @@ public class NewHierarchicalLayoutManager {
         return newPos;
     }
 
-    public void moveNode(LayoutNode movedNode, int newX, int newLayerNr) {
+    public void moveNode(LayoutNode node, int newX, int newLayerNr) {
         int newPos = findPosInLayer(newX, newLayerNr);
 
         // remove from old layer and update positions in old layer
-        removeNode(movedNode);
+        removeNode(node);
 
         // set x of movedNode
-        movedNode.x = newX;
+        node.x = newX;
 
-        if (movedNode.layer != newLayerNr) { // insert into a different layer
-            movedNode.layer = newLayerNr;
-            movedNode.pos = newPos;
+        if (node.layer != newLayerNr) { // insert into a different layer
+            node.layer = newLayerNr;
+            node.pos = newPos;
         } else { // move within the same layer
             //assert movedNode.pos != newPos; // handled before
-            if (movedNode.pos < newPos) { // moved to the right
+            if (node.pos < newPos) { // moved to the right
                 // adjust because we have already removed movedNode in this layer
-                movedNode.pos = newPos - 1;
+                node.pos = newPos - 1;
             } else { // moved to the left
-                movedNode.pos = newPos;
+                node.pos = newPos;
             }
         }
-        addNode(movedNode);
+        addNode(node);
+    }
+
+    // check that NO neighbors of node are in a given layer
+    private boolean canMoveNodeToLayer(LayoutNode node, int layerNr) {
+        for (LayoutEdge succEdge : node.succs) {
+            if (succEdge.to.layer == layerNr) {
+                return false;
+            }
+        }
+
+        for (LayoutEdge predEdge : node.preds) {
+            if (predEdge.from.layer == layerNr) {
+                return false;
+            }
+        }
+        return true;
+
     }
 
     public void moveFigureTo(Vertex movedVertex, Point loc) {
@@ -304,6 +322,10 @@ public class NewHierarchicalLayoutManager {
         Point newLocation = new Point(loc.x, loc.y + movedNode.height/2);
 
         int newLayerNr = findLayer(newLocation.y);
+        if (!canMoveNodeToLayer(movedNode, newLayerNr)) {
+            return;
+        }
+
         if (movedNode.layer == newLayerNr) { // we move the node in the same layer
             // the node did not change position withing the layer
             if (tryMoveNodeInSamePosition(movedNode, newLocation.x, newLayerNr)) {
