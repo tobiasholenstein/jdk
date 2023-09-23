@@ -259,6 +259,26 @@ public class NewHierarchicalLayoutManager {
         }
     }
 
+    public void addEdges(LayoutNode movedNode) {
+        List<? extends Link> inputLinks = new ArrayList<>(graph.getInputLinks(movedNode.vertex));
+        inputLinks.sort(BuildDatastructure.LINK_COMPARATOR);
+        for (Link inputLink : inputLinks) {
+            createLayoutEdge(inputLink);
+        }
+
+        List<? extends Link> outputLinks = new ArrayList<>(graph.getInputLinks(movedNode.vertex));
+        outputLinks.sort(BuildDatastructure.LINK_COMPARATOR);
+        for (Link outputLink : outputLinks) {
+            createLayoutEdge(outputLink);
+        }
+        assert inputLinks.size() == movedNode.preds.size();
+        assert outputLinks.size() == movedNode.succs.size();
+    }
+
+    public void reverseEdges(LayoutNode movedNode) {
+
+    }
+
     private int findLayer(int y) {
         for (int i = 0; i < layerCount; i++) {
             LayoutLayer newLayer = layers[i];
@@ -347,14 +367,12 @@ public class NewHierarchicalLayoutManager {
                 new WriteResult().run();
                 return;
             }
+            moveNode(movedNode, newLocation.x, newLayerNr);
         } else { // only remove edges if we moved the node to a new layer
             removeEdges(movedNode);
-        }
-
-        moveNode(movedNode, newLocation.x, newLayerNr);
-
-        if (movedNode.layer != newLayerNr) {
-            // TODO: re-add edges
+            moveNode(movedNode, newLocation.x, newLayerNr);
+            addEdges(movedNode);
+            reverseEdges(movedNode);
         }
 
         assertOrder();
@@ -583,13 +601,27 @@ public class NewHierarchicalLayoutManager {
         assertOrder();
     }
 
+    public void createLayoutEdge(Link l ) {
+        LayoutEdge edge = new LayoutEdge(
+                vertexToLayoutNode.get(l.getFrom().getVertex()),
+                vertexToLayoutNode.get(l.getTo().getVertex()),
+                l.getFrom().getRelativePosition().x,
+                l.getTo().getRelativePosition().x,
+                l);
+        edge.from.succs.add(edge);
+        edge.to.preds.add(edge);
+    }
+
     private class BuildDatastructure {
 
-        private final Comparator<Link> LINK_COMPARATOR =
+        public static final Comparator<Link> LINK_COMPARATOR =
                 Comparator.comparing((Link l) -> l.getFrom().getVertex())
                         .thenComparing(l -> l.getTo().getVertex())
                         .thenComparingInt(l -> l.getFrom().getRelativePosition().x)
                         .thenComparingInt(l -> l.getTo().getRelativePosition().x);
+
+
+
 
         private void run() {
             // cleanup
@@ -608,14 +640,7 @@ public class NewHierarchicalLayoutManager {
 
             links.sort(LINK_COMPARATOR);
             for (Link l : links) {
-                LayoutEdge edge = new LayoutEdge(
-                        vertexToLayoutNode.get(l.getFrom().getVertex()),
-                        vertexToLayoutNode.get(l.getTo().getVertex()),
-                        l.getFrom().getRelativePosition().x,
-                        l.getTo().getRelativePosition().x,
-                        l);
-                edge.from.succs.add(edge);
-                edge.to.preds.add(edge);
+                createLayoutEdge(l);
             }
         }
     }
