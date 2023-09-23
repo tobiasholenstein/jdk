@@ -248,6 +248,15 @@ public class NewHierarchicalLayoutManager {
         }
         movedNode.height = movedNode.vertex.getSize().height;
         movedNode.width = movedNode.vertex.getSize().width;
+
+        assert movedNode.succs.isEmpty();
+        assert movedNode.preds.isEmpty();
+        for (Link link : reversedLinks) {
+            assert link.getFrom().getVertex() != movedNode.vertex;
+            assert link.getTo().getVertex() != movedNode.vertex;
+            assert vertexToLayoutNode.get(link.getFrom().getVertex()) != movedNode;
+            assert vertexToLayoutNode.get(link.getTo().getVertex()) != movedNode;
+        }
     }
 
     private int findLayer(int y) {
