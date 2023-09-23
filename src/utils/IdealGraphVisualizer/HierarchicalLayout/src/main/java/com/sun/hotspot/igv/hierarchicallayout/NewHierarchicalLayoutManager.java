@@ -47,9 +47,9 @@ public class NewHierarchicalLayoutManager {
     // Options
     private final int maxLayerLength;
     // Algorithm global datastructures
-    private final Set<Link> reversedLinks;
     private final List<LayoutNode> allNodes;
     private final HashMap<Vertex, LayoutNode> vertexToLayoutNode;
+    private final Set<Link> reversedLinks;
     private final HashMap<Link, List<Point>> reversedLinkStartPoints;
     private final HashMap<Link, List<Point>> reversedLinkEndPoints;
     private LayoutGraph graph;
@@ -238,10 +238,16 @@ public class NewHierarchicalLayoutManager {
         for (Link link : graph.getLinks()) {
             if (link.getTo().getVertex() == movedNode.vertex) {
                 link.setControlPoints(new ArrayList<>());
+                reversedLinks.remove(link);
+                reversedLinkStartPoints.remove(link);
             } else if (link.getFrom().getVertex() == movedNode.vertex) {
                 link.setControlPoints(new ArrayList<>());
+                reversedLinks.remove(link);
+                reversedLinkEndPoints.remove(link);
             }
         }
+        movedNode.height = movedNode.vertex.getSize().height;
+        movedNode.width = movedNode.vertex.getSize().width;
     }
 
     private int findLayer(int y) {
