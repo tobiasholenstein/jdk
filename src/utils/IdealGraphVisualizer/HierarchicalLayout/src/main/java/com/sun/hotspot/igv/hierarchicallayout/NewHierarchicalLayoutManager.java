@@ -261,23 +261,411 @@ public class NewHierarchicalLayoutManager {
 
     public void addEdges(LayoutNode movedNode) {
         List<? extends Link> inputLinks = new ArrayList<>(graph.getInputLinks(movedNode.vertex));
-        inputLinks.sort(BuildDatastructure.LINK_COMPARATOR);
+        inputLinks.sort(LINK_COMPARATOR);
         for (Link inputLink : inputLinks) {
             createLayoutEdge(inputLink);
         }
 
         List<? extends Link> outputLinks = new ArrayList<>(graph.getInputLinks(movedNode.vertex));
-        outputLinks.sort(BuildDatastructure.LINK_COMPARATOR);
+        outputLinks.sort(LINK_COMPARATOR);
         for (Link outputLink : outputLinks) {
             createLayoutEdge(outputLink);
         }
-        assert inputLinks.size() == movedNode.preds.size();
-        assert outputLinks.size() == movedNode.succs.size();
+        //assert inputLinks.size() == movedNode.preds.size();
+        //assert outputLinks.size() == movedNode.succs.size();
+
+        for (LayoutEdge predEdge : new ArrayList<>(movedNode.preds)) {
+            updateReverseLayoutEdge(predEdge);
+        }
+
     }
 
-    public void reverseEdges(LayoutNode movedNode) {
+    public void updateReverseLayoutEdge(LayoutEdge layoutEdge) {
+        LayoutNode fromNode = layoutEdge.from;
+        LayoutNode toNode = layoutEdge.to;
 
+        boolean reversedLink = fromNode.layer > toNode.layer;
+        if (reversedLink) {
+            // Reversed link
+            reversedLinks.add(layoutEdge.link);
+
+            LayoutNode temp = fromNode;
+            fromNode = toNode;
+            toNode = temp;
+
+            int oldRelativeFrom = layoutEdge.relativeFrom;
+            int oldRelativeTo = layoutEdge.relativeTo;
+
+            layoutEdge.from = fromNode;
+            layoutEdge.to = toNode;
+            layoutEdge.relativeFrom = oldRelativeTo;
+            layoutEdge.relativeTo = oldRelativeFrom;
+        }
+
+        fromNode.succs.add(layoutEdge);
+        toNode.preds.add(layoutEdge);
+
+        if (reversedLink) {
+            // Correct direction, is reversed link
+            assert allNodes.contains(fromNode) && allNodes.contains(toNode);
+            assert fromNode.layer < toNode.layer;
+            assert reversedLinks.contains(layoutEdge.link);
+
+            updateNodeWithReversedEdges(fromNode);
+            updateNodeWithReversedEdges(toNode);
+        }
+
+        if (fromNode.layer != toNode.layer - 1) {
+            // Edge span multiple layers - must insert dummy nodes
+            insertDummyNodes(layoutEdge);
+        }
     }
+
+    private void processSingleEdge(LayoutEdge e) {
+        LayoutNode n = e.to;
+        if (e.to.layer - 1 > e.from.layer) {
+            LayoutEdge last = e;
+            for (int i = n.layer - 1; i > last.from.layer; i--) {
+                last = addBetween(last, i);
+            }
+        }
+    }
+
+    private LayoutEdge addBetween(LayoutEdge e, int layer) {
+        LayoutNode n = new LayoutNode();
+        n.width = DUMMY_WIDTH;
+        n.height = DUMMY_HEIGHT;
+        n.succs.add(e);
+        LayoutEdge result = new LayoutEdge(e.from, n, e.relativeFrom, 0, e.link);
+        n.preds.add(result);
+        e.relativeFrom = 0;
+        e.from.succs.remove(e);
+        e.from.succs.add(result);
+        e.from = n;
+        insertNode(n, layer);
+        return result;
+    }
+
+    /**
+     * Find the optimal position within the given layer to insert the given node.
+     * The optimum is given by the least amount of edge crossings.
+     */
+    private int optimalPosition(LayoutNode node, int layer) {
+        assert 0 <= layer && layer < layers.length;
+
+        layers[layer].sort(Comparator.comparingInt(n -> n.pos));
+        int edgeCrossings = Integer.MAX_VALUE;
+        int optimalPos = -1;
+
+        // Try each possible position in the layer
+        for (int i = 0; i < layers[layer].size() + 1; i++) {
+            int xCoord;
+            if (i == 0) {
+                xCoord = layers[layer].get(i).x - node.width - 1;
+            } else {
+                xCoord = layers[layer].get(i - 1).x + layers[layer].get(i - 1).width + 1;
+            }
+
+            int currentCrossings = 0;
+
+            if (0 <= layer - 1) {
+                // For each link with an end point in vertex, check how many edges cross it
+                for (LayoutEdge edge : node.preds) {
+                    if (edge.from.layer == layer - 1) {
+                        int fromNodeXCoord = edge.from.x;
+                        if (edge.from.vertex != null) {
+                            fromNodeXCoord += edge.relativeFrom;
+                        }
+                        int toNodeXCoord = xCoord;
+                        if (node.vertex != null) {
+                            toNodeXCoord += edge.relativeTo;
+                        }
+                        for (LayoutNode n : layers[layer - 1]) {
+                            for (LayoutEdge e : n.succs) {
+                                if (e.to == null) {
+                                    continue;
+                                }
+                                int compFromXCoord = e.from.x;
+                                if (e.from.vertex != null) {
+                                    compFromXCoord += e.relativeFrom;
+                                }
+                                int compToXCoord = e.to.x;
+                                if (e.to.vertex != null) {
+                                    compToXCoord += e.relativeTo;
+                                }
+                                if ((fromNodeXCoord > compFromXCoord && toNodeXCoord < compToXCoord)
+                                        || (fromNodeXCoord < compFromXCoord
+                                        && toNodeXCoord > compToXCoord)) {
+                                    currentCrossings += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Edge crossings across current layer and layer below
+            if (layer + 1 < layers.length) {
+                // For each link with an end point in vertex, check how many edges cross it
+                for (LayoutEdge edge : node.succs) {
+                    if (edge.to.layer == layer + 1) {
+                        int toNodeXCoord = edge.to.x;
+                        if (edge.to.vertex != null) {
+                            toNodeXCoord += edge.relativeTo;
+                        }
+                        int fromNodeXCoord = xCoord;
+                        if (node.vertex != null) {
+                            fromNodeXCoord += edge.relativeFrom;
+                        }
+                        for (LayoutNode n : layers[layer + 1]) {
+                            for (LayoutEdge e : n.preds) {
+                                if (e.from == null) {
+                                    continue;
+                                }
+                                int compFromXCoord = e.from.x;
+                                if (e.from.vertex != null) {
+                                    compFromXCoord += e.relativeFrom;
+                                }
+                                int compToXCoord = e.to.x;
+                                if (e.to.vertex != null) {
+                                    compToXCoord += e.relativeTo;
+                                }
+                                if ((fromNodeXCoord > compFromXCoord && toNodeXCoord < compToXCoord)
+                                        || (fromNodeXCoord < compFromXCoord
+                                        && toNodeXCoord > compToXCoord)) {
+                                    currentCrossings += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (currentCrossings <= edgeCrossings) {
+                edgeCrossings = currentCrossings;
+                optimalPos = i;
+            }
+        }
+        assert optimalPos != -1;
+        return optimalPos;
+    }
+
+    /**
+     * Insert node at the assigned layer, updating the positions of the nodes within
+     * the layer
+     */
+    private void insertNode(LayoutNode node, int layer) {
+        assert 0 <= layer && layer < layers.length;
+        node.layer = layer;
+
+        if (layers[layer].isEmpty()) {
+            node.pos = 0;
+        } else {
+            node.pos = optimalPosition(node, layer);
+        }
+
+        for (LayoutNode n : layers[layer]) {
+            if (n.pos >= node.pos) {
+                n.pos += 1;
+            }
+        }
+        layers[layer].add(node);
+
+        if (!allNodes.contains(node)) {
+            allNodes.add(node);
+        }
+        if (node.vertex != null) {
+            vertexToLayoutNode.put(node.vertex, node);
+        }
+
+        //adjustXCoordinates(layer);
+    }
+
+    private void insertDummyNodes(LayoutEdge edge) {
+        LayoutNode from = edge.from;
+        LayoutNode to = edge.to;
+
+        boolean hasEdgeFromSamePort = false;
+        LayoutEdge edgeFromSamePort = new LayoutEdge(from, to);
+
+        for (LayoutEdge e : edge.from.succs) {
+            if (e.relativeFrom == edge.relativeFrom && e.to.vertex == null) {
+                edgeFromSamePort = e;
+                hasEdgeFromSamePort = true;
+                break;
+            }
+        }
+
+        if (!hasEdgeFromSamePort) {
+            processSingleEdge(edge);
+        } else {
+            LayoutEdge curEdge = edgeFromSamePort;
+            boolean newEdge = true;
+            while (curEdge.to.layer < to.layer - 1 && curEdge.to.vertex == null && newEdge) {
+                // Traverse down the chain of dummy nodes linking together the edges originating
+                // from the same port
+                newEdge = false;
+                if (curEdge.to.succs.size() == 1) {
+                    curEdge = curEdge.to.succs.get(0);
+                    newEdge = true;
+                } else {
+                    for (LayoutEdge e : curEdge.to.succs) {
+                        if (e.to.vertex == null) {
+                            curEdge = e;
+                            newEdge = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            LayoutNode prevDummy;
+            if (curEdge.to.vertex != null) {
+                prevDummy = curEdge.from;
+            } else {
+                prevDummy = curEdge.to;
+            }
+
+            edge.from = prevDummy;
+            edge.relativeFrom = prevDummy.width / 2;
+            from.succs.remove(edge);
+            prevDummy.succs.add(edge);
+            processSingleEdge(edge);
+        }
+    }
+
+
+    private void updateNodeWithReversedEdges(LayoutNode node) {
+        // Reset node data in case there were previous reversed edges
+        node.width = (int) node.vertex.getSize().getWidth();
+        node.height = (int) node.vertex.getSize().getHeight();
+        node.yOffset = 0;
+        node.bottomYOffset = 0;
+        node.xOffset = 0;
+
+        SortedSet<Integer> reversedDown = new TreeSet<>();
+
+        // Reset relativeFrom for all succ edges
+        for (LayoutEdge e : node.succs) {
+            if (e.link == null) {
+                continue;
+            }
+            e.relativeFrom = e.link.getFrom().getRelativePosition().x;
+            if (reversedLinks.contains(e.link)) {
+                e.relativeFrom = e.link.getTo().getRelativePosition().x;
+                reversedDown.add(e.relativeFrom);
+            }
+        }
+
+        // Whether the node has non-self reversed edges going downwards.
+        // If so, reversed edges going upwards are drawn to the left.
+        boolean hasReversedDown = !reversedDown.isEmpty();
+
+        SortedSet<Integer> reversedUp;
+        if (hasReversedDown) {
+            reversedUp = new TreeSet<>();
+        } else {
+            reversedUp = new TreeSet<>(Collections.reverseOrder());
+        }
+
+        // Reset relativeTo for all pred edges
+        for (LayoutEdge e : node.preds) {
+            if (e.link == null) {
+                continue;
+            }
+            e.relativeTo = e.link.getTo().getRelativePosition().x;
+            if (reversedLinks.contains(e.link)) {
+                e.relativeTo = e.link.getFrom().getRelativePosition().x;
+                reversedUp.add(e.relativeTo);
+            }
+        }
+
+        final int offset = X_OFFSET + DUMMY_WIDTH;
+
+        int curY = 0;
+        int curWidth = node.width + reversedDown.size() * offset;
+        for (int pos : reversedDown) {
+            ArrayList<LayoutEdge> reversedSuccs = new ArrayList<>();
+            for (LayoutEdge e : node.succs) {
+                if (e.relativeFrom == pos && reversedLinks.contains(e.link)) {
+                    reversedSuccs.add(e);
+                    e.relativeFrom = curWidth;
+                }
+            }
+
+            ArrayList<Point> startPoints = new ArrayList<>();
+            startPoints.add(new Point(curWidth, curY));
+            startPoints.add(new Point(pos, curY));
+            startPoints.add(new Point(pos, reversedDown.size() * offset));
+            for (LayoutEdge e : reversedSuccs) {
+                reversedLinkStartPoints.put(e.link, startPoints);
+            }
+
+            //node.inOffsets.put(pos, -curY);
+            curY += offset;
+            node.height += offset;
+            node.yOffset += offset;
+            curWidth -= offset;
+        }
+
+        int widthFactor = reversedDown.size();
+        node.width += widthFactor * offset;
+
+        int curX = 0;
+        int minX = 0;
+        if (hasReversedDown) {
+            minX = -offset * reversedUp.size();
+        }
+
+        int oldNodeHeight = node.height;
+        for (int pos : reversedUp) {
+            ArrayList<LayoutEdge> reversedPreds = new ArrayList<>();
+            for (LayoutEdge e : node.preds) {
+                if (e.relativeTo == pos && reversedLinks.contains(e.link)) {
+                    if (hasReversedDown) {
+                        e.relativeTo = curX - offset;
+                    } else {
+                        e.relativeTo = node.width + offset;
+                    }
+
+                    reversedPreds.add(e);
+                }
+            }
+            node.height += offset;
+            ArrayList<Point> endPoints = new ArrayList<>();
+
+            node.width += offset;
+            if (hasReversedDown) {
+                curX -= offset;
+                endPoints.add(new Point(curX, node.height));
+            } else {
+                curX += offset;
+                endPoints.add(new Point(node.width, node.height));
+            }
+
+            //node.outOffsets.put(pos - minX, curX);
+            curX += offset;
+            node.bottomYOffset += offset;
+
+            endPoints.add(new Point(pos, node.height));
+            endPoints.add(new Point(pos, oldNodeHeight));
+            for (LayoutEdge e : reversedPreds) {
+                reversedLinkEndPoints.put(e.link, endPoints);
+            }
+        }
+
+        if (minX < 0) {
+            for (LayoutEdge e : node.preds) {
+                e.relativeTo -= minX;
+            }
+
+            for (LayoutEdge e : node.succs) {
+                e.relativeFrom -= minX;
+            }
+
+            node.xOffset = -minX;
+            node.width -= minX;
+        }
+    }
+
 
     private int findLayer(int y) {
         for (int i = 0; i < layerCount; i++) {
@@ -372,7 +760,6 @@ public class NewHierarchicalLayoutManager {
             removeEdges(movedNode);
             moveNode(movedNode, newLocation.x, newLayerNr);
             addEdges(movedNode);
-            reverseEdges(movedNode);
         }
 
         assertOrder();
@@ -612,13 +999,15 @@ public class NewHierarchicalLayoutManager {
         edge.to.preds.add(edge);
     }
 
+    public static final Comparator<Link> LINK_COMPARATOR =
+            Comparator.comparing((Link l) -> l.getFrom().getVertex())
+                    .thenComparing(l -> l.getTo().getVertex())
+                    .thenComparingInt(l -> l.getFrom().getRelativePosition().x)
+                    .thenComparingInt(l -> l.getTo().getRelativePosition().x);
+
     private class BuildDatastructure {
 
-        public static final Comparator<Link> LINK_COMPARATOR =
-                Comparator.comparing((Link l) -> l.getFrom().getVertex())
-                        .thenComparing(l -> l.getTo().getVertex())
-                        .thenComparingInt(l -> l.getFrom().getRelativePosition().x)
-                        .thenComparingInt(l -> l.getTo().getRelativePosition().x);
+
 
 
 
@@ -643,6 +1032,26 @@ public class NewHierarchicalLayoutManager {
                 createLayoutEdge(l);
             }
         }
+    }
+
+    private void reverseEdge(LayoutEdge e) {
+        assert !reversedLinks.contains(e.link);
+        reversedLinks.add(e.link);
+
+        LayoutNode oldFrom = e.from;
+        LayoutNode oldTo = e.to;
+        int oldRelativeFrom = e.relativeFrom;
+        int oldRelativeTo = e.relativeTo;
+
+        e.from = oldTo;
+        e.to = oldFrom;
+        e.relativeFrom = oldRelativeTo;
+        e.relativeTo = oldRelativeFrom;
+
+        oldFrom.succs.remove(e);
+        oldFrom.preds.add(e);
+        oldTo.preds.remove(e);
+        oldTo.succs.add(e);
     }
 
     private class ReverseEdges {
@@ -792,27 +1201,6 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        private void reverseEdge(LayoutEdge e) {
-            assert !reversedLinks.contains(e.link);
-            reversedLinks.add(e.link);
-
-            LayoutNode oldFrom = e.from;
-            LayoutNode oldTo = e.to;
-            int oldRelativeFrom = e.relativeFrom;
-            int oldRelativeTo = e.relativeTo;
-
-            e.from = oldTo;
-            e.to = oldFrom;
-            e.relativeFrom = oldRelativeTo;
-            e.relativeTo = oldRelativeFrom;
-
-            oldFrom.succs.remove(e);
-            oldFrom.preds.add(e);
-            oldTo.preds.remove(e);
-            oldTo.succs.add(e);
-
-        }
-
         private void controlFlowBackEdges() {
             ArrayList<LayoutNode> workingList = new ArrayList<>();
             for (LayoutNode node : allNodes) {
@@ -889,20 +1277,11 @@ public class NewHierarchicalLayoutManager {
         }
 
         private void reverseAllInputs(LayoutNode node) {
-            for (LayoutEdge e : node.preds) {
+            for (LayoutEdge e : new ArrayList<>(node.preds)) {
                 assert !reversedLinks.contains(e.link);
-                reversedLinks.add(e.link);
-                node.succs.add(e);
-                e.from.preds.add(e);
-                e.from.succs.remove(e);
-                int oldRelativeFrom = e.relativeFrom;
-                int oldRelativeTo = e.relativeTo;
-                e.to = e.from;
-                e.from = node;
-                e.relativeFrom = oldRelativeTo;
-                e.relativeTo = oldRelativeFrom;
+                reverseEdge(e);
             }
-            node.preds.clear();
+            assert node.preds.isEmpty();
         }
 
     }

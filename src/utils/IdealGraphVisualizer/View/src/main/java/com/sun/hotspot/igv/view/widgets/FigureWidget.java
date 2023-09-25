@@ -238,7 +238,9 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         for (LabelWidget labelWidget : labelWidgets) {
             labelWidget.setFont(font);
         }
+
         formatExtraLabel(state.isSelected());
+
         repaint();
     }
 
