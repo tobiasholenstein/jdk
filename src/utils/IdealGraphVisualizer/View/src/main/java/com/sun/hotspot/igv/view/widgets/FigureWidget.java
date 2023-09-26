@@ -153,6 +153,11 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         }
         formatExtraLabel(false);
 
+        for (int i=1; i < labelWidgets.size(); i++) {
+            labelWidgets.get(i).setFont(Diagram.FONT.deriveFont(Font.ITALIC));
+            labelWidgets.get(i).setForeground(Color.DARK_GRAY);
+        }
+
         if (getFigure().getWarning() != null) {
             ImageWidget warningWidget = new ImageWidget(scene, warningSign);
             Point warningLocation = new Point(getFigure().getWidth() - Figure.WARNING_WIDTH - Figure.INSET / 2, 0);
