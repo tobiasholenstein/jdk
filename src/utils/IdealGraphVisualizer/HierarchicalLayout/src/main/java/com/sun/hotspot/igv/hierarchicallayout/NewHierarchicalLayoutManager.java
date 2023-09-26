@@ -1091,99 +1091,106 @@ public class NewHierarchicalLayoutManager {
 
             // Start DFS and reverse back edges
             allNodes.forEach(this::DFS);
-            allNodes.forEach(this::resolveInsOuts);
+            allNodes.forEach(this::computeReversedLinkPoints);
         }
 
-        private void resolveInsOuts(LayoutNode node) {
+        private boolean computeReversedStartPoints(LayoutNode node) {
             SortedSet<Integer> reversedDown = new TreeSet<>();
 
-            for (LayoutEdge e : node.succs) {
-                if (reversedLinks.contains(e.link)) {
-                    reversedDown.add(e.relativeFrom);
+            for (LayoutEdge succEdge : node.succs) {
+                if (reversedLinks.contains(succEdge.link)) {
+                    reversedDown.add(succEdge.relativeFrom);
                 }
             }
 
-            SortedSet<Integer> reversedUp;
-            if (reversedDown.isEmpty()) {
-                reversedUp = new TreeSet<>(Collections.reverseOrder());
-            } else {
-                reversedUp = new TreeSet<>();
-            }
-
-            for (LayoutEdge e : node.preds) {
-                if (reversedLinks.contains(e.link)) {
-                    reversedUp.add(e.relativeTo);
-                }
-            }
-
-            int cur = -reversedDown.size() * OFFSET;
-            int curWidth = node.width + reversedDown.size() * OFFSET;
-            for (int pos : reversedDown) {
+            int currentY = -reversedDown.size() * OFFSET;
+            int curentWidth = node.width + reversedDown.size() * OFFSET;
+            for (int downX : reversedDown) {
                 ArrayList<LayoutEdge> reversedSuccs = new ArrayList<>();
-                for (LayoutEdge e : node.succs) {
-                    if (e.relativeFrom == pos && reversedLinks.contains(e.link)) {
-                        reversedSuccs.add(e);
-                        e.relativeFrom = curWidth;
+                for (LayoutEdge succEdge : node.succs) {
+                    if (succEdge.relativeFrom == downX && reversedLinks.contains(succEdge.link)) {
+                        reversedSuccs.add(succEdge);
+                        succEdge.relativeFrom = curentWidth;
                     }
                 }
 
                 ArrayList<Point> startPoints = new ArrayList<>();
-                startPoints.add(new Point(curWidth, cur));
-                startPoints.add(new Point(pos, cur));
-                startPoints.add(new Point(pos, cur));
-                startPoints.add(new Point(pos, 0));
-                for (LayoutEdge e : reversedSuccs) {
-                    reversedLinkStartPoints.put(e.link, startPoints);
+                startPoints.add(new Point(curentWidth, currentY));
+                startPoints.add(new Point(downX, currentY));
+                startPoints.add(new Point(downX, currentY));
+                startPoints.add(new Point(downX, 0));
+                for (LayoutEdge revEdge : reversedSuccs) {
+                    reversedLinkStartPoints.put(revEdge.link, startPoints);
                 }
 
-                cur += OFFSET;
+                currentY += OFFSET;
                 node.yOffset += OFFSET;
-                curWidth -= OFFSET;
+                curentWidth -= OFFSET;
             }
             node.width += reversedDown.size() * OFFSET;
 
-            if (reversedDown.isEmpty()) {
-                cur = OFFSET;
+            return !reversedDown.isEmpty();
+        }
+
+        private boolean computeReversedEndPoints(LayoutNode node,  boolean drawLeft) {
+            SortedSet<Integer> reversedUp;
+            if (drawLeft) {
+                reversedUp = new TreeSet<>();
             } else {
-                cur = -OFFSET;
+                reversedUp = new TreeSet<>(Collections.reverseOrder());
             }
+
+            for (LayoutEdge predEdge : node.preds) {
+                if (reversedLinks.contains(predEdge.link)) {
+                    reversedUp.add(predEdge.relativeTo);
+                }
+            }
+
+            int currentPos = -OFFSET;
             int bottomYOffset = 0;
-
-            for (int pos : reversedUp) {
+            for (int upX : reversedUp) {
                 ArrayList<LayoutEdge> reversedPreds = new ArrayList<>();
-                for (LayoutEdge e : node.preds) {
-                    if (e.relativeTo == pos && reversedLinks.contains(e.link)) {
-                        if (reversedDown.isEmpty()) {
-                            e.relativeTo = node.width + OFFSET;
+                for (LayoutEdge predEdge : node.preds) {
+                    if (predEdge.relativeTo == upX && reversedLinks.contains(predEdge.link)) {
+                        if (drawLeft) {
+                            predEdge.relativeTo = currentPos;
                         } else {
-                            e.relativeTo = cur;
+                            predEdge.relativeTo = node.width + OFFSET;
                         }
-
-                        reversedPreds.add(e);
+                        reversedPreds.add(predEdge);
                     }
                 }
                 bottomYOffset += OFFSET;
                 ArrayList<Point> endPoints = new ArrayList<>();
 
                 node.width += OFFSET;
-                if (reversedDown.isEmpty()) {
-                    endPoints.add(new Point(node.width, node.height + bottomYOffset));
+
+                if (drawLeft) {
+                    endPoints.add(new Point(currentPos, node.height + bottomYOffset));
+                    currentPos -= OFFSET;
                 } else {
-                    endPoints.add(new Point(cur, node.height + bottomYOffset));
-                    cur -= OFFSET;
+                    endPoints.add(new Point(node.width, node.height + bottomYOffset));
                 }
 
-                endPoints.add(new Point(pos, node.height + bottomYOffset));
-                endPoints.add(new Point(pos, node.height + bottomYOffset));
-                endPoints.add(new Point(pos, node.height));
-                for (LayoutEdge e : reversedPreds) {
-                    reversedLinkEndPoints.put(e.link, endPoints);
+                endPoints.add(new Point(upX, node.height + bottomYOffset));
+                endPoints.add(new Point(upX, node.height + bottomYOffset));
+                endPoints.add(new Point(upX, node.height));
+                for (LayoutEdge redEdge : reversedPreds) {
+                    reversedLinkEndPoints.put(redEdge.link, endPoints);
                 }
             }
 
-            if (!reversedDown.isEmpty()) {
+            if (drawLeft) {
                 node.xOffset = reversedUp.size() * OFFSET;
             }
+
+            return !reversedUp.isEmpty();
+        }
+
+
+            private void computeReversedLinkPoints(LayoutNode node) {
+            boolean hasReversedDown = computeReversedStartPoints(node);
+            boolean hasReversedUp = computeReversedEndPoints(node, hasReversedDown);
 
         }
 
