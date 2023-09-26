@@ -1094,24 +1094,23 @@ public class NewHierarchicalLayoutManager {
             allNodes.forEach(this::computeReversedLinkPoints);
         }
 
-        private boolean computeReversedStartPoints(LayoutNode node) {
-            SortedSet<Integer> reversedDown = new TreeSet<>();
-
+        private boolean computeReversedStartPoints(LayoutNode node, boolean drawLeft) {
+            TreeMap<Integer, ArrayList<LayoutEdge>> sortedDownMap = new TreeMap<>();
             for (LayoutEdge succEdge : node.succs) {
                 if (reversedLinks.contains(succEdge.link)) {
-                    reversedDown.add(succEdge.relativeFrom);
+                    sortedDownMap.putIfAbsent(succEdge.relativeFrom, new ArrayList<>());
+                    sortedDownMap.get(succEdge.relativeFrom).add(succEdge);
                 }
             }
 
-            int currentY = -reversedDown.size() * OFFSET;
-            int curentWidth = node.width + reversedDown.size() * OFFSET;
-            for (int downX : reversedDown) {
-                ArrayList<LayoutEdge> reversedSuccs = new ArrayList<>();
-                for (LayoutEdge succEdge : node.succs) {
-                    if (succEdge.relativeFrom == downX && reversedLinks.contains(succEdge.link)) {
-                        reversedSuccs.add(succEdge);
-                        succEdge.relativeFrom = curentWidth;
-                    }
+            int currentY = -sortedDownMap.size() * OFFSET;
+            int curentWidth = node.width + sortedDownMap.size() * OFFSET;
+            for (Map.Entry<Integer, ArrayList<LayoutEdge>> entry : sortedDownMap.entrySet()) {
+                int downX = entry.getKey();
+                ArrayList<LayoutEdge> reversedSuccs = entry.getValue();
+
+                for (LayoutEdge succEdge : reversedSuccs) {
+                    succEdge.relativeFrom = curentWidth;
                 }
 
                 ArrayList<Point> startPoints = new ArrayList<>();
@@ -1127,19 +1126,13 @@ public class NewHierarchicalLayoutManager {
                 node.yOffset += OFFSET;
                 curentWidth -= OFFSET;
             }
-            node.width += reversedDown.size() * OFFSET;
+            node.width += sortedDownMap.size() * OFFSET;
 
-            return !reversedDown.isEmpty();
+            return !sortedDownMap.isEmpty();
         }
 
-        private boolean computeReversedEndPoints(LayoutNode node,  boolean drawLeft) {
-            SortedSet<Integer> reversedUp;
-            if (drawLeft) {
-                reversedUp = new TreeSet<>();
-            } else {
-                reversedUp = new TreeSet<>(Collections.reverseOrder());
-            }
-
+        private boolean computeReversedEndPoints(LayoutNode node, boolean left) {
+            SortedSet<Integer> reversedUp = left ? new TreeSet<>() : new TreeSet<>(Collections.reverseOrder());
             for (LayoutEdge predEdge : node.preds) {
                 if (reversedLinks.contains(predEdge.link)) {
                     reversedUp.add(predEdge.relativeTo);
@@ -1152,20 +1145,15 @@ public class NewHierarchicalLayoutManager {
                 ArrayList<LayoutEdge> reversedPreds = new ArrayList<>();
                 for (LayoutEdge predEdge : node.preds) {
                     if (predEdge.relativeTo == upX && reversedLinks.contains(predEdge.link)) {
-                        if (drawLeft) {
-                            predEdge.relativeTo = currentPos;
-                        } else {
-                            predEdge.relativeTo = node.width + OFFSET;
-                        }
+                        predEdge.relativeTo = left ? currentPos : node.width + OFFSET;
                         reversedPreds.add(predEdge);
                     }
                 }
                 bottomYOffset += OFFSET;
                 ArrayList<Point> endPoints = new ArrayList<>();
-
                 node.width += OFFSET;
 
-                if (drawLeft) {
+                if (left) {
                     endPoints.add(new Point(currentPos, node.height + bottomYOffset));
                     currentPos -= OFFSET;
                 } else {
@@ -1180,7 +1168,7 @@ public class NewHierarchicalLayoutManager {
                 }
             }
 
-            if (drawLeft) {
+            if (left) {
                 node.xOffset = reversedUp.size() * OFFSET;
             }
 
@@ -1189,7 +1177,7 @@ public class NewHierarchicalLayoutManager {
 
 
             private void computeReversedLinkPoints(LayoutNode node) {
-            boolean hasReversedDown = computeReversedStartPoints(node);
+            boolean hasReversedDown = computeReversedStartPoints(node, false);
             boolean hasReversedUp = computeReversedEndPoints(node, hasReversedDown);
 
         }
