@@ -39,7 +39,7 @@ public class NewHierarchicalLayoutManager {
     public static final int DUMMY_HEIGHT = 1;
     public static final int DUMMY_WIDTH = 1;
     public static final int X_OFFSET = 8;
-    public static final int LAYER_OFFSET = 4;
+    public static final int LAYER_OFFSET = 8;
     public final int OFFSET = X_OFFSET + DUMMY_WIDTH;
     public static final double SCALE_LAYER_PADDING = 1.5;
 
@@ -1155,7 +1155,7 @@ public class NewHierarchicalLayoutManager {
 
                 currentX += offsetX;
                 currentY += OFFSET;
-                node.height += OFFSET;
+                node.bottomYOffset += OFFSET;
 
                 for (LayoutEdge predEdge : reversedPreds) {
                     predEdge.relativeTo = currentX;
@@ -1767,22 +1767,23 @@ public class NewHierarchicalLayoutManager {
     private class AssignYCoordinates {
 
         private void run() {
-            int curY = 0;
+            int currentY = 0;
             for (LayoutLayer layer : layers) {
                 int layerHeight = layer.height;
-                layer.y = curY;
+                layer.y = currentY;
                 int maxXOffset = 0;
-                for (LayoutNode n : layer) {
-                    n.y = curY;
-                    if (!n.isDummy()) {
-                        n.topYOffset = (layerHeight - n.getWholeHeight()) / 2 + n.topYOffset;
-                        n.bottomYOffset = layerHeight - n.topYOffset - n.height;
+                for (LayoutNode layoutNode : layer) {
+                    layoutNode.y = currentY;
+                    if (!layoutNode.isDummy()) {
+                        // center the node
+                        layoutNode.topYOffset += (layerHeight - layoutNode.getWholeHeight()) / 2;
+                        layoutNode.bottomYOffset = layerHeight - layoutNode.topYOffset - layoutNode.height;
                     }
-                    for (LayoutEdge e : n.succs) {
-                        maxXOffset = Math.max(Math.abs(e.getStartPoint() - e.getEndPoint()), maxXOffset);
+                    for (LayoutEdge succEdge : layoutNode.succs) {
+                        maxXOffset = Math.max(Math.abs(succEdge.getStartPoint() - succEdge.getEndPoint()), maxXOffset);
                     }
                 }
-                curY += layerHeight + SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
+                currentY += layerHeight + SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
             }
         }
     }
@@ -1802,13 +1803,10 @@ public class NewHierarchicalLayoutManager {
             HashMap<Link, List<Point>> linkToSplitEndPoints = new HashMap<>();
             HashMap<Link, List<Point>> linkPositions = new HashMap<>();
 
-
-
             for (LayoutNode layoutNode : allNodes) {
                 if (layoutNode.isDummy()) continue;
 
                 for (LayoutEdge predEdge : layoutNode.preds) {
-                    if (!reversedLinks.contains(predEdge.link)) continue;
                     assert predEdge.link != null;
 
                     LayoutNode fromNode = predEdge.from;
@@ -1918,7 +1916,6 @@ public class NewHierarchicalLayoutManager {
                     linkPositions.put(succEdge.link, linkPoints);
                 }
             }
-
 
             return linkPositions;
         }
