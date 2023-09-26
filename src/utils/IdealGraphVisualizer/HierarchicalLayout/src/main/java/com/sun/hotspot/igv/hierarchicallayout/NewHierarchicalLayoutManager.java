@@ -1178,7 +1178,7 @@ public class NewHierarchicalLayoutManager {
 
 
         private void computeReversedLinkPoints(LayoutNode node) {
-            boolean reverseLeft = true; // default is false
+            boolean reverseLeft = false; // default is false
             boolean hasReversedDown = computeReversedStartPoints(node, reverseLeft);
             computeReversedEndPoints(node, hasReversedDown != reverseLeft);
         }
@@ -1772,17 +1772,29 @@ public class NewHierarchicalLayoutManager {
                 int layerHeight = layer.height;
                 layer.y = currentY;
                 int maxXOffset = 0;
+                int maxLayerHeight = 0;
+
                 for (LayoutNode layoutNode : layer) {
                     layoutNode.y = currentY;
                     if (!layoutNode.isDummy()) {
                         // center the node
+                        int offset = Math.max(layoutNode.topYOffset, layoutNode.bottomYOffset);
+                        layoutNode.topYOffset = offset;
+                        layoutNode.bottomYOffset = offset;
+
                         layoutNode.topYOffset += (layerHeight - layoutNode.getWholeHeight()) / 2;
                         layoutNode.bottomYOffset = layerHeight - layoutNode.topYOffset - layoutNode.height;
+
                     }
+                    maxLayerHeight = Math.max(maxLayerHeight, layoutNode.getWholeHeight());
+
                     for (LayoutEdge succEdge : layoutNode.succs) {
                         maxXOffset = Math.max(Math.abs(succEdge.getStartPoint() - succEdge.getEndPoint()), maxXOffset);
                     }
                 }
+
+                layer.height = maxLayerHeight;
+
                 currentY += layerHeight + SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
             }
         }
