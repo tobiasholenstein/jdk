@@ -882,7 +882,7 @@ public class NewHierarchicalLayoutManager {
         // for LayoutLayer layer: layer.y, layer.height
         // for each LayoutNode n
         //  - node.y
-        //  - node.yOffset
+        //  - node.topYOffset
         //  - node.bottomYOffset
         new AssignYCoordinates().run();
         assertOrder();
@@ -1380,6 +1380,7 @@ public class NewHierarchicalLayoutManager {
                     layoutNode.succs.remove(unprocessedEdge);
                 }
                 allNodes.addAll(Arrays.asList(dummyNodes));
+                for (LayoutNode dummyNode : dummyNodes) {
                     //layers[dummyNode.layer].add(dummyNode);
                 }
             }
