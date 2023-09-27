@@ -285,9 +285,11 @@ public class NewHierarchicalLayoutManager {
 
     public void removeEdges(LayoutNode movedNode) {
         for (Link inputLink : graph.getInputLinks(movedNode.vertex)) {
+            if (inputLink.getFrom().getVertex() == inputLink.getTo().getVertex()) continue;
             applyRemoveLinkAction(inputLink);
         }
         for (Link outputLink : graph.getOutputLinks(movedNode.vertex)) {
+            if (outputLink.getFrom().getVertex() == outputLink.getTo().getVertex()) continue;
             applyRemoveLinkAction(outputLink);
         }
 
@@ -326,25 +328,20 @@ public class NewHierarchicalLayoutManager {
         Set<LayoutNode> reversedLayoutNodes = new HashSet<>();
         assertOrder();
         for (Link link : nodeLinks) {
+            if (link.getFrom().getVertex() == link.getTo().getVertex()) continue;
+
             assertOrder();
             LayoutEdge layoutEdge = createLayoutEdge(link);
             assertOrder();
-            System.out.println("layoutEdge "+layoutEdge);
 
             LayoutNode fromNode = layoutEdge.from;
             LayoutNode toNode = layoutEdge.to;
-            System.out.println("  - fromNode "+fromNode);
-            System.out.println("  - toNode "+toNode);
-
-
 
             assert fromNode.layer  != toNode.layer;
             if (fromNode.layer > toNode.layer) {
                 assertOrder();
                 reverseEdge(layoutEdge);
                 assertOrder();
-
-                System.out.println("reverseEdge "+layoutEdge);
 
                 //updateNodeWithReversedEdges(fromNode);
                 //updateNodeWithReversedEdges(toNode);
@@ -605,18 +602,20 @@ public class NewHierarchicalLayoutManager {
 
     // check that NO neighbors of node are in a given layer
     private boolean canMoveNodeToLayer(LayoutNode node, int layerNr) {
-        // TODO: take dummy nodes into account
         for (Link inputLink : graph.getInputLinks(node.vertex)) {
-            if (vertexToLayoutNode.get(inputLink.getFrom().getVertex()).layer == layerNr) {
+            if (inputLink.getFrom().getVertex() == inputLink.getTo().getVertex()) continue;
+            LayoutNode fromNode = vertexToLayoutNode.get(inputLink.getFrom().getVertex());
+            if (fromNode.layer == layerNr) {
                 return false;
             }
         }
         for (Link outputLink : graph.getOutputLinks(node.vertex)) {
-            if (vertexToLayoutNode.get(outputLink.getTo().getVertex()).layer == layerNr) {
+            if (outputLink.getFrom().getVertex() == outputLink.getTo().getVertex()) continue;
+            LayoutNode toNode = vertexToLayoutNode.get(outputLink.getTo().getVertex());
+            if (toNode.layer == layerNr) {
                 return false;
             }
         }
-
         return true;
 
     }
