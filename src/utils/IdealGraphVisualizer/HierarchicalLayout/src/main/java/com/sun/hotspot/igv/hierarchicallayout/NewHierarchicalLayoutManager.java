@@ -544,14 +544,18 @@ public class NewHierarchicalLayoutManager {
 
 
     private int findLayer(int y) {
-        for (int i = 0; i < layerCount; i++) {
-            LayoutLayer newLayer = layers[i];
-            if (newLayer.getTop() <= y && y <= newLayer.getBottom()) {
-                return i;
+        int optimalLayer = -1;
+        int minDistance = Integer.MAX_VALUE;
+        for (int l = 0; l < layerCount; l++) {
+            int layerY = layers[l].getCenter();
+            int distance = Math.abs(layerY-y);
+            if (distance < minDistance) {
+                minDistance = distance;
+                optimalLayer = l;
             }
         }
-        assert false : "did not find a layer to place";
-        return 0;
+        assert 0 <= optimalLayer : "did not find a layer to place";
+        return optimalLayer;
     }
 
     private int findPosInLayer(int x, int layerNr) {
@@ -1684,6 +1688,14 @@ public class NewHierarchicalLayoutManager {
 
     }
 
+    private void assertYLayer() {
+        for (int i = 1; i < layerCount; i++) {
+            LayoutLayer topLayer = layers[i-1];
+            LayoutLayer bottomLayer = layers[i];
+            assert topLayer.getBottom() + LAYER_OFFSET <= bottomLayer.getTop();
+        }
+    }
+
     private class AssignYCoordinates {
 
         private void run() {
@@ -1717,6 +1729,8 @@ public class NewHierarchicalLayoutManager {
 
                 currentY += layerHeight + SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
             }
+
+            assertYLayer();
         }
     }
 
@@ -1966,6 +1980,10 @@ public class NewHierarchicalLayoutManager {
 
         public int getTop() {
             return y;
+        }
+
+        public int getCenter() {
+            return y + height/2;
         }
 
         public int getBottom() {
