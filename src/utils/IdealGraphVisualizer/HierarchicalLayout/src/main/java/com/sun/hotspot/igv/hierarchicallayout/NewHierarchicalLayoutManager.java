@@ -363,44 +363,16 @@ public class NewHierarchicalLayoutManager {
         }
         assertOrder();
 
-        //////////////////////////////////////////////////////////////////////////////////////////
-
-
-        System.out.println("before:");
-        for (LayoutEdge predEdge : movedNode.preds) {
-            LayoutNode fromNode = predEdge.from;
-            LayoutNode toNode = predEdge.to;
-            while (fromNode.isDummy() && !fromNode.preds.isEmpty()) {
-                LayoutEdge curEdge = fromNode.preds.get(0);
-                fromNode = curEdge.from;
-            }
-            System.out.println(fromNode + " -> " + toNode);
-        }
-
-        //////////////////////////////////////////////////////////////////////////////////////////
         // CreateDummyNodes
-        // successor nodes
         createDummiesForNodeSuccessor(movedNode, true);
-
         for (LayoutEdge predEdge : movedNode.preds) {
             insertDummyNodes(predEdge);
-        }
-
-        System.out.println("after:");
-        for (LayoutEdge predEdge : movedNode.preds) {
-            LayoutNode fromNode = predEdge.from;
-            LayoutNode toNode = predEdge.to;
-            while (fromNode.isDummy() && !fromNode.preds.isEmpty()) {
-                LayoutEdge curEdge = fromNode.preds.get(0);
-                fromNode = curEdge.from;
-            }
-            System.out.println(fromNode + " -> " + toNode);
         }
 
         assertNodeSynced();
         assertLayerNr();
 
-        updatePositions(); // TODO: find optimal positions
+        updatePositions();
 
         assertNodeSynced();
         assertLayerNr();
@@ -508,7 +480,6 @@ public class NewHierarchicalLayoutManager {
             }
         }
         assert optimalPos != -1;
-        System.out.println("optimalPosition " + node + " is " + optimalPos);
         return optimalPos;
     }
 
@@ -1242,15 +1213,16 @@ public class NewHierarchicalLayoutManager {
     }
 
     private void insertDummyNodes(LayoutEdge edge) {
-        LayoutNode from = edge.from;
-        LayoutNode to = edge.to;
+        LayoutNode fromNode = edge.from;
+        LayoutNode toNode = edge.to;
+        if (Math.abs(toNode.layer - fromNode.layer) <= 1) return;
 
         boolean hasEdgeFromSamePort = false;
-        LayoutEdge edgeFromSamePort = new LayoutEdge(from, to);
+        LayoutEdge edgeFromSamePort = new LayoutEdge(fromNode, toNode);
 
-        for (LayoutEdge e : edge.from.succs) {
-            if (e.relativeFrom == edge.relativeFrom && e.to.vertex == null) {
-                edgeFromSamePort = e;
+        for (LayoutEdge succEdge : fromNode.succs) {
+            if (succEdge.relativeFrom == edge.relativeFrom && succEdge.to.vertex == null) {
+                edgeFromSamePort = succEdge;
                 hasEdgeFromSamePort = true;
                 break;
             }
@@ -1261,7 +1233,7 @@ public class NewHierarchicalLayoutManager {
         } else {
             LayoutEdge curEdge = edgeFromSamePort;
             boolean newEdge = true;
-            while (curEdge.to.layer < to.layer - 1 && curEdge.to.vertex == null && newEdge) {
+            while (curEdge.to.layer < toNode.layer - 1 && curEdge.to.vertex == null && newEdge) {
                 // Traverse down the chain of dummy nodes linking together the edges originating
                 // from the same port
                 newEdge = false;
@@ -1288,7 +1260,7 @@ public class NewHierarchicalLayoutManager {
 
             edge.from = prevDummy;
             edge.relativeFrom = prevDummy.width / 2;
-            from.succs.remove(edge);
+            fromNode.succs.remove(edge);
             prevDummy.succs.add(edge);
             processSingleEdge(edge);
         }
@@ -1323,7 +1295,6 @@ public class NewHierarchicalLayoutManager {
     }
 
     private void insertNode(LayoutNode node, int layer) {
-
         node.layer = layer;
         List<LayoutNode> layerNodes = layers[layer];
 
