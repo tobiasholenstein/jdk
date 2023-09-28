@@ -379,7 +379,12 @@ public class NewHierarchicalLayoutManager {
 
         //////////////////////////////////////////////////////////////////////////////////////////
         // CreateDummyNodes
+        // successor nodes
         createDummiesForNodeSuccessor(movedNode, true);
+
+        for (LayoutEdge predEdge : movedNode.preds) {
+            insertDummyNodes(predEdge);
+        }
 
         System.out.println("after:");
         for (LayoutEdge predEdge : movedNode.preds) {
@@ -506,67 +511,6 @@ public class NewHierarchicalLayoutManager {
         System.out.println("optimalPosition " + node + " is " + optimalPos);
         return optimalPos;
     }
-
-    private void updateNodeWithReversedEdges(LayoutNode node) {
-        // Reset node data in case there were previous reversed edges
-        node.width = (int) node.vertex.getSize().getWidth();
-        node.height = (int) node.vertex.getSize().getHeight();
-        node.topYOffset = 0;
-        node.bottomYOffset = 0;
-        node.leftXOffset = 0;
-        node.rightXOffset = 0;
-
-        int reversedDown = 0;
-        // Reset relativeFrom for all succ edges
-        for (LayoutEdge e : node.succs) {
-            if (e.link == null) {
-                continue;
-            }
-            e.relativeFrom = e.link.getFrom().getRelativePosition().x;
-            if (reversedLinks.contains(e.link)) {
-                e.relativeFrom = e.link.getTo().getRelativePosition().x;
-                ++reversedDown;
-            }
-        }
-
-
-        int reversedUp = 0;
-        // Reset relativeTo for all pred edges
-        for (LayoutEdge e : node.preds) {
-            if (e.link == null) {
-                continue;
-            }
-            e.relativeTo = e.link.getTo().getRelativePosition().x;
-            if (reversedLinks.contains(e.link)) {
-                e.relativeTo = e.link.getFrom().getRelativePosition().x;
-                ++reversedUp;
-            }
-        }
-
-        final int offset = X_OFFSET + DUMMY_WIDTH;
-
-        int widthFactor = reversedDown;
-        node.width += widthFactor * offset;
-
-        int minX = 0;
-        if (reversedDown > 0) {
-            minX = -offset * reversedUp;
-        }
-
-        if (minX < 0) {
-            for (LayoutEdge e : node.preds) {
-                e.relativeTo -= minX;
-            }
-
-            for (LayoutEdge e : node.succs) {
-                e.relativeFrom -= minX;
-            }
-
-            node.leftXOffset = -minX;
-            node.width -= minX;
-        }
-    }
-
 
     private int findLayer(int y) {
         int optimalLayer = -1;
