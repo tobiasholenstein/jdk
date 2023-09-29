@@ -922,16 +922,13 @@ public class NewHierarchicalLayoutManager {
             currentY -= OFFSET;
             node.topYOffset += OFFSET;
 
-            for (LayoutEdge succEdge : reversedSuccs) {
-                succEdge.relativeFrom = currentX;
-            }
-
             ArrayList<Point> startPoints = new ArrayList<>();
             startPoints.add(new Point(currentX, startY));
             startPoints.add(new Point(currentX, currentY));
             startPoints.add(new Point(startX, currentY));
             startPoints.add(new Point(startX, startY));
             for (LayoutEdge revEdge : reversedSuccs) {
+                revEdge.relativeFrom = currentX;
                 node.reversedLinkStartPoints.put(revEdge.link, startPoints);
             }
         }
@@ -962,16 +959,13 @@ public class NewHierarchicalLayoutManager {
             currentY += OFFSET;
             node.bottomYOffset += OFFSET;
 
-            for (LayoutEdge predEdge : reversedPreds) {
-                predEdge.relativeTo = currentX;
-            }
-
             ArrayList<Point> endPoints = new ArrayList<>();
             endPoints.add(new Point(currentX, startY));
             endPoints.add(new Point(currentX, currentY));
             endPoints.add(new Point(startX, currentY));
             endPoints.add(new Point(startX, startY));
             for (LayoutEdge revEdge : reversedPreds) {
+                revEdge.relativeTo = currentX;
                 node.reversedLinkEndPoints.put(revEdge.link, endPoints);
             }
         }
@@ -990,6 +984,8 @@ public class NewHierarchicalLayoutManager {
         node.bottomYOffset = 0;
         node.leftXOffset = 0;
         node.rightXOffset = 0;
+        node.reversedLinkStartPoints.clear();
+        node.reversedLinkEndPoints.clear();
 
         boolean reverseLeft = false; // default is false
         boolean hasReversedDown = computeReversedStartPoints(node, reverseLeft);
