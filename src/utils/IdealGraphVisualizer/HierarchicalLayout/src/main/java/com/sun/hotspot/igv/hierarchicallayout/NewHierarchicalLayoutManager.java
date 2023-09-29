@@ -905,6 +905,7 @@ public class NewHierarchicalLayoutManager {
         TreeMap<Integer, ArrayList<LayoutEdge>> sortedDownMap = left ? new TreeMap<>() : new TreeMap<>(Collections.reverseOrder());
         for (LayoutEdge succEdge : node.succs) {
             if (reversedLinks.contains(succEdge.link)) {
+                succEdge.relativeFrom = succEdge.link.getTo().getRelativePosition().x;
                 sortedDownMap.putIfAbsent(succEdge.relativeFrom, new ArrayList<>());
                 sortedDownMap.get(succEdge.relativeFrom).add(succEdge);
             }
@@ -942,6 +943,7 @@ public class NewHierarchicalLayoutManager {
         TreeMap<Integer, ArrayList<LayoutEdge>> sortedUpMap = left ? new TreeMap<>() : new TreeMap<>(Collections.reverseOrder());
         for (LayoutEdge predEdge : node.preds) {
             if (reversedLinks.contains(predEdge.link)) {
+                predEdge.relativeTo = predEdge.link.getFrom().getRelativePosition().x;
                 sortedUpMap.putIfAbsent(predEdge.relativeTo, new ArrayList<>());
                 sortedUpMap.get(predEdge.relativeTo).add(predEdge);
             }
@@ -1768,36 +1770,41 @@ public class NewHierarchicalLayoutManager {
 
     private class AssignYCoordinates {
 
+        private void updateLayerHeight(LayoutLayer layer) {
+            int maxLayerHeight = 0;
+            for (LayoutNode layoutNode : layer) {
+                if (!layoutNode.isDummy()) {
+                    // center the node
+                    int offset = Math.max(layoutNode.topYOffset, layoutNode.bottomYOffset);
+                    layoutNode.topYOffset = offset;
+                    layoutNode.bottomYOffset = offset;
+                }
+                maxLayerHeight = Math.max(maxLayerHeight, layoutNode.getWholeHeight());
+            }
+            layer.height = maxLayerHeight;
+        }
+
+        private double getScaledLayerPadding(LayoutLayer layer) {
+            int maxXOffset = 0;
+
+            for (LayoutNode layoutNode : layer) {
+                for (LayoutEdge succEdge : layoutNode.succs) {
+                    maxXOffset = Math.max(Math.abs(succEdge.getStartPoint() - succEdge.getEndPoint()), maxXOffset);
+                }
+            }
+
+            return SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
+        }
+
         private void run() {
             int currentY = 0;
             for (LayoutLayer layer : layers) {
-                int layerHeight = layer.height;
                 layer.y = currentY;
-                int maxXOffset = 0;
-                int maxLayerHeight = 0;
-
+                updateLayerHeight(layer);
                 for (LayoutNode layoutNode : layer) {
-                    layoutNode.y = currentY;
-                    if (!layoutNode.isDummy()) {
-                        // center the node
-                        int offset = Math.max(layoutNode.topYOffset, layoutNode.bottomYOffset);
-                        layoutNode.topYOffset = offset;
-                        layoutNode.bottomYOffset = offset;
-
-                        layoutNode.topYOffset += (layerHeight - layoutNode.getWholeHeight()) / 2;
-                        layoutNode.bottomYOffset = layerHeight - layoutNode.topYOffset - layoutNode.height;
-
-                    }
-                    maxLayerHeight = Math.max(maxLayerHeight, layoutNode.getWholeHeight());
-
-                    for (LayoutEdge succEdge : layoutNode.succs) {
-                        maxXOffset = Math.max(Math.abs(succEdge.getStartPoint() - succEdge.getEndPoint()), maxXOffset);
-                    }
+                    layoutNode.y = currentY + (layer.height - layoutNode.getWholeHeight()) / 2;
                 }
-
-                layer.height = maxLayerHeight;
-
-                currentY += layerHeight + SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
+                currentY += layer.height + getScaledLayerPadding(layer);
             }
 
             assertYLayer();
