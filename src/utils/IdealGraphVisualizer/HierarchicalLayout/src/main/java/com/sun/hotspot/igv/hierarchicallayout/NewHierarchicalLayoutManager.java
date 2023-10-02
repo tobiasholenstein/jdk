@@ -344,10 +344,6 @@ public class NewHierarchicalLayoutManager {
                 assertOrder();
                 reverseEdge(layoutEdge);
                 assertOrder();
-
-                //updateNodeWithReversedEdges(fromNode);
-                //updateNodeWithReversedEdges(toNode);
-
                 reversedLayoutNodes.add(fromNode);
                 reversedLayoutNodes.add(toNode);
             }
