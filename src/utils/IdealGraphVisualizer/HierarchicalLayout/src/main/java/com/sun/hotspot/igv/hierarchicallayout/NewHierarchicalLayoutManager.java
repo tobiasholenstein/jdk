@@ -1420,7 +1420,6 @@ public class NewHierarchicalLayoutManager {
                         previousEdge = dummyEdge;
                     }
                     previousEdge.link = singleEdge.link;
-                    singleEdge.link = null;
                 }
             } else {
                 int lastLayer = unprocessedEdges.get(unprocessedEdges.size() - 1).to.layer;
