@@ -627,6 +627,7 @@ public class NewHierarchicalLayoutManager {
         public int pos = -1; // Position within layer
 
         public float crossingNumber = 0;
+        public boolean reverseLeft = false;
 
         public void loadCrossingNumber(boolean up) {
             crossingNumber = 0;
@@ -976,6 +977,7 @@ public class NewHierarchicalLayoutManager {
 
     private void computeReversedLinkPoints(LayoutNode node, boolean reverseLeft) {
         // reset node, except (x, y)
+        node.reverseLeft = reverseLeft;
         node.width = node.vertex.getSize().width;
         node.height = node.vertex.getSize().height;
         node.topYOffset = 0;
@@ -1643,10 +1645,10 @@ public class NewHierarchicalLayoutManager {
             if (node.reversedLinkStartPoints.isEmpty() && node.reversedLinkEndPoints.isEmpty()) continue;
             int width = node.getWholeWidth();
             int orig_score = getBackedgeCrossingScore(node);
-            computeReversedLinkPoints(node, true);
+            computeReversedLinkPoints(node, !node.reverseLeft);
             int reverse_score = getBackedgeCrossingScore(node);
             if (orig_score > reverse_score) {
-                computeReversedLinkPoints(node, false);
+                computeReversedLinkPoints(node, !node.reverseLeft);
             }
             assert width == node.getWholeWidth();
         }
