@@ -176,7 +176,7 @@ public class NewHierarchicalLayoutManager {
     private void removeNode(LayoutNode node) {
         int layer = node.layer;
         layers[layer].remove(node);
-        updateLayerPositions(layer);
+        updateLayerPositions(layers[layer]);
         // Remove node from graph layout
         allNodes.remove(node);
     }
@@ -550,11 +550,68 @@ public class NewHierarchicalLayoutManager {
             if (outputLink.getFrom().getVertex() == outputLink.getTo().getVertex()) continue;
             LayoutNode toNode = vertexToLayoutNode.get(outputLink.getTo().getVertex());
             if (toNode.layer == layerNr) {
-                return false;
+                moveExpandLayerDown(layerNr);
+                return true;
             }
         }
         return true;
 
+    }
+
+    private void moveExpandLayerDown(int layerNr) {
+        assert layerNr < layerCount;
+        LayoutLayer[] extendedLayers = new LayoutLayer[layerCount + 1];
+        // copy upper part from layers to extendedLayers
+        System.arraycopy(layers, 0, extendedLayers, 0, layerNr);
+        // insert new LayoutLayer at layerNr into extendedLayers
+        extendedLayers[layerNr] = new LayoutLayer();
+        // copy lower part from layers to extendedLayers
+        System.arraycopy(layers, layerNr, extendedLayers, layerNr + 1, layerCount - layerNr);
+
+        for (LayoutLayer layer : extendedLayers) {
+            assert layer  != null;
+        }
+
+
+        for (LayoutNode oldNodeBelow : List.copyOf(layers[layerNr])) {
+            for (LayoutEdge predEdge : oldNodeBelow.preds) {
+                LayoutNode dummyNode = createDummyBetween(predEdge);
+                allNodes.add(dummyNode);
+                dummyNode.layer = layerNr;
+                dummyNode.x = oldNodeBelow.x;
+                extendedLayers[layerNr].add(dummyNode);
+            }
+            /*
+            if (oldNodeBelow.isDummy()) {
+                LayoutNode dummyNode = createDummyBetween(oldNodeBelow.preds.get(0));
+                allNodes.add(dummyNode);
+                dummyNode.layer = layerNr;
+                dummyNode.x = oldNodeBelow.x;
+                extendedLayers[layerNr].add(dummyNode);
+            } else {
+                for (LayoutEdge predEdge : oldNodeBelow.preds) {
+                    LayoutNode dummyNode = createDummyBetween(predEdge);
+                    allNodes.add(dummyNode);
+                    dummyNode.layer = layerNr;
+                    dummyNode.x = oldNodeBelow.x;
+                    extendedLayers[layerNr].add(dummyNode);
+                }
+            }*/
+        }
+        extendedLayers[layerNr].sort(Comparator.comparingInt(n -> n.x));
+        updateLayerPositions(extendedLayers[layerNr]);
+        ++layerCount;
+        layers = extendedLayers;
+
+        // update layer field in nodes below layerNr
+        for (int l = layerNr + 1; l < layerCount; l++) {
+            for (LayoutNode layoutNode : layers[l]) {
+                layoutNode.layer = l;
+            }
+        }
+
+        assertPos();
+        assertOrder();
     }
 
     public void assertPos() {
@@ -574,6 +631,7 @@ public class NewHierarchicalLayoutManager {
 
         int newLayerNr = findLayer(newLocation.y);
         if (!canMoveNodeToLayer(movedNode, newLayerNr)) {
+            // TODO: insert a new layer
             return;
         }
 
@@ -1266,32 +1324,30 @@ public class NewHierarchicalLayoutManager {
         }
     }
 
-    private void processSingleEdge(LayoutEdge e) {
-        LayoutNode n = e.to;
-        if (e.to.layer - 1 > e.from.layer) {
-            LayoutEdge last = e;
-            for (int i = n.layer - 1; i > last.from.layer; i--) {
-                last = addBetween(last, i);
+    private void processSingleEdge(LayoutEdge layoutEdge) {
+        LayoutNode layoutNode = layoutEdge.to;
+        if (layoutEdge.to.layer - 1 > layoutEdge.from.layer) {
+            LayoutEdge prevEdge = layoutEdge;
+            for (int l = layoutNode.layer - 1; l > prevEdge.from.layer; l--) {
+                LayoutNode dummyNode = createDummyBetween(prevEdge);
+                insertNode(dummyNode, l);
+                prevEdge = dummyNode.preds.get(0);
             }
         }
     }
 
-    private LayoutEdge addBetween(LayoutEdge e, int layer) {
-        LayoutNode n = new LayoutNode();
-        n.width = DUMMY_WIDTH;
-        n.height = DUMMY_HEIGHT;
-        n.succs.add(e);
-        LayoutEdge result = new LayoutEdge(e.from, n);
-        n.preds.add(result);
-        result.relativeTo = 0;
-        result.relativeFrom = e.relativeFrom;
-        result.link = e.link;
-        e.relativeFrom = 0;
-        e.from.succs.remove(e);
-        e.from.succs.add(result);
-        e.from = n;
-        insertNode(n, layer);
-        return result;
+    private LayoutNode createDummyBetween(LayoutEdge layoutEdge) {
+        LayoutNode dummyNode = new LayoutNode();
+        dummyNode.width = DUMMY_WIDTH;
+        dummyNode.height = DUMMY_HEIGHT;
+        dummyNode.succs.add(layoutEdge);
+        LayoutEdge result = new LayoutEdge(layoutEdge.from, dummyNode, layoutEdge.relativeFrom, 0, layoutEdge.link);
+        dummyNode.preds.add(result);
+        layoutEdge.relativeFrom = 0;
+        layoutEdge.from.succs.remove(layoutEdge);
+        layoutEdge.from.succs.add(result);
+        layoutEdge.from = dummyNode;
+        return dummyNode;
     }
 
     private void insertNode(LayoutNode node, int layer) {
@@ -1516,10 +1572,10 @@ public class NewHierarchicalLayoutManager {
         }
     }
 
-    private void updateLayerPositions(int index) {
+    private void updateLayerPositions(LayoutLayer layer) {
         int pos = 0;
-        for (LayoutNode n : layers[index]) {
-            n.pos = pos;
+        for (LayoutNode layoutNode : layer) {
+            layoutNode.pos = pos;
             pos++;
         }
     }
@@ -1527,7 +1583,7 @@ public class NewHierarchicalLayoutManager {
     private void updatePositions() {
         assert layers.length == layerCount;
         for (int l = 0; l < layerCount; ++l) {
-            updateLayerPositions(l);
+            updateLayerPositions(layers[l]);
         }
     }
 
