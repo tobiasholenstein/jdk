@@ -353,7 +353,7 @@ public class NewHierarchicalLayoutManager {
 
         // ReverseEdges
         for (LayoutNode layoutNode : reversedLayoutNodes) {
-            computeReversedLinkPoints(layoutNode);
+            computeReversedLinkPoints(layoutNode, false);
         }
         assertOrder();
 
@@ -580,6 +580,7 @@ public class NewHierarchicalLayoutManager {
         if (movedNode.layer == newLayerNr) { // we move the node in the same layer
             // the node did not change position withing the layer
             if (tryMoveNodeInSamePosition(movedNode, newLocation.x, newLayerNr)) {
+                optimizeBackedgeCrossing();
                 new WriteResult().run();
                 return;
             }
@@ -621,9 +622,8 @@ public class NewHierarchicalLayoutManager {
         public final List<LayoutEdge> preds = new ArrayList<>();
         public final List<LayoutEdge> succs = new ArrayList<>();
 
-        public final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();;
+        public final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();
         public final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
-        ;
         public int pos = -1; // Position within layer
 
         public float crossingNumber = 0;
@@ -974,7 +974,7 @@ public class NewHierarchicalLayoutManager {
     }
 
 
-    private void computeReversedLinkPoints(LayoutNode node) {
+    private void computeReversedLinkPoints(LayoutNode node, boolean reverseLeft) {
         // reset node, except (x, y)
         node.width = node.vertex.getSize().width;
         node.height = node.vertex.getSize().height;
@@ -985,9 +985,11 @@ public class NewHierarchicalLayoutManager {
         node.reversedLinkStartPoints.clear();
         node.reversedLinkEndPoints.clear();
 
-        boolean reverseLeft = false; // default is false
+        //boolean reverseLeft = false; // default is false
         boolean hasReversedDown = computeReversedStartPoints(node, reverseLeft);
-        computeReversedEndPoints(node, hasReversedDown != reverseLeft);
+        boolean hasReversedUP = computeReversedEndPoints(node, hasReversedDown != reverseLeft);
+        assert !hasReversedDown || !node.reversedLinkStartPoints.isEmpty();
+        assert !hasReversedUP || !node.reversedLinkEndPoints.isEmpty();
     }
 
     private class ReverseEdges {
@@ -1029,8 +1031,12 @@ public class NewHierarchicalLayoutManager {
             active.clear();
 
             // Start DFS and reverse back edges
-            allNodes.forEach(this::DFS);
-            allNodes.forEach(NewHierarchicalLayoutManager.this::computeReversedLinkPoints);
+            for (LayoutNode node : allNodes) {
+                DFS(node);
+            }
+            for (LayoutNode node : allNodes) {
+                computeReversedLinkPoints(node, false);
+            }
         }
 
         private void controlFlowBackEdges() {
@@ -1461,14 +1467,11 @@ public class NewHierarchicalLayoutManager {
 
     private class CreateDummyNodes {
 
-        @SuppressWarnings({"unchecked"})
         private void createLayers() {
             layers = new LayoutLayer[layerCount];
             for (int i = 0; i < layerCount; i++) {
                 layers[i] = new LayoutLayer();
             }
-
-
         }
 
         private void run() {
@@ -1606,6 +1609,49 @@ public class NewHierarchicalLayoutManager {
         }
     }
 
+    public int getBackedgeCrossingScore(LayoutNode node) {
+        int score = 0;
+        for (LayoutEdge predEdge : node.preds) {
+            if (reversedLinks.contains(predEdge.link)) {
+                List<Point> points = node.reversedLinkEndPoints.get(predEdge.link);
+                int x0 = points.get(points.size()-1).x;
+                int xn = points.get(0).x;
+                int startPoint = predEdge.getStartPoint();
+                int endPoint = predEdge.getEndPoint();
+                int win = (x0 < xn) ? (startPoint - endPoint) : (endPoint - startPoint);
+                score += win;
+            }
+        }
+        for (LayoutEdge succEdge : node.succs) {
+            if (reversedLinks.contains(succEdge.link)) {
+                List<Point> points = node.reversedLinkStartPoints.get(succEdge.link);
+                int x0 = points.get(points.size()-1).x;
+                int xn = points.get(0).x;
+                int startPoint = succEdge.getStartPoint();
+                int endPoint = succEdge.getEndPoint();
+                int win = (x0 > xn) ? (startPoint - endPoint) : (endPoint - startPoint);
+                score += win;
+            }
+        }
+        return score;
+    }
+
+
+    public void optimizeBackedgeCrossing() {
+        for (LayoutNode node : allNodes) {
+            if (node.isDummy()) continue;
+            if (node.reversedLinkStartPoints.isEmpty() && node.reversedLinkEndPoints.isEmpty()) continue;
+            int width = node.getWholeWidth();
+            int orig_score = getBackedgeCrossingScore(node);
+            computeReversedLinkPoints(node, true);
+            int reverse_score = getBackedgeCrossingScore(node);
+            if (orig_score > reverse_score) {
+                computeReversedLinkPoints(node, false);
+            }
+            assert width == node.getWholeWidth();
+        }
+    }
+
     private class AssignXCoordinates {
 
         private int[][] space;
@@ -1657,7 +1703,6 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-
         private void run() {
             createArrays();
             initialPositions();
@@ -1666,6 +1711,7 @@ public class NewHierarchicalLayoutManager {
                 sweepDown();
                 sweepUp();
             }
+            optimizeBackedgeCrossing();
             assertOrder();
         }
 
