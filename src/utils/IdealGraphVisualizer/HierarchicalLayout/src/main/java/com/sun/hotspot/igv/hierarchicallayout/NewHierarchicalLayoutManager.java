@@ -538,12 +538,13 @@ public class NewHierarchicalLayoutManager {
     }
 
     // check that NO neighbors of node are in a given layer
-    private boolean canMoveNodeToLayer(LayoutNode node, int layerNr) {
+    private int insertNewLayerIfNeeded(LayoutNode node, int layerNr) {
         for (Link inputLink : graph.getInputLinks(node.vertex)) {
             if (inputLink.getFrom().getVertex() == inputLink.getTo().getVertex()) continue;
             LayoutNode fromNode = vertexToLayoutNode.get(inputLink.getFrom().getVertex());
             if (fromNode.layer == layerNr) {
-                return false;
+                moveExpandLayerDown(layerNr + 1);
+                return layerNr + 1;
             }
         }
         for (Link outputLink : graph.getOutputLinks(node.vertex)) {
@@ -551,10 +552,10 @@ public class NewHierarchicalLayoutManager {
             LayoutNode toNode = vertexToLayoutNode.get(outputLink.getTo().getVertex());
             if (toNode.layer == layerNr) {
                 moveExpandLayerDown(layerNr);
-                return true;
+                return layerNr;
             }
         }
-        return true;
+        return layerNr;
 
     }
 
@@ -568,11 +569,6 @@ public class NewHierarchicalLayoutManager {
         // copy lower part from layers to extendedLayers
         System.arraycopy(layers, layerNr, extendedLayers, layerNr + 1, layerCount - layerNr);
 
-        for (LayoutLayer layer : extendedLayers) {
-            assert layer  != null;
-        }
-
-
         for (LayoutNode oldNodeBelow : List.copyOf(layers[layerNr])) {
             for (LayoutEdge predEdge : oldNodeBelow.preds) {
                 LayoutNode dummyNode = createDummyBetween(predEdge);
@@ -581,25 +577,12 @@ public class NewHierarchicalLayoutManager {
                 dummyNode.x = oldNodeBelow.x;
                 extendedLayers[layerNr].add(dummyNode);
             }
-            /*
-            if (oldNodeBelow.isDummy()) {
-                LayoutNode dummyNode = createDummyBetween(oldNodeBelow.preds.get(0));
-                allNodes.add(dummyNode);
-                dummyNode.layer = layerNr;
-                dummyNode.x = oldNodeBelow.x;
-                extendedLayers[layerNr].add(dummyNode);
-            } else {
-                for (LayoutEdge predEdge : oldNodeBelow.preds) {
-                    LayoutNode dummyNode = createDummyBetween(predEdge);
-                    allNodes.add(dummyNode);
-                    dummyNode.layer = layerNr;
-                    dummyNode.x = oldNodeBelow.x;
-                    extendedLayers[layerNr].add(dummyNode);
-                }
-            }*/
         }
+
+
         extendedLayers[layerNr].sort(Comparator.comparingInt(n -> n.x));
         updateLayerPositions(extendedLayers[layerNr]);
+
         ++layerCount;
         layers = extendedLayers;
 
@@ -630,10 +613,7 @@ public class NewHierarchicalLayoutManager {
         Point newLocation = new Point(loc.x, loc.y + movedNode.height/2);
 
         int newLayerNr = findLayer(newLocation.y);
-        if (!canMoveNodeToLayer(movedNode, newLayerNr)) {
-            // TODO: insert a new layer
-            return;
-        }
+        newLayerNr = insertNewLayerIfNeeded(movedNode, newLayerNr);
 
         if (movedNode.layer == newLayerNr) { // we move the node in the same layer
             // the node did not change position withing the layer
