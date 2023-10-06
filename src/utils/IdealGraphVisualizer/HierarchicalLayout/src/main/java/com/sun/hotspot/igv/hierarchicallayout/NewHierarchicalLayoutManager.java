@@ -2005,8 +2005,9 @@ public class NewHierarchicalLayoutManager {
 
         private HashMap<Vertex, Point> computeVertexPositions() {
             HashMap<Vertex, Point> vertexPositions = new HashMap<>();
-            for (Vertex v : graph.getVertices()) {
-                LayoutNode n = vertexToLayoutNode.get(v);
+            for (Map.Entry<Vertex, LayoutNode> entry : vertexToLayoutNode.entrySet()) {
+                Vertex v = entry.getKey();
+                LayoutNode n = entry.getValue();
                 vertexPositions.put(v, new Point(n.getLeftSide(), n.getTop()));
             }
             return vertexPositions;
@@ -2130,14 +2131,17 @@ public class NewHierarchicalLayoutManager {
         }
 
         public void run() {
+            // takes dummyNodes, layers, vertexToLayoutNode and reversedLinks
             assert dummyNodes.size() == (new HashSet<>(dummyNodes)).size();
 
             assertEdgesConnected();
             assertOrder();
 
+            // takes vertexToLayoutNode
             HashMap<Vertex, Point> vertexPositions = computeVertexPositions();
             assertOrder();
 
+            // takes vertexToLayoutNode and reversedLinks
             HashMap<Link, List<Point>> linkPositions = computeLinkPositions();
             assertOrder();
             assertEdgesConnected();
