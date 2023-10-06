@@ -625,6 +625,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                 @Override
                 public void movementStarted(Widget widget) {
+                    if (!getModel().getShowSea()) return;
                     widget.bringToFront();
                     startLayerY = widget.getLocation().y;
                     Set<Figure> selectedFigures = model.getSelectedFigures();
@@ -637,6 +638,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                 @Override
                 public void movementFinished(Widget widget) {
+                    if (!getModel().getShowSea()) return;
                     rebuilding = true;
                     Set<FigureWidget> oldVisibleFigureWidgets = getVisibleFigureWidgets();
                     Set<BlockWidget> oldVisibleBlockWidgets = getVisibleBlockWidgets();
@@ -676,7 +678,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                 @Override
                 public void setNewLocation(Widget widget, Point location) {
-                    if (getModel().getShowCFG()) return;
+                    if (!getModel().getShowSea()) return;
+                    //if (getModel().getShowCFG()) return;
 
                     int shiftX = location.x - widget.getLocation().x;
                     int shiftY = magnetToStartLayerY(widget, location, 5);
