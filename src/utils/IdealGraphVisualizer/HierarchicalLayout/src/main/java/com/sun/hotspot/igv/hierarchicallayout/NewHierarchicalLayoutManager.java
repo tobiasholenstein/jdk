@@ -1789,8 +1789,6 @@ public class NewHierarchicalLayoutManager {
             if (orig_score > reverse_score) {
                 computeReversedLinkPoints(node, !node.reverseLeft);
             }
-            // TODO: should hold
-            //assert width == node.getWholeWidth();
         }
     }
 
