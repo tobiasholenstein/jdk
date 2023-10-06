@@ -514,51 +514,69 @@ public class NewHierarchicalLayoutManager {
     }
 
     public void removeEmptyLayers(int emtpyLayerNr) {
+        for (LayoutNode layoutNode : allNodes) {
+            if (layoutNode.isDummy()) continue;
+            for (LayoutEdge predEdge : layoutNode.preds) {
+                assert predEdge.link != null;
+            }
+        }
         for (LayoutNode layoutNode : layers[emtpyLayerNr]) {
             assert layoutNode.isDummy() : "has to be empty layer";
         }
 
-        if (emtpyLayerNr == 0) {
-            assert layers[0] == null | (layers[0] != null && layers[0].isEmpty());
-            // TODO: remove layer
-        } else if (emtpyLayerNr == layerCount-1) {
-            assert layers[layerCount-1] == null | (layers[layerCount-1] != null && layers[layerCount-1].isEmpty());
-            // TODO: remove layer
-        } else {
-            assert layerCount >= 3;
-            LayoutLayer[] compactedLayers = new LayoutLayer[layerCount - 1];
+        if (0 < emtpyLayerNr && emtpyLayerNr < layerCount-1) {
             LayoutLayer emptyLayer = layers[emtpyLayerNr];
-            for (LayoutNode layoutNode : emptyLayer) {
-                assert layoutNode.isDummy();
-                LayoutEdge predEdge = layoutNode.preds.get(0);
-                LayoutNode fromNode = predEdge.from;
+            for (LayoutNode dummyNode : emptyLayer) {
+                assert dummyNode.isDummy();
+                LayoutEdge predEdge = dummyNode.preds.get(0);
+                LayoutNode fromNode = predEdge.from; // Root
+                // remove the dummy node from Root
                 fromNode.succs.remove(predEdge);
-                for (LayoutEdge succEdge : layoutNode.succs) {
+
+                // modify succEdge to come from fromNode and add to succs
+                for (LayoutEdge succEdge : dummyNode.succs) {
                     // TODO: add Link, correct?
-                    succEdge.link = predEdge.link;
+                    // succEdge.link = predEdge.link;
                     succEdge.from = fromNode;
-                    succEdge.relativeFrom = predEdge.relativeFrom;
                     fromNode.succs.add(succEdge);
+                    succEdge.relativeFrom = predEdge.relativeFrom;
                 }
-                allNodes.remove(layoutNode);
+                allNodes.remove(dummyNode);
             }
 
-            // copy upper part from layers to extendedLayers
-            System.arraycopy(layers, 0, compactedLayers, 0, emtpyLayerNr);
-            // copy lower part from layers to extendedLayers
-            System.arraycopy(layers, emtpyLayerNr + 1, compactedLayers, emtpyLayerNr, layerCount - emtpyLayerNr - 1);
-
-            --layerCount;
-            layers = compactedLayers;
-
-            for (int l = emtpyLayerNr; l < layerCount; l++) {
-                for (LayoutNode layoutNode : layers[l]) {
-                    layoutNode.layer = l;
+            for (LayoutNode layoutNode : allNodes) {
+                if (layoutNode.isDummy()) continue;
+                for (LayoutEdge predEdge : layoutNode.preds) {
+                    assert predEdge.link != null;
                 }
+            }
+        } else if (0 == emtpyLayerNr) {
+            assert layers[0].isEmpty();
+        } else { // emtpyLayerNr = layerCount -1
+            assert 0 != layerCount - 1 || layers[layerCount - 1].isEmpty();
+        }
+
+        LayoutLayer[] compactedLayers = new LayoutLayer[layerCount - 1];
+        // copy upper part from layers to extendedLayers
+        System.arraycopy(layers, 0, compactedLayers, 0, emtpyLayerNr);
+        // copy lower part from layers to extendedLayers
+        System.arraycopy(layers, emtpyLayerNr + 1, compactedLayers, emtpyLayerNr, layerCount - emtpyLayerNr - 1);
+
+        --layerCount;
+        layers = compactedLayers;
+
+        for (int l = emtpyLayerNr; l < layerCount; l++) {
+            for (LayoutNode layoutNode : layers[l]) {
+                layoutNode.layer = l;
             }
         }
 
-
+        for (LayoutNode layoutNode : allNodes) {
+            if (layoutNode.isDummy()) continue;
+            for (LayoutEdge predEdge : layoutNode.preds) {
+                assert predEdge.link != null;
+            }
+        }
     }
 
     public void moveNode(LayoutNode node, int newX, int newLayerNr) {
@@ -600,6 +618,12 @@ public class NewHierarchicalLayoutManager {
 
     // check that NO neighbors of node are in a given layer
     private int insertNewLayerIfNeeded(LayoutNode node, int layerNr) {
+        for (LayoutNode layoutNode : allNodes) {
+            if (layoutNode.isDummy()) continue;
+            for (LayoutEdge predEdge : layoutNode.preds) {
+                assert predEdge.link != null;
+            }
+        }
         for (Link inputLink : graph.getInputLinks(node.vertex)) {
             if (inputLink.getFrom().getVertex() == inputLink.getTo().getVertex()) continue;
             LayoutNode fromNode = vertexToLayoutNode.get(inputLink.getFrom().getVertex());
@@ -614,6 +638,13 @@ public class NewHierarchicalLayoutManager {
             if (toNode.layer == layerNr) {
                 moveExpandLayerDown(layerNr);
                 return layerNr;
+            }
+        }
+
+        for (LayoutNode layoutNode : allNodes) {
+            if (layoutNode.isDummy()) continue;
+            for (LayoutEdge predEdge : layoutNode.preds) {
+                assert predEdge.link != null;
             }
         }
         return layerNr;
@@ -680,6 +711,8 @@ public class NewHierarchicalLayoutManager {
             // the node did not change position withing the layer
             if (tryMoveNodeInSamePosition(movedNode, newLocation.x, newLayerNr)) {
                 optimizeBackedgeCrossing();
+                new AssignYCoordinates().run();
+                assertOrder();
                 new WriteResult().run();
                 return;
             }
@@ -979,6 +1012,9 @@ public class NewHierarchicalLayoutManager {
 
     private void reverseEdge(LayoutEdge layoutEdge) {
         assert !reversedLinks.contains(layoutEdge.link);
+        if (reversedLinks.contains(layoutEdge.link)) {
+            return;
+        }
         reversedLinks.add(layoutEdge.link);
 
         LayoutNode oldFrom = layoutEdge.from;
