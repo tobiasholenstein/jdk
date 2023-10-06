@@ -1782,7 +1782,6 @@ public class NewHierarchicalLayoutManager {
     public void optimizeBackedgeCrossing() {
         for (LayoutNode node : getLayoutNodes()) {
             if (node.reversedLinkStartPoints.isEmpty() && node.reversedLinkEndPoints.isEmpty()) continue;
-            int width = node.getWholeWidth();
             int orig_score = getBackedgeCrossingScore(node);
             computeReversedLinkPoints(node, !node.reverseLeft);
             int reverse_score = getBackedgeCrossingScore(node);
