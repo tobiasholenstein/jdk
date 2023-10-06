@@ -1011,10 +1011,7 @@ public class NewHierarchicalLayoutManager {
     }
 
     private void reverseEdge(LayoutEdge layoutEdge) {
-        assert !reversedLinks.contains(layoutEdge.link);
-        if (reversedLinks.contains(layoutEdge.link)) {
-            return;
-        }
+        //assert !reversedLinks.contains(layoutEdge.link);
         reversedLinks.add(layoutEdge.link);
 
         LayoutNode oldFrom = layoutEdge.from;
