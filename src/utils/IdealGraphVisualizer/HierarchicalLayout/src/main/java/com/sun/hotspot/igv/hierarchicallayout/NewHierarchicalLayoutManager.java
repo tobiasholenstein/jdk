@@ -724,6 +724,7 @@ public class NewHierarchicalLayoutManager {
             // the node did not change position withing the layer
             if (tryMoveNodeInSamePosition(movedNode, newLocation.x, newLayerNr)) {
                 optimizeBackedgeCrossing();
+                straightenEdges();
                 new AssignYCoordinates().run();
                 assertOrder();
                 new WriteResult().run();
@@ -1796,6 +1797,88 @@ public class NewHierarchicalLayoutManager {
         }
     }
 
+    private void tryAlignDummies(LayoutNode dummyNode, LayoutNode nextDummyNode) {
+        if (dummyNode.x == nextDummyNode.x) return;
+        LayoutLayer nextLayer = layers[nextDummyNode.layer];
+        if (nextDummyNode.x < dummyNode.x) {
+            // try move nextDummyNode.x to the right
+            int rightPos = nextDummyNode.pos + 1;
+            if (rightPos < nextLayer.size()) {
+                // we have a right neighbor
+                LayoutNode rightNode = nextLayer.get(rightPos);
+                int rightShift = dummyNode.x - nextDummyNode.x;
+                if (nextDummyNode.getRightSide() + rightShift <= rightNode.getLeftSide()) {
+                    // it is possible to shift nextDummyNode right
+                    nextDummyNode.x = dummyNode.x;
+                }
+            } else {
+                // nextDummyNode is the right-most node, so we can always move nextDummyNode to the right
+                nextDummyNode.x = dummyNode.x;
+            }
+        } else {
+            // try move nextDummyNode.x to the left
+            int leftPos = nextDummyNode.pos - 1;
+            if (leftPos >= 0) {
+                // we have a left neighbor
+                LayoutNode leftNode = nextLayer.get(leftPos);
+                int leftShift = nextDummyNode.x - dummyNode.x;
+                if (leftNode.getRightSide() <= nextDummyNode.getLeftSide() - leftShift) {
+                    // it is possible to shift nextDummyNode left
+                    nextDummyNode.x = dummyNode.x;
+                }
+            } else {
+                // nextDummyNode is the left-most node, so we can always move nextDummyNode to the left
+                nextDummyNode.x = dummyNode.x;
+            }
+        }
+    }
+
+    private void straightenDummy(LayoutNode dummy) {
+        if (dummy.succs.size() == 1) {
+            LayoutNode succDummy = dummy.succs.get(0).to;
+            if (succDummy.isDummy()) {
+                tryAlignDummies(dummy, succDummy);
+            }
+        }
+        if (dummy.preds.size() == 1) {
+            LayoutNode predDummy = dummy.preds.get(0).from;
+            if (predDummy.isDummy()) {
+                tryAlignDummies(dummy, predDummy);
+            }
+        }
+    }
+
+    private void straightenLayer(LayoutLayer layer) {
+        for (LayoutNode dummy : layer) {
+            if (!dummy.isDummy()) continue;
+            straightenDummy(dummy);
+        }
+        for (int i = layer.size() - 1; i >= 0; i--) {
+            LayoutNode dummy = layer.get(i);
+            if (!dummy.isDummy()) continue;
+            straightenDummy(dummy);
+        }
+    }
+
+
+    private void straightenEdges() {
+        for (LayoutLayer layer : layers) {
+            for (int pos = 1; pos < layer.size(); ++pos) {
+                LayoutNode leftNode = layer.get(pos - 1);
+                LayoutNode rightNode = layer.get(pos);
+                assert leftNode.pos + 1 == rightNode.pos;
+                assert leftNode.x <= rightNode.x;
+                assert leftNode.getRightSide() <= rightNode.getLeftSide();
+            }
+        }
+        for (LayoutLayer layer : layers) {
+            straightenLayer(layer);
+        }
+        for (int i = layers.length - 1; i >= 0; i--) {
+            straightenLayer(layers[i]);
+        }
+    }
+
     private class AssignXCoordinates {
 
         private int[][] space;
@@ -1854,48 +1937,6 @@ public class NewHierarchicalLayoutManager {
             }
         }
 
-        private void straightenEdges() {
-            // TODO: test this
-            for (LayoutNode dummyNode : dummyNodes) {
-                if (dummyNode.succs.size() != 1) continue;
-                LayoutNode nextDummyNode = dummyNode.succs.get(0).to;
-                if (!nextDummyNode.isDummy()) continue;
-                if (dummyNode.x == nextDummyNode.x) continue;
-                LayoutLayer nextLayer = layers[nextDummyNode.layer];
-                if (dummyNode.x > nextDummyNode.x) {
-                    // try move nextDummyNode.x to the right
-                    int rightPos = nextDummyNode.pos + 1;
-                    if (rightPos < nextLayer.size()) {
-                        // we have a right neighbor
-                        LayoutNode rightNode = nextLayer.get(rightPos);
-                        int rightShift = dummyNode.x - nextDummyNode.x;
-                        if (nextDummyNode.getRightSide() + rightShift <= rightNode.getLeftSide()) {
-                            // it is possible to shift nextDummyNode right
-                            nextDummyNode.x = dummyNode.x;
-                        }
-                    } else {
-                        // nextDummyNode is the right-most node, so we can always move nextDummyNode to the right
-                        nextDummyNode.x = dummyNode.x;
-                    }
-                } else {
-                    // try move nextDummyNode.x to the left
-                    int leftPos = nextDummyNode.pos - 1;
-                    if (leftPos >= 0) {
-                        // we have a left neighbor
-                        LayoutNode leftNode = nextLayer.get(leftPos);
-                        int leftShift = nextDummyNode.x - dummyNode.x;
-                        if (leftNode.getRightSide() <= nextDummyNode.getLeftSide() - leftShift) {
-                            // it is possible to shift nextDummyNode left
-                            nextDummyNode.x = dummyNode.x;
-                        }
-                    } else {
-                        // nextDummyNode is the left-most node, so we can always move nextDummyNode to the left
-                        nextDummyNode.x = dummyNode.x;
-                    }
-                }
-            }
-        }
-
         private void run() {
             createArrays();
             initialPositions();
@@ -1905,17 +1946,6 @@ public class NewHierarchicalLayoutManager {
                 sweepUp();
             }
             optimizeBackedgeCrossing();
-
-            for (LayoutLayer layer : layers) {
-                for (int pos = 1; pos < layer.size(); ++pos) {
-                    LayoutNode leftNode = layer.get(pos - 1);
-                    LayoutNode rightNode = layer.get(pos);
-                    assert leftNode.pos + 1 == rightNode.pos;
-                    assert leftNode.x <= rightNode.x;
-                    assert leftNode.getRightSide() <= rightNode.getLeftSide();
-                }
-            }
-
             straightenEdges();
 
             assertOrder();
