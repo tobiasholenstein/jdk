@@ -544,6 +544,11 @@ public class NewHierarchicalLayoutManager {
                 LayoutNode fromNode = predEdge.from; // Root
                 // remove the dummy node from Root
                 fromNode.succs.remove(predEdge);
+                if (predEdge.link != null) {
+                    assert dummyNode.succs.size() == 1;
+                    LayoutEdge succEdge = dummyNode.succs.get(0);
+                    succEdge.link = predEdge.link;
+                }
 
                 // modify succEdge to come from fromNode and add to succs
                 for (LayoutEdge succEdge : dummyNode.succs) {
@@ -668,7 +673,7 @@ public class NewHierarchicalLayoutManager {
         // copy lower part from layers to extendedLayers
         System.arraycopy(layers, layerNr, extendedLayers, layerNr + 1, layerCount - layerNr);
 
-        for (LayoutNode oldNodeBelow : List.copyOf(layers[layerNr])) {
+        for (LayoutNode oldNodeBelow : layers[layerNr]) {
             for (LayoutEdge predEdge : oldNodeBelow.preds) {
                 LayoutNode dummyNode = createDummyBetween(predEdge);
                 assert dummyNode.isDummy();
