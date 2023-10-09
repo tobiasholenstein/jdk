@@ -656,6 +656,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     shadowWidget.setVisible(false);
                     pointerWidget.setVisible(false);
                     validateAll();
+                    addUndo();
                     rebuilding = false;
                 }
 
@@ -832,9 +833,9 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
     private void doClusteredLayout(HashSet<Connection> edges) {
         HierarchicalClusterLayoutManager m = new HierarchicalClusterLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
-        HierarchicalLayoutManager manager = new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
-        manager.setMaxLayerLength(9);
-        manager.setMinLayerDifference(3);
+        NewHierarchicalLayoutManager manager = new NewHierarchicalLayoutManager();
+        //manager.setMaxLayerLength(9);
+        //manager.setMinLayerDifference(3);
         m.setManager(manager);
         m.setSubManager(new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS));
         m.doLayout(new LayoutGraph(edges));
@@ -1444,6 +1445,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         public final int secondPos;
 
         public ModelState(DiagramViewModel model) {
+            // TODO
+            //model.getGraph().get
             hiddenNodes = new HashSet<>(model.getHiddenNodes());
             firstPos = model.getFirstPosition();
             secondPos = model.getSecondPosition();

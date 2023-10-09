@@ -25,6 +25,7 @@
 package com.sun.hotspot.igv.hierarchicallayout;
 
 import com.sun.hotspot.igv.layout.LayoutGraph;
+import com.sun.hotspot.igv.layout.LayoutManager;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Dimension;
@@ -32,7 +33,7 @@ import java.awt.Point;
 import java.util.*;
 
 
-public class NewHierarchicalLayoutManager {
+public class NewHierarchicalLayoutManager implements LayoutManager  {
 
     public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;
@@ -981,6 +982,17 @@ public class NewHierarchicalLayoutManager {
         // STEP 8: Write back to interface
         new WriteResult().run();
         assertOrder();
+    }
+
+    public List<LayoutNode> getNodes() {
+        List<LayoutNode> allNodes = new ArrayList<>(dummyNodes);
+        allNodes.addAll(getLayoutNodes());
+        return allNodes;
+    }
+
+    @Override
+    public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
+        doLayout(graph);
     }
 
     public LayoutEdge createLayoutEdge(Link link ) {
