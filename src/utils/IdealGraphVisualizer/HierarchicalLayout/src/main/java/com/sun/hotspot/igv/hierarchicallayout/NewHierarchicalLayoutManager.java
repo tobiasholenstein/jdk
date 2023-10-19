@@ -1861,6 +1861,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
     private void straightenUp(LayoutNode node) {
         if (node.preds.size() == 1) {
             LayoutEdge predEdge = node.preds.get(0);
+            if (predEdge.to.succs.size() != 1) return;
             LayoutNode predDummy = predEdge.from;
             if (!predDummy.isDummy()) return;
             if (node.isDummy()) {
