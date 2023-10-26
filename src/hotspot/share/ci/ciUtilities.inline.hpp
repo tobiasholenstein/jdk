@@ -43,10 +43,10 @@
 
 
 // Bring the compilation thread into the VM state.  No handle mark.
-#define VM_QUICK_ENTRY_MARK                 \
-  CompilerThread* thread=CompilerThread::current(); \
-    MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, thread)); \
-  ThreadInVMfromNative __tiv(thread);       \
+#define VM_QUICK_ENTRY_MARK                                 \
+  CompilerThread* thread=CompilerThread::current();         \
+  MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, thread)); \
+  ThreadInVMfromNative __tiv(thread);                       \
 /*                                          \
  * [TODO] The NoHandleMark line does nothing but declare a function prototype \
  * The NoHandkeMark constructor is NOT executed. If the ()'s are   \

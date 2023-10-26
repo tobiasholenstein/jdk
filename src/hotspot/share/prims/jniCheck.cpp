@@ -62,6 +62,7 @@
 
 #define IN_VM(source_code)   {                                         \
     {                                                                  \
+      MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, thr));           \
       ThreadInVMfromNative __tiv(thr);                                 \
       source_code                                                      \
     }                                                                  \

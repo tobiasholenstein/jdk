@@ -2412,6 +2412,7 @@ WB_ENTRY(jint, WB_AddCompilerDirective(JNIEnv* env, jobject o, jstring compDirec
   CHECK_JNI_EXCEPTION_(env, 0);
   int ret;
   {
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
     ThreadInVMfromNative ttvfn(thread); // back to VM
     ret = DirectivesParser::parse_string(dir, tty);
   }
