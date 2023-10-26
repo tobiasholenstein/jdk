@@ -98,7 +98,7 @@ extern "C" void JNICALL jfr_on_class_file_load_hook(jvmtiEnv *jvmti_env,
 static jclass* create_classes_array(jint classes_count, TRAPS) {
   assert(classes_count > 0, "invariant");
   DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_native(THREAD));
-  //MACOS_AARCH64_ONLY(THREAD->enable_wx(WXWrite));
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, THREAD));
   ThreadInVMfromNative tvmfn(THREAD);
   jclass* const classes = NEW_RESOURCE_ARRAY_IN_THREAD_RETURN_NULL(THREAD, jclass, classes_count);
   if (nullptr == classes) {
@@ -157,7 +157,6 @@ void JfrJvmtiAgent::retransform_classes(JNIEnv* env, jobjectArray classes_array,
     return;
   }
   ResourceMark rm(THREAD);
-  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, THREAD));
   jclass* const classes = create_classes_array(classes_count, CHECK);
   assert(classes != nullptr, "invariant");
   for (jint i = 0; i < classes_count; i++) {
@@ -167,7 +166,7 @@ void JfrJvmtiAgent::retransform_classes(JNIEnv* env, jobjectArray classes_array,
   }
   {
     // inspecting the oop/klass requires a thread transition
-    //MACOS_AARCH64_ONLY(THREAD->enable_wx(WXWrite));
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, THREAD));
     ThreadInVMfromNative transition(THREAD);
     for (jint i = 0; i < classes_count; ++i) {
       jclass clz = classes[i];
