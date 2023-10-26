@@ -126,6 +126,7 @@ JRT_END
     DECACHE_STATE();                                                              \
     SET_LAST_JAVA_FRAME();                                                        \
     {                                                                             \
+       MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, THREAD));                    \
        ThreadInVMfromJava trans(THREAD);                                          \
        Exceptions::_throw_msg(THREAD, __FILE__, __LINE__, name, msg);             \
     }                                                                             \
@@ -176,6 +177,7 @@ JRT_END
     if (JVMTI_ENABLED && JvmtiExport::should_post_single_step()) {           \
       DECACHE_STATE();                                                       \
       SET_LAST_JAVA_FRAME();                                                 \
+      MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, THREAD));                \
       ThreadInVMfromJava trans(THREAD);                                      \
       JvmtiExport::at_single_stepping_point(THREAD,                          \
                                            istate->method(),                 \

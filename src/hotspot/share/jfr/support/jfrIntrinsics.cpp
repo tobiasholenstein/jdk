@@ -61,11 +61,13 @@ void* JfrIntrinsicSupport::write_checkpoint(JavaThread* jt) {
     // and suspended the thread. As part of taking a sample, it updated
     // the vthread object and the thread local "for us". We are good.
     DEBUG_ONLY(assert_epoch_identity(jt, current_epoch);)
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, jt));
     ThreadInVMfromJava transition(jt);
     return JfrJavaEventWriter::event_writer(jt);
   }
   const traceid vthread_tid = JfrThreadLocal::vthread_id(jt);
   // Transition before reading the epoch generation anew, now as _thread_in_vm. Can safepoint here.
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, jt));
   ThreadInVMfromJava transition(jt);
   JfrThreadLocal::set_vthread_epoch(jt, vthread_tid, ThreadIdAccess::current_epoch());
   return JfrJavaEventWriter::event_writer(jt);
