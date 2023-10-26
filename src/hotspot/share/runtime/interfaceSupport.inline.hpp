@@ -85,6 +85,7 @@ class ThreadStateTransition : public StackObj {
   }
 
   static inline void transition_from_java(JavaThread *thread, JavaThreadState to) {
+    MACOS_AARCH64_ONLY(assert(thread->get_wx() == WXWrite, "transition_from_java requires WXWrite"));
     assert(thread->thread_state() == _thread_in_Java, "coming from wrong thread state");
     assert(to == _thread_in_vm || to == _thread_in_native, "invalid transition");
     thread->set_thread_state(to);
@@ -94,6 +95,7 @@ class ThreadStateTransition : public StackObj {
   // from native code because the runtime is not set up to handle exceptions floating
   // around at arbitrary points.
   static inline void transition_from_native(JavaThread *thread, JavaThreadState to, bool check_asyncs = true) {
+    MACOS_AARCH64_ONLY(assert(thread->get_wx() == WXWrite, "transition_from_native requires WXWrite"));
     assert(thread->thread_state() == _thread_in_native, "coming from wrong thread state");
     assert(to == _thread_in_vm || to == _thread_in_Java, "invalid transition");
     assert(!thread->has_last_Java_frame() || thread->frame_anchor()->walkable(), "Unwalkable stack in native transition");
@@ -191,6 +193,7 @@ class ThreadToNativeFromVM : public ThreadStateTransition {
     transition_from_vm(thread, _thread_in_native);
   }
   ~ThreadToNativeFromVM() {
+    MACOS_AARCH64_ONLY(assert(_thread->get_wx() == WXWrite, "~ThreadToNativeFromVM requires WXWrite"));
     transition_from_native(_thread, _thread_in_vm);
     assert(!_thread->is_pending_jni_exception_check(), "Pending JNI Exception Check");
     // We don't need to clear_walkable because it will happen automagically when we return to java

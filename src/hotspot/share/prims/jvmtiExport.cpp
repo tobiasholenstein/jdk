@@ -128,8 +128,10 @@ public:
   }
 
   ~JvmtiThreadEventTransition() {
-    if (_jthread != nullptr)
+    if (_jthread != nullptr) {
+      MACOS_AARCH64_ONLY(assert(_jthread->get_wx() == WXWrite, "~JvmtiThreadEventTransition requires WXWrite"));
       ThreadStateTransition::transition_from_native(_jthread, _saved_state);
+    }
   }
 };
 
