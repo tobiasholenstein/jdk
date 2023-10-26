@@ -84,6 +84,7 @@ extern "C" void JNICALL jfr_on_class_file_load_hook(jvmtiEnv *jvmti_env,
   }
   JavaThread* jt = JavaThread::thread_from_jni_environment(jni_env);
   DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_native(jt));;
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, jt));
   ThreadInVMfromNative tvmfn(jt);
   JfrUpcalls::on_retransform(JfrTraceId::load_raw(class_being_redefined),
                              class_being_redefined,
@@ -116,6 +117,7 @@ static jclass* create_classes_array(jint classes_count, TRAPS) {
 static void log_and_throw(jvmtiError error, TRAPS) {
   if (!HAS_PENDING_EXCEPTION) {
     DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_native(THREAD));
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, THREAD));
     ThreadInVMfromNative tvmfn(THREAD);
     const char base_error_msg[] = "JfrJvmtiAgent::retransformClasses failed: ";
     size_t length = sizeof base_error_msg; // includes terminating null
@@ -137,6 +139,7 @@ static void check_exception_and_log(JNIEnv* env, TRAPS) {
   if (env->ExceptionOccurred()) {
     // array index out of bound
     DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_native(THREAD));
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, THREAD));
     ThreadInVMfromNative tvmfn(THREAD);
     log_error(jfr, system)("GetObjectArrayElement threw an exception");
     return;
