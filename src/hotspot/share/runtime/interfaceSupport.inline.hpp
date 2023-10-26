@@ -110,6 +110,7 @@ class ThreadStateTransition : public StackObj {
   }
 
   static inline void transition_from_vm(JavaThread *thread, JavaThreadState to, bool check_asyncs = true) {
+    MACOS_AARCH64_ONLY(assert(thread->get_wx() == WXWrite, "transition_from_vm requires WXWrite"));
     assert(thread->thread_state() == _thread_in_vm, "coming from wrong thread state");
     if (to == _thread_in_Java) {
       SafepointMechanism::process_if_requested_with_exit_check(thread, check_asyncs);
