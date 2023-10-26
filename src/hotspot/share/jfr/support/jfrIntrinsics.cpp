@@ -73,12 +73,12 @@ void* JfrIntrinsicSupport::write_checkpoint(JavaThread* jt) {
 
 void* JfrIntrinsicSupport::return_lease(JavaThread* jt) {
   DEBUG_ONLY(assert_precondition(jt);)
-  ThreadStateTransition::transition_from_java(jt, _thread_in_native);
+  MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, jt));
+  ThreadInVMfromJava __tiv(jt);
   assert(jt->jfr_thread_local()->has_java_event_writer(), "invariant");
   assert(jt->jfr_thread_local()->shelved_buffer() != nullptr, "invariant");
   JfrJavaEventWriter::flush(jt->jfr_thread_local()->java_event_writer(), 0, 0, jt);
   assert(jt->jfr_thread_local()->shelved_buffer() == nullptr, "invariant");
-  ThreadStateTransition::transition_from_native(jt, _thread_in_Java);
   return nullptr;
 }
 
