@@ -469,6 +469,7 @@ void JfrRecorderService::pre_safepoint_clear() {
 
 void JfrRecorderService::invoke_safepoint_clear() {
   JfrVMOperation<JfrRecorderService, &JfrRecorderService::safepoint_clear> safepoint_task(*this);
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::current()));
   ThreadInVMfromNative transition(JavaThread::current());
   VMThread::execute(&safepoint_task);
 }
@@ -577,6 +578,7 @@ void JfrRecorderService::pre_safepoint_write() {
 void JfrRecorderService::invoke_safepoint_write() {
   JfrVMOperation<JfrRecorderService, &JfrRecorderService::safepoint_write> safepoint_task(*this);
   // can safepoint here
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::current()));
   ThreadInVMfromNative transition(JavaThread::current());
   VMThread::execute(&safepoint_task);
 }

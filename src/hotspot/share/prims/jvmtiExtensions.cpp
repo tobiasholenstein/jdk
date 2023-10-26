@@ -77,6 +77,7 @@ static jvmtiError JNICALL GetVirtualThread(const jvmtiEnv* env, ...) {
   vthread_ptr = va_arg(ap, jthread*);
   va_end(ap);
 
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, current_thread));
   ThreadInVMfromNative tiv(current_thread);
   JvmtiVTMSTransitionDisabler disabler;
   ThreadsListHandle tlh(current_thread);
