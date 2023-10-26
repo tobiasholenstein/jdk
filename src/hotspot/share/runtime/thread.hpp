@@ -135,7 +135,8 @@ class Thread: public ThreadShadow {
     return offset;
   }
 
- private:
+  WXMode _wx_state;
+private:
   // Thread local data area available to the GC. The internal
   // structure and contents of this data area is GC-specific.
   // Only GC and GC barrier code should access this data area.
@@ -625,10 +626,10 @@ protected:
 #if defined(__APPLE__) && defined(AARCH64)
  private:
   DEBUG_ONLY(bool _wx_init);
-  WXMode _wx_state;
- public:
+public:
   void init_wx();
   WXMode enable_wx(WXMode new_state);
+  WXMode get_wx();
 
   void assert_wx_state(WXMode expected) {
     assert(_wx_state == expected, "wrong state");
