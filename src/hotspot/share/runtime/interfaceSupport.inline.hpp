@@ -103,7 +103,7 @@ class ThreadStateTransition : public StackObj {
     } else {
       thread->set_thread_state(_thread_in_vm);
     }
-    SafepointMechanism::process_if_requested_with_exit_check(thread, to != _thread_in_Java ? false : check_asyncs);
+    SafepointMechanism::process_if_requested_with_exit_check(thread, to == _thread_in_Java && check_asyncs);
     thread->set_thread_state(to);
   }
 
@@ -151,6 +151,7 @@ class ThreadInVMfromUnknown {
       JavaThread* t2 = JavaThread::cast(t);
       if (t2->thread_state() == _thread_in_native) {
         _thread = t2;
+        MACOS_AARCH64_ONLY(assert(t2->get_wx() == WXWrite, "ThreadInVMfromUnknown requires WXWrite)"));
         ThreadStateTransition::transition_from_native(t2, _thread_in_vm);
         // Used to have a HandleMarkCleaner but that is dangerous as
         // it could free a handle in our (indirect, nested) caller.
