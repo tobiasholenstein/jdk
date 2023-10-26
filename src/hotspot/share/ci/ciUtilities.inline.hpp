@@ -32,11 +32,12 @@
 // Add a ci native entry wrapper?
 
 // Bring the compilation thread into the VM state.
-#define VM_ENTRY_MARK                       \
-  CompilerThread* thread=CompilerThread::current(); \
-  ThreadInVMfromNative __tiv(thread);       \
-  HandleMarkCleaner __hm(thread);           \
-  JavaThread* THREAD = thread; /* For exception macros. */ \
+#define VM_ENTRY_MARK                                       \
+  CompilerThread* thread=CompilerThread::current();         \
+  MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, thread)); \
+  ThreadInVMfromNative __tiv(thread);                       \
+  HandleMarkCleaner __hm(thread);                           \
+  JavaThread* THREAD = thread; /* For exception macros. */  \
   debug_only(VMNativeEntryWrapper __vew;)
 
 
@@ -44,6 +45,7 @@
 // Bring the compilation thread into the VM state.  No handle mark.
 #define VM_QUICK_ENTRY_MARK                 \
   CompilerThread* thread=CompilerThread::current(); \
+    MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, thread)); \
   ThreadInVMfromNative __tiv(thread);       \
 /*                                          \
  * [TODO] The NoHandleMark line does nothing but declare a function prototype \
