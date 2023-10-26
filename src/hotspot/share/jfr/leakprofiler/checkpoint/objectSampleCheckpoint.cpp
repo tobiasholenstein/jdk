@@ -271,6 +271,7 @@ void ObjectSampleCheckpoint::on_rotation(const ObjectSampler* sampler) {
   JavaThread* const thread = JavaThread::current();
   DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_native(thread);)
   // can safepoint here
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
   ThreadInVMfromNative transition(thread);
   MutexLocker lock(ClassLoaderDataGraph_lock);
   // the lock is needed to ensure the unload lists do not grow in the middle of inspection.
