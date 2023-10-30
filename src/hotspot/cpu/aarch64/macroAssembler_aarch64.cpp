@@ -779,7 +779,11 @@ void MacroAssembler::call_VM_base(Register oop_result,
                                   address  entry_point,
                                   int      number_of_arguments,
                                   bool     check_exceptions) {
-   // determine java_thread register
+
+  JavaThread* thread = JavaThread::current();
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
+
+  // determine java_thread register
   if (!java_thread->is_valid()) {
     java_thread = rthread;
   }

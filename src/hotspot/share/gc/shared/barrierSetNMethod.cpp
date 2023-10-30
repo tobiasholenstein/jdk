@@ -87,6 +87,8 @@ bool BarrierSetNMethod::is_armed(nmethod* nm) {
 }
 
 bool BarrierSetNMethod::nmethod_entry_barrier(nmethod* nm) {
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, Thread::current()));
+
   class OopKeepAliveClosure : public OopClosure {
   public:
     virtual void do_oop(oop* p) {

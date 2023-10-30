@@ -32,6 +32,8 @@
 #include "runtime/threadWXSetters.inline.hpp"
 
 bool XBarrierSetNMethod::nmethod_entry_barrier(nmethod* nm) {
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, Thread::current()));
+
   XLocker<XReentrantLock> locker(XNMethod::lock_for_nmethod(nm));
   log_trace(nmethod, barrier)("Entered critical zone for %p", nm);
 
@@ -40,8 +42,6 @@ bool XBarrierSetNMethod::nmethod_entry_barrier(nmethod* nm) {
     // and disarmed the nmethod.
     return true;
   }
-
-  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, Thread::current()));
 
   if (nm->is_unloading()) {
     // We don't need to take the lock when unlinking nmethods from
