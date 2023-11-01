@@ -49,6 +49,7 @@
 #include "runtime/handles.inline.hpp"
 #include "runtime/mutexLocker.hpp"
 #include "runtime/sharedRuntime.hpp"
+#include "runtime/threadWXSetters.inline.hpp"
 
 CompiledMethod::CompiledMethod(Method* method, const char* name, CompilerType type, const CodeBlobLayout& layout,
                                int frame_complete_offset, int frame_size, ImmutableOopMapSet* oop_maps,
@@ -89,6 +90,7 @@ void CompiledMethod::init_defaults() {
 }
 
 bool CompiledMethod::is_method_handle_return(address return_pc) {
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, Thread::current()));
   if (!has_method_handle_invokes())  return false;
   PcDesc* pd = pc_desc_at(return_pc);
   if (pd == nullptr)
