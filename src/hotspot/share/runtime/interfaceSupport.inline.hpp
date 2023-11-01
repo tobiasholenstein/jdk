@@ -255,8 +255,6 @@ class VMNativeEntryWrapper {
 
 #endif // ASSERT
 
-// LEAF routines do not lock, GC or throw exceptions
-
 // On macos/aarch64 we need to maintain the W^X state of the thread.  So we
 // take WXWrite on the enter to VM from the "outside" world, so the rest of JVM
 // code can assume writing (but not executing) codecache is always possible
@@ -265,22 +263,13 @@ class VMNativeEntryWrapper {
 // change may trigger a safepoint, that would need WXWrite to do bookkeeping
 // in the codecache.
 
+// LEAF routines do not lock, GC or throw exceptions
 #define VM_LEAF_BASE(result_type, header)                            \
   debug_only(NoHandleMark __hm;)                                     \
   os::verify_stack_alignment();                                      \
-  //MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite,JavaThread::current()));
   /* begin of body */
-
-#define VM_ENTRY_BASE_FROM_LEAF(result_type, header, thread)         \
-  debug_only(ResetNoHandleMark __rnhm;)                              \
-  HandleMarkCleaner __hm(thread);                                    \
-  JavaThread* THREAD = thread; /* For exception macros. */           \
-  os::verify_stack_alignment();                                      \
-  /* begin of body */
-
 
 // ENTRY routines may lock, GC and throw exceptions
-
 #define VM_ENTRY_BASE(result_type, header, thread)                   \
   HandleMarkCleaner __hm(thread);                                    \
   JavaThread* THREAD = thread; /* For exception macros. */           \
@@ -415,10 +404,11 @@ extern "C" {                                                         \
 #define JVM_ENTRY_FROM_LEAF(env, result_type, header)                \
   { {                                                                \
     JavaThread* thread=JavaThread::thread_from_jni_environment(env); \
-    MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, thread));        \
-    ThreadInVMfromNative __tiv(thread);                              \
     debug_only(VMNativeEntryWrapper __vew;)                          \
-    VM_ENTRY_BASE_FROM_LEAF(result_type, header, thread)
+    debug_only(ResetNoHandleMark __rnhm;)                            \
+    VM_ENTRY_BASE(result_type, header, thread)                       \
+    ThreadInVMfromNative __tiv(thread);
+
 
 
 #define JVM_END } }
