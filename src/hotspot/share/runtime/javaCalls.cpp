@@ -71,6 +71,7 @@ JavaCallWrapper::JavaCallWrapper(const methodHandle& callee_method, Handle recei
   // After this, we are official in JavaCode. This needs to be done before we change any of the thread local
   // info, since we cannot find oops before the new information is set up completely.
   ThreadStateTransition::transition_from_vm(thread, _thread_in_Java, true /* check_asyncs */);
+  MACOS_AARCH64_ONLY(thread->enable_wx(WXExec));
 
   // Make sure to set the oop's after the thread transition - since we can block there. No one is GC'ing
   // the JavaCallWrapper before the entry frame is on the stack.
@@ -94,8 +95,6 @@ JavaCallWrapper::JavaCallWrapper(const methodHandle& callee_method, Handle recei
 
   debug_only(_thread->inc_java_call_counter());
   _thread->set_active_handles(new_handles);     // install new handle block and reset Java frame linkage
-
-  MACOS_AARCH64_ONLY(_thread->enable_wx(WXExec));
 }
 
 
