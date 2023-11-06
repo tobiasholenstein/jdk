@@ -2369,25 +2369,19 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             this.space = space;
         }
 
-        public int offset(LayoutNode n1, LayoutNode n2) {
-            int v1 = space[n1.pos] + n1.getWholeWidth();
-            int v2 = space[n2.pos];
-            return v2 - v1;
-        }
-
         public void insert(LayoutNode n, int pos) {
             int minX = Integer.MIN_VALUE;
             SortedSet<LayoutNode> headSet = treeSet.headSet(n, false);
             if (!headSet.isEmpty()) {
                 LayoutNode leftNeighbor = headSet.last();
-                minX = leftNeighbor.getRightBorder() + offset(leftNeighbor, n);
+                minX = leftNeighbor.getLeftBorder() + space[n.pos] - space[leftNeighbor.pos];
             }
 
             int maxX = Integer.MAX_VALUE;
             SortedSet<LayoutNode> tailSet = treeSet.tailSet(n, false);
             if (!tailSet.isEmpty()) {
                 LayoutNode rightNeighbor = tailSet.first();
-                maxX = rightNeighbor.x - offset(n, rightNeighbor) - n.getWholeWidth();
+                maxX = rightNeighbor.getLeftBorder() + space[n.pos] - space[rightNeighbor.pos];
             }
 
             assert minX <= maxX : minX + " vs " + maxX;
