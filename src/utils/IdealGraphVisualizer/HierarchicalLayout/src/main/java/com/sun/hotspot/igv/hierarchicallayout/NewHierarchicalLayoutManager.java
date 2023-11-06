@@ -1908,13 +1908,11 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
     private class AssignXCoordinates {
 
-        private int[][] space;
-        private LayoutNode[][] downProcessingOrder;
-        private LayoutNode[][] upProcessingOrder;
+        int[][] space;
+        LayoutNode[][] downProcessingOrder;
+        LayoutNode[][] upProcessingOrder;
 
         private final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
-
-        private final Comparator<LayoutNode> NODE_PROCESSING_BOTH_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(n -> n.preds.size() + n.succs.size());
 
         private final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(n -> n.preds.size());
 
@@ -1922,24 +1920,23 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
         private final Comparator<LayoutNode> DUMMY_NODES_THEN_OPTMMAL_X = DUMMY_NODES_FIRST.thenComparing(n -> n.optimal_x);
 
-
         private void createArrays() {
             space = new int[layers.length][];
             downProcessingOrder = new LayoutNode[layers.length][];
             upProcessingOrder = new LayoutNode[layers.length][];
-
             for (int i = 0; i < layers.length; i++) {
                 LayoutLayer layer = layers[i];
                 space[i] = new int[layer.size()];
+                downProcessingOrder[i] = new LayoutNode[layer.size()];
+                upProcessingOrder[i] = new LayoutNode[layer.size()];
                 int curX = 0;
-                for (int y = 0; y < layer.size(); ++y) {
-                    space[i][y] = curX;
-                    LayoutNode node = layer.get(y);
+                for (int j = 0; j < layer.size(); j++) {
+                    space[i][j] = curX;
+                    LayoutNode node = layer.get(j);
                     curX += node.getWholeWidth() + X_OFFSET;
+                    downProcessingOrder[i][j] = node;
+                    upProcessingOrder[i][j] = node;
                 }
-
-                downProcessingOrder[i] = layer.toArray(new LayoutNode[0]);
-                upProcessingOrder[i] = layer.toArray(new LayoutNode[0]);
                 Arrays.sort(downProcessingOrder[i], NODE_PROCESSING_DOWN_COMPARATOR);
                 Arrays.sort(upProcessingOrder[i], NODE_PROCESSING_UP_COMPARATOR);
             }
