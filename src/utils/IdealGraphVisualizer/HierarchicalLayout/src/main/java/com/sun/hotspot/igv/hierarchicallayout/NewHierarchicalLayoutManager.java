@@ -719,8 +719,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         Point newLocation = new Point(loc.x, loc.y + movedNode.height/2);
 
         int newLayerNr = findLayer(newLocation.y);
-        newLayerNr = insertNewLayerIfNeeded(movedNode, newLayerNr);
-
         if (movedNode.layer == newLayerNr) { // we move the node in the same layer
             // the node did not change position withing the layer
             if (tryMoveNodeInSamePosition(movedNode, newLocation.x, newLayerNr)) {
@@ -733,6 +731,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             }
             moveNode(movedNode, newLocation.x, movedNode.layer);
         } else { // only remove edges if we moved the node to a new layer
+            newLayerNr = insertNewLayerIfNeeded(movedNode, newLayerNr);
             assertOrder();
             removeEdges(movedNode);
             assertOrder();
@@ -1876,13 +1875,13 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         for (LayoutNode node : layer) {
             //if (!dummy.isDummy()) continue;
             straightenDown(node);
-            straightenUp(node);
+            //straightenUp(node);
         }
         for (int i = layer.size() - 1; i >= 0; i--) {
             LayoutNode node = layer.get(i);
             //if (!dummy.isDummy()) continue;
             straightenDown(node);
-            straightenUp(node);
+            //straightenUp(node);
         }
     }
 
