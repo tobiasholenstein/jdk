@@ -2013,19 +2013,19 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             return Statistics.median(values);
         }
 
-        private void rowInsert(LayoutNode node, int pos, int layerNr, TreeSet<LayoutNode> treeSet) {
+        private void rowInsert(LayoutNode node, int pos, int[] space, TreeSet<LayoutNode> treeSet) {
             int minX = Integer.MIN_VALUE;
             SortedSet<LayoutNode> headSet = treeSet.headSet(node, false);
             if (!headSet.isEmpty()) {
                 LayoutNode leftNeighbor = headSet.last();
-                minX = leftNeighbor.getLeftBorder() + space[layerNr][node.pos] - space[layerNr][leftNeighbor.pos];
+                minX = leftNeighbor.getLeftBorder() + space[node.pos] - space[leftNeighbor.pos];
             }
 
             int maxX = Integer.MAX_VALUE;
             SortedSet<LayoutNode> tailSet = treeSet.tailSet(node, false);
             if (!tailSet.isEmpty()) {
                 LayoutNode rightNeighbor = tailSet.first();
-                maxX = rightNeighbor.getLeftBorder() + space[layerNr][node.pos] - space[layerNr][rightNeighbor.pos];
+                maxX = rightNeighbor.getLeftBorder() + space[node.pos] - space[rightNeighbor.pos];
             }
 
             assert minX <= maxX : minX + " vs " + maxX;
@@ -2046,7 +2046,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 Arrays.sort(upProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
                 TreeSet<LayoutNode> row = new TreeSet<>(Comparator.comparingInt(n -> n.pos));
                 for (LayoutNode node : upProcessingOrder[i]) {
-                    rowInsert(node, node.optimal_x, i, row);
+                    rowInsert(node, node.optimal_x, space[i], row);
                 }
             }
         }
@@ -2059,7 +2059,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 Arrays.sort(downProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
                 TreeSet<LayoutNode> row = new TreeSet<>(Comparator.comparingInt(n -> n.pos));
                 for (LayoutNode node : downProcessingOrder[i]) {
-                    rowInsert(node, node.optimal_x, i, row);
+                    rowInsert(node, node.optimal_x, space[i], row);
                 }
             }
         }
