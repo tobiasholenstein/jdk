@@ -1973,23 +1973,15 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             assertOrder();
         }
 
-
         private int calculateOptimalDown(LayoutNode node) {
             int size = node.preds.size();
             if (size == 0) {
                 return node.x;
             }
-
             int[] values = new int[size];
             for (int i = 0; i < size; i++) {
                 LayoutEdge edge = node.preds.get(i);
                 values[i] = edge.getStartPoint() - edge.relativeTo;
-            }
-            if (!node.isDummy() && size == 1) {
-                LayoutNode fromNode = node.preds.get(0).from;
-                if (fromNode.succs.size() == 1) {
-                    return fromNode.x + ((fromNode.getWholeWidth() - node.getWholeWidth()) / 2);
-                }
             }
             return Statistics.median(values);
         }
@@ -2003,12 +1995,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             for (int i = 0; i < size; i++) {
                 LayoutEdge edge = node.succs.get(i);
                 values[i] = edge.getEndPoint() - edge.relativeFrom;
-            }
-            if (!node.isDummy() && size == 1) {
-                LayoutNode toNode = node.succs.get(0).to;
-                if (toNode.preds.size() == 1) {
-                    return toNode.x + ((toNode.getWholeWidth() - node.getWholeWidth()) / 2);
-                }
             }
             return Statistics.median(values);
         }
