@@ -2032,13 +2032,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 }
 
                 assert minX <= maxX : minX + " vs " + maxX;
-                int x = node.optimal_x;
-                if (x < minX) {
-                    x = minX;
-                } else if (x > maxX) {
-                    x = maxX;
-                }
-                node.x = x;
+                node.x = Math.min(Math.max(node.optimal_x, minX), maxX);
                 treeSet.add(node);
             }
         }
