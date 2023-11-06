@@ -28,6 +28,7 @@ import com.sun.hotspot.igv.layout.LayoutGraph;
 import com.sun.hotspot.igv.layout.LayoutManager;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
+import com.sun.hotspot.igv.util.Statistics;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.util.*;
@@ -743,7 +744,9 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         }
 
         assertOrder();
-        new AssignXCoordinates().run();
+        //new AssignXCoordinates().run();
+        optimizeBackedgeCrossing();
+        straightenEdges();
         assertOrder();
         new AssignYCoordinates().run();
         assertOrder();
@@ -1939,8 +1942,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 upProcessingOrder[i] = layer.toArray(new LayoutNode[0]);
                 Arrays.sort(downProcessingOrder[i], NODE_PROCESSING_DOWN_COMPARATOR);
                 Arrays.sort(upProcessingOrder[i], NODE_PROCESSING_UP_COMPARATOR);
-                //Arrays.sort(downProcessingOrder[i], NODE_PROCESSING_BOTH_COMPARATOR);
-                //Arrays.sort(upProcessingOrder[i], NODE_PROCESSING_BOTH_COMPARATOR);
             }
         }
 
@@ -1975,86 +1976,68 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             assertOrder();
         }
 
-        public void getOptimalPositions(LayoutEdge edge, int layer, List<Integer> vals, int correction, boolean up) {
-            if (up) {
-                if (edge.from.layer <= layer) {
-                    vals.add(edge.getStartPoint() - correction);
-                } else if (edge.from.isDummy()) {
-                    edge.from.preds.forEach(x -> getOptimalPositions(x, layer, vals, correction, up));
-                }
-            } else {
-                if (edge.to.layer >= layer) {
-                    vals.add(edge.getEndPoint() - correction);
-                } else if (edge.to.isDummy()) {
-                    edge.to.succs.forEach(x -> getOptimalPositions(x, layer, vals, correction, up));
+
+        private int calculateOptimalDown(LayoutNode node) {
+            int size = node.preds.size();
+            if (size == 0) {
+                return node.x;
+            }
+
+            int[] values = new int[size];
+            for (int i = 0; i < size; i++) {
+                LayoutEdge edge = node.preds.get(i);
+                values[i] = edge.getStartPoint() - edge.relativeTo;
+            }
+            if (!node.isDummy() && size == 1) {
+                LayoutNode fromNode = node.preds.get(0).from;
+                if (fromNode.succs.size() == 1) {
+                    return fromNode.x + ((fromNode.getWholeWidth() - node.getWholeWidth()) / 2);
                 }
             }
+            return Statistics.median(values);
         }
 
-        private int calculateOptimalDown(LayoutNode n) {
-            List<Integer> values = new ArrayList<>();
-            int layer = n.layer - 1;
-            for (LayoutEdge e : n.preds) {
-                getOptimalPositions(e, layer, values, e.relativeTo, true);
+        private int calculateOptimalUp(LayoutNode node) {
+            int size = node.succs.size();
+            if (size == 0) {
+                return node.x;
             }
-            return median(values, n, true);
-        }
-
-        private int calculateOptimalUp(LayoutNode n) {
-            List<Integer> values = new ArrayList<>();
-            int layer = n.layer + 1;
-
-            for (LayoutEdge e : n.succs) {
-                getOptimalPositions(e, layer, values, e.relativeFrom, false);
+            int[] values = new int[size];
+            for (int i = 0; i < size; i++) {
+                LayoutEdge edge = node.succs.get(i);
+                values[i] = edge.getEndPoint() - edge.relativeFrom;
             }
-            return median(values, n, false);
-        }
-
-        private int median(List<Integer> values, LayoutNode n, boolean up) {
-            if (values.isEmpty()) {
-                return n.x;
-            }
-            if (!n.isDummy() && values.size() == 1 && (up ? n.preds.size() == 1 : n.succs.size() == 1)) {
-                LayoutNode node;
-                if (up) {
-                    node = n.preds.get(0).from;
-                } else {
-                    node = n.succs.get(0).to;
-                }
-                if (up ? node.succs.size() == 1 : node.preds.size() == 1) {
-                    return node.x + ((node.getWholeWidth() - n.getWholeWidth()) / 2);
+            if (!node.isDummy() && size == 1) {
+                LayoutNode toNode = node.succs.get(0).to;
+                if (toNode.preds.size() == 1) {
+                    return toNode.x + ((toNode.getWholeWidth() - node.getWholeWidth()) / 2);
                 }
             }
-            values.sort(Integer::compare);
-            if (values.size() % 2 == 0) {
-                return (values.get(values.size() / 2 - 1) + values.get(values.size() / 2)) / 2;
-            } else {
-                return values.get(values.size() / 2);
-            }
+            return Statistics.median(values);
         }
 
         private void sweepUp() {
             for (int i = layers.length - 2; i >= 0; i--) {
-                for (LayoutNode n : upProcessingOrder[i]) {
-                    n.optimal_x = calculateOptimalUp(n);
+                for (LayoutNode node : upProcessingOrder[i]) {
+                    node.optimal_x = calculateOptimalUp(node);
                 }
                 Arrays.sort(upProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
                 NodeRow row = new NodeRow(space[i]);
-                for (LayoutNode n : upProcessingOrder[i]) {
-                    row.insert(n, n.optimal_x);
+                for (LayoutNode node : upProcessingOrder[i]) {
+                    row.insert(node, node.optimal_x);
                 }
             }
         }
 
         private void sweepDown() {
             for (int i = 1; i < layers.length; i++) {
-                for (LayoutNode n : downProcessingOrder[i]) {
-                    n.optimal_x = calculateOptimalDown(n);
+                for (LayoutNode node : downProcessingOrder[i]) {
+                    node.optimal_x = calculateOptimalDown(node);
                 }
                 Arrays.sort(downProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
                 NodeRow row = new NodeRow(space[i]);
-                for (LayoutNode n : downProcessingOrder[i]) {
-                    row.insert(n, n.optimal_x);
+                for (LayoutNode node : downProcessingOrder[i]) {
+                    row.insert(node, node.optimal_x);
                 }
             }
         }
