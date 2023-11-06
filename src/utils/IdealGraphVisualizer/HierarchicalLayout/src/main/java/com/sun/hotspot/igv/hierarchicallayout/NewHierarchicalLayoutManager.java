@@ -2013,29 +2013,34 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             return Statistics.median(values);
         }
 
-        private void rowInsert(LayoutNode node, int pos, int[] space, TreeSet<LayoutNode> treeSet) {
-            int minX = Integer.MIN_VALUE;
-            SortedSet<LayoutNode> headSet = treeSet.headSet(node, false);
-            if (!headSet.isEmpty()) {
-                LayoutNode leftNeighbor = headSet.last();
-                minX = leftNeighbor.getLeftBorder() + space[node.pos] - space[leftNeighbor.pos];
-            }
+        private void processRow(int[] space, LayoutNode[] processingOrder) {
+            Arrays.sort(processingOrder, DUMMY_NODES_THEN_OPTMMAL_X);
+            TreeSet<LayoutNode> treeSet = new TreeSet<>(Comparator.comparingInt(n -> n.pos));
+            for (LayoutNode node : processingOrder) {
+                int minX = Integer.MIN_VALUE;
+                SortedSet<LayoutNode> headSet = treeSet.headSet(node, false);
+                if (!headSet.isEmpty()) {
+                    LayoutNode leftNeighbor = headSet.last();
+                    minX = leftNeighbor.getLeftBorder() + space[node.pos] - space[leftNeighbor.pos];
+                }
 
-            int maxX = Integer.MAX_VALUE;
-            SortedSet<LayoutNode> tailSet = treeSet.tailSet(node, false);
-            if (!tailSet.isEmpty()) {
-                LayoutNode rightNeighbor = tailSet.first();
-                maxX = rightNeighbor.getLeftBorder() + space[node.pos] - space[rightNeighbor.pos];
-            }
+                int maxX = Integer.MAX_VALUE;
+                SortedSet<LayoutNode> tailSet = treeSet.tailSet(node, false);
+                if (!tailSet.isEmpty()) {
+                    LayoutNode rightNeighbor = tailSet.first();
+                    maxX = rightNeighbor.getLeftBorder() + space[node.pos] - space[rightNeighbor.pos];
+                }
 
-            assert minX <= maxX : minX + " vs " + maxX;
-            if (pos < minX) {
-                pos = minX;
-            } else if (pos > maxX) {
-                pos = maxX;
+                assert minX <= maxX : minX + " vs " + maxX;
+                int x = node.optimal_x;
+                if (x < minX) {
+                    x = minX;
+                } else if (x > maxX) {
+                    x = maxX;
+                }
+                node.x = x;
+                treeSet.add(node);
             }
-            node.x = pos;
-            treeSet.add(node);
         }
 
         private void sweepUp() {
@@ -2043,11 +2048,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 for (LayoutNode node : upProcessingOrder[i]) {
                     node.optimal_x = calculateOptimalUp(node);
                 }
-                Arrays.sort(upProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
-                TreeSet<LayoutNode> row = new TreeSet<>(Comparator.comparingInt(n -> n.pos));
-                for (LayoutNode node : upProcessingOrder[i]) {
-                    rowInsert(node, node.optimal_x, space[i], row);
-                }
+                processRow(space[i], upProcessingOrder[i]);
             }
         }
 
@@ -2056,14 +2057,9 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 for (LayoutNode node : downProcessingOrder[i]) {
                     node.optimal_x = calculateOptimalDown(node);
                 }
-                Arrays.sort(downProcessingOrder[i], DUMMY_NODES_THEN_OPTMMAL_X);
-                TreeSet<LayoutNode> row = new TreeSet<>(Comparator.comparingInt(n -> n.pos));
-                for (LayoutNode node : downProcessingOrder[i]) {
-                    rowInsert(node, node.optimal_x, space[i], row);
-                }
+                processRow(space[i], downProcessingOrder[i]);
             }
         }
-
     }
 
     private void assertYLayer() {
