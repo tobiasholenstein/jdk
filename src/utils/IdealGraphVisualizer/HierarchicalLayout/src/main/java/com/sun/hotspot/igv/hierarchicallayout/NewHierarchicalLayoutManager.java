@@ -1681,10 +1681,33 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             assertOrder();
         }
 
+        private void sweepLayer(int layerNr, boolean down) {
+            LayoutLayer layer = layers[layerNr];
+            for (LayoutNode n : layer) {
+                List<LayoutEdge> neighbors = down ? n.preds : n.succs;
+                n.crossingNumber = 0;
+                for (LayoutEdge edge : neighbors) {
+                    n.crossingNumber += down ? edge.getStartPoint(): edge.getEndPoint();
+                }
+                int count = neighbors.size();
+                if (count > 0) {
+                    n.crossingNumber /= count;
+                }
+            }
 
-        private void updateXOfLayer(int index) {
+            for (int j = 0; j < layer.size(); j++) {
+                LayoutNode n = layer.get(j);
+                List<LayoutEdge> neighbors = down ? n.preds : n.succs;
+                if (neighbors.isEmpty()) {
+                    float prevCrossingNumber = (j > 0) ? layer.get(j - 1).crossingNumber : 0;
+                    float nextCrossingNumber = (j < layer.size() - 1) ? layer.get(j + 1).crossingNumber : 0;
+                    n.crossingNumber = (prevCrossingNumber + nextCrossingNumber) / 2;
+                }
+            }
+
+            layer.sort(CROSSING_NODE_COMPARATOR); // sort by crossingNumber
             int x = 0;
-            for (LayoutNode n : layers[index]) {
+            for (LayoutNode n : layer) {
                 n.x = x;
                 x += n.getWholeWidth() + OFFSET;
             }
@@ -1692,73 +1715,13 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
         private void downSweep() {
             for (int i = 0; i < layerCount; i++) {
-                for (LayoutNode n : layers[i]) {
-                    n.crossingNumber = 0;
-                    for (LayoutEdge predEdge : n.preds) {
-                        n.crossingNumber += predEdge.getStartPoint();
-                    }
-                    int count = n.preds.size();
-                    if (count > 0) {
-                        n.crossingNumber /= count;
-                    }
-                }
-
-                for (int j = 0; j < layers[i].size(); j++) {
-                    LayoutNode n = layers[i].get(j);
-                    if (n.preds.isEmpty()) {
-                        if (j > 0 && j < layers[i].size() - 1) {
-                            LayoutNode next = layers[i].get(j + 1);
-                            LayoutNode prev = layers[i].get(j - 1);
-                            n.crossingNumber = (prev.crossingNumber + next.crossingNumber) / 2;
-                        } else if (j > 0) {
-                            LayoutNode prev = layers[i].get(j - 1);
-                            n.crossingNumber = prev.crossingNumber;
-                        } else if (j < layers[i].size() - 1) {
-                            LayoutNode next = layers[i].get(j + 1);
-                            n.crossingNumber = next.crossingNumber;
-                        }
-                    }
-                }
-
-                layers[i].sort(CROSSING_NODE_COMPARATOR);
-                updateXOfLayer(i);
-
+                sweepLayer(i, true);
             }
         }
 
         private void upSweep() {
             for (int i = layerCount - 1; i >= 0; i--) {
-                for (LayoutNode n : layers[i]) {
-                    n.crossingNumber = 0;
-                    for (LayoutEdge succEdge : n.succs) {
-                        n.crossingNumber += succEdge.getEndPoint();
-                    }
-                    int count = n.succs.size();
-                    if (count > 0) {
-                        n.crossingNumber /= count;
-                    }
-                }
-
-                for (int j = 0; j < layers[i].size(); j++) {
-                    LayoutNode n = layers[i].get(j);
-                    if (n.succs.isEmpty()) {
-                        if (j > 0 && j < layers[i].size() - 1) {
-                            LayoutNode next = layers[i].get(j + 1);
-                            LayoutNode prev = layers[i].get(j - 1);
-                            n.crossingNumber = (prev.crossingNumber + next.crossingNumber) / 2;
-                        } else if (j > 0) {
-                            LayoutNode prev = layers[i].get(j - 1);
-                            n.crossingNumber = prev.crossingNumber;
-                        } else if (j < layers[i].size() - 1) {
-                            LayoutNode next = layers[i].get(j + 1);
-                            n.crossingNumber = next.crossingNumber;
-                        }
-                    }
-                }
-
-
-                layers[i].sort(CROSSING_NODE_COMPARATOR);
-                updateXOfLayer(i);
+                sweepLayer(i, false);
             }
         }
     }
