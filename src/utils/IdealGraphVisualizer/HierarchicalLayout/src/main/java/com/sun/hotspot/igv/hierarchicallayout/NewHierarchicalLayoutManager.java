@@ -775,7 +775,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         public final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
         public int pos = -1; // Position within layer
 
-        public float crossingNumber = 0;
+        public float weightedPosition = 0;
         public boolean reverseLeft = false;
 
         public LayoutNode(Vertex v) {
@@ -1667,11 +1667,19 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
     private class CrossingReduction {
 
-        private final Comparator<LayoutNode> CROSSING_NODE_COMPARATOR = (n1, n2) -> Float.compare(n1.crossingNumber, n2.crossingNumber);
+        private final Comparator<LayoutNode> CROSSING_NODE_COMPARATOR = (n1, n2) -> Float.compare(n1.weightedPosition, n2.weightedPosition);
 
         public CrossingReduction() {}
 
         private void run() {
+            // The nodes order within layers determines the edge crossings in the layout,
+            // thus a good ordering is one with few edge crossings
+
+            // TODO compute an initial ordering
+            // 1) An initial ordering within each rank is computed
+
+            // 2) Then a sequence of iterations is performed to try to improve the orderings.
+            // Each iteration traverses from the first rank to the last one (down), or vice versa (up).
             for (int i = 0; i < CROSSING_ITERATIONS; i++) {
                 downSweep();
                 upSweep();
@@ -1681,33 +1689,60 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             assertOrder();
         }
 
-        private void sweepLayer(int layerNr, boolean down) {
+        private void computeWeight(int layerNr, boolean down) {
             LayoutLayer layer = layers[layerNr];
-            for (LayoutNode n : layer) {
-                List<LayoutEdge> neighbors = down ? n.preds : n.succs;
-                n.crossingNumber = 0;
+
+            // For each node in a layer, assign a weight based on the weights of adjacent nodes
+            for (LayoutNode node : layer) {
+                List<LayoutEdge> neighbors = down ? node.preds : node.succs;
+
+                // The barycenter method defines the weight of node as the AVERAGE of elements in neighbors.
+                node.weightedPosition = 0;
                 for (LayoutEdge edge : neighbors) {
-                    n.crossingNumber += down ? edge.getStartPoint(): edge.getEndPoint();
+                    node.weightedPosition += down ? edge.getStartPoint(): edge.getEndPoint();
                 }
                 int count = neighbors.size();
                 if (count > 0) {
-                    n.crossingNumber /= count;
+                    node.weightedPosition /= count;
                 }
+
+                // TODO: implement median method
+                // The median method defines the weight of node as the MEDIAN of elements in neighbors
+                // The median method consistently performs better than the barycenter method.
+                // Resolve two median methods:
+                //   a) always using the left median, and always using right median
+                //   b) we use an interpolated value biased toward the side where nodes are more closely packed
+
+                // To reduce obvious crossings after the nodes have been sorted, convert a given order into
+                // an order that is locally optimal with regard to the swapping of neighboring nodes.
+
             }
 
+            // TODO: sort into remaining positions
+            // Nodes that have no adjacent nodes on the neighboring layer:
+            // leave fixed in their current positions with non-fixed nodes sorted into the remaining positions
             for (int j = 0; j < layer.size(); j++) {
-                LayoutNode n = layer.get(j);
-                List<LayoutEdge> neighbors = down ? n.preds : n.succs;
+                LayoutNode node = layer.get(j);
+                List<LayoutEdge> neighbors = down ? node.preds : node.succs;
                 if (neighbors.isEmpty()) {
-                    float prevCrossingNumber = (j > 0) ? layer.get(j - 1).crossingNumber : 0;
-                    float nextCrossingNumber = (j < layer.size() - 1) ? layer.get(j + 1).crossingNumber : 0;
-                    n.crossingNumber = (prevCrossingNumber + nextCrossingNumber) / 2;
+                    float prevWeight = (j > 0) ? layer.get(j - 1).weightedPosition : 0;
+                    float nextWeight = (j < layer.size() - 1) ? layer.get(j + 1).weightedPosition : 0;
+                    node.weightedPosition = (prevWeight + nextWeight) / 2;
                 }
             }
+        }
 
-            layer.sort(CROSSING_NODE_COMPARATOR); // sort by crossingNumber
+
+
+        private void sweepLayer(int layerNr, boolean down) {
+            // When visiting a layer, each of its nodes is assigned a weight based on the relative positions
+            // of its neighboring nodes on preceding / succeeding layer
+            computeWeight(layerNr, down);
+
+            // The nodes in the layer are re-ordered by sorting on the median weights
+            layers[layerNr].sort(CROSSING_NODE_COMPARATOR); // sort by crossingNumber
             int x = 0;
-            for (LayoutNode n : layer) {
+            for (LayoutNode n : layers[layerNr]) {
                 n.x = x;
                 x += n.getWholeWidth() + OFFSET;
             }
