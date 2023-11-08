@@ -1677,16 +1677,25 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
             // TODO compute an initial ordering
             // 1) An initial ordering within each rank is computed
+            // DFS or BFS starting with nodes of minimum rank. Nodes are assigned positions in their layers in
+            // left-to-right order as the search progresses. This strategy ensures that the initial ordering of a
+            // tree has no crossing.
 
             // 2) Then a sequence of iterations is performed to try to improve the orderings.
             // Each iteration traverses from the first rank to the last one (down), or vice versa (up).
-            for (int i = 0; i < CROSSING_ITERATIONS; i++) {
+            for (int i = 0; i < CROSSING_ITERATIONS; i++) { // CROSSING_ITERATIONS = 12 (resulting in 24 sweeps)
+                // At each iteration, if number of crossings improves (at least a few percent), new ordering is saved
                 downSweep();
                 upSweep();
             }
             downSweep();
             updatePositions();
             assertOrder();
+
+            // TODO
+            // Note: run() twice and pick the better solution of initial order determined
+            //  a) by starting with nodes of minimal rank and searching out-edges
+            //  b) by starting with nodes of maximal rank and searching in-edges,
         }
 
         private void computeWeight(int layerNr, boolean down) {
@@ -1694,6 +1703,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
             // For each node in a layer, assign a weight based on the weights of adjacent nodes
             for (LayoutNode node : layer) {
+                // TODO: use ALL of the adjacent nodes
                 List<LayoutEdge> neighbors = down ? node.preds : node.succs;
 
                 // The barycenter method defines the weight of node as the AVERAGE of elements in neighbors.
@@ -1709,10 +1719,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 // TODO: implement median method
                 // The median method defines the weight of node as the MEDIAN of elements in neighbors
                 // The median method consistently performs better than the barycenter method.
-                // Resolve two median methods:
-                //   a) always using the left median, and always using right median
-                //   b) we use an interpolated value biased toward the side where nodes are more closely packed
-
+                // Resolve two medians by using an interpolated value biased toward the side where nodes are more closely packed
                 // To reduce obvious crossings after the nodes have been sorted, convert a given order into
                 // an order that is locally optimal with regard to the swapping of neighboring nodes.
 
@@ -1749,8 +1756,19 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         }
 
         private void downSweep() {
+            // When equality occurs when comparing median values or number of edge crossings, flip ever other pass
             for (int i = 0; i < layerCount; i++) {
+                // reorders the nodes within each rank based on the weighted median heuristic
                 sweepLayer(i, true);
+
+
+            }
+            for (int i = 0; i < layerCount; i++) {
+                // TODO:
+                // repeatedly exchanges adjacent nodes on the same layer if this decreases the number of crossings.
+                // Iterates as long as the number of edge crossings can be reduced (or sufficient small) by swapping.
+                // crossing(v,w)> crossing(w,v): count the number of edge crossings where b appears to the left of w in the layer
+                // if improved -> exchange v and w
             }
         }
 
