@@ -1708,13 +1708,13 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
             // 2) Then a sequence of iterations is performed to try to improve the orderings.
             // Each iteration traverses from the first rank to the last one (down), or vice versa (up).
-            for (int i = 0; i < CROSSING_ITERATIONS; i++) { // CROSSING_ITERATIONS = 12 (resulting in 24 sweeps)
+            for (int i = 0; i < 12; i++) { // CROSSING_ITERATIONS = 12 (resulting in 24 sweeps)
                 // At each iteration, if number of crossings improves (at least a few percent), new ordering is saved
 
                 // When equality occurs when comparing median values or number of edge crossings, flip every other pass
 
                 downSweep();
-                //upSweep();
+                upSweep();
             }
             downSweep();
             updatePositions();
@@ -1726,73 +1726,70 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             //  b) by starting with nodes of maximal rank and searching in-edges,
         }
 
-
-
-        private void sweepLayer(int layerNr, boolean down) {
-
-
+        private void doAveragePositions(LayoutLayer layer) {
+            for (LayoutNode node : layer) {
+                node.weightedPosition = node.averagePosition(true);
+            }
+            // TODO: resolve no adjacent nodes on the neighboring layer?
+            layer.sort(CROSSING_NODE_COMPARATOR);
+            // TODO: a) recalculate x OR b) shift all overlapping to the right c) skip, since CrossingReduction has no x
+            int x = 0;
+            for (LayoutNode n : layer) {
+                n.weightedPosition = x;
+                x += n.getWholeWidth() + OFFSET;
+            }
         }
 
-        private void downSweep() {
-            for (int i = 0; i < layerCount; i++) {
-                LayoutLayer layer = layers[i];
-                for (LayoutNode node : layer) {
-                    node.weightedPosition = node.averagePosition(true);
+        private void doMedianPositions(LayoutLayer layer, boolean usePred) {
+            for (LayoutNode node : layer) {
+                int size = usePred ? node.preds.size() : node.succs.size();
+                if (size == 0) continue; // TODO: fill in empty positions or use succs nodes for weightedPosition
+                float[] values = new float[size];
+                for (int j = 0; j < size; j++) {
+                    LayoutNode predNode = usePred ? node.preds.get(j).from : node.succs.get(j).to;
+                    values[j] = predNode.weightedPosition;
                 }
-                // TODO: resolve no adjacent nodes on the neighboring layer?
-                layer.sort(CROSSING_NODE_COMPARATOR);
-                // TODO: a) recalculate x OR b) shift all overlapping to the right c) skip, since CrossingReduction has no x
-                int x = 0;
-                for (LayoutNode n : layer) {
-                    n.weightedPosition = x;
-                    x += n.getWholeWidth() + OFFSET;
-                }
-            }
-
-            for (int i = 1; i < layerCount; i++) {
-                LayoutLayer layer = layers[i];
-                for (LayoutNode node : layer) {
-                    int size = node.preds.size();
-                    if (size == 0) continue; // TODO: fill in empty positions or use succs nodes for weightedPosition
-                    float[] values = new float[size];
-                    for (int j = 0; j < size; j++) {
-                        LayoutNode predNode = node.preds.get(j).from;
-                        assert predNode.layer == i-1;
-                        values[j] = predNode.weightedPosition;
-                    }
-                    Arrays.sort(values);
-                    if (values.length % 2 == 0) {
-                        // TODO: interpolated value biased toward the side where nodes are more closely packed
-                        node.weightedPosition = (values[size / 2 - 1] + values[size / 2]) / 2;
-                    } else {
-                        node.weightedPosition = values[size / 2];
-                    }
-                }
-                // TODO: resolve no adjacent nodes on the neighboring layer?
-                layer.sort(CROSSING_NODE_COMPARATOR);
-                // TODO: a) recalculate x OR b) shift all overlapping to the right c) skip, since CrossingReduction has no x
-                int x = 0;
-                for (LayoutNode n : layer) {
-                    n.weightedPosition = x;
-                    x += n.getWholeWidth() + OFFSET;
+                Arrays.sort(values);
+                if (values.length % 2 == 0) {
+                    // TODO: interpolated value biased toward the side where nodes are more closely packed
+                    node.weightedPosition = (values[size / 2 - 1] + values[size / 2]) / 2;
+                } else {
+                    node.weightedPosition = values[size / 2];
                 }
             }
+            // TODO: resolve no adjacent nodes on the neighboring layer?
+            layer.sort(CROSSING_NODE_COMPARATOR);
+            // TODO: a) recalculate x OR b) shift all overlapping to the right c) skip, since CrossingReduction has no x
+            int x = 0;
+            for (LayoutNode n : layer) {
+                n.weightedPosition = x;
+                x += n.getWholeWidth() + OFFSET;
+            }
+        }
 
+        private void placeLeavesAndRoots(LayoutLayer layer, boolean usePred) {
             // TODO: sort into remaining positions
             // Nodes that have no adjacent nodes on the neighboring layer:
             // leave fixed in their current positions with non-fixed nodes sorted into the remaining positions
-            for (int i = 1; i < layerCount; i++) {
-                LayoutLayer layer = layers[i];
-                for (int j = 0; j < layer.size(); j++) {
-                    LayoutNode node = layer.get(j);
-                    if (node.preds.isEmpty()) {
-                        float prevWeight = (j > 0) ? layer.get(j - 1).weightedPosition : 0;
-                        float nextWeight = (j < layer.size() - 1) ? layer.get(j + 1).weightedPosition : 0;
-                        node.weightedPosition = (prevWeight + nextWeight) / 2;
-                    }
+            for (int j = 0; j < layer.size(); j++) {
+                LayoutNode node = layer.get(j);
+                if (usePred ? node.preds.isEmpty() :  node.succs.isEmpty()) {
+                    float prevWeight = (j > 0) ? layer.get(j - 1).weightedPosition : 0;
+                    float nextWeight = (j < layer.size() - 1) ? layer.get(j + 1).weightedPosition : 0;
+                    node.weightedPosition = (prevWeight + nextWeight) / 2;
                 }
             }
+            // TODO: resolve no adjacent nodes on the neighboring layer?
+            layer.sort(CROSSING_NODE_COMPARATOR);
+            // TODO: a) recalculate x OR b) shift all overlapping to the right c) skip, since CrossingReduction has no x
+            int x = 0;
+            for (LayoutNode n : layer) {
+                n.weightedPosition = x;
+                x += n.getWholeWidth() + OFFSET;
+            }
+        }
 
+        private void neighborSwapping() {
             boolean improved = true;
             while (improved) {
                 improved = false;
@@ -1845,11 +1842,26 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             return (s1 >= s2 || d1 >= d2) && (s2 >= s1 || d2 >= d1);
         }
 
+        private void downSweep() {
+            for (int i = 0; i < layerCount; i++) {
+                doAveragePositions(layers[i]);
+            }
+            for (int i = 1; i < layerCount; i++) {
+                doMedianPositions(layers[i], true);
+                placeLeavesAndRoots(layers[i], true);
+            }
+            neighborSwapping();
+        }
 
         private void upSweep() {
             for (int i = layerCount - 1; i >= 0; i--) {
-                sweepLayer(i, false);
+                doAveragePositions(layers[i]);
             }
+            for (int i = layerCount - 2; i >= 0; i--) {
+                doMedianPositions(layers[i], false);
+                placeLeavesAndRoots(layers[i], false);
+            }
+            neighborSwapping();
         }
     }
 
