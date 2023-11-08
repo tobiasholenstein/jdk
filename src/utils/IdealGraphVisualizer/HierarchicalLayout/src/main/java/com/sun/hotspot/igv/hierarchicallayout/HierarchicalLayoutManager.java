@@ -823,7 +823,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
                 }
 
                 if (cond) {
-
                     if (prev != null && next != null) {
                         n.crossingNumber = (prev.crossingNumber + next.crossingNumber) / 2;
                     } else if (prev != null) {

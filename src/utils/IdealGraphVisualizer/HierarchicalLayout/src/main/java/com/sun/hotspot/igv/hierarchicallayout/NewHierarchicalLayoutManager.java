@@ -778,21 +778,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         public float crossingNumber = 0;
         public boolean reverseLeft = false;
 
-        public void loadCrossingNumber(boolean up) {
-            crossingNumber = 0;
-            int count = 0;
-            if (up) {
-                count = succs.stream().map((e) -> e.loadCrossingNumber(up, this)).reduce(count, Integer::sum);
-            } else {
-                count = preds.stream().map((e) -> e.loadCrossingNumber(up, this)).reduce(count, Integer::sum);
-            }
-            if (count > 0) {
-                crossingNumber /= count;
-            } else {
-                crossingNumber = 0;
-            }
-        }
-
         public LayoutNode(Vertex v) {
             vertex = v;
             if (v == null) {
@@ -866,17 +851,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         public int relativeFrom;
         public int relativeTo;
         public Link link;
-
-        public int loadCrossingNumber(boolean up, LayoutNode source) {
-            int nr;
-            if (up) {
-                nr = getEndPoint();
-            } else {
-                nr = getStartPoint();
-            }
-            source.crossingNumber += nr;
-            return 1;
-        }
 
         public int getStartPoint() {
             return relativeFrom + from.getLeftSide();
@@ -1719,10 +1693,38 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         private void downSweep() {
             for (int i = 0; i < layerCount; i++) {
                 for (LayoutNode n : layers[i]) {
-                    n.loadCrossingNumber(false);
+                    n.crossingNumber = 0;
+                    for (LayoutEdge predEdge : n.preds) {
+                        n.crossingNumber += predEdge.getStartPoint();
+                    }
+                    int count = n.preds.size();
+                    if (count > 0) {
+                        n.crossingNumber /= count;
+                    }
                 }
 
-                updateCrossingNumbers(i, true);
+                for (int j = 0; j < layers[i].size(); j++) {
+                    LayoutNode n = layers[i].get(j);
+                    if (n.preds.isEmpty()) {
+                        LayoutNode prev = null;
+                        LayoutNode next = null;
+                        if (j > 0) {
+                            prev = layers[i].get(j - 1);
+                        }
+                        if (j < layers[i].size() - 1) {
+                            next = layers[i].get(j + 1);
+                        }
+
+                        if (prev != null && next != null) {
+                            n.crossingNumber = (prev.crossingNumber + next.crossingNumber) / 2;
+                        } else if (prev != null) {
+                            n.crossingNumber = prev.crossingNumber;
+                        } else if (next != null) {
+                            n.crossingNumber = next.crossingNumber;
+                        }
+                    }
+                }
+
                 layers[i].sort(CROSSING_NODE_COMPARATOR);
                 updateXOfLayer(i);
 
@@ -1732,41 +1734,41 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         private void upSweep() {
             for (int i = layerCount - 1; i >= 0; i--) {
                 for (LayoutNode n : layers[i]) {
-                    n.loadCrossingNumber(true);
+                    n.crossingNumber = 0;
+                    for (LayoutEdge succEdge : n.succs) {
+                        n.crossingNumber += succEdge.getEndPoint();
+                    }
+                    int count = n.succs.size();
+                    if (count > 0) {
+                        n.crossingNumber /= count;
+                    }
                 }
 
-                updateCrossingNumbers(i, false);
+                for (int j = 0; j < layers[i].size(); j++) {
+                    LayoutNode n = layers[i].get(j);
+                    if (n.succs.isEmpty()) {
+                        LayoutNode prev = null;
+                        LayoutNode  next = null;
+                        if (j > 0) {
+                            prev = layers[i].get(j - 1);
+                        }
+                        if (j < layers[i].size() - 1) {
+                            next = layers[i].get(j + 1);
+                        }
+
+                        if (prev != null && next != null) {
+                            n.crossingNumber = (prev.crossingNumber + next.crossingNumber) / 2;
+                        } else if (prev != null) {
+                            n.crossingNumber = prev.crossingNumber;
+                        } else if (next != null) {
+                            n.crossingNumber = next.crossingNumber;
+                        }
+                    }
+                }
+
+
                 layers[i].sort(CROSSING_NODE_COMPARATOR);
                 updateXOfLayer(i);
-            }
-        }
-
-        private void updateCrossingNumbers(int index, boolean down) {
-            List<LayoutNode> layer;
-            layer = layers[index];
-            int diff = 0;
-            LayoutNode prev;
-            LayoutNode next;
-            for (int i = 0; i < layer.size(); i++) {
-                LayoutNode n = layer.get(i);
-                if (down ? n.preds.isEmpty() : n.succs.isEmpty()) {
-                    prev = null;
-                    next = null;
-                    if (i > 0) {
-                        prev = layer.get(i - 1);
-                    }
-                    if (i < layer.size() - 1) {
-                        next = layer.get(i + 1);
-                    }
-
-                    if (prev != null && next != null) {
-                        n.crossingNumber = (prev.crossingNumber + next.crossingNumber) / 2;
-                    } else if (prev != null) {
-                        n.crossingNumber = prev.crossingNumber + diff;
-                    } else if (next != null) {
-                        n.crossingNumber = next.crossingNumber - diff;
-                    }
-                }
             }
         }
     }
