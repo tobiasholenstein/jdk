@@ -794,6 +794,31 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             this(null);
         }
 
+        public int getDegree() {
+            return preds.size() + succs.size();
+        }
+
+        public float averagePosition(boolean weighted) {
+            float totalWeightedPosition = 0;
+            float totalWeight = 0;
+
+            for (LayoutEdge predEdge : preds) {
+                LayoutNode predNode = predEdge.from;
+                int weight = weighted ? predNode.getDegree() : 1;
+                totalWeightedPosition += weight * predEdge.getStartPoint();
+                totalWeight += weight;
+            }
+            for (LayoutEdge succEdge : succs) {
+                LayoutNode succNode = succEdge.to;
+                int weight = weighted ? succNode.getDegree() : 1;
+                totalWeightedPosition += weight * succEdge.getEndPoint();
+                totalWeight += weight;
+            }
+
+            // Calculate the (weighted) average position for the node based on neighbor positions and weights (degree)
+            return totalWeight > 0 ? totalWeightedPosition / totalWeight : 0;
+        }
+
         public int getLeftSide() {
             return x + leftXOffset;
         }
@@ -1675,7 +1700,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             // The nodes order within layers determines the edge crossings in the layout,
             // thus a good ordering is one with few edge crossings
 
-            // TODO compute an initial ordering
+            // TODO compute an initial ordering (x needs to be set for sweep to work)
             // 1) An initial ordering within each rank is computed
             // DFS or BFS starting with nodes of minimum rank. Nodes are assigned positions in their layers in
             // left-to-right order as the search progresses. This strategy ensures that the initial ordering of a
@@ -1685,8 +1710,11 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             // Each iteration traverses from the first rank to the last one (down), or vice versa (up).
             for (int i = 0; i < CROSSING_ITERATIONS; i++) { // CROSSING_ITERATIONS = 12 (resulting in 24 sweeps)
                 // At each iteration, if number of crossings improves (at least a few percent), new ordering is saved
+
+                // When equality occurs when comparing median values or number of edge crossings, flip every other pass
+
                 downSweep();
-                upSweep();
+                //upSweep();
             }
             downSweep();
             updatePositions();
@@ -1698,79 +1726,125 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             //  b) by starting with nodes of maximal rank and searching in-edges,
         }
 
-        private void computeWeight(int layerNr, boolean down) {
-            LayoutLayer layer = layers[layerNr];
 
-            // For each node in a layer, assign a weight based on the weights of adjacent nodes
-            for (LayoutNode node : layer) {
-                // TODO: use ALL of the adjacent nodes
-                List<LayoutEdge> neighbors = down ? node.preds : node.succs;
 
-                // The barycenter method defines the weight of node as the AVERAGE of elements in neighbors.
-                node.weightedPosition = 0;
-                for (LayoutEdge edge : neighbors) {
-                    node.weightedPosition += down ? edge.getStartPoint(): edge.getEndPoint();
+        private void sweepLayer(int layerNr, boolean down) {
+
+
+        }
+
+        private void downSweep() {
+            for (int i = 0; i < layerCount; i++) {
+                LayoutLayer layer = layers[i];
+                for (LayoutNode node : layer) {
+                    node.weightedPosition = node.averagePosition(true);
                 }
-                int count = neighbors.size();
-                if (count > 0) {
-                    node.weightedPosition /= count;
+                // TODO: resolve no adjacent nodes on the neighboring layer?
+                layer.sort(CROSSING_NODE_COMPARATOR);
+                // TODO: a) recalculate x OR b) shift all overlapping to the right c) skip, since CrossingReduction has no x
+                int x = 0;
+                for (LayoutNode n : layer) {
+                    n.weightedPosition = x;
+                    x += n.getWholeWidth() + OFFSET;
                 }
+            }
 
-                // TODO: implement median method
-                // The median method defines the weight of node as the MEDIAN of elements in neighbors
-                // The median method consistently performs better than the barycenter method.
-                // Resolve two medians by using an interpolated value biased toward the side where nodes are more closely packed
-                // To reduce obvious crossings after the nodes have been sorted, convert a given order into
-                // an order that is locally optimal with regard to the swapping of neighboring nodes.
-
+            for (int i = 1; i < layerCount; i++) {
+                LayoutLayer layer = layers[i];
+                for (LayoutNode node : layer) {
+                    int size = node.preds.size();
+                    if (size == 0) continue; // TODO: fill in empty positions or use succs nodes for weightedPosition
+                    float[] values = new float[size];
+                    for (int j = 0; j < size; j++) {
+                        LayoutNode predNode = node.preds.get(j).from;
+                        assert predNode.layer == i-1;
+                        values[j] = predNode.weightedPosition;
+                    }
+                    Arrays.sort(values);
+                    if (values.length % 2 == 0) {
+                        // TODO: interpolated value biased toward the side where nodes are more closely packed
+                        node.weightedPosition = (values[size / 2 - 1] + values[size / 2]) / 2;
+                    } else {
+                        node.weightedPosition = values[size / 2];
+                    }
+                }
+                // TODO: resolve no adjacent nodes on the neighboring layer?
+                layer.sort(CROSSING_NODE_COMPARATOR);
+                // TODO: a) recalculate x OR b) shift all overlapping to the right c) skip, since CrossingReduction has no x
+                int x = 0;
+                for (LayoutNode n : layer) {
+                    n.weightedPosition = x;
+                    x += n.getWholeWidth() + OFFSET;
+                }
             }
 
             // TODO: sort into remaining positions
             // Nodes that have no adjacent nodes on the neighboring layer:
             // leave fixed in their current positions with non-fixed nodes sorted into the remaining positions
-            for (int j = 0; j < layer.size(); j++) {
-                LayoutNode node = layer.get(j);
-                List<LayoutEdge> neighbors = down ? node.preds : node.succs;
-                if (neighbors.isEmpty()) {
-                    float prevWeight = (j > 0) ? layer.get(j - 1).weightedPosition : 0;
-                    float nextWeight = (j < layer.size() - 1) ? layer.get(j + 1).weightedPosition : 0;
-                    node.weightedPosition = (prevWeight + nextWeight) / 2;
+            for (int i = 1; i < layerCount; i++) {
+                LayoutLayer layer = layers[i];
+                for (int j = 0; j < layer.size(); j++) {
+                    LayoutNode node = layer.get(j);
+                    if (node.preds.isEmpty()) {
+                        float prevWeight = (j > 0) ? layer.get(j - 1).weightedPosition : 0;
+                        float nextWeight = (j < layer.size() - 1) ? layer.get(j + 1).weightedPosition : 0;
+                        node.weightedPosition = (prevWeight + nextWeight) / 2;
+                    }
+                }
+            }
+
+            boolean improved = true;
+            while (improved) {
+                improved = false;
+                for (int i = 1; i < layerCount; i++) {
+                    LayoutLayer prevLayer = layers[i-1];
+                    LayoutLayer layer = layers[i];
+                    for (int j = 0; j < layer.size()-1; j++) {
+                        int origCrossings = crossings(prevLayer, layer);
+                        layer.swap(j, j+1);
+                        if (crossings(prevLayer, layer) < origCrossings) {
+                            improved = true;
+                        } else { // swap back
+                            layer.swap(j, j+1);
+                        }
+                    }
+
+                    // TODO:  swapping of neighboring nodes.:
+                    // repeatedly exchanges adjacent nodes on the same layer if this decreases the number of crossings.
+                    // Iterates as long as the number of edge crossings can be reduced (or sufficient small) by swapping.
+                    // crossing(v,w)> crossing(w,v): count the number of edge crossings where b appears to the left of w in the layer
+                    // if improved -> exchange v and w
                 }
             }
         }
 
-
-
-        private void sweepLayer(int layerNr, boolean down) {
-            // When visiting a layer, each of its nodes is assigned a weight based on the relative positions
-            // of its neighboring nodes on preceding / succeeding layer
-            computeWeight(layerNr, down);
-
-            // The nodes in the layer are re-ordered by sorting on the median weights
-            layers[layerNr].sort(CROSSING_NODE_COMPARATOR); // sort by crossingNumber
-            int x = 0;
-            for (LayoutNode n : layers[layerNr]) {
-                n.x = x;
-                x += n.getWholeWidth() + OFFSET;
+        // counts the number of edge crossings between two layers
+        private int crossings(LayoutLayer topLayer , LayoutLayer bottomLayer) {
+            int crossings = 0;
+            for (LayoutNode topNode : topLayer) {
+                for (LayoutEdge topEdge : topNode.succs) {
+                    for (LayoutNode bottomNode : bottomLayer) {
+                        for (LayoutEdge bottomEdge : bottomNode.preds) {
+                            if (topEdge == bottomEdge) continue;
+                            if (edgesIntersect(topEdge, bottomEdge)) {
+                                crossings += 1;
+                            }
+                        }
+                    }
+                }
             }
+            return crossings;
+
         }
 
-        private void downSweep() {
-            // When equality occurs when comparing median values or number of edge crossings, flip ever other pass
-            for (int i = 0; i < layerCount; i++) {
-                // reorders the nodes within each rank based on the weighted median heuristic
-                sweepLayer(i, true);
-
-
-            }
-            for (int i = 0; i < layerCount; i++) {
-                // TODO:
-                // repeatedly exchanges adjacent nodes on the same layer if this decreases the number of crossings.
-                // Iterates as long as the number of edge crossings can be reduced (or sufficient small) by swapping.
-                // crossing(v,w)> crossing(w,v): count the number of edge crossings where b appears to the left of w in the layer
-                // if improved -> exchange v and w
-            }
+        public  boolean edgesIntersect(LayoutEdge e1, LayoutEdge e2) {
+            int s1 = e1.getStartPoint();
+            int s2 = e2.getStartPoint();
+            int d1 = e1.getEndPoint();
+            int d2 = e2.getEndPoint();
+            return (s1 >= s2 || d1 >= d2) && (s2 >= s1 || d2 >= d1);
         }
+
 
         private void upSweep() {
             for (int i = layerCount - 1; i >= 0; i--) {
@@ -2353,6 +2427,13 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         public boolean add(LayoutNode n) {
             setHeight(n);
             return super.add(n);
+        }
+
+        public void swap(int i, int j) {
+            LayoutNode n1 = get(i);
+            LayoutNode n2 = get(j);
+            set(j, n1);
+            set(i, n2);
         }
 
         public int getTop() {
