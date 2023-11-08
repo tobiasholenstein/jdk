@@ -1706,20 +1706,15 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 for (int j = 0; j < layers[i].size(); j++) {
                     LayoutNode n = layers[i].get(j);
                     if (n.preds.isEmpty()) {
-                        LayoutNode prev = null;
-                        LayoutNode next = null;
-                        if (j > 0) {
-                            prev = layers[i].get(j - 1);
-                        }
-                        if (j < layers[i].size() - 1) {
-                            next = layers[i].get(j + 1);
-                        }
-
-                        if (prev != null && next != null) {
+                        if (j > 0 && j < layers[i].size() - 1) {
+                            LayoutNode next = layers[i].get(j + 1);
+                            LayoutNode prev = layers[i].get(j - 1);
                             n.crossingNumber = (prev.crossingNumber + next.crossingNumber) / 2;
-                        } else if (prev != null) {
+                        } else if (j > 0) {
+                            LayoutNode prev = layers[i].get(j - 1);
                             n.crossingNumber = prev.crossingNumber;
-                        } else if (next != null) {
+                        } else if (j < layers[i].size() - 1) {
+                            LayoutNode next = layers[i].get(j + 1);
                             n.crossingNumber = next.crossingNumber;
                         }
                     }
@@ -1747,20 +1742,15 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 for (int j = 0; j < layers[i].size(); j++) {
                     LayoutNode n = layers[i].get(j);
                     if (n.succs.isEmpty()) {
-                        LayoutNode prev = null;
-                        LayoutNode  next = null;
-                        if (j > 0) {
-                            prev = layers[i].get(j - 1);
-                        }
-                        if (j < layers[i].size() - 1) {
-                            next = layers[i].get(j + 1);
-                        }
-
-                        if (prev != null && next != null) {
+                        if (j > 0 && j < layers[i].size() - 1) {
+                            LayoutNode next = layers[i].get(j + 1);
+                            LayoutNode prev = layers[i].get(j - 1);
                             n.crossingNumber = (prev.crossingNumber + next.crossingNumber) / 2;
-                        } else if (prev != null) {
+                        } else if (j > 0) {
+                            LayoutNode prev = layers[i].get(j - 1);
                             n.crossingNumber = prev.crossingNumber;
-                        } else if (next != null) {
+                        } else if (j < layers[i].size() - 1) {
+                            LayoutNode next = layers[i].get(j + 1);
                             n.crossingNumber = next.crossingNumber;
                         }
                     }
