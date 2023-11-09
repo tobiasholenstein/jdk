@@ -43,4 +43,5 @@ public interface Vertex extends Comparable<Vertex> {
     boolean isRoot();
 
     Cluster getCluster();
+    int getID();
 }

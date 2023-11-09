@@ -110,6 +110,11 @@ public class HierarchicalGraphLayout<N, E> extends GraphLayout<N, E> {
         }
 
         @Override
+        public int getID() {
+            return 0;
+        }
+
+        @Override
         public int getPrority() {
             return 0;
         }

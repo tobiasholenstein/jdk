@@ -49,10 +49,12 @@ public class ClusterNode implements Vertex {
     private final Dimension nodeOffset;
     private final int headerVerticalSpace;
     private final Dimension emptySize;
+    private final int id;
 
     public ClusterNode(Cluster cluster, String name, int border,
                        Dimension nodeOffset, int headerVerticalSpace,
                        Dimension emptySize) {
+        this.id = cluster.getID();
         this.subNodes = new HashSet<>();
         this.subEdges = new HashSet<>();
         this.cluster = cluster;
@@ -209,6 +211,11 @@ public class ClusterNode implements Vertex {
 
     public Cluster getCluster() {
         return cluster;
+    }
+
+    @Override
+    public int getID() {
+        return id;
     }
 
     public void setCluster(Cluster c) {

@@ -40,16 +40,16 @@ public class ClusterInputSlotNode implements Vertex {
     private final Port outputSlot;
     private final ClusterNode blockNode;
 
-    private final String id;
+    private final String name;
 
     @Override
     public String toString() {
-        return id;
+        return name;
     }
 
-    public ClusterInputSlotNode(ClusterNode n, String id) {
+    public ClusterInputSlotNode(ClusterNode n, String name) {
         this.blockNode = n;
-        this.id = id;
+        this.name = name;
 
         n.addSubNode(this);
 
@@ -119,6 +119,11 @@ public class ClusterInputSlotNode implements Vertex {
 
     public Cluster getCluster() {
         return null;
+    }
+
+    @Override
+    public int getID() {
+        return blockNode.getID();
     }
 
     public boolean isRoot() {

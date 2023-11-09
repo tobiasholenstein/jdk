@@ -328,13 +328,18 @@ public class InputGraph extends Properties.Entity implements FolderElement {
     }
 
     public InputBlock addArtificialBlock() {
-        InputBlock b = addBlock("(no block)");
-        b.setArtificial();
-        return b;
+        return addBlock("(no block)", true);
     }
 
     public InputBlock addBlock(String name) {
-        final InputBlock b = new InputBlock(this, name);
+        return addBlock(name, false);
+    }
+
+    public InputBlock addBlock(String name, boolean artificial) {
+        final InputBlock b = new InputBlock(this, name, artificial ? -1 : blocks.size());
+        if (artificial) {
+            b.setArtificial();
+        }
         blocks.put(b.getName(), b);
         return b;
     }

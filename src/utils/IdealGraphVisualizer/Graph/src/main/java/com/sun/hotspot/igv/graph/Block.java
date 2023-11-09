@@ -36,9 +36,9 @@ import java.util.Set;
  */
 public class Block implements Cluster {
 
-    private InputBlock inputBlock;
+    private final InputBlock inputBlock;
     private Rectangle bounds;
-    private Diagram diagram;
+    private final Diagram diagram;
 
     public Block(InputBlock inputBlock, Diagram diagram) {
         this.inputBlock = inputBlock;
@@ -61,6 +61,11 @@ public class Block implements Cluster {
 
     public Dimension getNodeOffset() {
         return new Dimension(0, -Figure.getVerticalOffset());
+    }
+
+    @Override
+    public int getID() {
+        return inputBlock.getID();
     }
 
     public void setBounds(Rectangle r) {

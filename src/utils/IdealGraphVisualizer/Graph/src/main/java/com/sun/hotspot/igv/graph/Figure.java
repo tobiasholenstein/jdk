@@ -427,6 +427,11 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     @Override
+    public int getID() {
+        return id;
+    }
+
+    @Override
     public boolean isRoot() {
         if (inputNode != null && inputNode.getProperties().get("name") != null) {
             return inputNode.getProperties().get("name").equals("Root");
