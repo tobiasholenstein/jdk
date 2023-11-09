@@ -941,8 +941,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         // - sets LayoutNode.layer and inserts in layers[n.layer]
         new AssignLayers().run();
         assertNodePos();
-        assertEdgesConnected();
-        //assertLayerNr();
 
         // #############################################################
         // STEP 4: Create dummy nodes
@@ -952,7 +950,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         new CreateDummyNodes().run();
         assertLayerNr();
         assertNodePos();
-        assertEdgesConnected();
         assertNodeSynced();
 
         // #############################################################
@@ -1708,7 +1705,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
             // 2) Then a sequence of iterations is performed to try to improve the orderings.
             // Each iteration traverses from the first rank to the last one (down), or vice versa (up).
-            for (int i = 0; i < 12; i++) { // CROSSING_ITERATIONS = 12 (resulting in 24 sweeps)
+            for (int i = 0; i < CROSSING_ITERATIONS; i++) { // CROSSING_ITERATIONS = 12 (resulting in 24 sweeps)
                 // At each iteration, if number of crossings improves (at least a few percent), new ordering is saved
 
                 // When equality occurs when comparing median values or number of edge crossings, flip every other pass
@@ -2320,7 +2317,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             // takes dummyNodes, layers, vertexToLayoutNode and reversedLinks
             assert dummyNodes.size() == (new HashSet<>(dummyNodes)).size();
 
-            assertEdgesConnected();
             assertOrder();
 
             // takes vertexToLayoutNode
@@ -2330,7 +2326,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             // takes vertexToLayoutNode and reversedLinks
             HashMap<Link, List<Point>> linkPositions = computeLinkPositions();
             assertOrder();
-            assertEdgesConnected();
 
             int minX = Integer.MAX_VALUE;
             int minY = Integer.MAX_VALUE;
@@ -2523,35 +2518,4 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             assert n.width >= 0;
         }
     }
-
-    private void assertEdgesConnected() {
-        /*
-        for (LayoutNode layoutNode : getLayoutNodes()) {
-            if (layoutNode.isDummy()) continue;
-            assert layoutNode.vertex != null;
-            for (LayoutEdge predEdge : layoutNode.preds) {
-                Link link = predEdge.link;
-                assert link != null;
-                LayoutNode fromNode = predEdge.from;
-                LayoutNode toNode = predEdge.to;
-                assert toNode == layoutNode;
-
-                assert link.getTo().getVertex() != null;
-                assert link.getFrom().getVertex() != null;
-
-                LayoutEdge curEdge;
-                while (fromNode.isDummy() && !fromNode.preds.isEmpty()) {
-                    curEdge = fromNode.preds.get(0);
-                    fromNode = curEdge.from;
-                }
-                if (fromNode.vertex != null) {
-                    assert !fromNode.isDummy();
-                    assert fromNode.vertex != toNode.vertex;
-                    assert link.getTo().getVertex() == toNode.vertex || link.getTo().getVertex() == fromNode.vertex;
-                    assert link.getFrom().getVertex() == fromNode.vertex || link.getFrom().getVertex() == toNode.vertex;
-                }
-            }
-        }*/
-    }
-
 }
