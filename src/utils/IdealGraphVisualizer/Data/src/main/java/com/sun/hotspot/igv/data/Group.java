@@ -175,10 +175,32 @@ public class Group extends Properties.Entity implements ChangedEventProvider<Gro
     @Override
     public void setPath(String path) {
         this.path = path;
+        for (int index = 0; index < graphs.size(); index++) {
+            InputGraph graph = graphs.get(index);
+            graph.setPath(path + "#" + index);
+        }
     }
 
     @Override
     public String getPath() {
         return this.path;
+    }
+
+    @Override
+    public FolderElement findByPath(String path) {
+        System.out.println("    - Group findByPath " + path);
+        if (path.equals(getPath())) {
+            System.out.println("    - Group findByPath FOUND this");
+            return this;
+        }
+        for (InputGraph graph : graphs) {
+            System.out.println("    - Group search in graph " + graph.getPath());
+            if (path.equals(graph.getPath())) {
+                System.out.println("    - Group findByPath FOUND graph");
+                return graph;
+            }
+        }
+        System.out.println("    - Group findByPath NOT FOUND");
+        return null;
     }
 }

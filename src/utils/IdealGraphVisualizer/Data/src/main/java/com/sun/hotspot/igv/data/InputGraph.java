@@ -361,4 +361,12 @@ public class InputGraph extends Properties.Entity implements FolderElement {
     public String getPath() {
         return this.path;
     }
+
+    @Override
+    public FolderElement findByPath(String path) {
+        if (path.equals(getPath())) {
+            return this;
+        }
+        return null;
+    }
 }

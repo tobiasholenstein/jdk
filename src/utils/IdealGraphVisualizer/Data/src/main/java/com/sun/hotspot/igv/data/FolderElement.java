@@ -32,4 +32,5 @@ public interface FolderElement {
     Folder getParent();
     void setPath(String path);
     String getPath();
+    FolderElement findByPath(String path);
 }

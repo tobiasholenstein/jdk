@@ -32,9 +32,11 @@ import com.sun.hotspot.igv.data.InputGraph;
 import com.sun.hotspot.igv.data.serialization.GraphParser;
 import com.sun.hotspot.igv.data.serialization.ParseMonitor;
 import com.sun.hotspot.igv.data.serialization.Parser;
+import com.sun.hotspot.igv.data.services.GraphViewer;
 import com.sun.hotspot.igv.data.services.GroupCallback;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
 import com.sun.hotspot.igv.util.LookupHistory;
+import com.sun.hotspot.igv.view.DiagramViewModel;
 import com.sun.hotspot.igv.view.EditorTopComponent;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -44,8 +46,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
@@ -60,8 +61,10 @@ import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.BeanTreeView;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
+import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.util.RequestProcessor;
+import org.openide.windows.Mode;
 import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
 
@@ -81,6 +84,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private GraphNode[] selectedGraphs = new GraphNode[0];
     private final Set<FolderNode> selectedFolders = new HashSet<>();
     private static final int WORKUNITS = 10000;
+    private static final RequestProcessor RP = new RequestProcessor("OutlineTopComponent", 1);
 
     private OutlineTopComponent() {
         initComponents();
@@ -288,11 +292,55 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         ((BeanTreeView) this.treeView).setRootVisible(false);
 
         int pathCount = in.readInt();
-        System.out.println(pathCount);
         for (int i = 0; i < pathCount; i++) {
             String path = in.readUTF();
-            System.out.println(path);
             loadFile(path);
+        }
+
+        final GraphViewer viewer = Lookup.getDefault().lookup(GraphViewer.class);
+        assert viewer != null;
+        int tabCount = in.readInt();
+        for (int i = 0; i < tabCount; i++) {
+            final boolean isDiffGraph = in.readBoolean();
+            final String firstGraphPath = in.readUTF();
+            final String secondGraphPath = (isDiffGraph) ? in.readUTF() : "";
+
+            final Set<Integer> hiddenNodes = new HashSet<>();
+            int hiddenNodeCount = in.readInt();
+            for (int j = 0; j < hiddenNodeCount; j++) {
+                int hiddenNodeID = in.readInt();
+                hiddenNodes.add(hiddenNodeID);
+            }
+
+            RP.post(() -> {
+                SwingUtilities.invokeLater(() -> {
+                    InputGraph openedGraph = null;
+
+                    if (isDiffGraph) {
+                        InputGraph firstGraph = findGraph(firstGraphPath);
+                        InputGraph secondGraph = findGraph(secondGraphPath);
+                        if (firstGraph != null && secondGraph != null) {
+                            openedGraph = viewer.viewDifference(firstGraph, secondGraph);
+                        }
+                    } else {
+                        InputGraph firstGraph = findGraph(firstGraphPath);
+                        if (firstGraph != null) {
+                            openedGraph = viewer.view(firstGraph, true);
+                        }
+                    }
+
+                    if (openedGraph != null) {
+                        EditorTopComponent etc = EditorTopComponent.findEditorForGraph(openedGraph);
+                        if (etc != null) {
+                            etc.getModel().setHiddenNodes(hiddenNodes);
+                        }
+                    }
+                });
+
+
+            });
+
+
         }
     }
 
@@ -308,11 +356,44 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
 
         int pathCount = allPaths.size();
-        System.out.println(pathCount);
         out.writeInt(pathCount);
         for (String path : allPaths) {
-            System.out.println(path);
             out.writeUTF(path);
+        }
+
+        List<EditorTopComponent> editorTabs = new ArrayList<>();
+        WindowManager manager = WindowManager.getDefault();
+        for (Mode mode : manager.getModes()) {
+            List<TopComponent> compList = new ArrayList<>(Arrays.asList(manager.getOpenedTopComponents(mode)));
+            for (TopComponent comp : compList) {
+                if (comp instanceof EditorTopComponent) {
+                    editorTabs.add((EditorTopComponent) comp);
+                }
+            }
+        }
+
+        int tabCount = editorTabs.size();
+        out.writeInt(tabCount);
+        for (EditorTopComponent etc : editorTabs) {
+            DiagramViewModel model = etc.getModel();
+            boolean isDiffGraph = model.getGraph().isDiffGraph();
+            out.writeBoolean(isDiffGraph);
+            if (isDiffGraph) {
+                InputGraph firstGraph = model.getFirstGraph();
+                InputGraph secondGraph = model.getSecondGraph();
+                out.writeUTF(firstGraph.getPath());
+                out.writeUTF(secondGraph.getPath());
+
+            } else {
+                InputGraph graph = model.getGraph();
+                out.writeUTF(graph.getPath());
+            }
+
+            int hiddenNodeCount = model.getHiddenNodes().size();
+            out.writeInt(hiddenNodeCount);
+            for (int hiddenNodeID : model.getHiddenNodes()) {
+                out.writeInt(hiddenNodeID);
+            }
         }
     }
 
@@ -321,7 +402,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         final FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ);
         final long start = channel.size();
 
-        RequestProcessor.getDefault().post(() -> {
+        RP.post(() -> {
             final ProgressHandle handle = ProgressHandleFactory.createHandle("Opening file " + file.getName());
             handle.start(WORKUNITS);
 
@@ -349,23 +430,10 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                 assert parser != null;
                 final GraphDocument parsedDoc = parser.parse();
                 SwingUtilities.invokeLater(() -> {
-
                     for (FolderElement e : parsedDoc.getElements()) {
                         e.setPath(absolutePath);
                     }
-                    for (FolderElement e : parsedDoc.getElements()) {
-                        String path = e.getPath();
-                        assert path != null;
-                    }
-                    for (FolderElement e : parsedDoc.getElements()) {
-                        String path = e.getPath();
-                        assert path != null;
-                    }
                     this.getDocument().addGraphDocument(parsedDoc);
-                    for (FolderElement e : this.getDocument().getElements()) {
-                        String path = e.getPath();
-                        assert path != null;
-                    }
                     this.requestActive();
 
                 });
@@ -376,6 +444,15 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         });
     }
 
+    public InputGraph findGraph(String graphPath) {
+        for (FolderElement e : document.getElements()) {
+            FolderElement result = e.findByPath(graphPath);
+            if (result instanceof InputGraph) {
+                return (InputGraph) result;
+            }
+        }
+        return null;
+    }
 
     /** This method is called from within the constructor to
      * initialize the form.
