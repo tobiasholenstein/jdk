@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,21 +26,31 @@ package com.sun.hotspot.igv.coordinator;
 import com.sun.hotspot.igv.connection.Server;
 import com.sun.hotspot.igv.coordinator.actions.*;
 import com.sun.hotspot.igv.data.ChangedListener;
+import com.sun.hotspot.igv.data.FolderElement;
 import com.sun.hotspot.igv.data.GraphDocument;
 import com.sun.hotspot.igv.data.InputGraph;
+import com.sun.hotspot.igv.data.serialization.GraphParser;
+import com.sun.hotspot.igv.data.serialization.ParseMonitor;
+import com.sun.hotspot.igv.data.serialization.Parser;
 import com.sun.hotspot.igv.data.services.GroupCallback;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
 import com.sun.hotspot.igv.util.LookupHistory;
 import com.sun.hotspot.igv.view.EditorTopComponent;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
+import org.netbeans.api.progress.ProgressHandle;
+import org.netbeans.api.progress.ProgressHandleFactory;
 import org.openide.ErrorManager;
 import org.openide.actions.GarbageCollectAction;
 import org.openide.awt.Toolbar;
@@ -51,6 +61,7 @@ import org.openide.explorer.view.BeanTreeView;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
+import org.openide.util.RequestProcessor;
 import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
 
@@ -69,6 +80,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private RemoveAllAction removeAllAction;
     private GraphNode[] selectedGraphs = new GraphNode[0];
     private final Set<FolderNode> selectedFolders = new HashSet<>();
+    private static final int WORKUNITS = 10000;
 
     private OutlineTopComponent() {
         initComponents();
@@ -127,7 +139,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
     private void initReceivers() {
-
         final GroupCallback callback = g -> {
             synchronized(OutlineTopComponent.this) {
                 g.setParent(getDocument());
@@ -271,16 +282,100 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
     @Override
-    public void readExternal(ObjectInput objectInput) throws IOException, ClassNotFoundException {
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // Not called when user starts application for the first time
-        super.readExternal(objectInput);
+        super.readExternal(in);
         ((BeanTreeView) this.treeView).setRootVisible(false);
+
+        int pathCount = in.readInt();
+        System.out.println(pathCount);
+        for (int i = 0; i < pathCount; i++) {
+            String path = in.readUTF();
+            System.out.println(path);
+            loadFile(path);
+        }
     }
 
     @Override
-    public void writeExternal(ObjectOutput objectOutput) throws IOException {
-        super.writeExternal(objectOutput);
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
+        Set<String> allPaths = new HashSet<>();
+        for (FolderElement e : document.getElements()) {
+            String path = e.getPath();
+            assert path != null;
+            allPaths.add(path);
+        }
+
+        int pathCount = allPaths.size();
+        System.out.println(pathCount);
+        out.writeInt(pathCount);
+        for (String path : allPaths) {
+            System.out.println(path);
+            out.writeUTF(path);
+        }
     }
+
+    public void loadFile(String absolutePath) throws IOException {
+        File file = new File(absolutePath);
+        final FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ);
+        final long start = channel.size();
+
+        RequestProcessor.getDefault().post(() -> {
+            final ProgressHandle handle = ProgressHandleFactory.createHandle("Opening file " + file.getName());
+            handle.start(WORKUNITS);
+
+            ParseMonitor monitor = new ParseMonitor() {
+                @Override
+                public void updateProgress() {
+                    try {
+                        int prog = (int) (WORKUNITS * (double) channel.position() / (double) start);
+                        handle.progress(prog);
+                    } catch (IOException ignored) {}
+                }
+                @Override
+                public void setState(String state) {
+                    updateProgress();
+                    handle.progress(state);
+                }
+            };
+            try {
+                final GraphParser parser;
+                if (file.getName().endsWith(".xml")) {
+                    parser = new Parser(channel, monitor, null);
+                } else {
+                    parser = null;
+                }
+                assert parser != null;
+                final GraphDocument parsedDoc = parser.parse();
+                SwingUtilities.invokeLater(() -> {
+
+                    for (FolderElement e : parsedDoc.getElements()) {
+                        e.setPath(absolutePath);
+                    }
+                    for (FolderElement e : parsedDoc.getElements()) {
+                        String path = e.getPath();
+                        assert path != null;
+                    }
+                    for (FolderElement e : parsedDoc.getElements()) {
+                        String path = e.getPath();
+                        assert path != null;
+                    }
+                    this.getDocument().addGraphDocument(parsedDoc);
+                    for (FolderElement e : this.getDocument().getElements()) {
+                        String path = e.getPath();
+                        assert path != null;
+                    }
+                    this.requestActive();
+
+                });
+            } catch (IOException ex) {
+                Exceptions.printStackTrace(ex);
+            }
+            handle.finish();
+        });
+    }
+
 
     /** This method is called from within the constructor to
      * initialize the form.

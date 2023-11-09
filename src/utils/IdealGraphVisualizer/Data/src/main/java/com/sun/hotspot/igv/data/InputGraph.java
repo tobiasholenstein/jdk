@@ -35,6 +35,7 @@ public class InputGraph extends Properties.Entity implements FolderElement {
     private final List<InputEdge> edges;
     private Folder parent;
     private Group parentGroup;
+    private String path;
     private final Map<String, InputBlock> blocks;
     private final List<InputBlockEdge> blockEdges;
     private final Map<Integer, InputBlock> nodeToBlock;
@@ -349,5 +350,15 @@ public class InputGraph extends Properties.Entity implements FolderElement {
     @Override
     public Folder getParent() {
         return parent;
+    }
+
+    @Override
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    @Override
+    public String getPath() {
+        return this.path;
     }
 }

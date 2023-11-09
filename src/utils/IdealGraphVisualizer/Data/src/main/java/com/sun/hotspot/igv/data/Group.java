@@ -33,6 +33,7 @@ public class Group extends Properties.Entity implements ChangedEventProvider<Gro
 
     private final List<InputGraph> graphs;
     private InputMethod method;
+    private String path;
     private final transient ChangedEvent<Group> changedEvent;
     private final ChangedEvent<Group> displayNameChangedEvent = new ChangedEvent<>(this);
 
@@ -169,5 +170,15 @@ public class Group extends Properties.Entity implements ChangedEventProvider<Gro
     @Override
     public void setParent(Folder parent) {
         this.parent = parent;
+    }
+
+    @Override
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    @Override
+    public String getPath() {
+        return this.path;
     }
 }

@@ -30,4 +30,6 @@ public interface FolderElement {
     String getDisplayName();
     void setParent(Folder parent);
     Folder getParent();
+    void setPath(String path);
+    String getPath();
 }
