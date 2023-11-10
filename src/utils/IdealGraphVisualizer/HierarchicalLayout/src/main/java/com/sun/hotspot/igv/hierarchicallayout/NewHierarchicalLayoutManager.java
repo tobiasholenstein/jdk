@@ -721,16 +721,10 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
         int newLayerNr = findLayer(newLocation.y);
         if (movedNode.layer == newLayerNr) { // we move the node in the same layer
-            // the node did not change position withing the layer
-            if (tryMoveNodeInSamePosition(movedNode, newLocation.x, newLayerNr)) {
-                optimizeBackedgeCrossing();
-                straightenEdges();
-                new AssignYCoordinates().run();
-                assertOrder();
-                new WriteResult().run();
-                return;
+            boolean hasSamePos = tryMoveNodeInSamePosition(movedNode, newLocation.x, newLayerNr);
+            if (!hasSamePos) {
+                moveNode(movedNode, newLocation.x, movedNode.layer);
             }
-            moveNode(movedNode, newLocation.x, movedNode.layer);
         } else { // only remove edges if we moved the node to a new layer
             newLayerNr = insertNewLayerIfNeeded(movedNode, newLayerNr);
             assertOrder();
@@ -744,7 +738,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         }
 
         assertOrder();
-        //new AssignXCoordinates().run();
         optimizeBackedgeCrossing();
         straightenEdges();
         assertOrder();
