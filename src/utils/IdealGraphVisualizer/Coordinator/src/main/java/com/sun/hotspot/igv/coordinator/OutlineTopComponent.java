@@ -394,6 +394,16 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             for (int hiddenNodeID : model.getHiddenNodes()) {
                 out.writeInt(hiddenNodeID);
             }
+
+            boolean saveLayout = model.getShowSea();
+            //out.writeBoolean(saveLayout);
+            if (saveLayout) {
+                // TODO
+                //model.getDiagram().getFigures().get(0).getPosition()
+
+                //link.setControlPoints(points);
+                //vertex.setPosition(point);
+            }
         }
     }
 
