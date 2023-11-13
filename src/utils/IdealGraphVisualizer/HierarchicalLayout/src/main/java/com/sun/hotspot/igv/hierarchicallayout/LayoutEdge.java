@@ -28,17 +28,46 @@ import com.sun.hotspot.igv.layout.Link;
 
 public class LayoutEdge {
 
-        public LayoutNode from;
-        public LayoutNode to;
-        // Horizontal distance relative to start of 'from'.
-        public int relativeFrom;
-        // Horizontal distance relative to start of 'to'.
-        public int relativeTo;
-        public Link link;
-        public boolean vip;
+    public LayoutNode from;
+    public LayoutNode to;
+    // Horizontal distance relative to start of 'from'.
+    public int relativeFrom;
+    // Horizontal distance relative to start of 'to'.
+    public int relativeTo;
+    public Link link;
+    public boolean vip;
 
-        @Override
-        public String toString() {
-            return "Edge " + from + ", " + to;
-        }
+    public int getStartPoint() {
+        return relativeFrom + from.getLeftSide();
     }
+
+    public int getEndPoint() {
+        return relativeTo + to.getLeftSide();
+    }
+
+    public LayoutEdge(LayoutNode from, LayoutNode to) {
+        this.from = from;
+        this.to = to;
+    }
+
+    public LayoutEdge(LayoutNode from, LayoutNode to, int relativeFrom, int relativeTo, Link link) {
+        this(from, to);
+        this.relativeFrom = relativeFrom;
+        this.relativeTo = relativeTo;
+        this.link = link;
+        this.vip = link != null && link.isVIP();
+    }
+
+    public LayoutEdge(LayoutNode from, LayoutNode to, int relativeFrom, int relativeTo, Link link, boolean vip) {
+        this(from, to);
+        this.relativeFrom = relativeFrom;
+        this.relativeTo = relativeTo;
+        this.link = link;
+        this.vip = vip;
+    }
+
+    @Override
+    public String toString() {
+        return "Edge " + from + ", " + to;
+    }
+}
