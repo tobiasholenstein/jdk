@@ -56,7 +56,6 @@ public class LayoutNode {
     public final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
     public int pos = -1; // Position within layer
 
-    public int crossingNumber;
     public float weightedPosition = 0;
     public boolean reverseLeft = false;
 

@@ -687,7 +687,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
             treeSet.add(n);
         }
     }
-    private static final Comparator<LayoutNode> crossingNodeComparator = Comparator.comparingInt(n -> n.crossingNumber);
+    private static final Comparator<LayoutNode> crossingNodeComparator = Comparator.comparingDouble(n -> n.weightedPosition);
 
     private class CrossingReduction {
 
@@ -773,7 +773,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
             for (int i = 1; i < layerCount; i++) {
 
                 for (LayoutNode n : layers[i]) {
-                    n.crossingNumber = 0;
+                    n.weightedPosition = 0;
                 }
 
                 for (LayoutNode n : layers[i]) {
@@ -789,7 +789,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
                     if (count > 0) {
                         sum /= count;
-                        n.crossingNumber = sum;
+                        n.weightedPosition = sum;
                     }
                 }
 
@@ -824,11 +824,11 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
                 if (cond) {
                     if (prev != null && next != null) {
-                        n.crossingNumber = (prev.crossingNumber + next.crossingNumber) / 2;
+                        n.weightedPosition = (prev.weightedPosition + next.weightedPosition) / 2;
                     } else if (prev != null) {
-                        n.crossingNumber = prev.crossingNumber;
+                        n.weightedPosition = prev.weightedPosition;
                     } else if (next != null) {
-                        n.crossingNumber = next.crossingNumber;
+                        n.weightedPosition = next.weightedPosition;
                     }
                 }
             }
@@ -839,7 +839,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
             for (int i = layerCount - 2; i >= 0; i--) {
 
                 for (LayoutNode n : layers[i]) {
-                    n.crossingNumber = 0;
+                    n.weightedPosition = 0;
                 }
 
                 for (LayoutNode n : layers[i]) {
@@ -855,7 +855,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
                     if (count > 0) {
                         sum /= count;
-                        n.crossingNumber = sum;
+                        n.weightedPosition = sum;
                     }
 
                 }
