@@ -27,6 +27,7 @@ import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.data.*;
 import com.sun.hotspot.igv.graph.*;
 import com.sun.hotspot.igv.hierarchicallayout.*;
+import com.sun.hotspot.igv.layout.Cluster;
 import com.sun.hotspot.igv.layout.LayoutGraph;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.selectioncoordinator.SelectionCoordinator;
@@ -479,9 +480,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         };
         addObjectSceneListener(selectionChangedListener, ObjectSceneEventType.OBJECT_SELECTION_CHANGED, ObjectSceneEventType.OBJECT_HIGHLIGHTING_CHANGED, ObjectSceneEventType.OBJECT_HOVER_CHANGED);
 
-        this.model = model;
-        modelState = new ModelState(model);
-
         model.getDiagramChangedEvent().addListener(m -> update());
         model.getGraphChangedEvent().addListener(m -> graphChanged());
         model.getHiddenNodesChangedEvent().addListener(m -> hiddenNodesChanged());
@@ -500,6 +498,9 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
         hierarchicalStableLayoutManager = new HierarchicalStableLayoutManager();
         seaLayoutManager = new NewHierarchicalLayoutManager();
+
+        this.model = model;
+        modelState = new ModelState(model, this);
     }
 
     @Override
@@ -804,7 +805,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return rebuilding;
     }
 
-    private boolean isVisibleBlockConnection(BlockConnection blockConnection) {
+    public boolean isVisibleBlockConnection(BlockConnection blockConnection) {
         Widget w1 = getWidget(blockConnection.getFromCluster().getInputBlock());
         Widget w2 = getWidget(blockConnection.getToCluster().getInputBlock());
         return w1.isVisible() && w2.isVisible();
@@ -822,35 +823,25 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return w1.isVisible() && w2.isVisible();
     }
 
-    private void doStableSeaLayout(HashSet<Figure> visibleFigures, HashSet<Connection> visibleConnections) {
+    private void doStableSeaLayout(Set<Figure> visibleFigures, Set<Connection> visibleConnections) {
         hierarchicalStableLayoutManager.updateLayout(visibleFigures, visibleConnections);
     }
 
-    private void doSeaLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
+    private void doSeaLayout(Set<Figure> figures, Set<Connection> edges) {
         seaLayoutManager.doLayout(new LayoutGraph(edges, figures));
         hierarchicalStableLayoutManager.setShouldRedrawLayout(true);
     }
 
-    private void doClusteredLayout(HashSet<Connection> edges) {
-        HierarchicalClusterLayoutManager m = new HierarchicalClusterLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
-        NewHierarchicalLayoutManager manager = new NewHierarchicalLayoutManager();
-        //manager.setMaxLayerLength(9);
-        //manager.setMinLayerDifference(3);
-        m.setManager(manager);
-        m.setSubManager(new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS));
+    private void doClusteredLayout(Set<Connection> edges) {
+        HierarchicalClusterLayoutManager m = new HierarchicalClusterLayoutManager();
         m.doLayout(new LayoutGraph(edges));
     }
 
-    private void doCFGLayout(HashSet<Figure> figures, HashSet<Connection> edges) {
-        Diagram diagram = getModel().getDiagram();
+    private void doCFGLayout(Set<Figure> figures, Set<Connection> edges) {
         HierarchicalCFGLayoutManager m = new HierarchicalCFGLayoutManager();
-        HierarchicalLayoutManager manager = new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
-        manager.setMaxLayerLength(9);
-        manager.setMinLayerDifference(1);
-        manager.setLayoutSelfEdges(true);
-        manager.setXOffset(25);
-        manager.setLayerOffset(25);
-        m.setManager(manager);
+
+        Diagram diagram = getModel().getDiagram();
+
         Map<InputNode, Figure> nodeFig = new HashMap<>();
         for (Figure f : figures) {
             InputNode n = f.getInputNode();
@@ -872,21 +863,16 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 }
             }
         }
+
         // Add visible connections for CFG edges.
         for (BlockConnection c : diagram.getBlockConnections()) {
             if (isVisibleBlockConnection(c)) {
                 edges.add(c);
             }
         }
+
         m.setSubManager(new LinearLayoutManager(figureRank));
-        Set<Block> visibleBlocks = new HashSet<>();
-        for (Block b : diagram.getBlocks()) {
-            BlockWidget w = getWidget(b.getInputBlock());
-            if (w.isVisible()) {
-                visibleBlocks.add(b);
-            }
-        }
-        m.setClusters(new HashSet<>(visibleBlocks));
+        m.setClusters(getVisibleBlocks());
         m.doLayout(new LayoutGraph(edges, figures));
     }
 
@@ -1264,7 +1250,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
-    private HashSet<Figure> getVisibleFigures() {
+    private Set<Figure> getVisibleFigures() {
         HashSet<Figure> visibleFigures = new HashSet<>();
         for (Figure figure : getModel().getDiagram().getFigures()) {
             FigureWidget figureWidget = getWidget(figure);
@@ -1273,6 +1259,17 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             }
         }
         return visibleFigures;
+    }
+
+    private Set<Cluster> getVisibleBlocks() {
+        Set<Cluster> visibleBlocks = new HashSet<>();
+        for (Block b : getModel().getDiagram().getBlocks()) {
+            BlockWidget w = getWidget(b.getInputBlock());
+            if (w.isVisible()) {
+                visibleBlocks.add(b);
+            }
+        }
+        return visibleBlocks;
     }
 
     private HashSet<Connection> getVisibleConnections() {
@@ -1359,8 +1356,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         updateNodeHull();
         updateVisibleBlockWidgets();
 
-        HashSet<Figure> visibleFigures = getVisibleFigures();
-        HashSet<Connection> visibleConnections = getVisibleConnections();
+        Set<Figure> visibleFigures = getVisibleFigures();
+        Set<Connection> visibleConnections = getVisibleConnections();
         if (getModel().getShowStableSea()) {
             doStableSeaLayout(visibleFigures, visibleConnections);
         } else if (getModel().getShowSea()) {
@@ -1444,21 +1441,33 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         public final int firstPos;
         public final int secondPos;
 
-        public ModelState(DiagramViewModel model) {
-            // TODO
-            //model.getGraph().get
+        // Layout data
+        private int layerCount;
+
+        public int getLayerCount() {
+            return layerCount;
+        }
+
+        public ModelState(DiagramViewModel model, DiagramScene scene) {
             hiddenNodes = new HashSet<>(model.getHiddenNodes());
             firstPos = model.getFirstPosition();
             secondPos = model.getSecondPosition();
+            if (model.getShowSea()) {
+                // TODO
+                layerCount = scene.seaLayoutManager.getLayerCount();
+                if (layerCount > 0) {
+                    List<Map<Integer, Point>> nodeData = scene.seaLayoutManager.saveNodes();
+                }
+            }
         }
     }
 
     private void addUndo() {
-        ModelState newModelState = new ModelState(model);
         if (undoRedoEnabled) {
+            ModelState newModelState = new ModelState(model, this);
             DiagramUndoRedo undoRedo = new DiagramUndoRedo(this, getScrollPosition(), modelState, newModelState);
             getUndoRedoManager().undoableEditHappened(new UndoableEditEvent(this, undoRedo));
+            modelState = newModelState;
         }
-        modelState = newModelState;
     }
 }

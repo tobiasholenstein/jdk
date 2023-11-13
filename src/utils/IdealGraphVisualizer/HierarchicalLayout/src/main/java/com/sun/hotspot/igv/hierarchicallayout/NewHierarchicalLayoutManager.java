@@ -56,6 +56,9 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
     private LayoutLayer[] layers;
     private int layerCount;
 
+    public int getLayerCount() {
+        return layerCount;
+    }
 
     private void assertLinks() {
         for (LayoutNode node : getLayoutNodes()) {
@@ -121,7 +124,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 LayoutNode leftNode = layer.get(pos-1);
                 LayoutNode rightNode = layer.get(pos);
                 assert leftNode.pos + 1 == rightNode.pos;
-                //assert leftNode.x <= rightNode.x;
+                assert leftNode.x <= rightNode.x;
             }
             for (LayoutNode node : layer) {
                 assert node.layer >= 0;
@@ -631,6 +634,36 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             removeEmptyLayers(oldLayerNr);
         }
     }
+    public List<Map<Integer, Point>> saveNodes() {
+        assertOrder();
+        List<Map<Integer, Point>> data = new ArrayList<>();
+        for (LayoutLayer layer : layers) {
+            Map<Integer, Point> layerData = new HashMap<>();
+            int dummyID = -1;
+            for (LayoutNode node : layer) {
+                int id = (node.vertex != null) ? node.vertex.getID() : dummyID--;
+                assert !layerData.containsKey(id);
+                layerData.put(id, new Point(node.x, node.y));
+            }
+            data.add(layerData);
+        }
+        return data;
+    }
+
+    public void saveEdges() {
+        assertOrder();
+        List<Map<Integer, Point>> data = new ArrayList<>();
+        for (LayoutLayer layer : layers) {
+            Map<Integer, Point> layerData = new HashMap<>();
+            int dummyID = -1;
+            for (LayoutNode node : layer) {
+                int id = (node.vertex != null) ? node.vertex.getID() : dummyID--;
+                assert !layerData.containsKey(id);
+                layerData.put(id, new Point(node.x, node.y));
+            }
+            data.add(layerData);
+        }
+    }
 
     // check that NO neighbors of node are in a given layer
     private int insertNewLayerIfNeeded(LayoutNode node, int layerNr) {
@@ -745,150 +778,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         assertOrder();
         new WriteResult().run();
         assertOrder();
-    }
-
-    private class LayoutNode {
-
-        public int optimal_x;
-        public int x;
-        public int y;
-        public int width;
-        public int height;
-        public int layer = -1;
-        public int leftXOffset;
-        public int topYOffset;
-        public int rightXOffset;
-        public int bottomYOffset;
-        public final Vertex vertex; // Only used for non-dummy nodes, otherwise null
-
-        public final List<LayoutEdge> preds = new ArrayList<>();
-        public final List<LayoutEdge> succs = new ArrayList<>();
-
-        public final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();
-        public final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
-        public int pos = -1; // Position within layer
-
-        public float weightedPosition = 0;
-        public boolean reverseLeft = false;
-
-        public LayoutNode(Vertex v) {
-            vertex = v;
-            if (v == null) {
-                height = DUMMY_HEIGHT;
-                width = DUMMY_WIDTH;
-            } else {
-                Dimension size = v.getSize();
-                height = size.height;
-                width = size.width;
-            }
-        }
-
-        public LayoutNode() {
-            this(null);
-        }
-
-        public int getDegree() {
-            return preds.size() + succs.size();
-        }
-
-        public float averagePosition(boolean weighted) {
-            float totalWeightedPosition = 0;
-            float totalWeight = 0;
-
-            for (LayoutEdge predEdge : preds) {
-                LayoutNode predNode = predEdge.from;
-                int weight = weighted ? predNode.getDegree() : 1;
-                totalWeightedPosition += weight * predEdge.getStartPoint();
-                totalWeight += weight;
-            }
-            for (LayoutEdge succEdge : succs) {
-                LayoutNode succNode = succEdge.to;
-                int weight = weighted ? succNode.getDegree() : 1;
-                totalWeightedPosition += weight * succEdge.getEndPoint();
-                totalWeight += weight;
-            }
-
-            // Calculate the (weighted) average position for the node based on neighbor positions and weights (degree)
-            return totalWeight > 0 ? totalWeightedPosition / totalWeight : 0;
-        }
-
-        public int getLeftSide() {
-            return x + leftXOffset;
-        }
-
-        public int getLeftBorder() {
-            return x;
-        }
-
-        public int getWholeWidth() {
-            return leftXOffset + width + rightXOffset;
-        }
-
-        public int getWholeHeight() {
-            return topYOffset + height + bottomYOffset;
-        }
-
-        public int getRightSide() {
-            return x + leftXOffset + width;
-        }
-
-        public int getRightBorder() {
-            return x + leftXOffset + width + rightXOffset;
-        }
-
-        public int getCenterX() {
-            return getLeftSide() + (width / 2);
-        }
-
-        public int getTop() {
-            return y + topYOffset;
-        }
-
-        public int getBottom() {
-            return y + topYOffset + height;
-        }
-
-        public boolean isDummy() {
-            return vertex == null;
-        }
-
-        @Override
-        public String toString() {
-            if (vertex != null) {
-                return vertex.toString();
-            } else {
-                return "dummy";
-            }
-        }
-    }
-
-    private class LayoutEdge {
-
-        public LayoutNode from;
-        public LayoutNode to;
-        public int relativeFrom;
-        public int relativeTo;
-        public Link link;
-
-        public int getStartPoint() {
-            return relativeFrom + from.getLeftSide();
-        }
-
-        public int getEndPoint() {
-            return relativeTo + to.getLeftSide();
-        }
-
-        public LayoutEdge(LayoutNode from, LayoutNode to) {
-            this.from = from;
-            this.to = to;
-        }
-
-        public LayoutEdge(LayoutNode from, LayoutNode to, int relativeFrom, int relativeTo, Link link) {
-            this(from, to);
-            this.relativeFrom = relativeFrom;
-            this.relativeTo = relativeTo;
-            this.link = link;
-        }
     }
 
     public NewHierarchicalLayoutManager() {
@@ -1142,7 +1031,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         assert !hasReversedUP || !node.reversedLinkEndPoints.isEmpty();
     }
 
-    public Collection<LayoutNode> getLayoutNodes() {
+    private Collection<LayoutNode> getLayoutNodes() {
         return vertexToLayoutNode.values();
     }
 
@@ -1435,7 +1324,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         dummyNode.width = DUMMY_WIDTH;
         dummyNode.height = DUMMY_HEIGHT;
         dummyNode.succs.add(layoutEdge);
-        LayoutEdge result = new LayoutEdge(layoutEdge.from, dummyNode, layoutEdge.relativeFrom, 0, layoutEdge.link);
+        LayoutEdge result = new LayoutEdge(layoutEdge.from, dummyNode, layoutEdge.relativeFrom, 0, null);
         dummyNode.preds.add(result);
         layoutEdge.relativeFrom = 0;
         layoutEdge.from.succs.remove(layoutEdge);
@@ -1506,6 +1395,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                         portToTopNode.put(startPort, topCutNode);
                         portToBottomNodeMapping.put(startPort, new HashMap<>());
                     }
+                    assert !fromNode.isDummy();
                     LayoutEdge edgeToTopCut = new LayoutEdge(fromNode, topCutNode, succEdge.relativeFrom, topCutNode.width / 2, succEdge.link);
                     fromNode.succs.add(edgeToTopCut);
                     topCutNode.preds.add(edgeToTopCut);
