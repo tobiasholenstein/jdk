@@ -23,6 +23,7 @@
  */
 package com.sun.hotspot.igv.hierarchicallayout;
 
+
 import com.sun.hotspot.igv.layout.LayoutManager;
 import com.sun.hotspot.igv.layout.*;
 import java.awt.*;
@@ -35,7 +36,7 @@ public class HierarchicalCFGLayoutManager implements LayoutManager {
     // Lays out nodes within a single cluster (basic block).
     private LayoutManager subManager;
     // Lays out clusters in the CFG.
-    private LayoutManager manager;
+    private final LayoutManager manager;
     private Set<Cluster> clusters;
 
     public HierarchicalCFGLayoutManager() {
@@ -43,14 +44,11 @@ public class HierarchicalCFGLayoutManager implements LayoutManager {
         Canvas canvas = new Canvas();
         Font font = new Font("Arial", Font.BOLD, 14);
         fontMetrics = canvas.getFontMetrics(font);
+        this.manager =  new NewHierarchicalLayoutManager();
     }
 
     public void setSubManager(LayoutManager manager) {
         this.subManager = manager;
-    }
-
-    public void setManager(LayoutManager manager) {
-        this.manager = manager;
     }
 
     public void setClusters(Set<Cluster> clusters) {

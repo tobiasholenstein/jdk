@@ -38,8 +38,8 @@ public class HierarchicalStableLayoutManager {
     public static final int X_OFFSET = 8;
     public static final int LAYER_OFFSET = 8;
     // Algorithm global data structures
-    private HashSet<? extends Vertex> currentVertices;
-    private HashSet<? extends Link> currentLinks;
+    private Set<? extends Vertex> currentVertices;
+    private Set<? extends Link> currentLinks;
     private Set<Link> reversedLinks;
     private List<LayoutNode> nodes;
     private final HashMap<Vertex, LayoutNode> vertexToLayoutNode;
@@ -396,7 +396,7 @@ public class HierarchicalStableLayoutManager {
         this.shouldRedrawLayout = shouldRedrawLayout;
     }
 
-    public void updateLayout(HashSet<? extends Vertex> vertices, HashSet<? extends Link> links) {
+    public void updateLayout(Set<? extends Vertex> vertices, Set<? extends Link> links) {
         currentVertices = vertices;
         currentLinks = links;
         reversedLinks = new HashSet<>();
