@@ -59,10 +59,6 @@ public class Block implements Cluster {
         return succs;
     }
 
-    public Dimension getNodeOffset() {
-        return new Dimension(0, -Figure.getVerticalOffset());
-    }
-
     @Override
     public int getID() {
         return inputBlock.getID();

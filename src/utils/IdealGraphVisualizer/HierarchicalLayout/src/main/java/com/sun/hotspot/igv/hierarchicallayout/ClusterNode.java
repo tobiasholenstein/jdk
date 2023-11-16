@@ -46,14 +46,12 @@ public class ClusterNode implements Vertex {
     private boolean root;
     private final String name;
     private final int border;
-    private final Dimension nodeOffset;
     private final int headerVerticalSpace;
     private final Dimension emptySize;
     private final int id;
 
     public ClusterNode(Cluster cluster, String name, int border,
-                       Dimension nodeOffset, int headerVerticalSpace,
-                       Dimension emptySize) {
+                       int headerVerticalSpace, Dimension emptySize) {
         this.id = cluster.getID();
         this.subNodes = new HashSet<>();
         this.subEdges = new HashSet<>();
@@ -61,7 +59,6 @@ public class ClusterNode implements Vertex {
         this.position = new Point(0, 0);
         this.name = name;
         this.border = border;
-        this.nodeOffset = nodeOffset;
         this.headerVerticalSpace = headerVerticalSpace;
         this.emptySize = emptySize;
         if (emptySize.width > 0 || emptySize.height > 0) {
@@ -70,7 +67,7 @@ public class ClusterNode implements Vertex {
     }
 
     public ClusterNode(Cluster cluster, String name) {
-        this(cluster, name, 20, new Dimension(0, 0), 0, new Dimension(0, 0));
+        this(cluster, name, 20, 0, new Dimension(0, 0));
     }
 
     public String getName() {
@@ -147,8 +144,8 @@ public class ClusterNode implements Vertex {
 
         // Normalize coordinates
         for (Vertex n : subNodes) {
-            n.setPosition(new Point(n.getPosition().x - minX + nodeOffset.width,
-                                    n.getPosition().y - minY + nodeOffset.height + headerVerticalSpace));
+            n.setPosition(new Point(n.getPosition().x - minX,
+                                    n.getPosition().y - minY + headerVerticalSpace));
         }
 
         for (Link l : subEdges) {

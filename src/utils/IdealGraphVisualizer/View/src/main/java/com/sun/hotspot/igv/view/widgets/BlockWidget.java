@@ -73,7 +73,7 @@ public class BlockWidget extends Widget implements DoubleClickHandler {
 
         String s = "B" + blockNode.getName();
         Rectangle2D r1 = g.getFontMetrics().getStringBounds(s, g);
-        g.drawString(s, r.x + 5, r.y + (int) r1.getHeight());
+        g.drawString(s, r.x + 6, r.y + (int) r1.getHeight());
         g.setStroke(old);
     }
 
