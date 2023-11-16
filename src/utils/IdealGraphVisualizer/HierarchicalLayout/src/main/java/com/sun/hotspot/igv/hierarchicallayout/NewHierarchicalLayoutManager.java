@@ -520,7 +520,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             if (x < leftNode.getRightSide()) {
                 newPos = leftNode.pos;
                 break;
-            } else if (x < rightNode.getRightSide()) {
+            } else if (x <= rightNode.getRightSide()) {
                 newPos = rightNode.pos;
                 break;
             } else {
