@@ -86,13 +86,13 @@ public class LayoutNode {
         for (LayoutEdge predEdge : preds) {
             LayoutNode predNode = predEdge.from;
             int weight = weighted ? predNode.getDegree() : 1;
-            totalWeightedPosition += weight * predEdge.getStartPoint();
+            totalWeightedPosition += weight * predEdge.getStartX();
             totalWeight += weight;
         }
         for (LayoutEdge succEdge : succs) {
             LayoutNode succNode = succEdge.to;
             int weight = weighted ? succNode.getDegree() : 1;
-            totalWeightedPosition += weight * succEdge.getEndPoint();
+            totalWeightedPosition += weight * succEdge.getEndX();
             totalWeight += weight;
         }
 

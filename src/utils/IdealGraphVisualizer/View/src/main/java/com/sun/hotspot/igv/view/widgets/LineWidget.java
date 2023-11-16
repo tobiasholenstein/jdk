@@ -320,6 +320,13 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
         }
     }
 
+    public Figure getFromFigure() {
+        if (outputSlot != null) {
+            return outputSlot.getFigure();
+        }
+        return null;
+    }
+
     @Override
     public JPopupMenu getPopupMenu(Widget widget, Point localLocation) {
         JPopupMenu menu = new JPopupMenu();

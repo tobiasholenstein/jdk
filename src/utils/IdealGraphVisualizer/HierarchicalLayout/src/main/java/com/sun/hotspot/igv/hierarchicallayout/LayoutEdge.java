@@ -31,18 +31,18 @@ public class LayoutEdge {
     public LayoutNode from;
     public LayoutNode to;
     // Horizontal distance relative to start of 'from'.
-    public int relativeFrom;
+    public int relativeFromX;
     // Horizontal distance relative to start of 'to'.
-    public int relativeTo;
+    public int relativeToX;
     public Link link;
     public boolean vip;
 
-    public int getStartPoint() {
-        return relativeFrom + from.getLeftSide();
+    public int getStartX() {
+        return relativeFromX + from.getLeftSide();
     }
 
-    public int getEndPoint() {
-        return relativeTo + to.getLeftSide();
+    public int getEndX() {
+        return relativeToX + to.getLeftSide();
     }
 
     public LayoutEdge(LayoutNode from, LayoutNode to) {
@@ -50,18 +50,18 @@ public class LayoutEdge {
         this.to = to;
     }
 
-    public LayoutEdge(LayoutNode from, LayoutNode to, int relativeFrom, int relativeTo, Link link) {
+    public LayoutEdge(LayoutNode from, LayoutNode to, int relativeFromX, int relativeToX, Link link) {
         this(from, to);
-        this.relativeFrom = relativeFrom;
-        this.relativeTo = relativeTo;
+        this.relativeFromX = relativeFromX;
+        this.relativeToX = relativeToX;
         this.link = link;
         this.vip = link != null && link.isVIP();
     }
 
-    public LayoutEdge(LayoutNode from, LayoutNode to, int relativeFrom, int relativeTo, Link link, boolean vip) {
+    public LayoutEdge(LayoutNode from, LayoutNode to, int relativeFromX, int relativeToX, Link link, boolean vip) {
         this(from, to);
-        this.relativeFrom = relativeFrom;
-        this.relativeTo = relativeTo;
+        this.relativeFromX = relativeFromX;
+        this.relativeToX = relativeToX;
         this.link = link;
         this.vip = vip;
     }

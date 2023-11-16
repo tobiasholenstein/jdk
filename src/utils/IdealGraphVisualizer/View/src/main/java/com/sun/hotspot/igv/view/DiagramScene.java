@@ -649,7 +649,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     for (Figure figure : selectedFigures) {
                         FigureWidget fw = getWidget(figure);
                         Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
-                        seaLayoutManager.moveFigureTo(figure, newLocation);
+                        seaLayoutManager.moveVertex(figure, newLocation);
                     }
 
                     rebuildConnectionLayer();
@@ -964,13 +964,41 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 newPredecessor.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
 
 
+                    Point startLocation;
+                    Point origFrom;
                     @Override
-                    public void movementStarted(Widget widget) {}
+                    public void movementStarted(Widget widget) {
+                        LineWidget lineWidget = (LineWidget) widget;
+                        startLocation = lineWidget.getClientAreaLocation();
+                        origFrom = lineWidget.getFrom();
+                    }
 
                     @Override
                     public void movementFinished(Widget widget) {
                         if (!getModel().getShowSea()) return;
-                        //addUndo();
+
+                        LineWidget lineWidget = (LineWidget) widget;
+                        if (lineWidget.getPredecessor() == null) return;
+                        if (lineWidget.getSuccessors().isEmpty()) return;
+                        if (lineWidget.getFrom().x != lineWidget.getTo().x) return;
+
+                        int shiftX = lineWidget.getClientAreaLocation().x - startLocation.x;
+                        if (shiftX == 0) return;
+
+                        Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
+                        boolean wasMoved = seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
+                        rebuilding = true;
+                        Set<FigureWidget> oldVisibleFigureWidgets = getVisibleFigureWidgets();
+                        Set<BlockWidget> oldVisibleBlockWidgets = getVisibleBlockWidgets();
+                        seaLayoutManager.writeBack();
+                        rebuildConnectionLayer();
+                        updateFigureWidgetLocations(oldVisibleFigureWidgets);
+                        updateBlockWidgetBounds(oldVisibleBlockWidgets);
+                        validateAll();
+                        if (wasMoved) {
+                            addUndo();
+                        }
+                        rebuilding = false;
                     }
 
                     @Override
@@ -991,6 +1019,16 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                         int shiftX = location.x - lineWidget.getClientAreaLocation().x;
                         if (shiftX == 0) return;
 
+                        Point oldFrom = lineWidget.getFrom();
+                        Point newFrom = new Point(oldFrom.x + shiftX, oldFrom.y);
+
+                        Point oldTo = lineWidget.getTo();
+                        Point newTo = new Point(oldTo.x + shiftX, oldTo.y);
+
+                        lineWidget.setTo(newTo);
+                        lineWidget.setFrom(newFrom);
+                        lineWidget.revalidate();
+
                         LineWidget predecessor = lineWidget.getPredecessor();
                         Point toPt = predecessor.getTo();
                         predecessor.setTo(new Point(toPt.x + shiftX, toPt.y));
@@ -1001,12 +1039,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                             successor.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
                             successor.revalidate();
                         }
-
-                        Point oldFrom = lineWidget.getFrom();
-                        Point oldTo = lineWidget.getTo();
-                        lineWidget.setTo(new Point(oldTo.x + shiftX, oldTo.y));
-                        lineWidget.setFrom( new Point(oldFrom.x + shiftX, oldFrom.y));
-                        lineWidget.revalidate();
                     }
                 }));
             }
