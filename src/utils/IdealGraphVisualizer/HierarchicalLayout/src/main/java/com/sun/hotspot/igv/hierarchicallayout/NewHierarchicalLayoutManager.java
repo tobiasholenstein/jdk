@@ -170,8 +170,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             layer.add(node);
         }
 
-
-        int minX = node.pos == 0 ? 0 : layer.get(node.pos-1).getRightBorder();
+        int minX = node.pos == 0 ? 0 : layer.get(node.pos-1).getRightBorder() + X_OFFSET;
         node.x = Math.max( node.x, minX);
 
         // update x of the nodes right of inserted node at pos
