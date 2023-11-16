@@ -27,10 +27,10 @@ import com.sun.hotspot.igv.graph.Block;
 import com.sun.hotspot.igv.graph.Connection;
 import com.sun.hotspot.igv.graph.Figure;
 import com.sun.hotspot.igv.graph.OutputSlot;
-import com.sun.hotspot.igv.layout.Vertex;
+import com.sun.hotspot.igv.util.DoubleClickAction;
+import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.util.StringUtils;
 import com.sun.hotspot.igv.view.DiagramScene;
-import com.sun.hotspot.igv.view.actions.CustomSelectAction;
 import java.awt.*;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
@@ -42,7 +42,7 @@ import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.PopupMenuProvider;
-import org.netbeans.api.visual.action.SelectProvider;
+import org.netbeans.api.visual.action.WidgetAction;
 import org.netbeans.api.visual.model.ObjectState;
 import org.netbeans.api.visual.widget.Widget;
 
@@ -50,7 +50,7 @@ import org.netbeans.api.visual.widget.Widget;
  *
  * @author Thomas Wuerthinger
  */
-public class LineWidget extends Widget implements PopupMenuProvider {
+public class LineWidget extends Widget implements PopupMenuProvider, DoubleClickHandler {
 
     public final int BORDER = 5;
     public final int ARROW_SIZE = 6;
@@ -91,7 +91,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         computeClientArea();
 
         Color color = Color.BLACK;
-        if (connections.size() > 0) {
+        if (!connections.isEmpty()) {
             color = connections.get(0).getColor();
         }
         setToolTipText("<HTML>" + generateToolTipText(this.connections) + "</HTML>");
@@ -101,30 +101,7 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         getActions().addAction(ActionFactory.createPopupMenuAction(this));
         setBackground(color);
 
-        getActions().addAction(new CustomSelectAction(new SelectProvider() {
-
-            @Override
-            public boolean isAimingAllowed(Widget widget, Point localLocation, boolean invertSelection) {
-                return true;
-            }
-
-            @Override
-            public boolean isSelectionAllowed(Widget widget, Point localLocation, boolean invertSelection) {
-                return true;
-            }
-
-            @Override
-            public void select(Widget widget, Point localLocation, boolean invertSelection) {
-                Set<Vertex> vertexSet = new HashSet<>();
-                for (Connection connection : connections) {
-                    if (connection.hasSlots()) {
-                        vertexSet.add(connection.getTo().getVertex());
-                        vertexSet.add(connection.getFrom().getVertex());
-                    }
-                }
-                scene.userSelectionSuggested(vertexSet, invertSelection);
-            }
-        }));
+        getActions().addAction(new DoubleClickAction(this));
     }
 
 
@@ -378,5 +355,23 @@ public class LineWidget extends Widget implements PopupMenuProvider {
         });
 
         return menu;
+    }
+
+    @Override
+    public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent event) {
+        Set<Object> selectedObjects = new HashSet<>();
+
+        boolean additiveSelection = (event.getModifiersEx() & DoubleClickAction.getModifierMask()) != 0;
+        if (additiveSelection) {
+            selectedObjects.addAll(scene.getSelectedObjects());
+        }
+
+        for (Connection connection : connections) {
+            if (connection.hasSlots()) {
+                selectedObjects.add(connection.getTo().getVertex());
+                selectedObjects.add(connection.getFrom().getVertex());
+            }
+        }
+        scene.setSelectedObjects(selectedObjects);
     }
 }
