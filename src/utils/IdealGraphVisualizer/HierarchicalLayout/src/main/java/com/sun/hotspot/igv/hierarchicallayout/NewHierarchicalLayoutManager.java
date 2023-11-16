@@ -1830,7 +1830,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 // we have a right neighbor
                 LayoutNode rightNode = nextLayer.get(rightPos);
                 int rightShift = x - dummy.x;
-                if (dummy.getRightSide() + rightShift <= rightNode.getLeftBorder()) {
+                if (dummy.getRightSide() + rightShift <= rightNode.getLeftBorder() - X_OFFSET) {
                     // it is possible to shift nextDummyNode right
                     dummy.x = x;
                 }
