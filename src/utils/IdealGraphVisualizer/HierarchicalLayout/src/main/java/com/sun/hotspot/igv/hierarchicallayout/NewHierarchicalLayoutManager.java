@@ -764,22 +764,14 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
     }
 
     public boolean moveLink(Vertex linkFromVertex, Point oldFrom, Point newFrom) {
-        System.out.println("moveLink");
         LayoutNode fromNode = vertexToLayoutNode.get(linkFromVertex);
         LayoutNode movedNode = findSuccLayoutNode(fromNode, oldFrom);
         if (movedNode != null) {
-            System.out.println("findSuccLayoutNode");
-
             Point newLocation = new Point(newFrom.x, newFrom.y + movedNode.height/2);
-
             int newLayerNr = findLayer(newLocation.y);
-            System.out.println("newLayerNr : " + newLayerNr);
-
             if (movedNode.layer == newLayerNr) { // we move the node in the same layer
-                System.out.println("we move the node in the same layer");
                 boolean hasSamePos = tryMoveNodeInSamePosition(movedNode, newLocation.x, newLayerNr);
                 if (!hasSamePos) {
-                    System.out.println("old pos: " + movedNode.pos);
                     moveNode(movedNode, newLocation.x, movedNode.layer);
                 }
             }
@@ -789,6 +781,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
     }
 
     public void writeBack() {
+        optimizeBackedgeCrossing();
         straightenEdges();
         assertOrder();
         new AssignYCoordinates().run();
@@ -820,7 +813,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         }
 
         assertOrder();
-        optimizeBackedgeCrossing();
         writeBack();
     }
 
