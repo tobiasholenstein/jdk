@@ -58,6 +58,7 @@ import org.netbeans.api.visual.layout.LayoutFactory;
 import org.netbeans.api.visual.model.*;
 import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
+import org.netbeans.modules.visual.util.GeomUtil;
 import org.openide.awt.UndoRedo;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
@@ -960,6 +961,54 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 connectionLayer.addChild(newPredecessor);
                 addObject(new ConnectionSet(connectionList), newPredecessor);
                 newPredecessor.getActions().addAction(hoverAction);
+                newPredecessor.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
+
+
+                    @Override
+                    public void movementStarted(Widget widget) {}
+
+                    @Override
+                    public void movementFinished(Widget widget) {
+                        if (!getModel().getShowSea()) return;
+                        //addUndo();
+                    }
+
+                    @Override
+                    public Point getOriginalLocation(Widget widget) {
+                        LineWidget lineWidget = (LineWidget) widget;
+                        return lineWidget.getClientAreaLocation();
+                    }
+
+                    @Override
+                    public void setNewLocation(Widget widget, Point location) {
+                        if (!getModel().getShowSea()) return;
+
+                        LineWidget lineWidget = (LineWidget) widget;
+                        if (lineWidget.getPredecessor() == null) return;
+                        if (lineWidget.getSuccessors().isEmpty()) return;
+                        if (lineWidget.getFrom().x != lineWidget.getTo().x) return;
+
+                        int shiftX = location.x - lineWidget.getClientAreaLocation().x;
+                        if (shiftX == 0) return;
+
+                        LineWidget predecessor = lineWidget.getPredecessor();
+                        Point toPt = predecessor.getTo();
+                        predecessor.setTo(new Point(toPt.x + shiftX, toPt.y));
+                        predecessor.revalidate();
+
+                        for (LineWidget successor : lineWidget.getSuccessors()) {
+                            Point fromPt = successor.getFrom();
+                            successor.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
+                            successor.revalidate();
+                        }
+
+                        Point oldFrom = lineWidget.getFrom();
+                        Point oldTo = lineWidget.getTo();
+                        lineWidget.setTo(new Point(oldTo.x + shiftX, oldTo.y));
+                        lineWidget.setFrom( new Point(oldFrom.x + shiftX, oldFrom.y));
+                        lineWidget.revalidate();
+                    }
+                }));
             }
 
             processOutputSlot(outputSlot, connectionList, controlPointIndex + 1, currentPoint, newPredecessor);

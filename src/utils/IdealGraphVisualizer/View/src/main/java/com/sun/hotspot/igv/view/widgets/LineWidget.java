@@ -128,6 +128,10 @@ public class LineWidget extends Widget implements PopupMenuProvider {
     }
 
 
+    public Point getClientAreaLocation() {
+        return clientArea.getLocation();
+    }
+
     private void computeClientArea() {
         int minX = from.x;
         int minY = from.y;
@@ -272,6 +276,14 @@ public class LineWidget extends Widget implements PopupMenuProvider {
             recursiveHighlightSuccessors(enableHighlighting);
             highlightVertices(enableHighlighting);
         }
+    }
+
+    public LineWidget getPredecessor() {
+        return predecessor;
+    }
+
+    public List<LineWidget> getSuccessors() {
+        return successors;
     }
 
     private void highlightPredecessors(boolean enable) {
