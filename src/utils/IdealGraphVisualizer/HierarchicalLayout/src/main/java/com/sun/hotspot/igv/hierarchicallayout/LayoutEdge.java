@@ -35,6 +35,7 @@ public class LayoutEdge {
     // Horizontal distance relative to start of 'to'.
     public int relativeToX;
     public Link link;
+    private boolean isReversed;
     public boolean vip;
 
     public int getStartX() {
@@ -48,6 +49,7 @@ public class LayoutEdge {
     public LayoutEdge(LayoutNode from, LayoutNode to) {
         this.from = from;
         this.to = to;
+        isReversed = false;
     }
 
     public LayoutEdge(LayoutNode from, LayoutNode to, int relativeFromX, int relativeToX, Link link) {
@@ -64,6 +66,14 @@ public class LayoutEdge {
         this.relativeToX = relativeToX;
         this.link = link;
         this.vip = vip;
+    }
+
+    public void reverse() {
+        isReversed = !isReversed;
+    }
+
+    public boolean isReversed() {
+        return isReversed;
     }
 
     @Override
