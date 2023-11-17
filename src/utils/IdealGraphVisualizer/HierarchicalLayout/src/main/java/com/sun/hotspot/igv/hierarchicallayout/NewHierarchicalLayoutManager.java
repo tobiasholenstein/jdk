@@ -736,16 +736,15 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         }
     }
 
-    private LayoutNode findSuccLayoutNode(LayoutNode layoutNode, Point startPoint) {
-
-        for (LayoutEdge toEdge : layoutNode.succs) {
-            LayoutNode toNode = toEdge.to;
-            if (toNode.isDummy()) {
-                if (startPoint.x == toNode.getCenterX() && startPoint.y == layers[toNode.layer].getTop() - LAYER_OFFSET) {
-                    // found
-                    return toNode;
+    private LayoutNode findDummyNode(LayoutNode layoutNode, Point startPoint, boolean searchPred) {
+        for (LayoutEdge edge : searchPred ? layoutNode.preds : layoutNode.succs) {
+            LayoutNode node = searchPred ? edge.from : edge.to;
+            if (node.isDummy()) {
+                int y = searchPred ? layers[node.layer].getBottom() + LAYER_OFFSET : layers[node.layer].getTop() - LAYER_OFFSET;
+                if (startPoint.x == node.getCenterX() && startPoint.y == y) {
+                    return node;
                 }
-                LayoutNode resultNode = findSuccLayoutNode(toNode, startPoint);
+                LayoutNode resultNode = findDummyNode(node, startPoint, searchPred);
                 if (resultNode != null) return resultNode;
             }
         }
@@ -754,7 +753,8 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
     public boolean moveLink(Vertex linkFromVertex, Point oldFrom, Point newFrom) {
         LayoutNode fromNode = vertexToLayoutNode.get(linkFromVertex);
-        LayoutNode movedNode = findSuccLayoutNode(fromNode, oldFrom);
+        boolean isReversed = fromNode.y > oldFrom.y;
+        LayoutNode movedNode = findDummyNode(fromNode, oldFrom, isReversed);
         if (movedNode != null) {
             Point newLocation = new Point(newFrom.x, newFrom.y + movedNode.height/2);
             int newLayerNr = findLayer(newLocation.y);
