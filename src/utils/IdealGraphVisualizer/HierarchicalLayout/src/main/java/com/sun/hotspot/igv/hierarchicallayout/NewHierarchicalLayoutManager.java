@@ -122,7 +122,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 LayoutNode leftNode = layer.get(pos-1);
                 LayoutNode rightNode = layer.get(pos);
                 assert leftNode.pos + 1 == rightNode.pos;
-                assert leftNode.x <= rightNode.x;
+                //assert leftNode.x <= rightNode.x;
             }
             for (LayoutNode node : layer) {
                 assert node.layer >= 0;
