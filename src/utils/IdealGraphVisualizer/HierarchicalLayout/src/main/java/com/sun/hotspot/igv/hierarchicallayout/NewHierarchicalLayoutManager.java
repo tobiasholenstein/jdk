@@ -1100,7 +1100,10 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             active.clear();
 
             // Start DFS and reverse back edges
-            for (LayoutNode node : getLayoutNodes()) {
+            List<LayoutNode> layoutNodes = new ArrayList<>(getLayoutNodes());
+            Comparator<LayoutNode> ROOTS_FIRST = Comparator.comparingInt(n -> n.preds.size());
+            layoutNodes.sort(ROOTS_FIRST.thenComparing(n -> n.vertex));
+            for (LayoutNode node : layoutNodes) {
                 DFS(node);
             }
             for (LayoutNode node : getLayoutNodes()) {
