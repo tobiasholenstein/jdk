@@ -37,11 +37,9 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
     public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;
-    public static final int DUMMY_HEIGHT = 1;
-    public static final int DUMMY_WIDTH = 1;
     public static final int X_OFFSET = 8;
     public static final int LAYER_OFFSET = 8;
-    public final int OFFSET = X_OFFSET + DUMMY_WIDTH;
+    public final int OFFSET = X_OFFSET + LayoutNode.DUMMY_WIDTH;
     private final boolean combine;
     public static final double SCALE_LAYER_PADDING = 1.5;
 
@@ -986,7 +984,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             node.topYOffset += OFFSET;
 
             ArrayList<Point> startPoints = new ArrayList<>();
-            startPoints.add(new Point(currentX, startY));
             startPoints.add(new Point(currentX, currentY));
             startPoints.add(new Point(startX, currentY));
             startPoints.add(new Point(startX, startY));
@@ -1024,7 +1021,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             node.bottomYOffset += OFFSET;
 
             ArrayList<Point> endPoints = new ArrayList<>();
-            endPoints.add(new Point(currentX, startY));
             endPoints.add(new Point(currentX, currentY));
             endPoints.add(new Point(startX, currentY));
             endPoints.add(new Point(startX, startY));
@@ -1351,8 +1347,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
     private LayoutNode createDummyBetween(LayoutEdge layoutEdge) {
         LayoutNode dummyNode = new LayoutNode();
-        dummyNode.width = DUMMY_WIDTH;
-        dummyNode.height = DUMMY_HEIGHT;
         dummyNode.succs.add(layoutEdge);
         LayoutEdge result = new LayoutEdge(layoutEdge.from, dummyNode, layoutEdge.relativeFromX, 0, null);
         if (layoutEdge.isReversed()) result.reverse();
