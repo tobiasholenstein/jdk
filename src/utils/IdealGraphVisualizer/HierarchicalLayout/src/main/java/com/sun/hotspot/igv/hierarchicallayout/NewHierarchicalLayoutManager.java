@@ -42,6 +42,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
     public static final int X_OFFSET = 8;
     public static final int LAYER_OFFSET = 8;
     public final int OFFSET = X_OFFSET + DUMMY_WIDTH;
+    private final boolean combine;
     public static final double SCALE_LAYER_PADDING = 1.5;
 
 
@@ -806,6 +807,11 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
     }
 
     public NewHierarchicalLayoutManager() {
+        this(true);
+    }
+
+    public NewHierarchicalLayoutManager(boolean combineEdges) {
+        combine = combineEdges;
         maxLayerLength = -1;
         vertexToLayoutNode = new HashMap<>();
         dummyNodes = new ArrayList<>();
@@ -1382,93 +1388,143 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
     public void createDummiesForNodeSuccessor(LayoutNode layoutNode, boolean optimalPos) {
         assert !layoutNode.isDummy();
 
-        HashMap<Integer, List<LayoutEdge>> portsToUnprocessedEdges = new HashMap<>();
-        ArrayList<LayoutEdge> succs = new ArrayList<>(layoutNode.succs);
-        HashMap<Integer, LayoutNode> portToTopNode = new HashMap<>();
-        HashMap<Integer, HashMap<Integer, LayoutNode>> portToBottomNodeMapping = new HashMap<>();
-        for (LayoutEdge succEdge : succs) {
-            int startPort = succEdge.relativeFromX;
-            LayoutNode fromNode = succEdge.from;
-            LayoutNode toNode = succEdge.to;
-            assert fromNode.layer < toNode.layer;
+        if (combine) {
+            HashMap<Integer, List<LayoutEdge>> portsToUnprocessedEdges = new HashMap<>();
+            ArrayList<LayoutEdge> succs = new ArrayList<>(layoutNode.succs);
+            HashMap<Integer, LayoutNode> portToTopNode = new HashMap<>();
+            HashMap<Integer, HashMap<Integer, LayoutNode>> portToBottomNodeMapping = new HashMap<>();
+            for (LayoutEdge succEdge : succs) {
+                int startPort = succEdge.relativeFromX;
+                LayoutNode fromNode = succEdge.from;
+                LayoutNode toNode = succEdge.to;
+                assert fromNode.layer < toNode.layer;
 
-            // edge is longer than one layer => needs dummy nodes
-            if (fromNode.layer != toNode.layer - 1) {
-                // the edge needs to be cut
-                if (maxLayerLength != -1 && toNode.layer - fromNode.layer > maxLayerLength) {
-                    assert maxLayerLength > 2;
-                    // remove the succEdge before replacing it
-                    toNode.preds.remove(succEdge);
-                    fromNode.succs.remove(succEdge);
+                // edge is longer than one layer => needs dummy nodes
+                if (fromNode.layer != toNode.layer - 1) {
+                    // the edge needs to be cut
+                    if (maxLayerLength != -1 && toNode.layer - fromNode.layer > maxLayerLength) {
+                        assert maxLayerLength > 2;
+                        // remove the succEdge before replacing it
+                        toNode.preds.remove(succEdge);
+                        fromNode.succs.remove(succEdge);
 
-                    LayoutNode topCutNode = portToTopNode.get(startPort);
-                    if (topCutNode == null) {
-                        topCutNode = new LayoutNode();
-                        topCutNode.layer = fromNode.layer + 1;
-                        if (optimalPos) {
-                            topCutNode.pos = optimalPosition(topCutNode, topCutNode.layer);
-                            topCutNode.x = 0;
-                            insertNodeAndAdjustLayer(topCutNode);
-                        } else {
-                            assert topCutNode.isDummy();
-                            dummyNodes.add(topCutNode);
-                            layers[topCutNode.layer].add(topCutNode);
+                        LayoutNode topCutNode = portToTopNode.get(startPort);
+                        if (topCutNode == null) {
+                            topCutNode = new LayoutNode();
+                            topCutNode.layer = fromNode.layer + 1;
+                            if (optimalPos) {
+                                topCutNode.pos = optimalPosition(topCutNode, topCutNode.layer);
+                                topCutNode.x = 0;
+                                insertNodeAndAdjustLayer(topCutNode);
+                            } else {
+                                assert topCutNode.isDummy();
+                                dummyNodes.add(topCutNode);
+                                layers[topCutNode.layer].add(topCutNode);
+                            }
+                            portToTopNode.put(startPort, topCutNode);
+                            portToBottomNodeMapping.put(startPort, new HashMap<>());
                         }
-                        portToTopNode.put(startPort, topCutNode);
-                        portToBottomNodeMapping.put(startPort, new HashMap<>());
-                    }
-                    assert !fromNode.isDummy();
-                    LayoutEdge edgeToTopCut = new LayoutEdge(fromNode, topCutNode, succEdge.relativeFromX, topCutNode.width / 2, succEdge.link);
-                    if (succEdge.isReversed()) edgeToTopCut.reverse();
-                    fromNode.succs.add(edgeToTopCut);
-                    topCutNode.preds.add(edgeToTopCut);
-                    assert topCutNode.isDummy();
+                        assert !fromNode.isDummy();
+                        LayoutEdge edgeToTopCut = new LayoutEdge(fromNode, topCutNode, succEdge.relativeFromX, topCutNode.width / 2, succEdge.link);
+                        if (succEdge.isReversed()) edgeToTopCut.reverse();
+                        fromNode.succs.add(edgeToTopCut);
+                        topCutNode.preds.add(edgeToTopCut);
+                        assert topCutNode.isDummy();
 
-                    HashMap<Integer, LayoutNode> layerToBottomNode = portToBottomNodeMapping.get(startPort);
-                    LayoutNode bottomCutNode = layerToBottomNode.get(toNode.layer);
-                    if (bottomCutNode == null) {
-                        bottomCutNode = new LayoutNode();
-                        bottomCutNode.layer = toNode.layer - 1;
-                        if (optimalPos) {
-                            bottomCutNode.pos = optimalPosition(bottomCutNode, bottomCutNode.layer);
-                            bottomCutNode.x = 0;
-                            insertNodeAndAdjustLayer(bottomCutNode);
-                        } else {
-                            assert bottomCutNode.isDummy();
-                            dummyNodes.add(bottomCutNode);
-                            layers[bottomCutNode.layer].add(bottomCutNode);
+                        HashMap<Integer, LayoutNode> layerToBottomNode = portToBottomNodeMapping.get(startPort);
+                        LayoutNode bottomCutNode = layerToBottomNode.get(toNode.layer);
+                        if (bottomCutNode == null) {
+                            bottomCutNode = new LayoutNode();
+                            bottomCutNode.layer = toNode.layer - 1;
+                            if (optimalPos) {
+                                bottomCutNode.pos = optimalPosition(bottomCutNode, bottomCutNode.layer);
+                                bottomCutNode.x = 0;
+                                insertNodeAndAdjustLayer(bottomCutNode);
+                            } else {
+                                assert bottomCutNode.isDummy();
+                                dummyNodes.add(bottomCutNode);
+                                layers[bottomCutNode.layer].add(bottomCutNode);
+                            }
+                            layerToBottomNode.put(toNode.layer, bottomCutNode);
                         }
-                        layerToBottomNode.put(toNode.layer, bottomCutNode);
-                    }
-                    LayoutEdge bottomEdge = new LayoutEdge(bottomCutNode, toNode, bottomCutNode.width / 2, succEdge.relativeToX, succEdge.link);
-                    if (succEdge.isReversed()) bottomEdge.reverse();
-                    toNode.preds.add(bottomEdge);
-                    bottomCutNode.succs.add(bottomEdge);
-                    assert bottomCutNode.isDummy();
+                        LayoutEdge bottomEdge = new LayoutEdge(bottomCutNode, toNode, bottomCutNode.width / 2, succEdge.relativeToX, succEdge.link);
+                        if (succEdge.isReversed()) bottomEdge.reverse();
+                        toNode.preds.add(bottomEdge);
+                        bottomCutNode.succs.add(bottomEdge);
+                        assert bottomCutNode.isDummy();
 
-                } else { // the edge is not cut, but needs dummy nodes
-                    portsToUnprocessedEdges.putIfAbsent(startPort, new ArrayList<>());
-                    portsToUnprocessedEdges.get(startPort).add(succEdge);
+                    } else { // the edge is not cut, but needs dummy nodes
+                        portsToUnprocessedEdges.putIfAbsent(startPort, new ArrayList<>());
+                        portsToUnprocessedEdges.get(startPort).add(succEdge);
+                    }
                 }
             }
-        }
 
-        for (Map.Entry<Integer, List<LayoutEdge>> portToUnprocessedEdges : portsToUnprocessedEdges.entrySet()) {
-            Integer startPort = portToUnprocessedEdges.getKey();
-            List<LayoutEdge> unprocessedEdges = portToUnprocessedEdges.getValue();
-            unprocessedEdges.sort(Comparator.comparingInt(e -> e.to.layer));
+            for (Map.Entry<Integer, List<LayoutEdge>> portToUnprocessedEdges : portsToUnprocessedEdges.entrySet()) {
+                Integer startPort = portToUnprocessedEdges.getKey();
+                List<LayoutEdge> unprocessedEdges = portToUnprocessedEdges.getValue();
+                unprocessedEdges.sort(Comparator.comparingInt(e -> e.to.layer));
 
-            if (unprocessedEdges.size() == 1) {
-                // process a single edge
-                LayoutEdge singleEdge = unprocessedEdges.get(0);
-                assert singleEdge.link != null;
-                LayoutNode fromNode = singleEdge.from;
-                if (singleEdge.to.layer > fromNode.layer + 1) {
-                    LayoutEdge previousEdge = singleEdge;
-                    for (int i = fromNode.layer + 1; i < previousEdge.to.layer; i++) {
-                        LayoutNode dummyNode = new LayoutNode();
-                        dummyNode.layer = i;
-                        dummyNode.preds.add(previousEdge);
+                if (unprocessedEdges.size() == 1) {
+                    // process a single edge
+                    LayoutEdge singleEdge = unprocessedEdges.get(0);
+                    assert singleEdge.link != null;
+                    LayoutNode fromNode = singleEdge.from;
+                    if (singleEdge.to.layer > fromNode.layer + 1) {
+                        LayoutEdge previousEdge = singleEdge;
+                        for (int i = fromNode.layer + 1; i < previousEdge.to.layer; i++) {
+                            LayoutNode dummyNode = new LayoutNode();
+                            dummyNode.layer = i;
+                            dummyNode.preds.add(previousEdge);
+                            if (optimalPos) {
+                                dummyNode.pos = optimalPosition(dummyNode, dummyNode.layer);
+                                dummyNode.x = 0;
+                                insertNodeAndAdjustLayer(dummyNode);
+                            } else {
+                                assert dummyNode.isDummy();
+                                dummyNodes.add(dummyNode);
+                                layers[dummyNode.layer].add(dummyNode);
+                            }
+                            LayoutEdge dummyEdge = new LayoutEdge(dummyNode, previousEdge.to, dummyNode.width / 2, previousEdge.relativeToX, null);
+                            if (previousEdge.isReversed()) dummyEdge.reverse();
+                            dummyNode.succs.add(dummyEdge);
+                            previousEdge.relativeToX = dummyNode.width / 2;
+                            previousEdge.to.preds.remove(previousEdge);
+                            previousEdge.to.preds.add(dummyEdge);
+                            previousEdge.to = dummyNode;
+                            previousEdge = dummyEdge;
+                        }
+                        previousEdge.link = singleEdge.link;
+                    }
+                } else {
+                    int lastLayer = unprocessedEdges.get(unprocessedEdges.size() - 1).to.layer;
+                    int dummyCnt = lastLayer - layoutNode.layer - 1;
+                    LayoutEdge[] newDummyEdges = new LayoutEdge[dummyCnt];
+                    LayoutNode[] newDummyNodes = new LayoutNode[dummyCnt];
+
+                    newDummyNodes[0] = new LayoutNode();
+                    newDummyNodes[0].layer = layoutNode.layer + 1;
+                    newDummyEdges[0] = new LayoutEdge(layoutNode, newDummyNodes[0], startPort, newDummyNodes[0].width / 2, null);
+                    newDummyNodes[0].preds.add(newDummyEdges[0]);
+                    layoutNode.succs.add(newDummyEdges[0]);
+                    for (int j = 1; j < dummyCnt; j++) {
+                        newDummyNodes[j] = new LayoutNode();
+                        newDummyNodes[j].layer = layoutNode.layer + j + 1;
+                        newDummyEdges[j] = new LayoutEdge(newDummyNodes[j - 1], newDummyNodes[j], newDummyNodes[j - 1].width / 2, newDummyNodes[j].width / 2, null);
+                        newDummyNodes[j].preds.add(newDummyEdges[j]);
+                        newDummyNodes[j - 1].succs.add(newDummyEdges[j]);
+                    }
+                    for (LayoutEdge unprocessedEdge : unprocessedEdges) {
+                        assert unprocessedEdge.link != null;
+                        assert unprocessedEdge.to.layer - layoutNode.layer - 2 >= 0;
+                        assert unprocessedEdge.to.layer - layoutNode.layer - 2 < dummyCnt;
+                        LayoutNode anchorNode = newDummyNodes[unprocessedEdge.to.layer - layoutNode.layer - 2];
+                        anchorNode.succs.add(unprocessedEdge);
+                        unprocessedEdge.from = anchorNode;
+                        unprocessedEdge.relativeFromX = anchorNode.width / 2;
+                        layoutNode.succs.remove(unprocessedEdge);
+                    }
+                    for (LayoutNode dummyNode : newDummyNodes) {
                         if (optimalPos) {
                             dummyNode.pos = optimalPosition(dummyNode, dummyNode.layer);
                             dummyNode.x = 0;
@@ -1478,55 +1534,14 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                             dummyNodes.add(dummyNode);
                             layers[dummyNode.layer].add(dummyNode);
                         }
-                        LayoutEdge dummyEdge = new LayoutEdge(dummyNode, previousEdge.to, dummyNode.width / 2, previousEdge.relativeToX, null);
-                        if (previousEdge.isReversed()) dummyEdge.reverse();
-                        dummyNode.succs.add(dummyEdge);
-                        previousEdge.relativeToX = dummyNode.width / 2;
-                        previousEdge.to.preds.remove(previousEdge);
-                        previousEdge.to.preds.add(dummyEdge);
-                        previousEdge.to = dummyNode;
-                        previousEdge = dummyEdge;
                     }
-                    previousEdge.link = singleEdge.link;
                 }
-            } else {
-                int lastLayer = unprocessedEdges.get(unprocessedEdges.size() - 1).to.layer;
-                int dummyCnt = lastLayer - layoutNode.layer - 1;
-                LayoutEdge[] newDummyEdges = new LayoutEdge[dummyCnt];
-                LayoutNode[] newDummyNodes = new LayoutNode[dummyCnt];
-
-                newDummyNodes[0] = new LayoutNode();
-                newDummyNodes[0].layer = layoutNode.layer + 1;
-                newDummyEdges[0] = new LayoutEdge(layoutNode, newDummyNodes[0], startPort, newDummyNodes[0].width / 2, null);
-                newDummyNodes[0].preds.add(newDummyEdges[0]);
-                layoutNode.succs.add(newDummyEdges[0]);
-                for (int j = 1; j < dummyCnt; j++) {
-                    newDummyNodes[j] = new LayoutNode();
-                    newDummyNodes[j].layer = layoutNode.layer + j + 1;
-                    newDummyEdges[j] = new LayoutEdge(newDummyNodes[j - 1], newDummyNodes[j], newDummyNodes[j - 1].width / 2, newDummyNodes[j].width / 2, null);
-                    newDummyNodes[j].preds.add(newDummyEdges[j]);
-                    newDummyNodes[j - 1].succs.add(newDummyEdges[j]);
-                }
-                for (LayoutEdge unprocessedEdge : unprocessedEdges) {
-                    assert unprocessedEdge.link != null;
-                    assert unprocessedEdge.to.layer - layoutNode.layer - 2 >= 0;
-                    assert unprocessedEdge.to.layer - layoutNode.layer - 2 < dummyCnt;
-                    LayoutNode anchorNode = newDummyNodes[unprocessedEdge.to.layer - layoutNode.layer - 2];
-                    anchorNode.succs.add(unprocessedEdge);
-                    unprocessedEdge.from = anchorNode;
-                    unprocessedEdge.relativeFromX = anchorNode.width / 2;
-                    layoutNode.succs.remove(unprocessedEdge);
-                }
-                for (LayoutNode dummyNode : newDummyNodes) {
-                    if (optimalPos) {
-                        dummyNode.pos = optimalPosition(dummyNode, dummyNode.layer);
-                        dummyNode.x = 0;
-                        insertNodeAndAdjustLayer(dummyNode);
-                    } else {
-                        assert dummyNode.isDummy();
-                        dummyNodes.add(dummyNode);
-                        layers[dummyNode.layer].add(dummyNode);
-                    }
+            }
+        } else {
+            ArrayList<LayoutNode> currentNodes = new ArrayList<>(getLayoutNodes());
+            for (LayoutNode n : currentNodes) {
+                for (LayoutEdge e : List.copyOf(n.succs)) {
+                    processSingleEdge(e);
                 }
             }
         }
@@ -1775,23 +1790,27 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         for (LayoutEdge predEdge : node.preds) {
             if (predEdge.isReversed()) {
                 List<Point> points = node.reversedLinkEndPoints.get(predEdge.link);
-                int x0 = points.get(points.size()-1).x;
-                int xn = points.get(0).x;
-                int startPoint = predEdge.getStartX();
-                int endPoint = predEdge.getEndX();
-                int win = (x0 < xn) ? (startPoint - endPoint) : (endPoint - startPoint);
-                score += win;
+                if (points != null) {
+                    int x0 = points.get(points.size()-1).x;
+                    int xn = points.get(0).x;
+                    int startPoint = predEdge.getStartX();
+                    int endPoint = predEdge.getEndX();
+                    int win = (x0 < xn) ? (startPoint - endPoint) : (endPoint - startPoint);
+                    score += win;
+                }
             }
         }
         for (LayoutEdge succEdge : node.succs) {
             if (succEdge.isReversed()) {
                 List<Point> points = node.reversedLinkStartPoints.get(succEdge.link);
-                int x0 = points.get(points.size()-1).x;
-                int xn = points.get(0).x;
-                int startPoint = succEdge.getStartX();
-                int endPoint = succEdge.getEndX();
-                int win = (x0 > xn) ? (startPoint - endPoint) : (endPoint - startPoint);
-                score += win;
+                if (points != null) {
+                    int x0 = points.get(points.size()-1).x;
+                    int xn = points.get(0).x;
+                    int startPoint = succEdge.getStartX();
+                    int endPoint = succEdge.getEndX();
+                    int win = (x0 > xn) ? (startPoint - endPoint) : (endPoint - startPoint);
+                    score += win;
+                }
             }
         }
         return score;
@@ -1799,6 +1818,9 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
 
 
     public void optimizeBackedgeCrossing() {
+        if (!combine) {
+            return;
+        }
         for (LayoutNode node : getLayoutNodes()) {
             if (node.reversedLinkStartPoints.isEmpty() && node.reversedLinkEndPoints.isEmpty()) continue;
             int orig_score = getBackedgeCrossingScore(node);
