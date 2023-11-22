@@ -33,31 +33,31 @@ public class LayoutNode {
 
     public static final int DUMMY_HEIGHT = 1;
     public static final int DUMMY_WIDTH = 1;
-    public int optimal_x;
+    private int optimal_x;
 
-    public int x;
-    public int y;
-    public int width;
-    public int height;
-    public int layer = -1;
-    public int leftXOffset;
-    public int topYOffset;
-    public int rightXOffset;
-    public int bottomYOffset;
+    private int x;
+    private int y;
+    private int width;
+    private int height;
+    private int layer = -1;
+    private int leftXOffset;
+    private int topYOffset;
+    private int rightXOffset;
+    private int bottomYOffset;
 
     // TODO make final
-    public Vertex vertex; // Only used for non-dummy nodes, otherwise null
+    private Vertex vertex; // Only used for non-dummy nodes, otherwise null
 
-    public List<LayoutEdge> preds = new ArrayList<>();
-    public List<LayoutEdge> succs = new ArrayList<>();
-    public HashMap<Integer, Integer> outOffsets = new HashMap<>(); // deprecated
-    public HashMap<Integer, Integer> inOffsets = new HashMap<>(); // deprecated
-    public final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();
-    public final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
-    public int pos = -1; // Position within layer
+    private List<LayoutEdge> preds = new ArrayList<>();
+    private List<LayoutEdge> succs = new ArrayList<>();
+    private HashMap<Integer, Integer> outOffsets = new HashMap<>(); // deprecated
+    private HashMap<Integer, Integer> inOffsets = new HashMap<>(); // deprecated
+    private final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();
+    private final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
+    private int pos = -1; // Position within layer
 
-    public float weightedPosition = 0;
-    public boolean reverseLeft = false;
+    private float weightedPosition = 0;
+    private boolean reverseLeft = false;
 
     public LayoutNode(Vertex v) {
         vertex = v;
@@ -85,12 +85,13 @@ public class LayoutNode {
 
         for (LayoutEdge predEdge : preds) {
             LayoutNode predNode = predEdge.from;
+            LayoutNode predNode = predEdge.getFrom();
             int weight = weighted ? predNode.getDegree() : 1;
             totalWeightedPosition += weight * predEdge.getStartX();
             totalWeight += weight;
         }
         for (LayoutEdge succEdge : succs) {
-            LayoutNode succNode = succEdge.to;
+            LayoutNode succNode = succEdge.getTo();
             int weight = weighted ? succNode.getDegree() : 1;
             totalWeightedPosition += weight * succEdge.getEndX();
             totalWeight += weight;
@@ -146,5 +147,157 @@ public class LayoutNode {
         } else {
             return "dummy";
         }
+    }
+
+    public int getOptimal_x() {
+        return optimal_x;
+    }
+
+    public void setOptimal_x(int optimal_x) {
+        this.optimal_x = optimal_x;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
+    public int getLayer() {
+        return layer;
+    }
+
+    public void setLayer(int layer) {
+        this.layer = layer;
+    }
+
+    public int getLeftXOffset() {
+        return leftXOffset;
+    }
+
+    public void setLeftXOffset(int leftXOffset) {
+        this.leftXOffset = leftXOffset;
+    }
+
+    public int getTopYOffset() {
+        return topYOffset;
+    }
+
+    public void setTopYOffset(int topYOffset) {
+        this.topYOffset = topYOffset;
+    }
+
+    public int getRightXOffset() {
+        return rightXOffset;
+    }
+
+    public void setRightXOffset(int rightXOffset) {
+        this.rightXOffset = rightXOffset;
+    }
+
+    public int getBottomYOffset() {
+        return bottomYOffset;
+    }
+
+    public void setBottomYOffset(int bottomYOffset) {
+        this.bottomYOffset = bottomYOffset;
+    }
+
+    public Vertex getVertex() {
+        return vertex;
+    }
+
+    public void setVertex(Vertex vertex) {
+        this.vertex = vertex;
+    }
+
+    public List<LayoutEdge> getPreds() {
+        return preds;
+    }
+
+    public void setPreds(List<LayoutEdge> preds) {
+        this.preds = preds;
+    }
+
+    public List<LayoutEdge> getSuccs() {
+        return succs;
+    }
+
+    public void setSuccs(List<LayoutEdge> succs) {
+        this.succs = succs;
+    }
+
+    public HashMap<Integer, Integer> getOutOffsets() {
+        return outOffsets;
+    }
+
+    public void setOutOffsets(HashMap<Integer, Integer> outOffsets) {
+        this.outOffsets = outOffsets;
+    }
+
+    public HashMap<Integer, Integer> getInOffsets() {
+        return inOffsets;
+    }
+
+    public void setInOffsets(HashMap<Integer, Integer> inOffsets) {
+        this.inOffsets = inOffsets;
+    }
+
+    public HashMap<Link, List<Point>> getReversedLinkStartPoints() {
+        return reversedLinkStartPoints;
+    }
+
+    public HashMap<Link, List<Point>> getReversedLinkEndPoints() {
+        return reversedLinkEndPoints;
+    }
+
+    public int getPos() {
+        return pos;
+    }
+
+    public void setPos(int pos) {
+        this.pos = pos;
+    }
+
+    public float getWeightedPosition() {
+        return weightedPosition;
+    }
+
+    public void setWeightedPosition(float weightedPosition) {
+        this.weightedPosition = weightedPosition;
+    }
+
+    public boolean isReverseLeft() {
+        return reverseLeft;
+    }
+
+    public void setReverseLeft(boolean reverseLeft) {
+        this.reverseLeft = reverseLeft;
     }
 }
