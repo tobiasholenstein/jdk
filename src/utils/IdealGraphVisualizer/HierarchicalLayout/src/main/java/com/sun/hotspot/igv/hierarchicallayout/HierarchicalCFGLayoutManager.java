@@ -69,12 +69,12 @@ public class HierarchicalCFGLayoutManager implements LayoutManager {
         // Compute layout for each cluster.
         for (Cluster c : clusters) {
             ClusterNode n = clusterNode.get(c);
-            subManager.doLayout(new LayoutGraph(n.getSubEdges(), n.getSubNodes()), new HashSet<>());
+            subManager.doLayout(new LayoutGraph(n.getSubEdges(), n.getSubNodes()));
             n.updateSize();
         }
 
         // Compute inter-cluster layout.
-        manager.doLayout(new LayoutGraph(clusterEdges, new HashSet<>(clusterNode.values())), new HashSet<>());
+        manager.doLayout(new LayoutGraph(clusterEdges, new HashSet<>(clusterNode.values())));
 
         // Write back results.
         writeBackClusterBounds(clusterNode);

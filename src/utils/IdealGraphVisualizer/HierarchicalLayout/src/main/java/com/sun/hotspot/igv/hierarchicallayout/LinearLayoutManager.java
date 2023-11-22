@@ -61,7 +61,7 @@ public class LinearLayoutManager implements LayoutManager {
         int curY = 0;
         for (Vertex v : vertices) {
             v.setPosition(new Point(0, curY));
-            curY += v.getSize().getHeight();
+            curY += v.getSize().height;
         }
     }
 }

@@ -151,7 +151,7 @@ public class HierarchicalClusterLayoutManager implements LayoutManager {
 
         for (Cluster c : cluster) {
             ClusterNode n = clusterNodes.get(c);
-            subManager.doLayout(new LayoutGraph(n.getSubEdges(), n.getSubNodes()), new HashSet<>());
+            subManager.doLayout(new LayoutGraph(n.getSubEdges(), n.getSubNodes()));
             n.updateSize();
         }
 

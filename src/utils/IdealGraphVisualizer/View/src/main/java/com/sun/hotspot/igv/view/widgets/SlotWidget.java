@@ -25,7 +25,6 @@ package com.sun.hotspot.igv.view.widgets;
 
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
-import com.sun.hotspot.igv.graph.OutputSlot;
 import com.sun.hotspot.igv.graph.Slot;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.view.DiagramScene;
@@ -63,8 +62,8 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
         parent.addChild(this);
 
         Point p = slot.getRelativePosition();
-        p.x -= this.calculateClientArea().width / 2;
-        p.y -=  this.calculateClientArea().height / 2;
+        p.x -= slot.getWidth() / 2;
+        p.y -= slot.getHeight() / 2;
         p.y += yOffset();
         this.setPreferredLocation(p);
     }
@@ -139,11 +138,7 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
                     g.setColor(Color.BLACK);
                 }
                 int r = 2;
-                if (slot instanceof OutputSlot) {
-                    g.fillOval(w / 2 - r, h / 2 - r, 2 * r, 2 * r);
-                } else {
-                    g.fillOval(w / 2 - r, Figure.DOT_OFFSET - r, 2 * r, 2 * r);
-                }
+                g.fillOval(w / 2 - r, h / 2 - r, 2 * r, 2 * r);
             }
         }
     }

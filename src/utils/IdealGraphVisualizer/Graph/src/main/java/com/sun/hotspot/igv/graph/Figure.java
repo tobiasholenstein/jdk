@@ -34,10 +34,7 @@ import java.util.*;
 public class Figure extends Properties.Entity implements Vertex {
 
     public static final int INSET = 8;
-    public static final int DOT_OFFSET = 5;
     public static final int SLOT_OFFSET = 8;
-    public static final int TOP_CFG_HEIGHT = 7;
-    public static final int BOTTOM_CFG_HEIGHT = 6;
     public static final int WARNING_WIDTH = 16;
     public static final double BOLD_LINE_FACTOR = 1.06;
     protected List<InputSlot> inputSlots;
@@ -64,21 +61,14 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     private void updateHeight() {
-        String nodeText = diagram.getNodeText();
-        int lines = nodeText.split("\n").length;
-        if (hasInputList() && lines > 1) {
-            lines++;
-        }
-        if (getProperties().get("extra_label") != null) {
-            lines++;
-        }
+        int lines = getLines().length;
         heightCash = lines * metrics.getHeight() + INSET;
         if (diagram.isCFG()) {
             if (hasNamedInputSlot()) {
-                heightCash += TOP_CFG_HEIGHT;
+                heightCash += INSET;
             }
             if (hasNamedOutputSlot()) {
-                heightCash += BOTTOM_CFG_HEIGHT;
+                heightCash += INSET;
             }
         }
     }

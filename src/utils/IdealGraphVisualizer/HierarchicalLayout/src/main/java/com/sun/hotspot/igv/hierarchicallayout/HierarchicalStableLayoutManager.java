@@ -24,6 +24,7 @@
 package com.sun.hotspot.igv.hierarchicallayout;
 
 import com.sun.hotspot.igv.layout.LayoutGraph;
+import com.sun.hotspot.igv.layout.LayoutManager;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
 import com.sun.hotspot.igv.util.Statistics;
@@ -31,11 +32,9 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.util.*;
 
-public class HierarchicalStableLayoutManager {
+public class HierarchicalStableLayoutManager implements LayoutManager {
 
-    public static final int DUMMY_HEIGHT = 1;
-    public static final int DUMMY_WIDTH = 1;
-    public static final int X_OFFSET = 8;
+    public static final int NODE_OFFSET = 8;
     public static final int LAYER_OFFSET = 8;
     // Algorithm global data structures
     private Set<? extends Vertex> currentVertices;
@@ -55,6 +54,16 @@ public class HierarchicalStableLayoutManager {
     private HashSet<? extends Link> oldLinks;
     private boolean shouldRedrawLayout = true;
     private boolean shouldRemoveEmptyLayers = true;
+
+    @Override
+    public void doLayout(LayoutGraph graph) {
+        updateLayout(graph.getVertices(), graph.getLinks());
+    }
+
+    @Override
+    public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
+        doLayout(graph);
+    }
 
     enum Action {
         ADD,
@@ -85,7 +94,7 @@ public class HierarchicalStableLayoutManager {
     public HierarchicalStableLayoutManager() {
         oldVertices = new HashSet<>();
         oldLinks = new HashSet<>();
-        manager = new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.SAME_OUTPUTS);
+        manager = new HierarchicalLayoutManager(true);
         vertexToLayoutNode = new HashMap<>();
         nodes = new ArrayList<>();
     }
@@ -125,7 +134,7 @@ public class HierarchicalStableLayoutManager {
         int curX = 0;
         for (LayoutNode n : nodes) {
             space.add(curX);
-            curX += n.getWidth() + X_OFFSET;
+            curX += n.getWidth() + NODE_OFFSET;
             nodeProcessingOrder.add(n);
         }
 
@@ -301,7 +310,7 @@ public class HierarchicalStableLayoutManager {
             }
         }
 
-        final int offset = X_OFFSET + DUMMY_WIDTH;
+        final int offset = NODE_OFFSET;
 
         int curY = 0;
         int curWidth = node.getWidth() + reversedDown.size() * offset;
@@ -479,8 +488,8 @@ public class HierarchicalStableLayoutManager {
                     }
                     vertexToLayoutNode.put(node.getVertex(), node);
                 } else {
-                    node.setHeight(DUMMY_HEIGHT);
-                    node.setWidth(DUMMY_WIDTH);
+                    node.setHeight(0);
+                    node.setWidth(0);
                 }
                 for (LayoutEdge edge : node.getPreds()) {
                     if (edge.getLink() != null) {
@@ -1347,7 +1356,7 @@ public class HierarchicalStableLayoutManager {
                 if (n.getVertex() != null) {
                     updateNodeWithReversedEdges(n);
                 } else {
-                    n.setHeight(DUMMY_HEIGHT);
+                    n.setHeight(0);
                 }
                 n.setY(0);
             }
@@ -1457,7 +1466,7 @@ public class HierarchicalStableLayoutManager {
 
                 if (n.getVertex() != null) {
                     assert !vertexPositions.containsKey(n.getVertex());
-                    vertexPositions.put(n.getVertex(), new Point(n.getX() + n.getLeftMargin(), n.getY() + n.getTopMargin()));
+                    vertexPositions.put(n.getVertex(), new Point(n.getLeft(), n.getTop()));
                 } else {
                     continue;
                 }

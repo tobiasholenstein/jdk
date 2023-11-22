@@ -40,28 +40,13 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
     public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;
-    public static final int DUMMY_HEIGHT = 1;
-    public static final int DUMMY_WIDTH = 1;
-    public static final int X_OFFSET = 8;
+    public static final int NODE_OFFSET = 8;
     public static final int LAYER_OFFSET = 8;
-    public static final int MAX_LAYER_LENGTH = -1;
-    public static final int MIN_LAYER_DIFFERENCE = 1;
+    public static final double SCALE_LAYER_PADDING = 1.5;
+    private final boolean combine;
 
-    public enum Combine {
-
-        NONE,
-        SAME_INPUTS,
-        SAME_OUTPUTS
-    }
     // Options
-    private final Combine combine;
-    private final int dummyWidth;
-    private final int dummyHeight;
-    private int xOffset;
-    private int layerOffset;
-    private int maxLayerLength;
-    private int minLayerDifference;
-    private boolean layoutSelfEdges;
+    private final int maxLayerLength;
     // Algorithm global datastructures
     private Set<Link> reversedLinks;
     private Set<LayoutEdge> selfEdges;
@@ -78,36 +63,10 @@ public class HierarchicalLayoutManager implements LayoutManager {
     private final Set<Link> linksToFollow;
 
 
-    public HierarchicalLayoutManager(Combine b) {
-        this.combine = b;
-        this.dummyWidth = DUMMY_WIDTH;
-        this.dummyHeight = DUMMY_HEIGHT;
-        this.xOffset = X_OFFSET;
-        this.layerOffset = LAYER_OFFSET;
-        this.maxLayerLength = MAX_LAYER_LENGTH;
-        this.minLayerDifference = MIN_LAYER_DIFFERENCE;
-        this.layoutSelfEdges = false;
+    public HierarchicalLayoutManager(boolean combineEdges) {
+        this.combine = combineEdges;
+        this.maxLayerLength = -1;
         this.linksToFollow = new HashSet<>();
-    }
-
-    public void setXOffset(int xOffset) {
-        this.xOffset = xOffset;
-    }
-
-    public void setLayerOffset(int layerOffset) {
-        this.layerOffset = layerOffset;
-    }
-
-    public void setMaxLayerLength(int v) {
-        maxLayerLength = v;
-    }
-
-    public void setMinLayerDifference(int v) {
-        minLayerDifference = v;
-    }
-
-    public void setLayoutSelfEdges(boolean layoutSelfEdges) {
-        this.layoutSelfEdges = layoutSelfEdges;
     }
 
     public List<LayoutNode> getNodes() {
@@ -136,7 +95,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
     @Override
     public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
-
         this.importantLinks = importantLinks;
         this.graph = graph;
 
@@ -153,10 +111,8 @@ public class HierarchicalLayoutManager implements LayoutManager {
         // Step 1: Build up data structure
         new BuildDatastructure().run();
 
-        if (!layoutSelfEdges) {
-            // Remove self-edges from the beginning.
-            removeSelfEdges(false);
-        }
+        // Remove self-edges from the beginning.
+        removeSelfEdges(false);
 
         // #############################################################
         // STEP 2: Reverse edges, handle backedges
@@ -212,8 +168,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
     private class WriteResult {
 
-        private int pointCount;
-
         protected void run() {
 
             HashMap<Vertex, Point> vertexPositions = new HashMap<>();
@@ -221,7 +175,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
             for (Vertex v : graph.getVertices()) {
                 LayoutNode n = vertexToLayoutNode.get(v);
                 assert !vertexPositions.containsKey(v);
-                vertexPositions.put(v, new Point(n.getX() + n.getLeftMargin(), n.getY() + n.getTopMargin()));
+                vertexPositions.put(v, new Point(n.getLeft(), n.getTop()));
             }
 
             for (LayoutNode n : nodes) {
@@ -239,7 +193,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
                         LayoutNode cur = e.getFrom();
                         LayoutNode other = e.getTo();
                         LayoutEdge curEdge = e;
-                        while (cur.getVertex() == null && cur.getPreds().size() != 0) {
+                        while (cur.getVertex() == null && !cur.getPreds().isEmpty()) {
                             if (points.size() > 1 && points.get(points.size() - 1).x == cur.getX() + cur.getWidth() / 2 && points.get(points.size() - 2).x == cur.getX() + cur.getWidth() / 2) {
                                 points.remove(points.size() - 1);
                             }
@@ -261,7 +215,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
                         Collections.reverse(points);
 
-                        if (cur.getVertex() == null && cur.getPreds().size() == 0) {
+                        if (cur.getVertex() == null && cur.getPreds().isEmpty()) {
 
                             if (reversedLinkEndPoints.containsKey(e.getLink())) {
                                 for (Point p1 : reversedLinkEndPoints.get(e.getLink())) {
@@ -307,7 +261,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
                             assert !linkPositions.containsKey(e.getLink());
                             linkPositions.put(e.getLink(), points);
                         }
-                        pointCount += points.size();
                     }
                 }
 
@@ -373,12 +326,12 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
                             if (reversedLinkStartPoints.containsKey(e.getLink())) {
                                 for (Point p1 : reversedLinkStartPoints.get(e.getLink())) {
-                                    points.add(0, new Point(p1.x + other.getX() + other.getLeftMargin(), p1.y + other.getY()));
+                                    points.add(0, new Point(p1.x + other.getLeft(), p1.y + other.getY()));
                                 }
                             }
                             if (reversedLinkEndPoints.containsKey(e.getLink())) {
                                 for (Point p1 : reversedLinkEndPoints.get(e.getLink())) {
-                                    points.add(new Point(p1.x + cur.getX() + cur.getLeftMargin(), p1.y + cur.getY()));
+                                    points.add(new Point(p1.x + cur.getLeft(), p1.y + cur.getY()));
                                 }
                             }
                             if (reversedLinks.contains(e.getLink())) {
@@ -387,8 +340,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
                             assert !linkPositions.containsKey(e.getLink());
                             linkPositions.put(e.getLink(), points);
                         }
-
-                        pointCount += points.size();
                     }
                 }
             }
@@ -520,7 +471,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
                 int curX = 0;
                 for (LayoutNode n : layers[i]) {
                     space[i].add(curX);
-                    curX += n.getWidth() + xOffset;
+                    curX += n.getWidth() + NODE_OFFSET;
                     downProcessingOrder[i].add(n);
                     upProcessingOrder[i].add(n);
                 }
@@ -753,7 +704,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
             for (LayoutNode n : layers[index]) {
                 n.setX(x);
-                x += n.getWidth() + xOffset;
+                x += n.getWidth() + NODE_OFFSET;
             }
         }
 
@@ -908,19 +859,17 @@ public class HierarchicalLayoutManager implements LayoutManager {
                 }
 
                 curY += maxHeight + baseLine + bottomBaseLine;
-                curY += layerOffset + ((int) (Math.sqrt(maxXOffset) * 1.5));
+                curY += LAYER_OFFSET + ((int) (Math.sqrt(maxXOffset) * SCALE_LAYER_PADDING));
             }
         }
     }
 
     private class CreateDummyNodes {
 
-        private int oldNodeCount;
 
         protected void run() {
-            oldNodeCount = nodes.size();
 
-            if (combine == Combine.SAME_OUTPUTS) {
+            if (combine) {
 
                 Comparator<LayoutEdge> comparator = Comparator.comparingInt(e -> e.getTo().getLayer());
                 HashMap<Integer, List<LayoutEdge>> portHash = new HashMap<>();
@@ -950,8 +899,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
                                     LayoutNode topNode = new LayoutNode();
                                     topNode.setLayer(e.getFrom().getLayer() + 1);
-                                    topNode.setWidth(DUMMY_WIDTH);
-                                    topNode.setHeight(DUMMY_HEIGHT);
                                     nodes.add(topNode);
                                     topEdge = new LayoutEdge(e.getFrom(), topNode, e.getRelativeFromX(), 0, e.getLink());
                                     e.getFrom().getSuccs().add(topEdge);
@@ -969,8 +916,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
 
                                     bottomNode = new LayoutNode();
                                     bottomNode.setLayer(e.getTo().getLayer() - 1);
-                                    bottomNode.setWidth(DUMMY_WIDTH);
-                                    bottomNode.setHeight(DUMMY_HEIGHT);
                                     nodes.add(bottomNode);
                                     hash.put(e.getTo().getLayer(), bottomNode);
                                 }
@@ -1013,16 +958,12 @@ public class HierarchicalLayoutManager implements LayoutManager {
                                 n.getSuccs().add(edges[0]);
 
                                 nodes[0] = new LayoutNode();
-                                nodes[0].setWidth(dummyWidth);
-                                nodes[0].setHeight(dummyHeight);
                                 nodes[0].setLayer(n.getLayer() + 1);
                                 nodes[0].getPreds().add(edges[0]);
                                 edges[0].setTo(nodes[0]);
                                 edges[0].setRelativeToX(nodes[0].getWidth() / 2);
                                 for (int j = 1; j < cnt; j++) {
                                     nodes[j] = new LayoutNode();
-                                    nodes[j].setWidth(dummyWidth);
-                                    nodes[j].setHeight(dummyHeight);
                                     nodes[j].setLayer(n.getLayer() + j + 1);
                                     edges[j] = new LayoutEdge(nodes[j - 1], nodes[j], nodes[j - 1].getWidth() / 2, nodes[j].getWidth() / 2, null, e.isVip());
                                     nodes[j - 1].getSuccs().add(edges[j]);
@@ -1045,8 +986,6 @@ public class HierarchicalLayoutManager implements LayoutManager {
                         }
                     }
                 }
-            } else if (combine == Combine.SAME_INPUTS) {
-                throw new UnsupportedOperationException("Currently not supported");
             } else {
                 ArrayList<LayoutNode> currentNodes = new ArrayList<>(nodes);
                 for (LayoutNode n : currentNodes) {
@@ -1100,7 +1039,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
                 }
             }
 
-            int z = minLayerDifference;
+            int z = 0;
             while (!hull.isEmpty()) {
                 ArrayList<LayoutNode> newSet = new ArrayList<>();
                 for (LayoutNode n : hull) {
@@ -1130,10 +1069,10 @@ public class HierarchicalLayoutManager implements LayoutManager {
                 }
 
                 hull = newSet;
-                z += minLayerDifference;
+                z += 1;
             }
 
-            layerCount = z - minLayerDifference;
+            layerCount = z;
             for (LayoutNode n : nodes) {
                 n.setLayer((layerCount - 1 - n.getLayer()));
             }
@@ -1149,7 +1088,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
                 }
             }
 
-            int z = minLayerDifference;
+            int z = 0;
             while (!hull.isEmpty()) {
                 ArrayList<LayoutNode> newSet = new ArrayList<>();
                 for (LayoutNode n : hull) {
@@ -1183,10 +1122,10 @@ public class HierarchicalLayoutManager implements LayoutManager {
                 }
 
                 hull = newSet;
-                z += minLayerDifference;
+                z += 1;
             }
 
-            layerCount = z - minLayerDifference;
+            layerCount = z;
 
             for (LayoutNode n : nodes) {
                 n.setLayer((layerCount - 1 - n.getLayer()));
@@ -1243,7 +1182,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
                 // Whether the node has non-self reversed edges going downwards.
                 // If so, reversed edges going upwards are drawn to the left.
                 boolean hasReversedDown =
-                    reversedDown.size() > 0 &&
+                        !reversedDown.isEmpty() &&
                     !(reversedDown.size() == 1 && hasSelfEdge);
 
                 SortedSet<Integer> reversedUp = null;
@@ -1259,10 +1198,8 @@ public class HierarchicalLayoutManager implements LayoutManager {
                     }
                 }
 
-                final int offset = xOffset + DUMMY_WIDTH;
-
                 int curY = 0;
-                int curWidth = node.getWidth() + reversedDown.size() * offset;
+                int curWidth = node.getWidth() + reversedDown.size() * NODE_OFFSET;
                 for (int pos : reversedDown) {
                     ArrayList<LayoutEdge> reversedSuccs = new ArrayList<>();
                     for (LayoutEdge e : node.getSuccs()) {
@@ -1275,28 +1212,28 @@ public class HierarchicalLayoutManager implements LayoutManager {
                     ArrayList<Point> startPoints = new ArrayList<>();
                     startPoints.add(new Point(curWidth, curY));
                     startPoints.add(new Point(pos, curY));
-                    startPoints.add(new Point(pos, reversedDown.size() * offset));
+                    startPoints.add(new Point(pos, reversedDown.size() * NODE_OFFSET));
                     for (LayoutEdge e : reversedSuccs) {
                         reversedLinkStartPoints.put(e.getLink(), startPoints);
                     }
 
                     node.getInOffsets().put(pos, -curY);
-                    curY += offset;
-                    node.setHeight(node.getHeight() + offset);
-                    node.setTopMargin(node.getTopMargin() + offset);
-                    curWidth -= offset;
+                    curY += NODE_OFFSET;
+                    node.setHeight(node.getHeight() + NODE_OFFSET);
+                    node.setTopMargin(node.getTopMargin() + NODE_OFFSET);
+                    curWidth -= NODE_OFFSET;
                 }
 
                 int widthFactor = reversedDown.size();
                 if (hasSelfEdge) {
                     widthFactor--;
                 }
-                node.setWidth(node.getWidth() + widthFactor * offset);
+                node.setWidth(node.getWidth() + widthFactor * NODE_OFFSET);
 
                 int curX = 0;
                 int minX = 0;
                 if (hasReversedDown) {
-                    minX = -offset * reversedUp.size();
+                    minX = -NODE_OFFSET * reversedUp.size();
                 }
 
                 int oldNodeHeight = node.getHeight();
@@ -1305,29 +1242,29 @@ public class HierarchicalLayoutManager implements LayoutManager {
                     for (LayoutEdge e : node.getPreds()) {
                         if (e.getRelativeToX() == pos && reversedLinks.contains(e.getLink())) {
                             if (hasReversedDown) {
-                                e.setRelativeToX(curX - offset);
+                                e.setRelativeToX(curX - NODE_OFFSET);
                             } else {
-                                e.setRelativeToX(node.getWidth() + offset);
+                                e.setRelativeToX(node.getWidth() + NODE_OFFSET);
                             }
 
                             reversedPreds.add(e);
                         }
                     }
-                    node.setHeight(node.getHeight() + offset);
+                    node.setHeight(node.getHeight() + NODE_OFFSET);
                     ArrayList<Point> endPoints = new ArrayList<>();
 
-                    node.setWidth(node.getWidth() + offset);
+                    node.setWidth(node.getWidth() + NODE_OFFSET);
                     if (hasReversedDown) {
-                        curX -= offset;
+                        curX -= NODE_OFFSET;
                         endPoints.add(new Point(curX, node.getHeight()));
                     } else {
-                        curX += offset;
+                        curX += NODE_OFFSET;
                         endPoints.add(new Point(node.getWidth(), node.getHeight()));
                     }
 
                     node.getOutOffsets().put(pos - minX, curX);
-                    curX += offset;
-                    node.setBottomMargin(node.getBottomMargin() + offset);
+                    curX += NODE_OFFSET;
+                    node.setBottomMargin(node.getBottomMargin() + NODE_OFFSET);
 
                     endPoints.add(new Point(pos, node.getHeight()));
                     endPoints.add(new Point(pos, oldNodeHeight));
@@ -1380,7 +1317,7 @@ public class HierarchicalLayoutManager implements LayoutManager {
                         assert visited.contains(e.getTo());
                         // Encountered back edge
                         reverseEdge(e);
-                    } else if (!visited.contains(e.getTo()) && (linksToFollow.size() == 0 || linksToFollow.contains(e.getLink()))) {
+                    } else if (!visited.contains(e.getTo()) && (linksToFollow.isEmpty() || linksToFollow.contains(e.getLink()))) {
                         stack.push(e.getTo());
                     }
                 }

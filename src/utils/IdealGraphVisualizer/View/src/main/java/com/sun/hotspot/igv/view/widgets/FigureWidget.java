@@ -121,20 +121,16 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         middleWidget.setCheckClipping(false);
 
         Widget dummyTop = new Widget(scene);
-        int extraTopHeight =
-            getFigure().getDiagram().isCFG() && getFigure().hasNamedInputSlot() ?
-            Figure.TOP_CFG_HEIGHT : 0;
-        dummyTop.setMinimumSize(new Dimension(Figure.INSET / 2, 1 + extraTopHeight));
+        int extraTopHeight = getFigure().getDiagram().isCFG() && getFigure().hasNamedInputSlot() ? Figure.INSET : 0;
+        dummyTop.setMinimumSize(new Dimension(0, 2 + extraTopHeight));
         middleWidget.addChild(dummyTop);
 
         // This widget includes the node text and possibly a warning sign to the right.
         Widget nodeInfoWidget = new Widget(scene);
         nodeInfoWidget.setLayout(LayoutFactory.createAbsoluteLayout());
         middleWidget.addChild(nodeInfoWidget);
-
         Widget textWidget = new Widget(scene);
         textWidget.setLayout(LayoutFactory.createVerticalFlowLayout(textAlign, 0));
-        nodeInfoWidget.addChild(textWidget);
 
         String[] strings = figure.getLines();
         labelWidgets = new ArrayList<>(strings.length);
@@ -158,6 +154,8 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
             labelWidgets.get(i).setForeground(Color.DARK_GRAY);
         }
 
+        nodeInfoWidget.addChild(textWidget);
+
         if (getFigure().getWarning() != null) {
             ImageWidget warningWidget = new ImageWidget(scene, warningSign);
             Point warningLocation = new Point(getFigure().getWidth() - Figure.WARNING_WIDTH - Figure.INSET / 2, 0);
@@ -165,13 +163,6 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
             warningWidget.setToolTipText(getFigure().getWarning());
             nodeInfoWidget.addChild(warningWidget);
         }
-
-        Widget dummyBottom = new Widget(scene);
-        int extraBottomHeight =
-            getFigure().getDiagram().isCFG() && getFigure().hasNamedOutputSlot() ?
-            Figure.BOTTOM_CFG_HEIGHT : 0;
-        dummyBottom.setMinimumSize(new Dimension(Figure.INSET / 2, 1  + extraBottomHeight));
-        middleWidget.addChild(dummyBottom);
 
         middleWidget.setPreferredBounds(new Rectangle(0, 0, f.getWidth(), f.getHeight()));
         this.addChild(middleWidget);
@@ -236,7 +227,6 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
             innerBorderColor = borderColor = Color.BLUE;
         }
 
-        // Border roundedBorder = BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(borderColor, thickness, true), BorderFactory.createLineBorder(innerBorderColor, 1, true));
         Border roundedBorder = BorderFactory.createCompoundBorder(new RoundedBorder(borderColor, thickness), new RoundedBorder(innerBorderColor, 1));
         middleWidget.setBorder(roundedBorder);
 

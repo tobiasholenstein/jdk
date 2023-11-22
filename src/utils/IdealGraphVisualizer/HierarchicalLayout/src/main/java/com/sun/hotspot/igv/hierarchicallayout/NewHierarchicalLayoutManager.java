@@ -2386,8 +2386,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         for (LayoutNode n : getLayoutNodes()) {
             assert n.getX() >= 0;
             assert n.getY() >= 0;
-            assert n.getRightMargin() >= 0;
-            assert n.getLeftMargin() >= 0;
             assert n.getTopMargin() >= 0;
             assert n.getBottomMargin() >= 0;
             assert n.getHeight() >= 0;
@@ -2410,10 +2408,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
         for (LayoutNode n : dummyNodes) {
             assert n.getX() >= 0;
             assert n.getY() >= 0;
-            assert n.getRightMargin() >= 0;
-            assert n.getLeftMargin() >= 0;
-            assert n.getTopMargin() >= 0;
-            assert n.getBottomMargin() >= 0;
             assert n.getHeight() >= 0;
             assert n.getWidth() >= 0;
 
@@ -2436,10 +2430,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             LayoutNode n = vertexToLayoutNode.get(v);
             assert n.getX() >= 0;
             assert n.getY() >= 0;
-            assert n.getRightMargin() >= 0;
-            assert n.getLeftMargin() >= 0;
-            assert n.getTopMargin() >= 0;
-            assert n.getBottomMargin() >= 0;
             assert n.getHeight() >= 0;
             assert n.getWidth() >= 0;
         }
