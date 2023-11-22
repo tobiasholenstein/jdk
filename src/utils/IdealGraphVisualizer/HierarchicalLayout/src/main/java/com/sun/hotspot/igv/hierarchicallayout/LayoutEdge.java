@@ -49,7 +49,7 @@ public class LayoutEdge {
     public LayoutEdge(LayoutNode from, LayoutNode to) {
         this.from = from;
         this.to = to;
-        isReversed = false;
+        this.isReversed = false;
     }
 
     public LayoutEdge(LayoutNode from, LayoutNode to, int relativeFromX, int relativeToX, Link link) {
@@ -120,15 +120,7 @@ public class LayoutEdge {
         this.link = link;
     }
 
-    public void setReversed(boolean reversed) {
-        isReversed = reversed;
-    }
-
     public boolean isVip() {
         return vip;
-    }
-
-    public void setVip(boolean vip) {
-        this.vip = vip;
     }
 }

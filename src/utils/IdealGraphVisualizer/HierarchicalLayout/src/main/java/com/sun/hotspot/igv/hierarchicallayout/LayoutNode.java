@@ -48,10 +48,10 @@ public class LayoutNode {
     // TODO make final
     private Vertex vertex; // Only used for non-dummy nodes, otherwise null
 
-    private List<LayoutEdge> preds = new ArrayList<>();
-    private List<LayoutEdge> succs = new ArrayList<>();
-    private HashMap<Integer, Integer> outOffsets = new HashMap<>(); // deprecated
-    private HashMap<Integer, Integer> inOffsets = new HashMap<>(); // deprecated
+    private final List<LayoutEdge> preds = new ArrayList<>();
+    private final List<LayoutEdge> succs = new ArrayList<>();
+    private final HashMap<Integer, Integer> outOffsets = new HashMap<>(); // deprecated
+    private final HashMap<Integer, Integer> inOffsets = new HashMap<>(); // deprecated
     private final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();
     private final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
     private int pos = -1; // Position within layer
@@ -84,7 +84,6 @@ public class LayoutNode {
         float totalWeight = 0;
 
         for (LayoutEdge predEdge : preds) {
-            LayoutNode predNode = predEdge.from;
             LayoutNode predNode = predEdge.getFrom();
             int weight = weighted ? predNode.getDegree() : 1;
             totalWeightedPosition += weight * predEdge.getStartX();
@@ -241,32 +240,16 @@ public class LayoutNode {
         return preds;
     }
 
-    public void setPreds(List<LayoutEdge> preds) {
-        this.preds = preds;
-    }
-
     public List<LayoutEdge> getSuccs() {
         return succs;
-    }
-
-    public void setSuccs(List<LayoutEdge> succs) {
-        this.succs = succs;
     }
 
     public HashMap<Integer, Integer> getOutOffsets() {
         return outOffsets;
     }
 
-    public void setOutOffsets(HashMap<Integer, Integer> outOffsets) {
-        this.outOffsets = outOffsets;
-    }
-
     public HashMap<Integer, Integer> getInOffsets() {
         return inOffsets;
-    }
-
-    public void setInOffsets(HashMap<Integer, Integer> inOffsets) {
-        this.inOffsets = inOffsets;
     }
 
     public HashMap<Link, List<Point>> getReversedLinkStartPoints() {
