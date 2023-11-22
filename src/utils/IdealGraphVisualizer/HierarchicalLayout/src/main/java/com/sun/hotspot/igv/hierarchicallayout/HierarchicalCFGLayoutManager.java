@@ -29,9 +29,8 @@ import com.sun.hotspot.igv.layout.*;
 import java.awt.*;
 import java.util.*;
 
-public class HierarchicalCFGLayoutManager implements LayoutManager {
+public class HierarchicalCFGLayoutManager extends LayoutManager {
 
-    private static final int BLOCK_BORDER = 6;
     private final FontMetrics fontMetrics;
     // Lays out nodes within a single cluster (basic block).
     private LayoutManager subManager;
@@ -85,8 +84,8 @@ public class HierarchicalCFGLayoutManager implements LayoutManager {
         Map<Cluster, ClusterNode> clusterNode = new HashMap<>();
         for (Cluster c : clusters) {
             String blockLabel = "B" + c;
-            Dimension emptySize = new Dimension(fontMetrics.stringWidth(blockLabel) + BLOCK_BORDER * 2,
-                                                fontMetrics.getHeight() + BLOCK_BORDER);
+            Dimension emptySize = new Dimension(fontMetrics.stringWidth(blockLabel) + ClusterNode.BORDER * 2,
+                                                fontMetrics.getHeight() + ClusterNode.BORDER);
             ClusterNode cn = new ClusterNode(c, c.toString(),
                     fontMetrics.getHeight(), emptySize);
             clusterNode.put(c, cn);

@@ -45,7 +45,7 @@ public class ClusterNode implements Vertex {
     private final Set<Link> subEdges;
     private boolean root;
     private final String name;
-    public final int BORDER = 8;
+    public static final int BORDER = 8;
     private final int headerVerticalSpace;
     private final Dimension emptySize;
     private final int id;

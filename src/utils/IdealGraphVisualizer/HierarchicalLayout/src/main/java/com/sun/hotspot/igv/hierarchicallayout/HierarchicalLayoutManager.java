@@ -36,7 +36,7 @@ import java.util.*;
  *
  * @author Thomas Wuerthinger
  */
-public class HierarchicalLayoutManager implements LayoutManager {
+public class HierarchicalLayoutManager extends LayoutManager {
 
     public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;

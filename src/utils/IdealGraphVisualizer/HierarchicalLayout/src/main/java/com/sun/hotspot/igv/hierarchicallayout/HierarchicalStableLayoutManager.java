@@ -32,10 +32,8 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.util.*;
 
-public class HierarchicalStableLayoutManager implements LayoutManager {
+public class HierarchicalStableLayoutManager extends LayoutManager {
 
-    public static final int NODE_OFFSET = 8;
-    public static final int LAYER_OFFSET = 8;
     // Algorithm global data structures
     private Set<? extends Vertex> currentVertices;
     private Set<? extends Link> currentLinks;

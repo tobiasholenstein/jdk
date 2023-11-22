@@ -32,7 +32,7 @@ import java.util.*;
  *
  * @author Thomas Wuerthinger
  */
-public class HierarchicalClusterLayoutManager implements LayoutManager {
+public class HierarchicalClusterLayoutManager extends LayoutManager {
 
     private final LayoutManager subManager;
     private final LayoutManager manager;

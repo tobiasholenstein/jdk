@@ -29,9 +29,15 @@ import java.util.Set;
  *
  * @author Thomas Wuerthinger
  */
-public interface LayoutManager {
+public abstract class LayoutManager {
 
-    void doLayout(LayoutGraph graph);
+    public static final int SWEEP_ITERATIONS = 1;
+    public static final int CROSSING_ITERATIONS = 2;
+    public static final int NODE_OFFSET = 8;
+    public static final int LAYER_OFFSET = 8;
+    public static final double SCALE_LAYER_PADDING = 1.5;
 
-    void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks);
+    public abstract void doLayout(LayoutGraph graph);
+
+    public abstract void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks);
 }

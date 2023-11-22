@@ -33,13 +33,8 @@ import java.awt.Point;
 import java.util.*;
 
 
-public class NewHierarchicalLayoutManager implements LayoutManager  {
+public class NewHierarchicalLayoutManager extends LayoutManager  {
 
-    public static final int SWEEP_ITERATIONS = 1;
-    public static final int CROSSING_ITERATIONS = 2;
-    public static final int NODE_OFFSET = 8;
-    public static final int LAYER_OFFSET = 8;
-    public static final double SCALE_LAYER_PADDING = 1.5;
     private final boolean combine;
 
 
@@ -51,10 +46,6 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
     private LayoutGraph graph;
     private LayoutLayer[] layers;
     private int layerCount;
-
-    public int getLayerCount() {
-        return layerCount;
-    }
 
     private void assertLinks() {
         for (LayoutNode node : getLayoutNodes()) {
@@ -2083,7 +2074,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
             layer.height = maxLayerHeight;
         }
 
-        private double getScaledLayerPadding(LayoutLayer layer) {
+        private int getScaledLayerPadding(LayoutLayer layer) {
             int maxXOffset = 0;
 
             for (LayoutNode layoutNode : layer) {
@@ -2092,7 +2083,7 @@ public class NewHierarchicalLayoutManager implements LayoutManager  {
                 }
             }
 
-            return SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3);
+            return (int) (SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3));
         }
 
         private void run() {

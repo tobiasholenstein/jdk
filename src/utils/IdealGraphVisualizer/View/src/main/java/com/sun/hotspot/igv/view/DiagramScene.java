@@ -29,7 +29,6 @@ import com.sun.hotspot.igv.graph.*;
 import com.sun.hotspot.igv.hierarchicallayout.*;
 import com.sun.hotspot.igv.layout.Cluster;
 import com.sun.hotspot.igv.layout.LayoutGraph;
-import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.selectioncoordinator.SelectionCoordinator;
 import com.sun.hotspot.igv.util.ColorIcon;
 import com.sun.hotspot.igv.util.DoubleClickAction;
@@ -58,7 +57,6 @@ import org.netbeans.api.visual.layout.LayoutFactory;
 import org.netbeans.api.visual.model.*;
 import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
-import org.netbeans.modules.visual.util.GeomUtil;
 import org.openide.awt.UndoRedo;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
@@ -103,13 +101,12 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
      * The offset of the graph to the border of the window showing it.
      */
     public static final int BORDER_SIZE = 100;
-    public static final int UNDOREDO_LIMIT = 100;
+    public static final int UNDO_REDO_LIMIT = 100;
     public static final int SCROLL_UNIT_INCREMENT = 80;
     public static final int SCROLL_BLOCK_INCREMENT = 400;
     public static final float ZOOM_MAX_FACTOR = 4.0f;
     public static final float ZOOM_MIN_FACTOR = 0.25f;
     public static final float ZOOM_INCREMENT = 1.5f;
-    public static final int SLOT_OFFSET = 8;
     public static final int ANIMATION_LIMIT = 40;
 
     @SuppressWarnings("unchecked")
@@ -501,7 +498,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         seaLayoutManager = new NewHierarchicalLayoutManager();
 
         this.model = model;
-        modelState = new ModelState(model, this);
+        modelState = new ModelState(model);
     }
 
     @Override
@@ -662,10 +659,12 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     rebuilding = false;
                 }
 
-                private int magnetToStartLayerY(Widget widget, Point location, int magnetSize) {
+                private static final int MAGNET_SIZE = 5;
+
+                private int magnetToStartLayerY(Widget widget, Point location) {
                     int shiftY = location.y - widget.getLocation().y;
-                    if (Math.abs(location.y - startLayerY) <= magnetSize) {
-                        if (Math.abs(widget.getLocation().y - startLayerY) > magnetSize) {
+                    if (Math.abs(location.y - startLayerY) <= MAGNET_SIZE) {
+                        if (Math.abs(widget.getLocation().y - startLayerY) > MAGNET_SIZE) {
                             shiftY = startLayerY - widget.getLocation().y;
                         } else {
                             shiftY = 0;
@@ -685,7 +684,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     //if (getModel().getShowCFG()) return;
 
                     int shiftX = location.x - widget.getLocation().x;
-                    int shiftY = magnetToStartLayerY(widget, location, 5);
+                    int shiftY = magnetToStartLayerY(widget, location);
 
                     List<Figure> selectedFigures = new ArrayList<>( model.getSelectedFigures());
                     selectedFigures.sort(Comparator.comparingInt(f -> f.getPosition().x));
@@ -1048,7 +1047,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private void processBlockConnection(BlockConnection blockConnection) {
-        boolean isDashed = blockConnection.getStyle() == Connection.ConnectionStyle.DASHED;;
+        boolean isDashed = blockConnection.getStyle() == Connection.ConnectionStyle.DASHED;
         boolean isBold = blockConnection.getStyle() == Connection.ConnectionStyle.BOLD;
         boolean isVisible = blockConnection.getStyle() != Connection.ConnectionStyle.INVISIBLE;
         Point lastPoint = null;
@@ -1187,7 +1186,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     @Override
     public void resetUndoRedoManager() {
         undoRedoManager = new UndoRedo.Manager();
-        undoRedoManager.setLimit(UNDOREDO_LIMIT);
+        undoRedoManager.setLimit(UNDO_REDO_LIMIT);
     }
 
     private UndoRedo.Manager getUndoRedoManager() {
@@ -1522,30 +1521,17 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         public final int firstPos;
         public final int secondPos;
 
-        // Layout data
-        private int layerCount;
 
-        public int getLayerCount() {
-            return layerCount;
-        }
-
-        public ModelState(DiagramViewModel model, DiagramScene scene) {
+        public ModelState(DiagramViewModel model) {
             hiddenNodes = new HashSet<>(model.getHiddenNodes());
             firstPos = model.getFirstPosition();
             secondPos = model.getSecondPosition();
-            if (model.getShowSea()) {
-                // TODO
-                layerCount = scene.seaLayoutManager.getLayerCount();
-                if (layerCount > 0) {
-                    List<Map<Integer, Point>> nodeData = scene.seaLayoutManager.saveNodes();
-                }
-            }
         }
     }
 
     private void addUndo() {
         if (undoRedoEnabled) {
-            ModelState newModelState = new ModelState(model, this);
+            ModelState newModelState = new ModelState(model);
             DiagramUndoRedo undoRedo = new DiagramUndoRedo(this, getScrollPosition(), modelState, newModelState);
             getUndoRedoManager().undoableEditHappened(new UndoableEditEvent(this, undoRedo));
             modelState = newModelState;

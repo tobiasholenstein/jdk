@@ -30,7 +30,7 @@ import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Point;
 import java.util.*;
 
-public class LinearLayoutManager implements LayoutManager {
+public class LinearLayoutManager extends LayoutManager {
 
     // Ranking determining the vertical node ordering.
     private final Map<? extends Vertex, Integer> vertexRank;
