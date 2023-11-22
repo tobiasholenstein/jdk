@@ -23,10 +23,8 @@
  */
 package com.sun.hotspot.igv.view.widgets;
 
-import com.sun.hotspot.igv.graph.Figure;
 import com.sun.hotspot.igv.graph.OutputSlot;
 import com.sun.hotspot.igv.view.DiagramScene;
-import java.util.List;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
@@ -44,14 +42,6 @@ public class OutputSlotWidget extends SlotWidget {
 
     public OutputSlot getOutputSlot() {
         return outputSlot;
-    }
-
-    @Override
-    protected int calculateSlotWidth() {
-        List<OutputSlot> slots = getSlot().getFigure().getOutputSlots();
-        assert slots.contains(getSlot());
-        return calculateWidth(slots.size());
-
     }
 
     @Override

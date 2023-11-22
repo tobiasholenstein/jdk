@@ -31,19 +31,16 @@ import java.util.*;
 
 public class LayoutNode {
 
-    public static final int DUMMY_HEIGHT = 1;
-    public static final int DUMMY_WIDTH = 1;
+    private int layer = -1;
     private int optimal_x;
-
     private int x;
     private int y;
     private int width;
     private int height;
-    private int layer = -1;
-    private int leftXOffset;
-    private int topYOffset;
-    private int rightXOffset;
-    private int bottomYOffset;
+    private int topMargin;
+    private int bottomMargin;
+    private int rightMargin;
+    private int leftMargin;
 
     // TODO make final
     private Vertex vertex; // Only used for non-dummy nodes, otherwise null
@@ -62,8 +59,8 @@ public class LayoutNode {
     public LayoutNode(Vertex v) {
         vertex = v;
         if (v == null) {
-            height = DUMMY_HEIGHT;
-            width = DUMMY_WIDTH;
+            height = 0;
+            width = 0;
         } else {
             Dimension size = v.getSize();
             height = size.height;
@@ -100,40 +97,40 @@ public class LayoutNode {
         return totalWeight > 0 ? totalWeightedPosition / totalWeight : 0;
     }
 
-    public int getLeftSide() {
-        return x + leftXOffset;
+    public int getLeft() {
+        return x + leftMargin;
     }
 
-    public int getLeftBorder() {
+    public int getOuterLeft() {
         return x;
     }
 
-    public int getWholeWidth() {
-        return leftXOffset + width + rightXOffset;
+    public int getOuterWidth() {
+        return leftMargin + width + rightMargin;
     }
 
-    public int getWholeHeight() {
-        return topYOffset + height + bottomYOffset;
+    public int getOuterHeight() {
+        return topMargin + height + bottomMargin;
     }
 
-    public int getRightSide() {
-        return x + leftXOffset + width;
+    public int getRight() {
+        return x + leftMargin + width;
     }
 
-    public int getRightBorder() {
-        return x + leftXOffset + width + rightXOffset;
+    public int getOuterRight() {
+        return x + leftMargin + width + rightMargin;
     }
 
     public int getCenterX() {
-        return getLeftSide() + (width / 2);
+        return x + leftMargin + (width / 2);
     }
 
     public int getTop() {
-        return y + topYOffset;
+        return y + topMargin;
     }
 
     public int getBottom() {
-        return y + topYOffset + height;
+        return y + topMargin + height;
     }
 
     public boolean isDummy() {
@@ -196,36 +193,36 @@ public class LayoutNode {
         this.layer = layer;
     }
 
-    public int getLeftXOffset() {
-        return leftXOffset;
+    public int getLeftMargin() {
+        return leftMargin;
     }
 
-    public void setLeftXOffset(int leftXOffset) {
-        this.leftXOffset = leftXOffset;
+    public void setLeftMargin(int leftMargin) {
+        this.leftMargin = leftMargin;
     }
 
-    public int getTopYOffset() {
-        return topYOffset;
+    public int getTopMargin() {
+        return topMargin;
     }
 
-    public void setTopYOffset(int topYOffset) {
-        this.topYOffset = topYOffset;
+    public void setTopMargin(int topMargin) {
+        this.topMargin = topMargin;
     }
 
-    public int getRightXOffset() {
-        return rightXOffset;
+    public int getRightMargin() {
+        return rightMargin;
     }
 
-    public void setRightXOffset(int rightXOffset) {
-        this.rightXOffset = rightXOffset;
+    public void setRightMargin(int rightMargin) {
+        this.rightMargin = rightMargin;
     }
 
-    public int getBottomYOffset() {
-        return bottomYOffset;
+    public int getBottomMargin() {
+        return bottomMargin;
     }
 
-    public void setBottomYOffset(int bottomYOffset) {
-        this.bottomYOffset = bottomYOffset;
+    public void setBottomMargin(int bottomMargin) {
+        this.bottomMargin = bottomMargin;
     }
 
     public Vertex getVertex() {

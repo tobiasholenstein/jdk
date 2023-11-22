@@ -33,7 +33,6 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
-import java.util.List;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
@@ -53,13 +52,6 @@ public class InputSlotWidget extends SlotWidget {
 
     public InputSlot getInputSlot() {
         return inputSlot;
-    }
-
-    @Override
-    protected int calculateSlotWidth() {
-        List<InputSlot> slots = getSlot().getFigure().getInputSlots();
-        assert slots.contains(getSlot());
-        return calculateWidth(slots.size());
     }
 
     @Override

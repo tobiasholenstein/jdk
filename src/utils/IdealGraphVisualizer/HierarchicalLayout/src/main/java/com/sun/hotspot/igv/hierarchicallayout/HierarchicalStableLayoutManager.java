@@ -258,9 +258,9 @@ public class HierarchicalStableLayoutManager {
         // Reset node data in case there were previous reversed edges
         node.setWidth((int) node.getVertex().getSize().getWidth());
         node.setHeight((int) node.getVertex().getSize().getHeight());
-        node.setTopYOffset(0);
-        node.setBottomYOffset(0);
-        node.setLeftXOffset(0);
+        node.setTopMargin(0);
+        node.setBottomMargin(0);
+        node.setLeftMargin(0);
         node.getInOffsets().clear();
         node.getOutOffsets().clear();
 
@@ -325,7 +325,7 @@ public class HierarchicalStableLayoutManager {
             node.getInOffsets().put(pos, -curY);
             curY += offset;
             node.setHeight(node.getHeight() + offset);
-            node.setTopYOffset(node.getTopYOffset() + offset);
+            node.setTopMargin(node.getTopMargin() + offset);
             curWidth -= offset;
         }
 
@@ -366,7 +366,7 @@ public class HierarchicalStableLayoutManager {
 
             node.getOutOffsets().put(pos - minX, curX);
             curX += offset;
-            node.setBottomYOffset(node.getBottomYOffset() + offset);
+            node.setBottomMargin(node.getBottomMargin() + offset);
 
             endPoints.add(new Point(pos, node.getHeight()));
             endPoints.add(new Point(pos, oldNodeHeight));
@@ -384,7 +384,7 @@ public class HierarchicalStableLayoutManager {
                 e.setRelativeFromX(e.getRelativeFromX() - minX);
             }
 
-            node.setLeftXOffset(-minX);
+            node.setLeftMargin(-minX);
             node.setWidth(node.getWidth() - minX);
         }
     }
@@ -1313,7 +1313,7 @@ public class HierarchicalStableLayoutManager {
                 // we have a right neighbor
                 LayoutNode rightNode = nextLayer.get(rightPos);
                 int rightShift = x - dummy.getX();
-                if (dummy.getRightSide() + rightShift <= rightNode.getLeftSide()) {
+                if (dummy.getRight() + rightShift <= rightNode.getLeft()) {
                     // it is possible to shift nextDummyNode right
                     dummy.setX(x);
                 }
@@ -1328,7 +1328,7 @@ public class HierarchicalStableLayoutManager {
                 // we have a left neighbor
                 LayoutNode leftNode = nextLayer.get(leftPos);
                 int leftShift = dummy.getX() - x;
-                if (leftNode.getRightSide() <= dummy.getLeftSide() - leftShift) {
+                if (leftNode.getRight() <= dummy.getLeft() - leftShift) {
                     // it is possible to shift nextDummyNode left
                     dummy.setX(x);
                 }
@@ -1360,9 +1360,9 @@ public class HierarchicalStableLayoutManager {
                 int baseLine = 0;
                 int bottomBaseLine = 0;
                 for (LayoutNode n : layer) {
-                    maxHeight = Math.max(maxHeight, n.getHeight() - n.getTopYOffset() - n.getBottomYOffset());
-                    baseLine = Math.max(baseLine, n.getTopYOffset());
-                    bottomBaseLine = Math.max(bottomBaseLine, n.getBottomYOffset());
+                    maxHeight = Math.max(maxHeight, n.getHeight() - n.getTopMargin() - n.getBottomMargin());
+                    baseLine = Math.max(baseLine, n.getTopMargin());
+                    bottomBaseLine = Math.max(bottomBaseLine, n.getBottomMargin());
                 }
 
                 int maxXOffset = 0;
@@ -1373,7 +1373,7 @@ public class HierarchicalStableLayoutManager {
                         n.setHeight(maxHeight + baseLine + bottomBaseLine);
 
                     } else {
-                        n.setY(curY + baseLine + (maxHeight - (n.getHeight() - n.getTopYOffset() - n.getBottomYOffset())) / 2 - n.getTopYOffset());
+                        n.setY(curY + baseLine + (maxHeight - (n.getHeight() - n.getTopMargin() - n.getBottomMargin())) / 2 - n.getTopMargin());
                     }
 
                     for (LayoutEdge e : n.getSuccs()) {
@@ -1394,7 +1394,7 @@ public class HierarchicalStableLayoutManager {
             ArrayList<Point> points = new ArrayList<>();
 
             Point p = new Point(e.getTo().getX() + e.getRelativeToX(),
-                    e.getTo().getY() + e.getTo().getTopYOffset() + e.getLink().getTo().getRelativePosition().y);
+                    e.getTo().getY() + e.getTo().getTopMargin() + e.getLink().getTo().getRelativePosition().y);
             points.add(p);
             if (e.getTo().getInOffsets().containsKey(e.getRelativeToX())) {
                 points.add(new Point(p.x,
@@ -1422,7 +1422,7 @@ public class HierarchicalStableLayoutManager {
                 cur = curEdge.getFrom();
             }
 
-            p = new Point(cur.getX() + curEdge.getRelativeFromX(), cur.getY() + cur.getHeight() - cur.getBottomYOffset()
+            p = new Point(cur.getX() + curEdge.getRelativeFromX(), cur.getY() + cur.getHeight() - cur.getBottomMargin()
                     + (curEdge.getLink() == null ? 0 : curEdge.getLink().getFrom().getRelativePosition().y));
             if (curEdge.getFrom().getOutOffsets().containsKey(curEdge.getRelativeFromX())) {
                 points.add(new Point(p.x, p.y + curEdge.getFrom().getOutOffsets().get(curEdge.getRelativeFromX())
@@ -1457,7 +1457,7 @@ public class HierarchicalStableLayoutManager {
 
                 if (n.getVertex() != null) {
                     assert !vertexPositions.containsKey(n.getVertex());
-                    vertexPositions.put(n.getVertex(), new Point(n.getX() + n.getLeftXOffset(), n.getY() + n.getTopYOffset()));
+                    vertexPositions.put(n.getVertex(), new Point(n.getX() + n.getLeftMargin(), n.getY() + n.getTopMargin()));
                 } else {
                     continue;
                 }

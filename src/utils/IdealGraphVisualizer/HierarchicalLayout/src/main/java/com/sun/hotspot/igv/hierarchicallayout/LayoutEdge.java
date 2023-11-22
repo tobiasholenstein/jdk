@@ -39,11 +39,11 @@ public class LayoutEdge {
     private boolean vip;
 
     public int getStartX() {
-        return relativeFromX + from.getLeftSide();
+        return relativeFromX + from.getLeft();
     }
 
     public int getEndX() {
-        return relativeToX + to.getLeftSide();
+        return relativeToX + to.getLeft();
     }
 
     public LayoutEdge(LayoutNode from, LayoutNode to) {

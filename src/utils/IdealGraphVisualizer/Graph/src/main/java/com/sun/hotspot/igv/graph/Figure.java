@@ -34,7 +34,6 @@ import java.util.*;
 public class Figure extends Properties.Entity implements Vertex {
 
     public static final int INSET = 8;
-    public static final int SLOT_WIDTH = 10;
     public static final int DOT_OFFSET = 5;
     public static final int SLOT_OFFSET = 8;
     public static final int TOP_CFG_HEIGHT = 7;
@@ -51,7 +50,6 @@ public class Figure extends Properties.Entity implements Vertex {
     private Color color;
     private String warning;
     private final int id;
-    private final String idString;
     private String[] lines;
     private int heightCash = -1;
     private int widthCash = -1;
@@ -139,7 +137,7 @@ public class Figure extends Properties.Entity implements Vertex {
         this.predecessors = new ArrayList<>(6);
         this.successors = new ArrayList<>(6);
         this.id = id;
-        this.idString = Integer.toString(id);
+        String idString = Integer.toString(id);
         this.position = new Point(0, 0);
         this.color = Color.WHITE;
         Canvas canvas = new Canvas();
@@ -416,10 +414,6 @@ public class Figure extends Properties.Entity implements Vertex {
     @Override
     public String toString() {
         return inputNode.getProperties().get("idx");
-    }
-
-    public static int getVerticalOffset() {
-        return Figure.SLOT_WIDTH;
     }
 
     public Cluster getCluster() {

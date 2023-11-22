@@ -85,13 +85,12 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
 
     @Override
     protected void paintWidget() {
-
         if (getScene().getZoomFactor() < ZOOM_FACTOR) {
             return;
         }
 
         Graphics2D g = this.getGraphics();
-        // g.setColor(Color.DARK_GRAY);
+        assert this.getBounds() != null;
         int w = this.getBounds().width;
         int h = this.getBounds().height;
 
@@ -132,7 +131,6 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
             }
 
         } else {
-
             if (this.getSlot().getConnections().isEmpty() &&
                 !getFigureWidget().getFigure().getDiagram().isCFG()) {
                 if (this.getState().isHighlighted()) {
@@ -142,28 +140,20 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
                 }
                 int r = 2;
                 if (slot instanceof OutputSlot) {
-                    g.fillOval(w / 2 - r, Figure.SLOT_WIDTH - Figure.DOT_OFFSET - r, 2 * r, 2 * r);
+                    g.fillOval(w / 2 - r, h / 2 - r, 2 * r, 2 * r);
                 } else {
                     g.fillOval(w / 2 - r, Figure.DOT_OFFSET - r, 2 * r, 2 * r);
                 }
-            } else {
-                // Do not paint a slot with connections.
             }
         }
     }
 
     @Override
     protected Rectangle calculateClientArea() {
-        return new Rectangle(0, 0, slot.getWidth(), Figure.SLOT_WIDTH);
+        return new Rectangle(0, 0, slot.getWidth(), slot.getHeight());
     }
-
-    protected abstract int calculateSlotWidth();
 
     protected abstract int yOffset();
-
-    protected int calculateWidth(int count) {
-        return getFigureWidget().getFigure().getWidth() / count;
-    }
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
