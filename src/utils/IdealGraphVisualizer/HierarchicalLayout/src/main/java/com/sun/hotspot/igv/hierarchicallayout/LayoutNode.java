@@ -50,8 +50,8 @@ public class LayoutNode {
 
     public List<LayoutEdge> preds = new ArrayList<>();
     public List<LayoutEdge> succs = new ArrayList<>();
-    public HashMap<Integer, Integer> outOffsets = new HashMap<>();
-    public HashMap<Integer, Integer> inOffsets = new HashMap<>();
+    public HashMap<Integer, Integer> outOffsets = new HashMap<>(); // deprecated
+    public HashMap<Integer, Integer> inOffsets = new HashMap<>(); // deprecated
     public final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();
     public final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
     public int pos = -1; // Position within layer
