@@ -107,7 +107,7 @@ public class Figure extends Properties.Entity implements Vertex {
                     widthCash = cur;
                 }
             }
-            widthCash += 2 * PADDING;
+            widthCash += 2 * PADDING + 4;
             if (getWarning() != null) {
                 widthCash += WARNING_WIDTH;
             }
