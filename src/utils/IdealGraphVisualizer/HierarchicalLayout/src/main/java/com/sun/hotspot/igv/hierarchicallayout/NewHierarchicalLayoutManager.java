@@ -37,9 +37,6 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
 
     private final boolean combine;
 
-
-    // Options
-    private final int maxLayerLength;
     // Algorithm global datastructures
     private final List<LayoutNode> dummyNodes;
     private final HashMap<Vertex, LayoutNode> vertexToLayoutNode;
@@ -803,6 +800,11 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         maxLayerLength = -1;
         vertexToLayoutNode = new HashMap<>();
         dummyNodes = new ArrayList<>();
+    }
+
+    @Override
+    public void cutEdges(boolean enable) {
+        maxLayerLength = enable ? 10 : -1;
     }
 
     public void doLayout(LayoutGraph graph) {

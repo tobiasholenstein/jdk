@@ -47,6 +47,13 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
         doLayout(graph);
     }
 
+    @Override
+    public void cutEdges(boolean enable) {
+        manager.cutEdges(enable);
+        subManager.cutEdges(enable);
+        maxLayerLength = enable ? 10 : -1;
+    }
+
     public void doLayout(LayoutGraph graph) {
 
         assert graph.verify();

@@ -32,6 +32,11 @@ import java.util.Set;
  */
 public abstract class LayoutManager {
 
+    // Options
+    protected int maxLayerLength = -1;
+
+    public abstract void cutEdges(boolean enable);
+
     public static final Font TITLE_FONT = new Font("Arial", Font.BOLD, 14);
     public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;

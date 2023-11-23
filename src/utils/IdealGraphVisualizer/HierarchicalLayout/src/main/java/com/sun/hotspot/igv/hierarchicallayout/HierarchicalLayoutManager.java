@@ -48,8 +48,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
     private final boolean combine;
     public static final int MIN_LAYER_DIFFERENCE = 1;
 
-    // Options
-    private final int maxLayerLength;
     // Algorithm global datastructures
     private Set<Link> reversedLinks;
     private Set<LayoutEdge> selfEdges;
@@ -68,7 +66,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
     public HierarchicalLayoutManager(boolean combineEdges) {
         this.combine = combineEdges;
-        this.maxLayerLength = -1;
         this.linksToFollow = new HashSet<>();
     }
 
@@ -89,6 +86,11 @@ public class HierarchicalLayoutManager extends LayoutManager {
                 }
             }
         }
+    }
+
+    @Override
+    public void cutEdges(boolean enable) {
+        maxLayerLength = enable ? 10 : -1;
     }
 
     @Override

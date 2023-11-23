@@ -54,6 +54,12 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     private boolean shouldRemoveEmptyLayers = true;
 
     @Override
+    public void cutEdges(boolean enable) {
+        manager.cutEdges(enable);
+        maxLayerLength = enable ? 10 : -1;
+    }
+
+    @Override
     public void doLayout(LayoutGraph graph) {
         updateLayout(graph.getVertices(), graph.getLinks());
     }

@@ -40,6 +40,11 @@ public class LinearLayoutManager extends LayoutManager {
     }
 
     @Override
+    public void cutEdges(boolean enable) {
+        maxLayerLength = enable ? 10 : -1;
+    }
+
+    @Override
     public void doLayout(LayoutGraph graph) {
         doLayout(graph, new HashSet<>());
     }
