@@ -46,7 +46,9 @@ public class BlockWidget extends LabelWidget implements Vertex {
     private static final Font font = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
     private static final Font boldFont = font.deriveFont(Font.BOLD);
     public static final Color NORMAL_FOREGROUND_COLOR = Color.BLACK;
-    public static final Color HOVER_FOREGROUND_COLOR = Color.BLUE;
+    public static final Color DEFAULT_COLOR = Color.WHITE;
+    public static final Color SELECTED_COLOR = Color.GREEN;
+    public static final Color HOVER_FOREGROUND_COLOR = Color.RED;
     public final int id;
 
     /** Creates a new instance of BlockWidget */
@@ -58,6 +60,7 @@ public class BlockWidget extends LabelWidget implements Vertex {
         this.setForeground(NORMAL_FOREGROUND_COLOR);
         this.setBorder(BorderFactory.createLineBorder(1, NORMAL_FOREGROUND_COLOR));
         this.setMinimumSize(MIN_SIZE);
+        this.setOpaque(true);
 
         this.setFont(font);
         this.setAlignment(Alignment.CENTER);
