@@ -33,10 +33,9 @@ import java.util.*;
 
 public class Figure extends Properties.Entity implements Vertex {
 
-    public static final int INSET = 8;
-    public static final int SLOT_OFFSET = 8;
+    public static final int PADDING = 2;
+    public static final int SLOT_OFFSET = 10;
     public static final int WARNING_WIDTH = 16;
-    public static final double BOLD_LINE_FACTOR = 1.06;
     protected List<InputSlot> inputSlots;
     protected List<OutputSlot> outputSlots;
     private final InputNode inputNode;
@@ -61,15 +60,12 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     private void updateHeight() {
-        int lines = getLines().length;
-        heightCash = lines * metrics.getHeight() + INSET;
-        if (diagram.isCFG()) {
-            if (hasNamedInputSlot()) {
-                heightCash += INSET;
-            }
-            if (hasNamedOutputSlot()) {
-                heightCash += INSET;
-            }
+        heightCash = getLines().length * metrics.getHeight() + 2 * PADDING + 4;
+        if (hasNamedInputSlot()) {
+            heightCash += diagram.isCFG() ? Slot.SLOT_HEIGHT : Slot.SLOT_HEIGHT / 2;
+        }
+        if (hasNamedOutputSlot()) {
+            heightCash += diagram.isCFG() ? Slot.SLOT_HEIGHT : Slot.SLOT_HEIGHT / 2;
         }
     }
 
@@ -104,14 +100,14 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     private void updateWidth() {
-            int max = 0;
+            widthCash = 0;
             for (String s : getLines()) {
                 int cur = metrics.stringWidth(s);
-                if (cur > max) {
-                    max = cur;
+                if (cur > widthCash) {
+                    widthCash = cur;
                 }
             }
-            widthCash = (int)(max * BOLD_LINE_FACTOR) + INSET;
+            widthCash += 2 * PADDING;
             if (getWarning() != null) {
                 widthCash += WARNING_WIDTH;
             }
@@ -127,7 +123,6 @@ public class Figure extends Properties.Entity implements Vertex {
         this.predecessors = new ArrayList<>(6);
         this.successors = new ArrayList<>(6);
         this.id = id;
-        String idString = Integer.toString(id);
         this.position = new Point(0, 0);
         this.color = Color.WHITE;
         Canvas canvas = new Canvas();

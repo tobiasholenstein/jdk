@@ -33,8 +33,8 @@ public abstract class LayoutManager {
 
     public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;
-    public static final int NODE_OFFSET = 8;
-    public static final int LAYER_OFFSET = 8;
+    public static final int NODE_OFFSET = 10;
+    public static final int LAYER_OFFSET = 10;
     public static final double SCALE_LAYER_PADDING = 1.5;
 
     public abstract void doLayout(LayoutGraph graph);

@@ -84,8 +84,8 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
         Map<Cluster, ClusterNode> clusterNode = new HashMap<>();
         for (Cluster c : clusters) {
             String blockLabel = "B" + c;
-            Dimension emptySize = new Dimension(fontMetrics.stringWidth(blockLabel) + ClusterNode.BORDER * 2,
-                                                fontMetrics.getHeight() + ClusterNode.BORDER);
+            Dimension emptySize = new Dimension(fontMetrics.stringWidth(blockLabel) + ClusterNode.PADDING * 2,
+                                                fontMetrics.getHeight() + ClusterNode.PADDING);
             ClusterNode cn = new ClusterNode(c, c.toString(),
                     fontMetrics.getHeight(), emptySize);
             clusterNode.put(c, cn);

@@ -45,7 +45,7 @@ public class ClusterNode implements Vertex {
     private final Set<Link> subEdges;
     private boolean root;
     private final String name;
-    public static final int BORDER = 8;
+    public static final int PADDING = 10;
     private final int headerVerticalSpace;
     private final Dimension emptySize;
     private final int id;
@@ -157,8 +157,8 @@ public class ClusterNode implements Vertex {
 
         }
 
-        size.width += 2 * BORDER;
-        size.height += 2 * BORDER;
+        size.width += 2 * PADDING;
+        size.height += 2 * PADDING;
     }
 
     public Port getInputSlot() {
@@ -184,7 +184,7 @@ public class ClusterNode implements Vertex {
         this.position = pos;
         for (Vertex n : subNodes) {
             Point cur = new Point(n.getPosition());
-            cur.translate(pos.x + BORDER, pos.y + BORDER);
+            cur.translate(pos.x + PADDING, pos.y + PADDING);
             n.setPosition(cur);
         }
 
@@ -194,7 +194,7 @@ public class ClusterNode implements Vertex {
             for (Point p : arr) {
                 if (p != null) {
                     Point p2 = new Point(p);
-                    p2.translate(pos.x + BORDER, pos.y + BORDER);
+                    p2.translate(pos.x + PADDING, pos.y + PADDING);
                     newArr.add(p2);
                 } else {
                     newArr.add(null);

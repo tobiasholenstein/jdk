@@ -26,6 +26,7 @@ package com.sun.hotspot.igv.view.widgets;
 import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
+import com.sun.hotspot.igv.graph.Slot;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.util.PropertiesConverter;
@@ -106,23 +107,19 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         this.setCheckClipping(true);
         this.diagramScene = scene;
 
-        Widget outer = new Widget(scene);
-        outer.setBackground(f.getColor());
-        outer.setLayout(LayoutFactory.createOverlayLayout());
-
         middleWidget = new Widget(scene);
-        SerialAlignment textAlign = scene.getModel().getShowCFG() ?
-            LayoutFactory.SerialAlignment.LEFT_TOP :
-            LayoutFactory.SerialAlignment.CENTER;
-        middleWidget.setLayout(LayoutFactory.createVerticalFlowLayout(textAlign, 0));
+        middleWidget.setLayout(LayoutFactory.createVerticalFlowLayout(SerialAlignment.CENTER, 0));
         middleWidget.setBackground(f.getColor());
         middleWidget.setOpaque(true);
         middleWidget.getActions().addAction(new DoubleClickAction(this));
         middleWidget.setCheckClipping(false);
 
         Widget dummyTop = new Widget(scene);
-        int extraTopHeight = getFigure().getDiagram().isCFG() && getFigure().hasNamedInputSlot() ? Figure.INSET : 0;
-        dummyTop.setMinimumSize(new Dimension(0, 2 + extraTopHeight));
+        int extraTopHeight =  Figure.PADDING;
+        if (getFigure().hasNamedInputSlot()) {
+            extraTopHeight += getFigure().getDiagram().isCFG() ? Slot.SLOT_HEIGHT : Slot.SLOT_HEIGHT / 2;
+        }
+        dummyTop.setMinimumSize(new Dimension(0, extraTopHeight));
         middleWidget.addChild(dummyTop);
 
         // This widget includes the node text and possibly a warning sign to the right.
@@ -130,7 +127,7 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         nodeInfoWidget.setLayout(LayoutFactory.createAbsoluteLayout());
         middleWidget.addChild(nodeInfoWidget);
         Widget textWidget = new Widget(scene);
-        textWidget.setLayout(LayoutFactory.createVerticalFlowLayout(textAlign, 0));
+        textWidget.setLayout(LayoutFactory.createVerticalFlowLayout(SerialAlignment.CENTER, 0));
 
         String[] strings = figure.getLines();
         labelWidgets = new ArrayList<>(strings.length);
@@ -144,7 +141,6 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
             lw.setForeground(getTextColor());
             lw.setAlignment(LabelWidget.Alignment.CENTER);
             lw.setVerticalAlignment(LabelWidget.VerticalAlignment.CENTER);
-            lw.setBorder(BorderFactory.createEmptyBorder());
             lw.setCheckClipping(false);
         }
         formatExtraLabel(false);
@@ -158,7 +154,7 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
 
         if (getFigure().getWarning() != null) {
             ImageWidget warningWidget = new ImageWidget(scene, warningSign);
-            Point warningLocation = new Point(getFigure().getWidth() - Figure.WARNING_WIDTH - Figure.INSET / 2, 0);
+            Point warningLocation = new Point(getFigure().getWidth() - Figure.WARNING_WIDTH - Figure.PADDING / 2, 0);
             warningWidget.setPreferredLocation(warningLocation);
             warningWidget.setToolTipText(getFigure().getWarning());
             nodeInfoWidget.addChild(warningWidget);
