@@ -946,7 +946,8 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     isBold = true;
                 } else if (c.getStyle() == Connection.ConnectionStyle.INVISIBLE) {
                     isVisible = false;
-                } else if (c.getStyle() != Connection.ConnectionStyle.DASHED) {
+                }
+                if (c.getStyle() != Connection.ConnectionStyle.DASHED) {
                     isDashed = false;
                 }
             }
