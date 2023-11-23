@@ -37,6 +37,7 @@ import java.util.*;
  */
 public class ClusterNode implements Vertex {
 
+    public static final int PADDING = 10;
     private Cluster cluster;
     private Port inputSlot;
     private final Set<Vertex> subNodes;
@@ -45,13 +46,11 @@ public class ClusterNode implements Vertex {
     private final Set<Link> subEdges;
     private boolean root;
     private final String name;
-    public static final int PADDING = 10;
     private final int headerVerticalSpace;
     private final Dimension emptySize;
     private final int id;
 
-    public ClusterNode(Cluster cluster, String name,
-                       int headerVerticalSpace, Dimension emptySize) {
+    public ClusterNode(Cluster cluster, String name, int headerVerticalSpace, Dimension emptySize) {
         this.id = cluster.getID();
         this.subNodes = new HashSet<>();
         this.subEdges = new HashSet<>();
@@ -63,10 +62,6 @@ public class ClusterNode implements Vertex {
         if (emptySize.width > 0 || emptySize.height > 0) {
             updateSize();
         }
-    }
-
-    public ClusterNode(Cluster cluster, String name) {
-        this(cluster, name, 0, new Dimension(0, 0));
     }
 
     public String getName() {
@@ -151,7 +146,7 @@ public class ClusterNode implements Vertex {
             List<Point> points = new ArrayList<>(l.getControlPoints());
             for (Point p : points) {
                 p.x -= minX;
-                p.y -= minY;
+                p.y = p.y - minY + headerVerticalSpace;
             }
             l.setControlPoints(points);
 

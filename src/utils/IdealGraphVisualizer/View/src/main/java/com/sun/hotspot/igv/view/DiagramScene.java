@@ -29,6 +29,7 @@ import com.sun.hotspot.igv.graph.*;
 import com.sun.hotspot.igv.hierarchicallayout.*;
 import com.sun.hotspot.igv.layout.Cluster;
 import com.sun.hotspot.igv.layout.LayoutGraph;
+import com.sun.hotspot.igv.layout.LayoutManager;
 import com.sun.hotspot.igv.selectioncoordinator.SelectionCoordinator;
 import com.sun.hotspot.igv.util.ColorIcon;
 import com.sun.hotspot.igv.util.DoubleClickAction;
@@ -744,7 +745,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         blockLayer.removeChildren();
         if (getModel().getShowBlocks() || getModel().getShowCFG()) {
             for (InputBlock inputBlock : getModel().getDiagram().getInputBlocks()) {
-                BlockWidget blockWidget = new BlockWidget(this, inputBlock);
+                BlockWidget blockWidget = new BlockWidget(this, inputBlock, LayoutManager.TITLE_FONT);
                 blockWidget.getActions().addAction(new DoubleClickAction(blockWidget));
                 blockWidget.setVisible(false);
                 addObject(inputBlock, blockWidget);

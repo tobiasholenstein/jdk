@@ -41,8 +41,7 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
     public HierarchicalCFGLayoutManager() {
         // Anticipate block label sizes to dimension blocks appropriately.
         Canvas canvas = new Canvas();
-        Font font = new Font("Arial", Font.BOLD, 14);
-        fontMetrics = canvas.getFontMetrics(font);
+        fontMetrics = canvas.getFontMetrics(TITLE_FONT);
         this.manager =  new NewHierarchicalLayoutManager();
     }
 
@@ -84,10 +83,9 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
         Map<Cluster, ClusterNode> clusterNode = new HashMap<>();
         for (Cluster c : clusters) {
             String blockLabel = "B" + c;
-            Dimension emptySize = new Dimension(fontMetrics.stringWidth(blockLabel) + ClusterNode.PADDING * 2,
+            Dimension emptySize = new Dimension(fontMetrics.stringWidth(blockLabel) + ClusterNode.PADDING,
                                                 fontMetrics.getHeight() + ClusterNode.PADDING);
-            ClusterNode cn = new ClusterNode(c, c.toString(),
-                    fontMetrics.getHeight(), emptySize);
+            ClusterNode cn = new ClusterNode(c, c.toString(), fontMetrics.getHeight(), emptySize);
             clusterNode.put(c, cn);
         }
 

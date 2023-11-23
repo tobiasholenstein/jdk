@@ -24,9 +24,10 @@
 package com.sun.hotspot.igv.hierarchicallayout;
 
 import com.sun.hotspot.igv.layout.*;
-import java.awt.Point;
-import java.awt.Rectangle;
+import com.sun.hotspot.igv.layout.LayoutManager;
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 /**
  *
@@ -72,7 +73,14 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
             clusterOutputSlotHash.put(c, new HashMap<>());
             clusterOutputSlotSet.put(c, new TreeSet<>());
             clusterInputSlotSet.put(c, new TreeSet<>());
-            ClusterNode cn = new ClusterNode(c, "" + z);
+
+            String blockLabel = "B" + c;
+            Canvas canvas = new Canvas();
+            FontMetrics fontMetrics = canvas.getFontMetrics(TITLE_FONT);
+            Dimension emptySize = new Dimension(fontMetrics.stringWidth(blockLabel) + ClusterNode.PADDING * 2,
+                    fontMetrics.getHeight() + ClusterNode.PADDING * 2);
+            ClusterNode cn = new ClusterNode(c, "" + z, fontMetrics.getHeight(), emptySize);
+
             clusterNodes.put(c, cn);
             clusterNodeSet.add(cn);
             z++;
