@@ -133,8 +133,12 @@ public class Figure extends Properties.Entity implements Vertex {
         return id;
     }
 
-    public void setColor(Color color) {
-        this.color = color;
+    public void setColor(Color newColor) {
+        if (newColor == Color.WHITE) {
+            this.color = new Color(color.getRed(), color.getGreen(), color.getBlue(), 127);
+        } else {
+            this.color = newColor;
+        }
     }
 
     public Color getColor() {
