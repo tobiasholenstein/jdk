@@ -394,11 +394,11 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 for (LayoutEdge edge : node.getPreds()) {
                     if (edge.getFrom().getLayer() == layer - 1) {
                         int fromNodeXCoord = edge.getFrom().getX();
-                        if (edge.getFrom().getVertex() != null) {
+                        if (!edge.getFrom().isDummy()) {
                             fromNodeXCoord += edge.getRelativeFromX();
                         }
                         int toNodeXCoord = xCoord;
-                        if (node.getVertex() != null) {
+                        if (!node.isDummy()) {
                             toNodeXCoord += edge.getRelativeToX();
                         }
                         for (LayoutNode n : layers[layer - 1]) {
@@ -407,11 +407,11 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                                     continue;
                                 }
                                 int compFromXCoord = e.getFrom().getX();
-                                if (e.getFrom().getVertex() != null) {
+                                if (!e.getFrom().isDummy()) {
                                     compFromXCoord += e.getRelativeFromX();
                                 }
                                 int compToXCoord = e.getTo().getX();
-                                if (e.getTo().getVertex() != null) {
+                                if (!e.getTo().isDummy()) {
                                     compToXCoord += e.getRelativeToX();
                                 }
                                 if ((fromNodeXCoord > compFromXCoord && toNodeXCoord < compToXCoord)
@@ -430,11 +430,11 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 for (LayoutEdge edge : node.getSuccs()) {
                     if (edge.getTo().getLayer() == layer + 1) {
                         int toNodeXCoord = edge.getTo().getX();
-                        if (edge.getTo().getVertex() != null) {
+                        if (!edge.getTo().isDummy()) {
                             toNodeXCoord += edge.getRelativeToX();
                         }
                         int fromNodeXCoord = xCoord;
-                        if (node.getVertex() != null) {
+                        if (!node.isDummy()) {
                             fromNodeXCoord += edge.getRelativeFromX();
                         }
                         for (LayoutNode n : layers[layer + 1]) {
@@ -443,11 +443,11 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                                     continue;
                                 }
                                 int compFromXCoord = e.getFrom().getX();
-                                if (e.getFrom().getVertex() != null) {
+                                if (!e.getFrom().isDummy()) {
                                     compFromXCoord += e.getRelativeFromX();
                                 }
                                 int compToXCoord = e.getTo().getX();
-                                if (e.getTo().getVertex() != null) {
+                                if (!e.getTo().isDummy()) {
                                     compToXCoord += e.getRelativeToX();
                                 }
                                 if ((fromNodeXCoord > compFromXCoord && toNodeXCoord < compToXCoord)
@@ -606,36 +606,6 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
 
         if (shouldRemoveEmptyLayers) {
             removeEmptyLayers(oldLayerNr);
-        }
-    }
-    public List<Map<Integer, Point>> saveNodes() {
-        assertOrder();
-        List<Map<Integer, Point>> data = new ArrayList<>();
-        for (LayoutLayer layer : layers) {
-            Map<Integer, Point> layerData = new HashMap<>();
-            int dummyID = -1;
-            for (LayoutNode node : layer) {
-                int id = (node.getVertex() != null) ? node.getVertex().getID() : dummyID--;
-                assert !layerData.containsKey(id);
-                layerData.put(id, new Point(node.getX(), node.getY()));
-            }
-            data.add(layerData);
-        }
-        return data;
-    }
-
-    public void saveEdges() {
-        assertOrder();
-        List<Map<Integer, Point>> data = new ArrayList<>();
-        for (LayoutLayer layer : layers) {
-            Map<Integer, Point> layerData = new HashMap<>();
-            int dummyID = -1;
-            for (LayoutNode node : layer) {
-                int id = (node.getVertex() != null) ? node.getVertex().getID() : dummyID--;
-                assert !layerData.containsKey(id);
-                layerData.put(id, new Point(node.getX(), node.getY()));
-            }
-            data.add(layerData);
         }
     }
 
@@ -1280,7 +1250,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         if (edge.isReversed()) edgeFromSamePort.reverse();
 
         for (LayoutEdge succEdge : fromNode.getSuccs()) {
-            if (succEdge.getRelativeFromX() == edge.getRelativeFromX() && succEdge.getTo().getVertex() == null) {
+            if (succEdge.getRelativeFromX() == edge.getRelativeFromX() && succEdge.getTo().isDummy()) {
                 edgeFromSamePort = succEdge;
                 hasEdgeFromSamePort = true;
                 break;
@@ -1292,7 +1262,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         } else {
             LayoutEdge curEdge = edgeFromSamePort;
             boolean newEdge = true;
-            while (curEdge.getTo().getLayer() < toNode.getLayer() - 1 && curEdge.getTo().getVertex() == null && newEdge) {
+            while (curEdge.getTo().getLayer() < toNode.getLayer() - 1 && curEdge.getTo().isDummy() && newEdge) {
                 // Traverse down the chain of dummy nodes linking together the edges originating
                 // from the same port
                 newEdge = false;
@@ -1301,7 +1271,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                     newEdge = true;
                 } else {
                     for (LayoutEdge e : curEdge.getTo().getSuccs()) {
-                        if (e.getTo().getVertex() == null) {
+                        if (e.getTo().isDummy()) {
                             curEdge = e;
                             newEdge = true;
                             break;
@@ -1311,7 +1281,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
             }
 
             LayoutNode prevDummy;
-            if (curEdge.getTo().getVertex() != null) {
+            if (!curEdge.getTo().isDummy()) {
                 prevDummy = curEdge.getFrom();
             } else {
                 prevDummy = curEdge.getTo();
@@ -1369,7 +1339,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
 
         addNode(node);
 
-        if (node.getVertex() != null) {
+        if (!node.isDummy()) {
             vertexToLayoutNode.put(node.getVertex(), node);
         }
     }
@@ -1499,7 +1469,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                     for (int j = 1; j < dummyCnt; j++) {
                         newDummyNodes[j] = new LayoutNode();
                         newDummyNodes[j].setLayer(layoutNode.getLayer() + j + 1);
-                        newDummyEdges[j] = new LayoutEdge(newDummyNodes[j - 1], newDummyNodes[j], newDummyNodes[j - 1].getWidth() / 2, newDummyNodes[j].getWidth() / 2, null);
+                        newDummyEdges[j] = new LayoutEdge(newDummyNodes[j - 1], newDummyNodes[j]);
                         newDummyNodes[j].getPreds().add(newDummyEdges[j]);
                         newDummyNodes[j - 1].getSuccs().add(newDummyEdges[j]);
                     }

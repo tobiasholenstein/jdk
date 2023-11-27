@@ -198,7 +198,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                         LayoutNode cur = e.getFrom();
                         LayoutNode other = e.getTo();
                         LayoutEdge curEdge = e;
-                        while (cur.getVertex() == null && !cur.getPreds().isEmpty()) {
+                        while (cur.isDummy() && !cur.getPreds().isEmpty()) {
                             if (points.size() > 1 && points.get(points.size() - 1).x == cur.getX() + cur.getWidth() / 2 && points.get(points.size() - 2).x == cur.getX() + cur.getWidth() / 2) {
                                 points.remove(points.size() - 1);
                             }
@@ -220,7 +220,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
                         Collections.reverse(points);
 
-                        if (cur.getVertex() == null && cur.getPreds().isEmpty()) {
+                        if (cur.isDummy() && cur.getPreds().isEmpty()) {
 
                             if (reversedLinkEndPoints.containsKey(e.getLink())) {
                                 for (Point p1 : reversedLinkEndPoints.get(e.getLink())) {
@@ -285,7 +285,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                         LayoutNode cur = e.getTo();
                         LayoutNode other = e.getFrom();
                         LayoutEdge curEdge = e;
-                        while (cur.getVertex() == null && !cur.getSuccs().isEmpty()) {
+                        while (cur.isDummy() && !cur.getSuccs().isEmpty()) {
                             if (points.size() > 1 && points.get(points.size() - 1).x == cur.getX() + cur.getWidth() / 2 && points.get(points.size() - 2).x == cur.getX() + cur.getWidth() / 2) {
                                 points.remove(points.size() - 1);
                             }
@@ -308,7 +308,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                             points.add(new Point(p.x, p.y + curEdge.getTo().getInOffsets().get(curEdge.getRelativeToX()) + ((curEdge.getLink() == null) ? 0 : curEdge.getLink().getTo().getRelativePosition().y)));
                         }
 
-                        if (cur.getSuccs().isEmpty() && cur.getVertex() == null) {
+                        if (cur.getSuccs().isEmpty() && cur.isDummy()) {
                             if (reversedLinkStartPoints.containsKey(e.getLink())) {
                                 for (Point p1 : reversedLinkStartPoints.get(e.getLink())) {
                                     points.add(0, new Point(p1.x + other.getX(), p1.y + other.getY()));
@@ -392,25 +392,25 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
     public static final Comparator<LayoutNode> nodePositionComparator = Comparator.comparingInt(n -> n.getPos());
     public static final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
-        if (n1.getVertex() == null) {
-            if (n2.getVertex() == null) {
+        if (n1.isDummy()) {
+            if (n2.isDummy()) {
                 return 0;
             }
             return -1;
         }
-        if (n2.getVertex() == null) {
+        if (n2.isDummy()) {
             return 1;
         }
         return n1.getPreds().size() - n2.getPreds().size();
     };
     public static final Comparator<LayoutNode> nodeProcessingUpComparator = (n1, n2) -> {
-        if (n1.getVertex() == null) {
-            if (n2.getVertex() == null) {
+        if (n1.isDummy()) {
+            if (n2.isDummy()) {
                 return 0;
             }
             return -1;
         }
-        if (n2.getVertex() == null) {
+        if (n2.isDummy()) {
             return 1;
         }
         return n1.getSuccs().size() - n2.getSuccs().size();
@@ -796,7 +796,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
                 int maxXOffset = 0;
                 for (LayoutNode n : layer) {
-                    if (n.getVertex() == null) {
+                    if (n.isDummy()) {
                         // Dummy node
                         n.setY(curY);
                         n.setHeight(maxHeight + baseLine + bottomBaseLine);
@@ -922,7 +922,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                                     nodes[j].setWidth(DUMMY_WIDTH);
                                     nodes[j].setHeight(DUMMY_HEIGHT);
                                     nodes[j].setLayer(n.getLayer() + j + 1);
-                                    edges[j] = new LayoutEdge(nodes[j - 1], nodes[j], nodes[j - 1].getWidth() / 2, nodes[j].getWidth() / 2, null);
+                                    edges[j] = new LayoutEdge(nodes[j - 1], nodes[j]);
                                     nodes[j - 1].getSuccs().add(edges[j]);
                                     nodes[j].getPreds().add(edges[j]);
                                 }

@@ -76,19 +76,19 @@ public class LayoutNode {
         return preds.size() + succs.size();
     }
 
-    public float averagePosition(boolean weighted) {
+    public float averagePosition(boolean weightedDegree) {
         float totalWeightedPosition = 0;
         float totalWeight = 0;
 
         for (LayoutEdge predEdge : preds) {
             LayoutNode predNode = predEdge.getFrom();
-            int weight = weighted ? predNode.getDegree() : 1;
+            int weight = weightedDegree ? predNode.getDegree() : 1;
             totalWeightedPosition += weight * predEdge.getStartX();
             totalWeight += weight;
         }
         for (LayoutEdge succEdge : succs) {
             LayoutNode succNode = succEdge.getTo();
-            int weight = weighted ? succNode.getDegree() : 1;
+            int weight = weightedDegree ? succNode.getDegree() : 1;
             totalWeightedPosition += weight * succEdge.getEndX();
             totalWeight += weight;
         }

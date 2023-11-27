@@ -477,7 +477,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
          */
         private void updateNodeObjects() {
             for (LayoutNode node : nodes) {
-                if (node.getVertex() != null) {
+                if (!node.isDummy()) {
                     for (Vertex vertex : currentVertices) {
                         if (vertex.equals(node.getVertex())) {
                             Dimension size = vertex.getSize();
@@ -595,11 +595,11 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                     for (LayoutEdge edge : node.getPreds()) {
                         if (edge.getFrom().getLayer() == layer - 1) {
                             int fromNodeXCoord = edge.getFrom().getX();
-                            if (edge.getFrom().getVertex() != null) {
+                            if (!edge.getFrom().isDummy()) {
                                 fromNodeXCoord += edge.getRelativeFromX();
                             }
                             int toNodeXCoord = xCoord;
-                            if (node.getVertex() != null) {
+                            if (!node.isDummy()) {
                                 toNodeXCoord += edge.getRelativeToX();
                             }
                             for (LayoutNode n : predNodes) {
@@ -608,11 +608,11 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                                         continue;
                                     }
                                     int compFromXCoord = e.getFrom().getX();
-                                    if (e.getFrom().getVertex() != null) {
+                                    if (!e.getFrom().isDummy()) {
                                         compFromXCoord += e.getRelativeFromX();
                                     }
                                     int compToXCoord = e.getTo().getX();
-                                    if (e.getTo().getVertex() != null) {
+                                    if (!e.getTo().isDummy()) {
                                         compToXCoord += e.getRelativeToX();
                                     }
                                     if ((fromNodeXCoord > compFromXCoord && toNodeXCoord < compToXCoord)
@@ -632,11 +632,11 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                     for (LayoutEdge edge : node.getSuccs()) {
                         if (edge.getTo().getLayer() == layer + 1) {
                             int toNodeXCoord = edge.getTo().getX();
-                            if (edge.getTo().getVertex() != null) {
+                            if (!edge.getTo().isDummy()) {
                                 toNodeXCoord += edge.getRelativeToX();
                             }
                             int fromNodeXCoord = xCoord;
-                            if (node.getVertex() != null) {
+                            if (!node.isDummy()) {
                                 fromNodeXCoord += edge.getRelativeFromX();
                             }
                             for (LayoutNode n : succsNodes) {
@@ -645,11 +645,11 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                                         continue;
                                     }
                                     int compFromXCoord = e.getFrom().getX();
-                                    if (e.getFrom().getVertex() != null) {
+                                    if (!e.getFrom().isDummy()) {
                                         compFromXCoord += e.getRelativeFromX();
                                     }
                                     int compToXCoord = e.getTo().getX();
-                                    if (e.getTo().getVertex() != null) {
+                                    if (!e.getTo().isDummy()) {
                                         compToXCoord += e.getRelativeToX();
                                     }
                                     if ((fromNodeXCoord > compFromXCoord && toNodeXCoord < compToXCoord)
@@ -698,7 +698,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             if (!nodes.contains(node)) {
                 nodes.add(node);
             }
-            if (node.getVertex() != null) {
+            if (!node.isDummy()) {
                 vertexToLayoutNode.put(node.getVertex(), node);
             }
 
@@ -736,7 +736,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             LayoutEdge edgeFromSamePort = new LayoutEdge(from, to);
 
             for (LayoutEdge e : edge.getFrom().getSuccs()) {
-                if (e.getRelativeFromX() == edge.getRelativeFromX() && e.getTo().getVertex() == null) {
+                if (e.getRelativeFromX() == edge.getRelativeFromX() && e.getTo().isDummy()) {
                     edgeFromSamePort = e;
                     hasEdgeFromSamePort = true;
                     break;
@@ -748,7 +748,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             } else {
                 LayoutEdge curEdge = edgeFromSamePort;
                 boolean newEdge = true;
-                while (curEdge.getTo().getLayer() < to.getLayer() - 1 && curEdge.getTo().getVertex() == null && newEdge) {
+                while (curEdge.getTo().getLayer() < to.getLayer() - 1 && curEdge.getTo().isDummy() && newEdge) {
                     // Traverse down the chain of dummy nodes linking together the edges originating
                     // from the same port
                     newEdge = false;
@@ -757,7 +757,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                         newEdge = true;
                     } else {
                         for (LayoutEdge e : curEdge.getTo().getSuccs()) {
-                            if (e.getTo().getVertex() == null) {
+                            if (e.getTo().isDummy()) {
                                 curEdge = e;
                                 newEdge = true;
                                 break;
@@ -767,7 +767,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                 }
 
                 LayoutNode prevDummy;
-                if (curEdge.getTo().getVertex() != null) {
+                if (!curEdge.getTo().isDummy()) {
                     prevDummy = curEdge.getFrom();
                 } else {
                     prevDummy = curEdge.getTo();
@@ -787,7 +787,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             }
             int newLayer = node.getLayer() - 1;
             for (LayoutEdge e : node.getPreds()) {
-                if (e.getFrom().getVertex() != null && e.getFrom().getLayer() == newLayer) {
+                if (!e.getFrom().isDummy() && e.getFrom().getLayer() == newLayer) {
                     return false;
                 }
             }
@@ -800,7 +800,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             }
             int newLayer = node.getLayer() + 1;
             for (LayoutEdge e : node.getSuccs()) {
-                if (e.getTo().getVertex() != null && e.getTo().getLayer() == newLayer) {
+                if (!e.getTo().isDummy() && e.getTo().getLayer() == newLayer) {
                     return false;
                 }
             }
@@ -813,7 +813,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             List<LayoutEdge> previousPredEdges = List.copyOf(node.getPreds());
             for (LayoutEdge edge : previousPredEdges) {
                 LayoutNode predNode = edge.getFrom();
-                assert predNode.getVertex() == null;
+                assert predNode.isDummy();
                 for (LayoutEdge e : predNode.getPreds()) {
                     e.setTo(edge.getTo());
                     e.setRelativeToX(edge.getRelativeToX());
@@ -837,7 +837,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             List<LayoutEdge> previousSuccEdges = List.copyOf(node.getSuccs());
             for (LayoutEdge edge : previousSuccEdges) {
                 LayoutNode succNode = edge.getTo();
-                assert succNode.getVertex() == null;
+                assert succNode.isDummy();
                 for (LayoutEdge e : succNode.getSuccs()) {
                     e.setFrom(edge.getFrom());
                     e.setRelativeFromX(edge.getRelativeFromX());
@@ -1108,7 +1108,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                     continue;
                 }
 
-                if (n.getVertex() != null && n.getVertex().equals(from)) {
+                if (!n.isDummy() && n.getVertex().equals(from)) {
                     // No dummy nodes inbetween 'from' and 'to' vertex
                     n.getSuccs().remove(edgeToRemove);
                     break;
@@ -1116,7 +1116,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                     // Must remove edges between dummy nodes
                     boolean found = true;
                     LayoutNode prev = toNode;
-                    while (n.getVertex() == null && found) {
+                    while (n.isDummy() && found) {
                         found = false;
 
                         if (n.getSuccs().size() <= 1 && n.getPreds().size() <= 1) {
@@ -1170,7 +1170,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                 if (n.getPos() > pos) {
                     n.setPos(n.getPos() - 1);
                 }
-                if (n.getVertex() != null || n.getPreds().size() > 1) {
+                if (!n.isDummy() || n.getPreds().size() > 1) {
                     onlyDummiesLeft = false;
                 }
             }
@@ -1257,7 +1257,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                         layoutedLinks.add(e.getLink());
                     }
                 }
-                if (n.getVertex() != null) {
+                if (!n.isDummy()) {
                     layoutedNodes.add(n);
                 }
             }
@@ -1357,7 +1357,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
             // Reset all values before assigning y-coordinates
             for (LayoutNode n : nodes) {
-                if (n.getVertex() != null) {
+                if (!n.isDummy()) {
                     updateNodeWithReversedEdges(n);
                 } else {
                     n.setHeight(0);
@@ -1380,7 +1380,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
                 int maxXOffset = 0;
                 for (LayoutNode n : layer) {
-                    if (n.getVertex() == null) {
+                    if (n.isDummy()) {
                         // Dummy node
                         n.setY(curY);
                         n.setHeight(maxHeight + baseLine + bottomBaseLine);
@@ -1416,7 +1416,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
             LayoutNode cur = e.getFrom();
             LayoutEdge curEdge = e;
-            while (cur.getVertex() == null && !cur.getPreds().isEmpty()) {
+            while (cur.isDummy() && !cur.getPreds().isEmpty()) {
                 if (points.size() > 1 && points.get(points.size() - 1).x == cur.getX() + cur.getWidth() / 2
                         && points.get(points.size() - 2).x == cur.getX() + cur.getWidth() / 2) {
                     // On the same vertical line, can remove previous point
@@ -1468,7 +1468,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
             for (LayoutNode n : nodes) {
 
-                if (n.getVertex() != null) {
+                if (!n.isDummy()) {
                     assert !vertexPositions.containsKey(n.getVertex());
                     vertexPositions.put(n.getVertex(), new Point(n.getLeft(), n.getTop()));
                 } else {
