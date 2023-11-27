@@ -167,7 +167,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
             }
         }
         // adjust Y of movedNode
-        node.setY(layer.y);
+        node.setY(layer.getTop());
 
         addNode(node);
         assertOrder();
@@ -2014,7 +2014,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
 
     private class AssignYCoordinates {
 
-        private void updateLayerHeight(LayoutLayer layer) {
+        private void updateLayerHeight(LayoutLayer layer, int y) {
+            layer.setTop(y);
             int maxLayerHeight = 0;
             for (LayoutNode layoutNode : layer) {
                 if (!layoutNode.isDummy()) {
@@ -2025,7 +2026,11 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 }
                 maxLayerHeight = Math.max(maxLayerHeight, layoutNode.getOuterHeight());
             }
-            layer.height = maxLayerHeight;
+            layer.setHeight(maxLayerHeight);
+
+            for (LayoutNode layoutNode : layer) {
+                layoutNode.setY(y + (layer.getHeight() - layoutNode.getOuterHeight()) / 2);
+            }
         }
 
         private int getScaledLayerPadding(LayoutLayer layer) {
@@ -2043,12 +2048,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         private void run() {
             int currentY = 0;
             for (LayoutLayer layer : layers) {
-                layer.y = currentY;
-                updateLayerHeight(layer);
-                for (LayoutNode layoutNode : layer) {
-                    layoutNode.setY(currentY + (layer.height - layoutNode.getOuterHeight()) / 2);
-                }
-                currentY += layer.height + getScaledLayerPadding(layer);
+                updateLayerHeight(layer, currentY);
+                currentY += layer.getHeight() + getScaledLayerPadding(layer);
             }
 
             assertYLayer();
@@ -2226,7 +2227,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
             }
 
             for (LayoutLayer layer : layers) {
-                minY = Math.min(minY, layer.y);
+                minY = Math.min(minY, layer.getTop());
             }
 
             for (LayoutNode layoutNode : getLayoutNodes()) {
@@ -2245,8 +2246,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
             assertOrder();
 
             for (LayoutLayer layer : layers) {
-                layer.y -= minY;
-                assert layer.y >= 0;
+                layer.shiftTop(-minY);
+                assert layer.getTop() >= 0;
             }
 
             assertOrder();
@@ -2283,47 +2284,6 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
 
             assertOrder();
             assertNodePos();
-        }
-    }
-
-    private class LayoutLayer extends ArrayList<LayoutNode> {
-
-        private int height = 0;
-        private int y = 0;
-
-        @Override
-        public boolean addAll(Collection<? extends LayoutNode> c) {
-            c.forEach(this::setHeight);
-            return super.addAll(c);
-        }
-
-        private void setHeight(LayoutNode n) {
-            height = Math.max(height, n.getOuterHeight());
-        }
-
-        @Override
-        public boolean add(LayoutNode n) {
-            setHeight(n);
-            return super.add(n);
-        }
-
-        public void swap(int i, int j) {
-            LayoutNode n1 = get(i);
-            LayoutNode n2 = get(j);
-            set(j, n1);
-            set(i, n2);
-        }
-
-        public int getTop() {
-            return y;
-        }
-
-        public int getCenter() {
-            return y + height/2;
-        }
-
-        public int getBottom() {
-            return y + height;
         }
     }
 
