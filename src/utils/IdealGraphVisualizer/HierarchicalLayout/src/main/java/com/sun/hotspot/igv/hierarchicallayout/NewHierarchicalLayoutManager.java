@@ -52,7 +52,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 }
                 for (LayoutEdge succEdge : node.getSuccs()) {
                     if (succEdge.getTo().isDummy()) {
-                        assert !succEdge.getTo().getSuccs().isEmpty() || succEdge.getLink() != null;
+                        assert succEdge.getTo().hasSuccs() || succEdge.getLink() != null;
                     } else {
                         assert succEdge.getLink() != null;
                     }
@@ -308,8 +308,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         movedNode.setHeight(movedNode.getVertex().getSize().height);
         movedNode.setWidth(movedNode.getVertex().getSize().width);
 
-        assert movedNode.getSuccs().isEmpty();
-        assert movedNode.getPreds().isEmpty();
+        assert !movedNode.hasSuccs();
+        assert !movedNode.hasPreds();
     }
 
     public void addEdges(LayoutNode movedNode) {
@@ -1054,7 +1054,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         private void controlFlowBackEdges() {
             ArrayList<LayoutNode> workingList = new ArrayList<>();
             for (LayoutNode node : getLayoutNodes()) {
-                if (node.getPreds().isEmpty()) {
+                if (!node.hasPreds()) {
                     workingList.add(node);
                 }
             }
@@ -1131,7 +1131,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
 
             // add all root nodes to layer 0
             for (LayoutNode node : getLayoutNodes()) {
-                if (node.getPreds().isEmpty()) {
+                if (!node.hasPreds()) {
                     workingList.add(node);
                     node.setLayer(0);
                 }
@@ -1170,7 +1170,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
 
             // add all leaves to working list, reset layer of non-leave nodes
             for (LayoutNode node : getLayoutNodes()) {
-                if (node.getSuccs().isEmpty()) {
+                if (!node.hasSuccs()) {
                     node.setLayer((layer - 2 - node.getLayer()));
                     workingList.add(node);
                 } else {
@@ -1506,7 +1506,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 if (layoutNode.getLayer() == 0) {
                     layers[0].add(layoutNode);
                     visited.add(layoutNode);
-                } else if (layoutNode.getPreds().isEmpty()) {
+                } else if (!layoutNode.hasPreds()) {
                     layers[layoutNode.getLayer()].add(layoutNode);
                     visited.add(layoutNode);
                 }
@@ -1634,7 +1634,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
             // leave fixed in their current positions with non-fixed nodes sorted into the remaining positions
             for (int j = 0; j < layer.size(); j++) {
                 LayoutNode node = layer.get(j);
-                if (usePred ? node.getPreds().isEmpty() :  node.getSuccs().isEmpty()) {
+                if (usePred ? !node.hasPreds() : !node.hasSuccs()) {
                     float prevWeight = (j > 0) ? layer.get(j - 1).getWeightedPosition() : 0;
                     float nextWeight = (j < layer.size() - 1) ? layer.get(j + 1).getWeightedPosition() : 0;
                     node.setWeightedPosition((prevWeight + nextWeight) / 2);
@@ -2084,7 +2084,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                     linkPoints.add(new Point(predEdge.getEndX(), layers[toNode.getLayer()].getTop() - LAYER_OFFSET));
 
                     LayoutEdge curEdge = predEdge;
-                    while (fromNode.isDummy() && !fromNode.getPreds().isEmpty()) {
+                    while (fromNode.isDummy() && fromNode.hasPreds()) {
                         linkPoints.add(new Point(fromNode.getCenterX(), layers[fromNode.getLayer()].getBottom() + LAYER_OFFSET));
                         linkPoints.add(new Point(fromNode.getCenterX(), layers[fromNode.getLayer()].getTop() - LAYER_OFFSET));
                         curEdge = fromNode.getPreds().get(0);
@@ -2137,7 +2137,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                     linkPoints.add(new Point(succEdge.getStartX(), layers[fromNode.getLayer()].getBottom() + LAYER_OFFSET));
 
                     LayoutEdge curEdge = succEdge;
-                    while (toNode.isDummy() && !toNode.getSuccs().isEmpty()) {
+                    while (toNode.isDummy() && toNode.hasSuccs()) {
                         linkPoints.add(new Point(toNode.getCenterX(), layers[toNode.getLayer()].getTop() - LAYER_OFFSET));
                         linkPoints.add(new Point(toNode.getCenterX(), layers[toNode.getLayer()].getBottom() + LAYER_OFFSET));
                         curEdge = toNode.getSuccs().get(0);

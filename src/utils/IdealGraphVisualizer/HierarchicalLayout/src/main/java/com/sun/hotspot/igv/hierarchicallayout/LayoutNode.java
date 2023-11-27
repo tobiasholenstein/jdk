@@ -237,6 +237,14 @@ public class LayoutNode {
         return preds;
     }
 
+    public boolean hasPreds() {
+        return !preds.isEmpty();
+    }
+
+    public boolean hasSuccs() {
+        return !succs.isEmpty();
+    }
+
     public List<LayoutEdge> getSuccs() {
         return succs;
     }

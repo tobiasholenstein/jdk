@@ -198,7 +198,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                         LayoutNode cur = e.getFrom();
                         LayoutNode other = e.getTo();
                         LayoutEdge curEdge = e;
-                        while (cur.isDummy() && !cur.getPreds().isEmpty()) {
+                        while (cur.isDummy() && cur.hasPreds()) {
                             if (points.size() > 1 && points.get(points.size() - 1).x == cur.getX() + cur.getWidth() / 2 && points.get(points.size() - 2).x == cur.getX() + cur.getWidth() / 2) {
                                 points.remove(points.size() - 1);
                             }
@@ -220,7 +220,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
                         Collections.reverse(points);
 
-                        if (cur.isDummy() && cur.getPreds().isEmpty()) {
+                        if (cur.isDummy() && !cur.hasPreds()) {
 
                             if (reversedLinkEndPoints.containsKey(e.getLink())) {
                                 for (Point p1 : reversedLinkEndPoints.get(e.getLink())) {
@@ -285,7 +285,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                         LayoutNode cur = e.getTo();
                         LayoutNode other = e.getFrom();
                         LayoutEdge curEdge = e;
-                        while (cur.isDummy() && !cur.getSuccs().isEmpty()) {
+                        while (cur.isDummy() && cur.hasSuccs()) {
                             if (points.size() > 1 && points.get(points.size() - 1).x == cur.getX() + cur.getWidth() / 2 && points.get(points.size() - 2).x == cur.getX() + cur.getWidth() / 2) {
                                 points.remove(points.size() - 1);
                             }
@@ -294,7 +294,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                                 points.remove(points.size() - 1);
                             }
                             points.add(new Point(cur.getX() + cur.getWidth() / 2, cur.getY() + cur.getHeight()));
-                            if (cur.getSuccs().isEmpty()) {
+                            if (!cur.hasSuccs()) {
                                 break;
                             }
                             assert cur.getSuccs().size() == 1;
@@ -308,7 +308,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                             points.add(new Point(p.x, p.y + curEdge.getTo().getInOffsets().get(curEdge.getRelativeToX()) + ((curEdge.getLink() == null) ? 0 : curEdge.getLink().getTo().getRelativePosition().y)));
                         }
 
-                        if (cur.getSuccs().isEmpty() && cur.isDummy()) {
+                        if (!cur.hasSuccs() && cur.isDummy()) {
                             if (reversedLinkStartPoints.containsKey(e.getLink())) {
                                 for (Point p1 : reversedLinkStartPoints.get(e.getLink())) {
                                     points.add(0, new Point(p1.x + other.getX(), p1.y + other.getY()));
@@ -613,7 +613,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                 if (n.getLayer() == 0) {
                     layers[0].add(n);
                     visited.add(n);
-                } else if (n.getPreds().isEmpty()) {
+                } else if (!n.hasPreds()) {
                     layers[n.getLayer()].add(n);
                     visited.add(n);
                 }
@@ -721,9 +721,9 @@ public class HierarchicalLayoutManager extends LayoutManager {
                     next = layers[index].get(i + 1);
                 }
 
-                boolean cond = n.getSuccs().isEmpty();
+                boolean cond = !n.hasSuccs();
                 if (down) {
-                    cond = n.getPreds().isEmpty();
+                    cond = !n.hasPreds();
                 }
 
                 if (cond) {
@@ -990,7 +990,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
         private void assignLayerDownwards() {
             ArrayList<LayoutNode> hull = new ArrayList<>();
             for (LayoutNode n : nodes) {
-                if (n.getPreds().isEmpty()) {
+                if (!n.hasPreds()) {
                     hull.add(n);
                     n.setLayer(0);
                 }
@@ -1038,7 +1038,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
         private void assignLayerUpwards() {
             ArrayList<LayoutNode> hull = new ArrayList<>();
             for (LayoutNode n : nodes) {
-                if (n.getSuccs().isEmpty()) {
+                if (!n.hasSuccs()) {
                     hull.add(n);
                 } else {
                     n.setLayer(-1);

@@ -104,7 +104,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     }
 
     private int calculateOptimalBoth(LayoutNode n) {
-        if (n.getPreds().isEmpty() && n.getSuccs().isEmpty()) {
+        if (!n.hasPreds() && !n.hasSuccs()) {
             return n.getX();
         }
 
@@ -1398,7 +1398,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
             LayoutNode cur = e.getFrom();
             LayoutEdge curEdge = e;
-            while (cur.isDummy() && !cur.getPreds().isEmpty()) {
+            while (cur.isDummy() && cur.hasPreds()) {
                 if (points.size() > 1 && points.get(points.size() - 1).x == cur.getX() + cur.getWidth() / 2
                         && points.get(points.size() - 2).x == cur.getX() + cur.getWidth() / 2) {
                     // On the same vertical line, can remove previous point
