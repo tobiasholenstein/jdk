@@ -112,12 +112,12 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
         int i = 0;
 
         for (LayoutEdge e : n.getPreds()) {
-            values[i] = e.getFrom().getX() + e.getRelativeFromX() - e.getRelativeToX();
+            values[i] = e.getFromX() - e.getRelativeToX();
             i++;
         }
 
         for (LayoutEdge e : n.getSuccs()) {
-            values[i] = e.getTo().getX() + e.getRelativeToX() - e.getRelativeFromX();
+            values[i] = e.getToX() - e.getRelativeFromX();
             i++;
         }
 
@@ -594,10 +594,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                     // For each link with an end point in vertex, check how many edges cross it
                     for (LayoutEdge edge : node.getPreds()) {
                         if (edge.getFrom().getLayer() == layer - 1) {
-                            int fromNodeXCoord = edge.getFrom().getX();
-                            if (!edge.getFrom().isDummy()) {
-                                fromNodeXCoord += edge.getRelativeFromX();
-                            }
+                            int fromNodeXCoord = edge.getFromX();
                             int toNodeXCoord = xCoord;
                             if (!node.isDummy()) {
                                 toNodeXCoord += edge.getRelativeToX();
@@ -607,14 +604,8 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                                     if (e.getTo() == null) {
                                         continue;
                                     }
-                                    int compFromXCoord = e.getFrom().getX();
-                                    if (!e.getFrom().isDummy()) {
-                                        compFromXCoord += e.getRelativeFromX();
-                                    }
-                                    int compToXCoord = e.getTo().getX();
-                                    if (!e.getTo().isDummy()) {
-                                        compToXCoord += e.getRelativeToX();
-                                    }
+                                    int compFromXCoord = e.getFromX();
+                                    int compToXCoord = e.getToX();
                                     if ((fromNodeXCoord > compFromXCoord && toNodeXCoord < compToXCoord)
                                             || (fromNodeXCoord < compFromXCoord
                                             && toNodeXCoord > compToXCoord)) {
@@ -631,10 +622,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                     // For each link with an end point in vertex, check how many edges cross it
                     for (LayoutEdge edge : node.getSuccs()) {
                         if (edge.getTo().getLayer() == layer + 1) {
-                            int toNodeXCoord = edge.getTo().getX();
-                            if (!edge.getTo().isDummy()) {
-                                toNodeXCoord += edge.getRelativeToX();
-                            }
+                            int toNodeXCoord = edge.getToX();
                             int fromNodeXCoord = xCoord;
                             if (!node.isDummy()) {
                                 fromNodeXCoord += edge.getRelativeFromX();
@@ -644,14 +632,8 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                                     if (e.getFrom() == null) {
                                         continue;
                                     }
-                                    int compFromXCoord = e.getFrom().getX();
-                                    if (!e.getFrom().isDummy()) {
-                                        compFromXCoord += e.getRelativeFromX();
-                                    }
-                                    int compToXCoord = e.getTo().getX();
-                                    if (!e.getTo().isDummy()) {
-                                        compToXCoord += e.getRelativeToX();
-                                    }
+                                    int compFromXCoord = e.getFromX();
+                                    int compToXCoord = e.getToX();
                                     if ((fromNodeXCoord > compFromXCoord && toNodeXCoord < compToXCoord)
                                             || (fromNodeXCoord < compFromXCoord
                                             && toNodeXCoord > compToXCoord)) {
@@ -1406,7 +1388,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
         private List<Point> edgePoints(LayoutEdge e) {
             ArrayList<Point> points = new ArrayList<>();
 
-            Point p = new Point(e.getTo().getX() + e.getRelativeToX(),
+            Point p = new Point(e.getToX(),
                     e.getTo().getY() + e.getTo().getTopMargin() + e.getLink().getTo().getRelativePosition().y);
             points.add(p);
             if (e.getTo().getInOffsets().containsKey(e.getRelativeToX())) {

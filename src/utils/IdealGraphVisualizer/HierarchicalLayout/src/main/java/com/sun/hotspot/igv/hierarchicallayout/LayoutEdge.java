@@ -87,6 +87,14 @@ public class LayoutEdge {
         this.to = to;
     }
 
+    public int getFromX() {
+        return from.getX() + getRelativeFromX();
+    }
+
+    public int getToX() {
+        return to.getX() + getRelativeToX();
+    }
+
     public int getRelativeFromX() {
         return relativeFromX;
     }

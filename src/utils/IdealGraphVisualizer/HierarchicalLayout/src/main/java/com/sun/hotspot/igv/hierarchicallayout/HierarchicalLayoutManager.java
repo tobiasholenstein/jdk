@@ -189,7 +189,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                     if (e.getLink() != null && !linkPositions.containsKey(e.getLink())) {
                         ArrayList<Point> points = new ArrayList<>();
 
-                        Point p = new Point(e.getTo().getX() + e.getRelativeToX(), e.getTo().getY() + e.getTo().getTopMargin() + e.getLink().getTo().getRelativePosition().y);
+                        Point p = new Point(e.getToX(), e.getTo().getY() + e.getTo().getTopMargin() + e.getLink().getTo().getRelativePosition().y);
                         points.add(p);
                         if (e.getTo().getInOffsets().containsKey(e.getRelativeToX())) {
                             points.add(new Point(p.x, p.y + e.getTo().getInOffsets().get(e.getRelativeToX()) + e.getLink().getTo().getRelativePosition().y));
@@ -272,7 +272,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                 for (LayoutEdge e : n.getSuccs()) {
                     if (e.getLink() != null && !linkPositions.containsKey(e.getLink())) {
                         ArrayList<Point> points = new ArrayList<>();
-                        Point p = new Point(e.getFrom().getX() + e.getRelativeFromX(), e.getFrom().getY() + e.getFrom().getHeight() - e.getFrom().getBottomMargin() + e.getLink().getFrom().getRelativePosition().y);
+                        Point p = new Point(e.getFromX(), e.getFrom().getY() + e.getFrom().getHeight() - e.getFrom().getBottomMargin() + e.getLink().getFrom().getRelativePosition().y);
                         points.add(p);
                         if (e.getFrom().getOutOffsets().containsKey(e.getRelativeFromX())) {
                             Point pOffset = new Point(p.x, p.y + e.getFrom().getOutOffsets().get(e.getRelativeFromX()) +
@@ -484,7 +484,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
             int[] values = new int[size];
             for (int i = 0; i < size; i++) {
                 LayoutEdge e = n.getPreds().get(i);
-                values[i] = e.getFrom().getX() + e.getRelativeFromX() - e.getRelativeToX();
+                values[i] = e.getFromX() - e.getRelativeToX();
             }
             return Statistics.median(values);
         }
@@ -498,12 +498,12 @@ public class HierarchicalLayoutManager extends LayoutManager {
             int i = 0;
 
             for (LayoutEdge e : n.getPreds()) {
-                values[i] = e.getFrom().getX() + e.getRelativeFromX() - e.getRelativeToX();
+                values[i] = e.getFromX() - e.getRelativeToX();
                 i++;
             }
 
             for (LayoutEdge e : n.getSuccs()) {
-                values[i] = e.getTo().getX() + e.getRelativeToX() - e.getRelativeFromX();
+                values[i] = e.getToX() - e.getRelativeFromX();
                 i++;
             }
 
@@ -518,7 +518,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
             int[] values = new int[size];
             for (int i = 0; i < size; i++) {
                 LayoutEdge e = n.getSuccs().get(i);
-                values[i] = e.getTo().getX() + e.getRelativeToX() - e.getRelativeFromX();
+                values[i] = e.getToX() - e.getRelativeFromX();
             }
             return Statistics.median(values);
         }
@@ -685,7 +685,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                     int sum = 0;
                     int count = 0;
                     for (LayoutEdge e : n.getPreds()) {
-                        int cur = e.getFrom().getX() + e.getRelativeFromX();
+                        int cur = e.getFromX();
                         int factor = 1;
                         sum += cur * factor;
                         count += factor;
@@ -751,7 +751,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                     int count = 0;
                     int sum = 0;
                     for (LayoutEdge e : n.getSuccs()) {
-                        int cur = e.getTo().getX() + e.getRelativeToX();
+                        int cur = e.getToX();
                         int factor = 1;
                         sum += cur * factor;
                         count += factor;
