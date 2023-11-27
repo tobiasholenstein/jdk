@@ -695,16 +695,26 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                             for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
                                 Point toPt = lw.getTo();
                                 lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
+                                Point fromPt = lw.getFrom();
+                                lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
                                 lw.revalidate();
-                                lw.repaint();
+                                LineWidget pred = lw.getPredecessor();
+                                pred.setTo(new Point(pred.getTo().x + shiftX, pred.getTo().y));
+                                pred.revalidate();
+
                             }
                         }
                         if (figureToOutLineWidget.containsKey(fw.getFigure())) {
                             for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
+                                Point toPt = lw.getTo();
+                                lw.setTo(new Point(toPt.x + shiftX, toPt.y));
                                 Point fromPt = lw.getFrom();
                                 lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
                                 lw.revalidate();
-                                lw.repaint();
+                                for (LineWidget succ : lw.getSuccessors()) {
+                                    succ.setFrom(new Point(succ.getFrom().x + shiftX, succ.getFrom().y));
+                                    succ.revalidate();
+                                }
                             }
                         }
                         Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
@@ -1089,14 +1099,10 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
     private class ConnectionSet {
 
-        private Set<Connection> connections;
+        private Collection<? extends Connection> connections;
 
         public ConnectionSet(Collection<? extends Connection> connections) {
-            connections = new HashSet<>(connections);
-        }
-
-        public Set<Connection> getConnectionSet() {
-            return Collections.unmodifiableSet(connections);
+            this.connections = connections;
         }
     }
 
