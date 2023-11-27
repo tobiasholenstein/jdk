@@ -58,7 +58,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
     private HashMap<Link, List<Point>> splitStartPoints;
     private HashMap<Link, List<Point>> splitEndPoints;
     private LayoutGraph graph;
-    private List<LayoutNode>[] layers;
+    private LayoutLayer[] layers;
     private int layerCount;
     private Set<? extends Link> importantLinks;
     private final Set<Link> linksToFollow;
@@ -597,10 +597,9 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
         @SuppressWarnings("unchecked")
         private void createLayers() {
-            layers = new List[layerCount];
-
+            layers = new LayoutLayer[layerCount];
             for (int i = 0; i < layerCount; i++) {
-                layers[i] = new ArrayList<>();
+                layers[i] = new LayoutLayer();
             }
         }
 
