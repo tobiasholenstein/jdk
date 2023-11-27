@@ -50,7 +50,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
     // Algorithm global datastructures
     private Set<Link> reversedLinks;
-    private Set<LayoutEdge> selfEdges;
     private List<LayoutNode> nodes;
     private HashMap<Vertex, LayoutNode> vertexToLayoutNode;
     private HashMap<Link, List<Point>> reversedLinkStartPoints;
@@ -69,14 +68,10 @@ public class HierarchicalLayoutManager extends LayoutManager {
         return nodes;
     }
 
-    // Remove self-edges, possibly saving them into the selfEdges set.
-    private void removeSelfEdges(boolean save) {
+    private void removeSelfEdges() {
         for (LayoutNode node : nodes) {
             for (LayoutEdge e : new ArrayList<>(node.getSuccs())) {
                 if (e.getTo() == node) {
-                    if (save) {
-                        selfEdges.add(e);
-                    }
                     node.getSuccs().remove(e);
                     node.getPreds().remove(e);
                 }
@@ -95,7 +90,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
         vertexToLayoutNode = new HashMap<>();
         reversedLinks = new HashSet<>();
-        selfEdges = new HashSet<>();
         reversedLinkStartPoints = new HashMap<>();
         reversedLinkEndPoints = new HashMap<>();
         nodes = new ArrayList<>();
@@ -106,15 +100,11 @@ public class HierarchicalLayoutManager extends LayoutManager {
         // Step 1: Build up data structure
         new BuildDatastructure().run();
 
-        // Remove self-edges from the beginning.
-        removeSelfEdges(false);
+        removeSelfEdges();
 
         // #############################################################
         // STEP 2: Reverse edges, handle backedges
         new ReverseEdges().run();
-
-        // Hide self-edges from the layout algorithm and save them for later.
-        removeSelfEdges(true);
 
         // #############################################################
         // STEP 3: Assign layers
@@ -135,12 +125,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
         // #############################################################
         // STEP 6: Assign Y coordinates
         new AssignYCoordinates().run();
-
-        // Put saved self-edges back so that they are assigned points.
-        for (LayoutEdge e : selfEdges) {
-            e.getFrom().getSuccs().add(e);
-            e.getTo().getPreds().add(e);
-        }
 
         // #############################################################
         // STEP 8: Write back to interface
@@ -221,11 +205,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
                         } else {
                             if (reversedLinks.contains(e.getLink())) {
                                 Collections.reverse(points);
-                                if (selfEdges.contains(e)) {
-                                    // For self edges, it is enough with the
-                                    // start and end points computed by ReverseEdges.
-                                    points.clear();
-                                }
                             }
                             if (reversedLinkStartPoints.containsKey(e.getLink())) {
                                 for (Point p1 : reversedLinkStartPoints.get(e.getLink())) {
