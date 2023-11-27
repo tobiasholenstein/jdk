@@ -43,10 +43,6 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
         this.subManager =  new NewHierarchicalLayoutManager();
     }
 
-    public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
-        doLayout(graph);
-    }
-
     @Override
     public void cutEdges(boolean enable) {
         manager.cutEdges(enable);
@@ -176,7 +172,7 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
             ((ClusterNode) v).setRoot(true);
         }
 
-        manager.doLayout(new LayoutGraph(clusterEdges, clusterNodeSet), interClusterEdges);
+        manager.doLayout(new LayoutGraph(clusterEdges, clusterNodeSet));
 
         for (Cluster c : cluster) {
             ClusterNode n = clusterNodes.get(c);

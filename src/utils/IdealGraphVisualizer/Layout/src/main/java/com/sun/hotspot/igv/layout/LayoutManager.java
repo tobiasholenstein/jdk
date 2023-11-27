@@ -45,6 +45,4 @@ public abstract class LayoutManager {
     public static final double SCALE_LAYER_PADDING = 1.5;
 
     public abstract void doLayout(LayoutGraph graph);
-
-    public abstract void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks);
 }

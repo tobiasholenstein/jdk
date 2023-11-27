@@ -64,11 +64,6 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
         updateLayout(graph.getVertices(), graph.getLinks());
     }
 
-    @Override
-    public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
-        doLayout(graph);
-    }
-
     enum Action {
         ADD,
         REMOVE

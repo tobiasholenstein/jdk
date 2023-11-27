@@ -53,10 +53,6 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
         this.clusters = clusters;
     }
 
-    public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
-        doLayout(graph);
-    }
-
     @Override
     public void cutEdges(boolean enable) {
         manager.cutEdges(enable);

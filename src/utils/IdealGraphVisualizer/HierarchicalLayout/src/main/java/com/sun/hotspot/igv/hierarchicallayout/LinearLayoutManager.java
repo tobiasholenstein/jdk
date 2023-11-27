@@ -46,11 +46,6 @@ public class LinearLayoutManager extends LayoutManager {
 
     @Override
     public void doLayout(LayoutGraph graph) {
-        doLayout(graph, new HashSet<>());
-    }
-
-    @Override
-    public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
 
         assert (graph.getLinks().isEmpty());
 

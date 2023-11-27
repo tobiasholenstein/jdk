@@ -839,11 +839,6 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         return allNodes;
     }
 
-    @Override
-    public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
-        doLayout(graph);
-    }
-
     public LayoutEdge createLayoutEdge(Link link ) {
         LayoutEdge edge = new LayoutEdge(
                 vertexToLayoutNode.get(link.getFrom().getVertex()),

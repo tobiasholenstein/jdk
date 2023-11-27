@@ -60,13 +60,9 @@ public class HierarchicalLayoutManager extends LayoutManager {
     private LayoutGraph graph;
     private LayoutLayer[] layers;
     private int layerCount;
-    private Set<? extends Link> importantLinks;
-    private final Set<Link> linksToFollow;
-
 
     public HierarchicalLayoutManager(boolean combineEdges) {
         this.combine = combineEdges;
-        this.linksToFollow = new HashSet<>();
     }
 
     public List<LayoutNode> getNodes() {
@@ -95,12 +91,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
     @Override
     public void doLayout(LayoutGraph graph) {
-        doLayout(graph, new HashSet<>());
-    }
-
-    @Override
-    public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
-        this.importantLinks = importantLinks;
         this.graph = graph;
 
         vertexToLayoutNode = new HashMap<>();
@@ -122,20 +112,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
         // #############################################################
         // STEP 2: Reverse edges, handle backedges
         new ReverseEdges().run();
-
-        for (LayoutNode n : nodes) {
-            ArrayList<LayoutEdge> tmpArr = new ArrayList<>();
-            for (LayoutEdge e : n.getSuccs()) {
-                if (importantLinks.contains(e.getLink())) {
-                    tmpArr.add(e);
-                }
-            }
-
-            for (LayoutEdge e : tmpArr) {
-                e.getFrom().getSuccs().remove(e);
-                e.getTo().getPreds().remove(e);
-            }
-        }
 
         // Hide self-edges from the layout algorithm and save them for later.
         removeSelfEdges(true);
@@ -1275,7 +1251,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                         assert visited.contains(e.getTo());
                         // Encountered back edge
                         reverseEdge(e);
-                    } else if (!visited.contains(e.getTo()) && (linksToFollow.isEmpty() || linksToFollow.contains(e.getLink()))) {
+                    } else if (!visited.contains(e.getTo())) {
                         stack.push(e.getTo());
                     }
                 }
@@ -1379,19 +1355,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
                 edge.getTo().getPreds().add(edge);
             }
 
-            for (Link l : importantLinks) {
-                if (!vertexToLayoutNode.containsKey(l.getFrom().getVertex())
-                        || vertexToLayoutNode.containsKey(l.getTo().getVertex())) {
-                    continue;
-                }
-                LayoutNode from = vertexToLayoutNode.get(l.getFrom().getVertex());
-                LayoutNode to = vertexToLayoutNode.get(l.getTo().getVertex());
-                for (LayoutEdge e : from.getSuccs()) {
-                    if (e.getTo() == to) {
-                        linksToFollow.add(e.getLink());
-                    }
-                }
-            }
         }
 
     }
