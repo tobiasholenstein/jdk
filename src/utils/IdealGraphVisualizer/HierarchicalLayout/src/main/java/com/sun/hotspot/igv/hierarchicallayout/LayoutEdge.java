@@ -36,7 +36,6 @@ public class LayoutEdge {
     private int relativeToX;
     private Link link;
     private boolean isReversed;
-    private boolean vip;
 
     public int getStartX() {
         return relativeFromX + from.getLeft();
@@ -57,15 +56,6 @@ public class LayoutEdge {
         this.relativeFromX = relativeFromX;
         this.relativeToX = relativeToX;
         this.link = link;
-        this.vip = link != null && link.isVIP();
-    }
-
-    public LayoutEdge(LayoutNode from, LayoutNode to, int relativeFromX, int relativeToX, Link link, boolean vip) {
-        this(from, to);
-        this.relativeFromX = relativeFromX;
-        this.relativeToX = relativeToX;
-        this.link = link;
-        this.vip = vip;
     }
 
     public void reverse() {
@@ -118,9 +108,5 @@ public class LayoutEdge {
 
     public void setLink(Link link) {
         this.link = link;
-    }
-
-    public boolean isVip() {
-        return vip;
     }
 }

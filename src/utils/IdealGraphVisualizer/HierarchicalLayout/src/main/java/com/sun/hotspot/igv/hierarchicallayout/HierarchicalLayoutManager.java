@@ -392,21 +392,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
     public static final Comparator<LayoutNode> nodePositionComparator = Comparator.comparingInt(n -> n.getPos());
     public static final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
-        int n1VIP = 0;
-        for (LayoutEdge e : n1.getPreds()) {
-            if (e.isVip()) {
-                n1VIP++;
-            }
-        }
-        int n2VIP = 0;
-        for (LayoutEdge e : n2.getPreds()) {
-            if (e.isVip()) {
-                n2VIP++;
-            }
-        }
-        if (n1VIP != n2VIP) {
-            return n2VIP - n1VIP;
-        }
         if (n1.getVertex() == null) {
             if (n2.getVertex() == null) {
                 return 0;
@@ -419,21 +404,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
         return n1.getPreds().size() - n2.getPreds().size();
     };
     public static final Comparator<LayoutNode> nodeProcessingUpComparator = (n1, n2) -> {
-        int n1VIP = 0;
-        for (LayoutEdge e : n1.getSuccs()) {
-            if (e.isVip()) {
-                n1VIP++;
-            }
-        }
-        int n2VIP = 0;
-        for (LayoutEdge e : n2.getSuccs()) {
-            if (e.isVip()) {
-                n2VIP++;
-            }
-        }
-        if (n1VIP != n2VIP) {
-            return n2VIP - n1VIP;
-        }
         if (n1.getVertex() == null) {
             if (n2.getVertex() == null) {
                 return 0;
@@ -511,31 +481,12 @@ public class HierarchicalLayoutManager extends LayoutManager {
             if (size == 0) {
                 return n.getX();
             }
-            int vipCount = 0;
-            for (LayoutEdge e : n.getPreds()) {
-                if (e.isVip()) {
-                    vipCount++;
-                }
+            int[] values = new int[size];
+            for (int i = 0; i < size; i++) {
+                LayoutEdge e = n.getPreds().get(i);
+                values[i] = e.getFrom().getX() + e.getRelativeFromX() - e.getRelativeToX();
             }
-
-            if (vipCount == 0) {
-                int[] values = new int[size];
-                for (int i = 0; i < size; i++) {
-                    LayoutEdge e = n.getPreds().get(i);
-                    values[i] = e.getFrom().getX() + e.getRelativeFromX() - e.getRelativeToX();
-                }
-                return Statistics.median(values);
-            } else {
-                int z = 0;
-                int[] values = new int[vipCount];
-                for (int i = 0; i < size; i++) {
-                    LayoutEdge e = n.getPreds().get(i);
-                    if (e.isVip()) {
-                        values[z++] = e.getFrom().getX() + e.getRelativeFromX() - e.getRelativeToX();
-                    }
-                }
-                return Statistics.median(values);
-            }
+            return Statistics.median(values);
         }
 
         private int calculateOptimalBoth(LayoutNode n) {
@@ -568,9 +519,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
             for (int i = 0; i < size; i++) {
                 LayoutEdge e = n.getSuccs().get(i);
                 values[i] = e.getTo().getX() + e.getRelativeToX() - e.getRelativeFromX();
-                if (e.isVip()) {
-                    return values[i];
-                }
             }
             return Statistics.median(values);
         }
@@ -959,7 +907,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                                 int cnt = maxLayer - n.getLayer() - 1;
                                 LayoutEdge[] edges = new LayoutEdge[cnt];
                                 LayoutNode[] nodes = new LayoutNode[cnt];
-                                edges[0] = new LayoutEdge(n, null, i, 0, null, e.isVip());
+                                edges[0] = new LayoutEdge(n, null, i, 0, null);
                                 n.getSuccs().add(edges[0]);
 
                                 nodes[0] = new LayoutNode();
@@ -974,7 +922,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                                     nodes[j].setWidth(DUMMY_WIDTH);
                                     nodes[j].setHeight(DUMMY_HEIGHT);
                                     nodes[j].setLayer(n.getLayer() + j + 1);
-                                    edges[j] = new LayoutEdge(nodes[j - 1], nodes[j], nodes[j - 1].getWidth() / 2, nodes[j].getWidth() / 2, null, e.isVip());
+                                    edges[j] = new LayoutEdge(nodes[j - 1], nodes[j], nodes[j - 1].getWidth() / 2, nodes[j].getWidth() / 2, null);
                                     nodes[j - 1].getSuccs().add(edges[j]);
                                     nodes[j].getPreds().add(edges[j]);
                                 }
