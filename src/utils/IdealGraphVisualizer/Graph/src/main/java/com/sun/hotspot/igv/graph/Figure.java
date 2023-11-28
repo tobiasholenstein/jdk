@@ -403,7 +403,7 @@ public class Figure extends Properties.Entity implements Vertex {
 
     @Override
     public String toString() {
-        return inputNode.getProperties().get("idx");
+        return Integer.toString(id);
     }
 
     public Cluster getCluster() {
