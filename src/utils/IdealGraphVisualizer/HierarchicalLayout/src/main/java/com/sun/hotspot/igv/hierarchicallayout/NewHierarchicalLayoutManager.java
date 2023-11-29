@@ -759,32 +759,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         maxLayerLength = enable ? 10 : -1;
     }
 
-    public void doLegacyLayout(LayoutGraph graph) {
-        this.graph = graph;
-
-        new BuildDatastructure().run();
-
-        new ReverseEdges().run(false);
-
-        new AssignLayers().run(false);
-
-        new CreateDummyNodes().run();
-
-        new LegacyCrossingReduction().run();
-        //new CrossingReduction().run();
-
-
-        new LegacyAssignXCoordinates().run();
-        //new AssignXCoordinates().run();
-
-        new AssignYCoordinates().run();
-
-        new WriteResult().run();
-    }
-
     public void doLayout(LayoutGraph graph) {
-        doLegacyLayout(graph);
-        /*
+
         this.graph = graph;
 
         // #############################################################
@@ -808,14 +784,14 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         //      - n.yOffset
         //      - n.xOffset
         //      - n.width
-        new ReverseEdges().run();
+        new ReverseEdges().run(true);
         assertNodePos();
 
         // #############################################################
         // STEP 3: Assign layers
         // creates layers = new LayoutLayer[layerCount];
         // - sets LayoutNode.layer and inserts in layers[n.layer]
-        new AssignLayers().run();
+        new AssignLayers().run(true);
         assertNodePos();
 
         // #############################################################
@@ -856,8 +832,6 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         // STEP 8: Write back to interface
         new WriteResult().run();
         assertOrder();
-
-         */
     }
 
     public List<LayoutNode> getNodes() {
@@ -937,7 +911,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
             }
         }
 
-        int offsetX = left ? -NODE_OFFSET : NODE_OFFSET;
+        int offset = NODE_OFFSET + LayoutNode.DUMMY_WIDTH;
+        int offsetX = left ? -offset : offset;
         int currentX = left ? 0 : node.getWidth();
         int startY = 0;
         int currentY = 0;
@@ -946,8 +921,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
             ArrayList<LayoutEdge> reversedSuccs = entry.getValue();
 
             currentX += offsetX;
-            currentY -= NODE_OFFSET;
-            node.setTopMargin(node.getTopMargin() + NODE_OFFSET);
+            currentY -= offset;
+            node.setTopMargin(node.getTopMargin() + offset);
 
             ArrayList<Point> startPoints = new ArrayList<>();
             startPoints.add(new Point(currentX, currentY));
@@ -958,8 +933,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 node.getReversedLinkStartPoints().put(revEdge.getLink(), startPoints);
             }
         }
-        node.setLeftMargin(node.getLeftMargin() + (left ? sortedDownMap.size() * NODE_OFFSET : 0));
-        node.setRightMargin(node.getRightMargin() + (left ? 0 : sortedDownMap.size() * NODE_OFFSET));
+        node.setLeftMargin(node.getLeftMargin() + (left ? sortedDownMap.size() * offset : 0));
+        node.setRightMargin(node.getRightMargin() + (left ? 0 : sortedDownMap.size() * offset));
 
         return !sortedDownMap.isEmpty();
     }
@@ -974,7 +949,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
             }
         }
 
-        int offsetX = left ? -NODE_OFFSET : NODE_OFFSET;
+        int offset = NODE_OFFSET + LayoutNode.DUMMY_WIDTH;
+        int offsetX = left ? -offset : offset;
         int currentX = left ? 0 : node.getWidth();
         int startY = node.getHeight();
         int currentY = node.getHeight();
@@ -983,8 +959,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
             ArrayList<LayoutEdge> reversedPreds = entry.getValue();
 
             currentX += offsetX;
-            currentY += NODE_OFFSET;
-            node.setBottomMargin(node.getBottomMargin() + NODE_OFFSET);
+            currentY += offset;
+            node.setBottomMargin(node.getBottomMargin() + offset);
 
             ArrayList<Point> endPoints = new ArrayList<>();
             endPoints.add(new Point(currentX, currentY));
@@ -995,8 +971,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 node.getReversedLinkEndPoints().put(revEdge.getLink(), endPoints);
             }
         }
-        node.setLeftMargin(node.getLeftMargin() + (left ? sortedUpMap.size() * NODE_OFFSET : 0));
-        node.setRightMargin(node.getRightMargin() + (left ? 0 : sortedUpMap.size() * NODE_OFFSET));
+        node.setLeftMargin(node.getLeftMargin() + (left ? sortedUpMap.size() * offset : 0));
+        node.setRightMargin(node.getRightMargin() + (left ? 0 : sortedUpMap.size() * offset));
 
         return !sortedUpMap.isEmpty();
     }
@@ -1527,9 +1503,14 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         private void run() {
             createLayers();
 
+
+
+            List<LayoutNode> layoutNodes = getNodes();
+            layoutNodes.sort(Comparator.comparingInt(LayoutNode::getDegree));
+
             // Generate initial ordering
             HashSet<LayoutNode> visited = new HashSet<>();
-            for (LayoutNode layoutNode : getLayoutNodes()) {
+            for (LayoutNode layoutNode : layoutNodes) {
                 if (layoutNode.getLayer() == 0) {
                     layers[0].add(layoutNode);
                     visited.add(layoutNode);
@@ -1539,8 +1520,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 }
             }
 
-            ArrayList<LayoutNode> currentNodes = new ArrayList<>(getLayoutNodes());
-            for (LayoutNode layoutNode : currentNodes) {
+            ArrayList<LayoutNode> currentNodes = new ArrayList<>(layoutNodes);
+            for (LayoutNode layoutNode : layoutNodes) {
                 assert !layoutNode.isDummy();
                 createDummiesForNodeSuccessor(layoutNode, false);
             }
@@ -2409,8 +2390,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 }
             }
 
-            // return (int) (SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3));
-            return LAYER_OFFSET + ((int) (Math.sqrt(maxXOffset) * SCALE_LAYER_PADDING));
+            return (int) (SCALE_LAYER_PADDING * Math.max((int) (Math.sqrt(maxXOffset) * 2), LAYER_OFFSET * 3));
         }
 
         private void run() {
