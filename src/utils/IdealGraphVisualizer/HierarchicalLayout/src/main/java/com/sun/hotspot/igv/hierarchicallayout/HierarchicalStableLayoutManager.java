@@ -54,8 +54,8 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     private boolean shouldRemoveEmptyLayers = true;
 
     @Override
-    public void cutEdges(boolean enable) {
-        manager.cutEdges(enable);
+    public void setCutEdges(boolean enable) {
+        manager.setCutEdges(enable);
         maxLayerLength = enable ? 10 : -1;
     }
 

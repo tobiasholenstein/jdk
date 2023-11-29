@@ -44,9 +44,9 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
     }
 
     @Override
-    public void cutEdges(boolean enable) {
-        manager.cutEdges(enable);
-        subManager.cutEdges(enable);
+    public void setCutEdges(boolean enable) {
+        manager.setCutEdges(enable);
+        subManager.setCutEdges(enable);
         maxLayerLength = enable ? 10 : -1;
     }
 

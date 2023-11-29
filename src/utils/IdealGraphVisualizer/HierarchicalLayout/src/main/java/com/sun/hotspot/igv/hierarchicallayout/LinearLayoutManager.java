@@ -40,7 +40,7 @@ public class LinearLayoutManager extends LayoutManager {
     }
 
     @Override
-    public void cutEdges(boolean enable) {
+    public void setCutEdges(boolean enable) {
         maxLayerLength = enable ? 10 : -1;
     }
 

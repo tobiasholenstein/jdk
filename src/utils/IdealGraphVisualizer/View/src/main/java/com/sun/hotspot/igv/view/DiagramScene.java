@@ -835,19 +835,24 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private void doStableSeaLayout(Set<Figure> visibleFigures, Set<Connection> visibleConnections) {
-        hierarchicalStableLayoutManager.cutEdges(model.getCutEdges());
+        boolean enable = model.getCutEdges();
+        boolean previous = hierarchicalStableLayoutManager.cutEdges();
+        if (enable != previous) {
+            hierarchicalStableLayoutManager.setShouldRedrawLayout(true);
+        }
+        hierarchicalStableLayoutManager.setCutEdges(enable);
         hierarchicalStableLayoutManager.updateLayout(visibleFigures, visibleConnections);
     }
 
     private void doSeaLayout(Set<Figure> figures, Set<Connection> edges) {
-        seaLayoutManager.cutEdges(model.getCutEdges());
+        seaLayoutManager.setCutEdges(model.getCutEdges());
         seaLayoutManager.doLayout(new LayoutGraph(edges, figures));
         hierarchicalStableLayoutManager.setShouldRedrawLayout(true);
     }
 
     private void doClusteredLayout(Set<Connection> edges) {
         HierarchicalClusterLayoutManager clusterLayoutManager = new HierarchicalClusterLayoutManager();
-        clusterLayoutManager.cutEdges(model.getCutEdges());
+        clusterLayoutManager.setCutEdges(model.getCutEdges());
         clusterLayoutManager.doLayout(new LayoutGraph(edges));
     }
 
@@ -887,7 +892,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
         cfgLayoutManager.setSubManager(new LinearLayoutManager(figureRank));
         cfgLayoutManager.setClusters(getVisibleBlocks());
-        cfgLayoutManager.cutEdges(model.getCutEdges());
+        cfgLayoutManager.setCutEdges(model.getCutEdges());
         cfgLayoutManager.doLayout(new LayoutGraph(edges, figures));
     }
 

@@ -24,7 +24,6 @@
 package com.sun.hotspot.igv.layout;
 
 import java.awt.Font;
-import java.util.Set;
 
 /**
  *
@@ -35,7 +34,11 @@ public abstract class LayoutManager {
     // Options
     protected int maxLayerLength = -1;
 
-    public abstract void cutEdges(boolean enable);
+    public abstract void setCutEdges(boolean enable);
+
+    public boolean cutEdges() {
+        return maxLayerLength >= 0;
+    }
 
     public static final Font TITLE_FONT = new Font("Arial", Font.BOLD, 14);
     public static final int SWEEP_ITERATIONS = 1;
