@@ -44,8 +44,8 @@ public class InputSlotWidget extends SlotWidget {
     private final InputSlot inputSlot;
     private final DiagramScene scene;
 
-    public InputSlotWidget(InputSlot slot, DiagramScene scene, Widget parent, FigureWidget fw) {
-        super(slot, scene, parent, fw);
+    public InputSlotWidget(InputSlot slot, DiagramScene scene, FigureWidget fw) {
+        super(slot, scene, fw);
         inputSlot = slot;
         this.scene = scene;
     }

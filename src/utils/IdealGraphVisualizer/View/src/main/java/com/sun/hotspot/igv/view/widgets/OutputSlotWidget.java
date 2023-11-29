@@ -25,7 +25,6 @@ package com.sun.hotspot.igv.view.widgets;
 
 import com.sun.hotspot.igv.graph.OutputSlot;
 import com.sun.hotspot.igv.view.DiagramScene;
-import org.netbeans.api.visual.widget.Widget;
 
 /**
  *
@@ -35,8 +34,8 @@ public class OutputSlotWidget extends SlotWidget {
 
     private final OutputSlot outputSlot;
 
-    public OutputSlotWidget(OutputSlot slot, DiagramScene scene, Widget parent, FigureWidget fw) {
-        super(slot, scene, parent, fw);
+    public OutputSlotWidget(OutputSlot slot, DiagramScene scene, FigureWidget fw) {
+        super(slot, scene, fw);
         outputSlot = slot;
     }
 
@@ -48,6 +47,6 @@ public class OutputSlotWidget extends SlotWidget {
     protected int yOffset() {
         int overlap = getFigureWidget().getFigure().getDiagram().isCFG() ?
             calculateClientArea().height / 2 : 0;
-        return getSlot().getFigure().getHeight() - overlap;
+        return getFigureWidget().getFigureHeight() - overlap;
     }
 }

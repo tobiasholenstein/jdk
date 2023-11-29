@@ -108,26 +108,17 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         this.diagramScene = scene;
 
         middleWidget = new Widget(scene);
-        middleWidget.setLayout(LayoutFactory.createVerticalFlowLayout(SerialAlignment.CENTER, 0));
+        middleWidget.setPreferredBounds(new Rectangle(0, 0, f.getWidth(), f.getHeight()));
+        middleWidget.setLayout(LayoutFactory.createHorizontalFlowLayout(SerialAlignment.CENTER, 0));
         middleWidget.setBackground(f.getColor());
         middleWidget.setOpaque(true);
         middleWidget.getActions().addAction(new DoubleClickAction(this));
         middleWidget.setCheckClipping(false);
+        this.addChild(middleWidget);
 
-        Widget dummyTop = new Widget(scene);
-        int extraTopHeight =  Figure.PADDING;
-        if (getFigure().hasNamedInputSlot()) {
-            extraTopHeight += getFigure().getDiagram().isCFG() ? Slot.SLOT_HEIGHT : Slot.SLOT_HEIGHT / 2;
-        }
-        dummyTop.setMinimumSize(new Dimension(0, extraTopHeight));
-        middleWidget.addChild(dummyTop);
-
-        // This widget includes the node text and possibly a warning sign to the right.
-        Widget nodeInfoWidget = new Widget(scene);
-        nodeInfoWidget.setLayout(LayoutFactory.createAbsoluteLayout());
-        middleWidget.addChild(nodeInfoWidget);
         Widget textWidget = new Widget(scene);
         textWidget.setLayout(LayoutFactory.createVerticalFlowLayout(SerialAlignment.CENTER, 0));
+        middleWidget.addChild(textWidget);
 
         String[] strings = figure.getLines();
         labelWidgets = new ArrayList<>(strings.length);
@@ -150,18 +141,19 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
             labelWidgets.get(i).setForeground(Color.DARK_GRAY);
         }
 
-        nodeInfoWidget.addChild(textWidget);
 
+        int textHeight = f.getHeight() - 2 * Figure.PADDING - f.getSlotsHeight();
         if (getFigure().getWarning() != null) {
             ImageWidget warningWidget = new ImageWidget(scene, warningSign);
-            Point warningLocation = new Point(getFigure().getWidth() - Figure.WARNING_WIDTH - Figure.PADDING / 2, 0);
-            warningWidget.setPreferredLocation(warningLocation);
             warningWidget.setToolTipText(getFigure().getWarning());
-            nodeInfoWidget.addChild(warningWidget);
+            middleWidget.addChild(warningWidget);
+            int textWidth = f.getWidth() - 4 * Figure.BORDER;
+            textWidth -= Figure.WARNING_WIDTH + Figure.PADDING;
+            textWidget.setPreferredBounds(new Rectangle(0, 0, textWidth, textHeight));
+        } else {
+            int textWidth = f.getWidth() - 4 * Figure.BORDER;
+            textWidget.setPreferredBounds(new Rectangle(0, 0, textWidth, textHeight));
         }
-
-        middleWidget.setPreferredBounds(new Rectangle(0, 0, f.getWidth(), f.getHeight()));
-        this.addChild(middleWidget);
 
         // Initialize node for property sheet
         Node node = new AbstractNode(Children.LEAF) {
@@ -176,6 +168,10 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         node.setDisplayName(getName());
 
         this.setToolTipText(PropertiesConverter.convertToHTML(f.getProperties()));
+    }
+
+    public int getFigureHeight() {
+        return middleWidget.getPreferredBounds().height;
     }
 
     public static class RoundedBorder extends LineBorder {
@@ -211,19 +207,20 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         super.notifyStateChanged(previousState, state);
 
         Font font = Diagram.FONT;
-        int thickness = 1;
-        if (state.isSelected()) {
-            font = Diagram.BOLD_FONT;
-            thickness = 2;
-        }
-
         Color borderColor = Color.BLACK;
         Color innerBorderColor = getFigure().getColor();
+        if (state.isSelected()) {
+            font = Diagram.BOLD_FONT;
+            innerBorderColor = Color.BLACK;
+        }
+
         if (state.isHighlighted()) {
             innerBorderColor = borderColor = Color.BLUE;
         }
 
-        Border roundedBorder = BorderFactory.createCompoundBorder(new RoundedBorder(borderColor, thickness), new RoundedBorder(innerBorderColor, 1));
+        Border innerBorder = new RoundedBorder(borderColor, Figure.BORDER);
+        Border outerBorder = new RoundedBorder(innerBorderColor, Figure.BORDER);
+        Border roundedBorder = BorderFactory.createCompoundBorder(innerBorder, outerBorder);
         middleWidget.setBorder(roundedBorder);
 
         for (LabelWidget labelWidget : labelWidgets) {

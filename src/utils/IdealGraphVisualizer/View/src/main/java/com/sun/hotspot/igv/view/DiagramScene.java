@@ -605,7 +605,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     shadowWidget.setBorder(border);
                     shadowWidget.setBackground(new Color(c.getRed(), c.getGreen(), c.getBlue(), 50));
                     shadowWidget.setPreferredLocation(fw.getPreferredLocation());
-                    shadowWidget.setPreferredBounds(new Rectangle(0, 0, f.getWidth(), f.getHeight()));
+                    shadowWidget.setPreferredBounds(fw.getPreferredBounds());
                     shadowWidget.setVisible(true);
                     shadowWidget.setOpaque(true);
                     shadowWidget.revalidate();
@@ -616,7 +616,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     Border border = new FigureWidget.RoundedBorder(Color.RED, 1);
                     pointerWidget.setBorder(border);
                     pointerWidget.setBackground(Color.RED);
-                    pointerWidget.setPreferredBounds(new Rectangle(0, 0, 3, f.getHeight()));
+                    pointerWidget.setPreferredBounds(new Rectangle(0, 0, 3, shadowWidget.getPreferredBounds().height));
                     pointerWidget.setVisible(false);
                     pointerWidget.setOpaque(true);
                 }
@@ -734,7 +734,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             mainLayer.addChild(figureWidget);
 
             for (InputSlot inputSlot : figure.getInputSlots()) {
-                SlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget, figureWidget);
+                SlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget);
                 slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
                 slotWidget.getActions().addAction(hoverAction);
                 slotWidget.getActions().addAction(selectAction);
@@ -742,7 +742,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             }
 
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
-                SlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget, figureWidget);
+                SlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget);
                 slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
                 slotWidget.getActions().addAction(hoverAction);
                 slotWidget.getActions().addAction(selectAction);

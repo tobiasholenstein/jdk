@@ -44,8 +44,8 @@ import java.util.List;
  * @author Thomas Wuerthinger
  */
 public abstract class Slot implements Port, Source.Provider, Properties.Provider {
-    public static final int SLOT_WIDTH = 12;
-    public static final int SLOT_HEIGHT = 12;
+    public static final int SLOT_WIDTH = 10;
+    public static final int SLOT_HEIGHT = 10;
 
     private final int wantedIndex;
     private final Source source;

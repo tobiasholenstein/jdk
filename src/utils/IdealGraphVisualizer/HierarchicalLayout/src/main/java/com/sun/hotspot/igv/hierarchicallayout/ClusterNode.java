@@ -37,7 +37,7 @@ import java.util.*;
  */
 public class ClusterNode implements Vertex {
 
-    public static final int PADDING = 10;
+    public static final int PADDING = 8;
     private Cluster cluster;
     private Port inputSlot;
     private final Set<Vertex> subNodes;

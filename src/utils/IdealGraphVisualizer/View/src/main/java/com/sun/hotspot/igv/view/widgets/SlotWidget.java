@@ -49,7 +49,7 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
     protected static double ZOOM_FACTOR = 0.6;
     private final DiagramScene diagramScene;
 
-    public SlotWidget(Slot slot, DiagramScene scene, Widget parent, FigureWidget fw) {
+    public SlotWidget(Slot slot, DiagramScene scene, FigureWidget fw) {
         super(scene);
         this.diagramScene = scene;
         this.slot = slot;
@@ -59,13 +59,14 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
         }
         // No clipping, to let input slots draw gap markers outside their bounds.
         this.setCheckClipping(false);
-        parent.addChild(this);
-
-        Point p = slot.getRelativePosition();
-        p.x -= slot.getWidth() / 2;
-        p.y -= slot.getHeight() / 2;
-        p.y += yOffset();
-        this.setPreferredLocation(p);
+        fw.addChild(this);
+        if (slot.shouldShowName()) {
+            Point p = slot.getRelativePosition();
+            p.x -= slot.getWidth() / 2;
+            p.y -= slot.getHeight() / 2;
+            p.y += yOffset(); // TODO use fw
+            this.setPreferredLocation(p);
+        }
     }
 
     @Override

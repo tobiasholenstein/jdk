@@ -33,9 +33,11 @@ import java.util.*;
 
 public class Figure extends Properties.Entity implements Vertex {
 
-    public static final int PADDING = 2;
-    public static final int SLOT_OFFSET = 10;
+    public static final int PADDING = 4;
+    public static final int SLOT_OFFSET = 8;
     public static final int WARNING_WIDTH = 16;
+    public static final int BORDER = 1;
+    public static final double BOLD_LINE_FACTOR = 1.06;
     protected List<InputSlot> inputSlots;
     protected List<OutputSlot> outputSlots;
     private final InputNode inputNode;
@@ -47,26 +49,29 @@ public class Figure extends Properties.Entity implements Vertex {
     private String warning;
     private final int id;
     private String[] lines;
-    private int heightCash = -1;
-    private int widthCash = -1;
+    private int height = -1;
+    private int width = -1;
     private Block block;
     private final FontMetrics metrics;
 
     public int getHeight() {
-        if (heightCash == -1) {
+        if (height == -1) {
             updateHeight();
         }
-        return heightCash;
+        return height;
+    }
+
+    public int getSlotsHeight() {
+        int slotHeight = 0;
+        if (hasNamedInputSlot() || hasNamedOutputSlot()) {
+            slotHeight += diagram.isCFG() ? 2 * Slot.SLOT_HEIGHT : Slot.SLOT_HEIGHT;
+        }
+        return slotHeight;
     }
 
     private void updateHeight() {
-        heightCash = getLines().length * metrics.getHeight() + 2 * PADDING + 4;
-        if (hasNamedInputSlot()) {
-            heightCash += diagram.isCFG() ? Slot.SLOT_HEIGHT : Slot.SLOT_HEIGHT / 2;
-        }
-        if (hasNamedOutputSlot()) {
-            heightCash += diagram.isCFG() ? Slot.SLOT_HEIGHT : Slot.SLOT_HEIGHT / 2;
-        }
+        height = getLines().length * metrics.getHeight() + 2 * PADDING;
+        height += getSlotsHeight();
     }
 
     public static <T> List<T> getAllBefore(List<T> inputList, T tIn) {
@@ -89,30 +94,31 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     public int getWidth() {
-        if (widthCash == -1) {
+        if (width == -1) {
             updateWidth();
         }
-        return widthCash;
+        return width;
     }
 
     public void setWidth(int width) {
-        widthCash = width;
+        this.width = width;
     }
 
     private void updateWidth() {
-            widthCash = 0;
-            for (String s : getLines()) {
-                int cur = metrics.stringWidth(s);
-                if (cur > widthCash) {
-                    widthCash = cur;
-                }
+        width = 0;
+        for (String s : getLines()) {
+            int cur = metrics.stringWidth(s);
+            if (cur > width) {
+                width = cur;
             }
-            widthCash += 2 * PADDING + 4;
-            if (getWarning() != null) {
-                widthCash += WARNING_WIDTH;
-            }
-            widthCash = Math.max(widthCash, Figure.getSlotsWidth(inputSlots));
-            widthCash = Math.max(widthCash, Figure.getSlotsWidth(outputSlots));
+        }
+        width += 2 * PADDING;
+        if (getWarning() != null) {
+            width += WARNING_WIDTH + PADDING;
+        }
+        width = Math.max(width, Figure.getSlotsWidth(inputSlots));
+        width = Math.max(width, Figure.getSlotsWidth(outputSlots));
+        width = (int)(width * BOLD_LINE_FACTOR);
     }
 
     protected Figure(Diagram diagram, int id, InputNode node) {
