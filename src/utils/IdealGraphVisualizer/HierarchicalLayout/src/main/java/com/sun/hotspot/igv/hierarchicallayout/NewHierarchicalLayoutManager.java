@@ -2136,7 +2136,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 int curX = 0;
                 for (LayoutNode n : layers[i]) {
                     space[i].add(curX);
-                    curX += n.getWidth() + NODE_OFFSET;
+                    curX += n.getOuterWidth() + NODE_OFFSET;
                     downProcessingOrder[i].add(n);
                     upProcessingOrder[i].add(n);
                 }

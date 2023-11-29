@@ -40,8 +40,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
     public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;
-    public static final int DUMMY_HEIGHT = 1;
-    public static final int DUMMY_WIDTH = 1;
     public static final int NODE_OFFSET = 8;
     public static final int LAYER_OFFSET = 8;
     public static final double SCALE_LAYER_PADDING = 1.5;
@@ -865,16 +863,12 @@ public class HierarchicalLayoutManager extends LayoutManager {
                                 n.getSuccs().add(edges[0]);
 
                                 nodes[0] = new LayoutNode();
-                                nodes[0].setWidth(DUMMY_WIDTH);
-                                nodes[0].setHeight(DUMMY_HEIGHT);
                                 nodes[0].setLayer(n.getLayer() + 1);
                                 nodes[0].getPreds().add(edges[0]);
                                 edges[0].setTo(nodes[0]);
                                 edges[0].setRelativeToX(nodes[0].getWidth() / 2);
                                 for (int j = 1; j < cnt; j++) {
                                     nodes[j] = new LayoutNode();
-                                    nodes[j].setWidth(DUMMY_WIDTH);
-                                    nodes[j].setHeight(DUMMY_HEIGHT);
                                     nodes[j].setLayer(n.getLayer() + j + 1);
                                     edges[j] = new LayoutEdge(nodes[j - 1], nodes[j]);
                                     nodes[j - 1].getSuccs().add(edges[j]);
@@ -1109,7 +1103,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                     }
                 }
 
-                final int offset = NODE_OFFSET + DUMMY_WIDTH;
+                final int offset = NODE_OFFSET + LayoutNode.DUMMY_WIDTH;
 
                 int curY = 0;
                 int curWidth = node.getWidth() + reversedDown.size() * offset;

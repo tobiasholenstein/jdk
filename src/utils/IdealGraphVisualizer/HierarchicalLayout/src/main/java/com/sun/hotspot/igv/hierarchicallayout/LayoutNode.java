@@ -31,6 +31,9 @@ import java.util.*;
 
 public class LayoutNode {
 
+    public static final int DUMMY_HEIGHT = 1;
+    public static final int DUMMY_WIDTH = 1;
+
     private int layer = -1;
     private int optimal_x;
     private int x;
@@ -59,8 +62,8 @@ public class LayoutNode {
     public LayoutNode(Vertex v) {
         vertex = v;
         if (v == null) {
-            height = 0;
-            width = 0;
+            height = DUMMY_HEIGHT;
+            width = DUMMY_WIDTH;
         } else {
             Dimension size = v.getSize();
             height = size.height;

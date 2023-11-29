@@ -34,7 +34,7 @@ import java.util.*;
 public class Figure extends Properties.Entity implements Vertex {
 
     public static final int PADDING = 4;
-    public static final int SLOT_OFFSET = 8;
+    public static final int SLOT_OFFSET = 16;
     public static final int WARNING_WIDTH = 16;
     public static final int BORDER = 1;
     public static final double BOLD_LINE_FACTOR = 1.06;
