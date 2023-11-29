@@ -1503,8 +1503,6 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         private void run() {
             createLayers();
 
-
-
             List<LayoutNode> layoutNodes = getNodes();
             layoutNodes.sort(Comparator.comparingInt(LayoutNode::getDegree));
 
@@ -1520,7 +1518,6 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 }
             }
 
-            ArrayList<LayoutNode> currentNodes = new ArrayList<>(layoutNodes);
             for (LayoutNode layoutNode : layoutNodes) {
                 assert !layoutNode.isDummy();
                 createDummiesForNodeSuccessor(layoutNode, false);
@@ -1538,6 +1535,9 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                     }
                 }
             }
+
+            updatePositions();
+
             assertLayerNr();
             assertNodeSynced();
             assertLinks();
@@ -1561,190 +1561,6 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
 
     private static final Comparator<LayoutNode> crossingNodeComparator = Comparator.comparingDouble(n -> n.getWeightedPosition());
 
-    private class LegacyCrossingReduction {
-
-        @SuppressWarnings("unchecked")
-        private void createLayers() {
-            layers = new LayoutLayer[layerCount];
-            for (int i = 0; i < layerCount; i++) {
-                layers[i] = new LayoutLayer();
-            }
-        }
-
-        protected void run() {
-            createLayers();
-
-            // Generate initial ordering
-            HashSet<LayoutNode> visited = new HashSet<>();
-            for (LayoutNode n : getLayoutNodes()) {
-                if (n.getLayer() == 0) {
-                    layers[0].add(n);
-                    visited.add(n);
-                } else if (!n.hasPreds()) {
-                    layers[n.getLayer()].add(n);
-                    visited.add(n);
-                }
-            }
-
-            for (int i = 0; i < layers.length - 1; i++) {
-                for (LayoutNode n : layers[i]) {
-                    for (LayoutEdge e : n.getSuccs()) {
-                        if (!visited.contains(e.getTo())) {
-                            visited.add(e.getTo());
-                            layers[i + 1].add(e.getTo());
-                            assert getLayoutNodes().contains(e.getTo()) || dummyNodes.contains(e.getTo());
-                        }
-                    }
-                }
-            }
-
-            updatePositions();
-
-            initX();
-
-            // Optimize
-            for (int i = 0; i < CROSSING_ITERATIONS; i++) {
-                downSweep();
-                upSweep();
-            }
-            downSweep();
-        }
-
-        private void initX() {
-
-            for (int i = 0; i < layers.length; i++) {
-                updateXOfLayer(i);
-            }
-        }
-
-        private void updateXOfLayer(int index) {
-            int x = 0;
-
-            for (LayoutNode n : layers[index]) {
-                n.setX(x);
-                x += n.getWidth() + NODE_OFFSET;
-            }
-        }
-
-        private void updatePositions() {
-            for (List<LayoutNode> layer : layers) {
-                int z = 0;
-                for (LayoutNode n : layer) {
-                    n.setPos(z);
-                    z++;
-                }
-            }
-        }
-
-        private void downSweep() {
-
-            // Downsweep
-            for (int i = 1; i < layerCount; i++) {
-
-                for (LayoutNode n : layers[i]) {
-                    n.setWeightedPosition(0);
-                }
-
-                for (LayoutNode n : layers[i]) {
-
-                    int sum = 0;
-                    int count = 0;
-                    for (LayoutEdge e : n.getPreds()) {
-                        int cur = e.getFromX();
-                        int factor = 1;
-                        sum += cur * factor;
-                        count += factor;
-                    }
-
-                    if (count > 0) {
-                        sum /= count;
-                        n.setWeightedPosition(sum);
-                    }
-                }
-
-                updateCrossingNumbers(i, true);
-                layers[i].sort(crossingNodeComparator);
-                updateXOfLayer(i);
-
-                int z = 0;
-                for (LayoutNode n : layers[i]) {
-                    n.setPos(z);
-                    z++;
-                }
-            }
-        }
-
-        private void updateCrossingNumbers(int index, boolean down) {
-            for (int i = 0; i < layers[index].size(); i++) {
-                LayoutNode n = layers[index].get(i);
-                LayoutNode prev = null;
-                if (i > 0) {
-                    prev = layers[index].get(i - 1);
-                }
-                LayoutNode next = null;
-                if (i < layers[index].size() - 1) {
-                    next = layers[index].get(i + 1);
-                }
-
-                boolean cond = !n.hasSuccs();
-                if (down) {
-                    cond = !n.hasPreds();
-                }
-
-                if (cond) {
-                    if (prev != null && next != null) {
-                        n.setWeightedPosition((prev.getWeightedPosition() + next.getWeightedPosition()) / 2);
-                    } else if (prev != null) {
-                        n.setWeightedPosition(prev.getWeightedPosition());
-                    } else if (next != null) {
-                        n.setWeightedPosition(next.getWeightedPosition());
-                    }
-                }
-            }
-        }
-
-        private void upSweep() {
-            // Upsweep
-            for (int i = layerCount - 2; i >= 0; i--) {
-
-                for (LayoutNode n : layers[i]) {
-                    n.setWeightedPosition(0);
-                }
-
-                for (LayoutNode n : layers[i]) {
-
-                    int count = 0;
-                    int sum = 0;
-                    for (LayoutEdge e : n.getSuccs()) {
-                        int cur = e.getToX();
-                        int factor = 1;
-                        sum += cur * factor;
-                        count += factor;
-                    }
-
-                    if (count > 0) {
-                        sum /= count;
-                        n.setWeightedPosition(sum);
-                    }
-
-                }
-
-                updateCrossingNumbers(i, false);
-                layers[i].sort(crossingNodeComparator);
-                updateXOfLayer(i);
-
-                int z = 0;
-                for (LayoutNode n : layers[i]) {
-                    n.setPos(z);
-                    z++;
-                }
-            }
-        }
-
-
-    }
-
-
     private class CrossingReduction {
 
         private final Comparator<LayoutNode> CROSSING_NODE_COMPARATOR = (n1, n2) -> Float.compare(n1.getWeightedPosition(), n2.getWeightedPosition());
@@ -1755,7 +1571,7 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
             // The nodes order within layers determines the edge crossings in the layout,
             // thus a good ordering is one with few edge crossings
 
-            // TODO compute an initial ordering (x needs to be set for sweep to work)
+            // Done in previous pass:  compute an initial ordering (x needs to be set for sweep to work)
             // 1) An initial ordering within each rank is computed
             // DFS or BFS starting with nodes of minimum rank. Nodes are assigned positions in their layers in
             // left-to-right order as the search progresses. This strategy ensures that the initial ordering of a
@@ -2086,135 +1902,6 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
         }
         return n1.getSuccs().size() - n2.getSuccs().size();
     };
-
-    private class LegacyAssignXCoordinates {
-
-        private ArrayList<Integer>[] space;
-        private ArrayList<LayoutNode>[] downProcessingOrder;
-        private ArrayList<LayoutNode>[] upProcessingOrder;
-
-        private void initialPositions() {
-            for (LayoutNode n : getLayoutNodes()) {
-                n.setX(space[n.getLayer()].get(n.getPos()));
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        private void createArrays() {
-            space = new ArrayList[layers.length];
-            downProcessingOrder = new ArrayList[layers.length];
-            upProcessingOrder = new ArrayList[layers.length];
-        }
-
-        protected void run() {
-            createArrays();
-
-            for (int i = 0; i < layers.length; i++) {
-                space[i] = new ArrayList<>();
-                downProcessingOrder[i] = new ArrayList<>();
-                upProcessingOrder[i] = new ArrayList<>();
-
-                int curX = 0;
-                for (LayoutNode n : layers[i]) {
-                    space[i].add(curX);
-                    curX += n.getOuterWidth() + NODE_OFFSET;
-                    downProcessingOrder[i].add(n);
-                    upProcessingOrder[i].add(n);
-                }
-
-                downProcessingOrder[i].sort(nodeProcessingDownComparator);
-                upProcessingOrder[i].sort(nodeProcessingUpComparator);
-            }
-
-            initialPositions();
-            for (int i = 0; i < SWEEP_ITERATIONS; i++) {
-                sweepDown();
-                adjustSpace();
-                sweepUp();
-                adjustSpace();
-            }
-
-            sweepDown();
-            adjustSpace();
-            sweepUp();
-        }
-
-        private void adjustSpace() {
-            for (int i = 0; i < layers.length; i++) {
-                for (LayoutNode n : layers[i]) {
-                    space[i].add(n.getX());
-                }
-            }
-        }
-
-        private int calculateOptimalDown(LayoutNode n) {
-            int size = n.getPreds().size();
-            if (size == 0) {
-                return n.getX();
-            }
-            int[] values = new int[size];
-            for (int i = 0; i < size; i++) {
-                LayoutEdge e = n.getPreds().get(i);
-                values[i] = e.getFromX() - e.getRelativeToX();
-            }
-            return Statistics.median(values);
-        }
-
-        private int calculateOptimalBoth(LayoutNode n) {
-            if (n.getPreds().size() == n.getSuccs().size()) {
-                return n.getX();
-            }
-
-            int[] values = new int[n.getPreds().size() + n.getSuccs().size()];
-            int i = 0;
-
-            for (LayoutEdge e : n.getPreds()) {
-                values[i] = e.getFromX() - e.getRelativeToX();
-                i++;
-            }
-
-            for (LayoutEdge e : n.getSuccs()) {
-                values[i] = e.getToX() - e.getRelativeFromX();
-                i++;
-            }
-
-            return Statistics.median(values);
-        }
-
-        private int calculateOptimalUp(LayoutNode n) {
-            int size = n.getSuccs().size();
-            if (size == 0) {
-                return n.getX();
-            }
-            int[] values = new int[size];
-            for (int i = 0; i < size; i++) {
-                LayoutEdge e = n.getSuccs().get(i);
-                values[i] = e.getToX() - e.getRelativeFromX();
-            }
-            return Statistics.median(values);
-        }
-
-        private void sweepUp() {
-            for (int i = layers.length - 1; i >= 0; i--) {
-                HierarchicalLayoutManager.NodeRow r = new HierarchicalLayoutManager.NodeRow(space[i]);
-                for (LayoutNode n : upProcessingOrder[i]) {
-                    int optimal = calculateOptimalUp(n);
-                    r.insert(n, optimal);
-                }
-            }
-        }
-
-        private void sweepDown() {
-            for (int i = 1; i < layers.length; i++) {
-                HierarchicalLayoutManager.NodeRow r = new HierarchicalLayoutManager.NodeRow(space[i]);
-                for (LayoutNode n : downProcessingOrder[i]) {
-                    int optimal = calculateOptimalDown(n);
-                    r.insert(n, optimal);
-                }
-            }
-        }
-    }
-
 
     private class AssignXCoordinates {
 
