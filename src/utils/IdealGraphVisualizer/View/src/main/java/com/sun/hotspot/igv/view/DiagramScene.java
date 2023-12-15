@@ -893,7 +893,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         for (InputNode inputNode : nodes) {
             nodeIds.add(inputNode.getId());
         }
-        selectNodes(nodeIds, true);
+        selectNodes(nodeIds, showIfHidden);
         if (showIfHidden) {
             model.showFigures(model.getSelectedFigures());
         }

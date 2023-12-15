@@ -430,10 +430,9 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
         DiagramViewModel model = new DiagramViewModel(getModel());
         model.setGlobalSelection(false, false);
         EditorTopComponent etc = new EditorTopComponent(model);
-
         Set<InputNode> selectedNodes = new HashSet<>();
-        for (Figure figure : getModel().getSelectedFigures()) {
-            selectedNodes.add(figure.getInputNode());
+        for (Integer nodeId : getModel().getSelectedNodes()) {
+            selectedNodes.add(getModel().getGraph().getNode(nodeId));
         }
         etc.addSelectedNodes(selectedNodes, false);
         model.setGlobalSelection(GlobalSelectionAction.get(GlobalSelectionAction.class).isSelected(), false);
