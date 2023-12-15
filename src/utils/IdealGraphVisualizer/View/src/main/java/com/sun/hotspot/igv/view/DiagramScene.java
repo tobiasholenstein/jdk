@@ -208,24 +208,30 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         @Override
         public void filteredChanged(SelectionCoordinator coordinator) {
             if (model.getGlobalSelection()) {
-                Set<Integer> ids = coordinator.getSelectedObjects();
-                Set<Object> selectedObjects = new HashSet<>();
-                for (Figure figure : getModel().getDiagram().getFigures()) {
-                    if (ids.contains(figure.getInputNode().getId())) {
-                        selectedObjects.add(figure);
-                    }
-                    for (Slot slot : figure.getSlots()) {
-                        if (!Collections.disjoint(slot.getSource().getSourceNodesAsSet(), ids)) {
-                            selectedObjects.add(slot);
-                        }
-                    }
-                }
-                setSelectedObjects(selectedObjects);
+                selectNodes(coordinator.getSelectedObjects(), false);
                 centerSelectedFigures();
                 validateAll();
             }
         }
     };
+
+    private void selectNodes(Set<Integer> nodeIds, boolean selectFigureForSlots) {
+        Set<Object> selectedObjects = new HashSet<>();
+        for (Figure figure : getModel().getDiagram().getFigures()) {
+            if (nodeIds.contains(figure.getInputNode().getId())) {
+                selectedObjects.add(figure);
+            }
+            for (Slot slot : figure.getSlots()) {
+                if (!Collections.disjoint(slot.getSource().getSourceNodesAsSet(), nodeIds)) {
+                    selectedObjects.add(slot);
+                    if (selectFigureForSlots) {
+                        selectedObjects.add(figure);
+                    }
+                }
+            }
+        }
+        setSelectedObjects(selectedObjects);
+    }
 
     private Point getScrollPosition() {
         return scrollPane.getViewport().getViewPosition();
@@ -630,7 +636,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         rebuildMainLayer();
         rebuildBlockLayer();
         relayout();
-        setSelectedObjects(model.getSelectedFigures());
+        selectNodes(model.getSelectedNodes(), false);
         validateAll();
         centerSelectedFigures();
         rebuilding = false;
@@ -887,21 +893,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         for (InputNode inputNode : nodes) {
             nodeIds.add(inputNode.getId());
         }
-
-        Set<Object> selectedObjects = new HashSet<>();
-        for (Figure figure : getModel().getDiagram().getFigures()) {
-            if (nodeIds.contains(figure.getInputNode().getId())) {
-                selectedObjects.add(figure);
-            }
-            for (Slot slot : figure.getSlots()) {
-                if (!Collections.disjoint(slot.getSource().getSourceNodesAsSet(), nodeIds)) {
-                    selectedObjects.add(slot);
-                    selectedObjects.add(figure);
-                }
-            }
-        }
-        setSelectedObjects(selectedObjects);
-
+        selectNodes(nodeIds, true);
         if (showIfHidden) {
             model.showFigures(model.getSelectedFigures());
         }
