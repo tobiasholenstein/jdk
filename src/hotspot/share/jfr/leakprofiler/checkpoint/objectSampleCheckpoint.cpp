@@ -283,6 +283,7 @@ void ObjectSampleCheckpoint::on_rotation(const ObjectSampler* sampler) {
   {
     // can safepoint here
     ThreadInVMfromNative transition(thread);
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
     MutexLocker lock(ClassLoaderDataGraph_lock);
     // the lock is needed to ensure the unload lists do not grow in the middle of inspection.
     install_stack_traces(sampler);

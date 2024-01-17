@@ -3909,28 +3909,25 @@ jint JNICALL jni_DetachCurrentThread(JavaVM *vm)  {
     return JNI_ERR;
   }
 
-  // We are going to VM, change W^X state to the expected one.
-  MACOS_AARCH64_ONLY(thread->enable_wx(WXWrite));
+  {
+    // Safepoint support. Have to do call-back to safepoint code, if in the
+    // middle of a safepoint operation
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
+    ThreadInVMfromNative transition(thread);
 
-  // Safepoint support. Have to do call-back to safepoint code, if in the
-  // middle of a safepoint operation
-  ThreadStateTransition::transition_from_native(thread, _thread_in_vm);
+    // XXX: Note that JavaThread::exit() call below removes the guards on the
+    // stack pages set up via enable_stack_{red,yellow}_zone() calls
+    // above in jni_AttachCurrentThread. Unfortunately, while the setting
+    // of the guards is visible in jni_AttachCurrentThread above,
+    // the removal of the guards is buried below in JavaThread::exit()
+    // here. The abstraction should be more symmetrically either exposed
+    // or hidden (e.g. it could probably be hidden in the same
+    // (platform-dependent) methods where we do alternate stack
+    // maintenance work?)
+    thread->exit(false, JavaThread::jni_detach);
+  }
 
-  // XXX: Note that JavaThread::exit() call below removes the guards on the
-  // stack pages set up via enable_stack_{red,yellow}_zone() calls
-  // above in jni_AttachCurrentThread. Unfortunately, while the setting
-  // of the guards is visible in jni_AttachCurrentThread above,
-  // the removal of the guards is buried below in JavaThread::exit()
-  // here. The abstraction should be more symmetrically either exposed
-  // or hidden (e.g. it could probably be hidden in the same
-  // (platform-dependent) methods where we do alternate stack
-  // maintenance work?)
-  thread->exit(false, JavaThread::jni_detach);
   thread->smr_delete();
-
-  // Go to the execute mode, the initial state of the thread on creation.
-  // Use os interface as the thread is not a JavaThread anymore.
-  MACOS_AARCH64_ONLY(os::current_thread_enable_wx(WXExec));
 
   HOTSPOT_JNI_DETACHCURRENTTHREAD_RETURN(JNI_OK);
   return JNI_OK;

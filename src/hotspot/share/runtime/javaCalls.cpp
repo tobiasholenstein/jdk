@@ -71,6 +71,7 @@ JavaCallWrapper::JavaCallWrapper(const methodHandle& callee_method, Handle recei
   // After this, we are official in JavaCode. This needs to be done before we change any of the thread local
   // info, since we cannot find oops before the new information is set up completely.
   ThreadStateTransition::transition_from_vm(thread, _thread_in_Java, true /* check_asyncs */);
+  MACOS_AARCH64_ONLY(thread->enable_wx(WXExec));
 
   // Make sure to set the oop's after the thread transition - since we can block there. No one is GC'ing
   // the JavaCallWrapper before the entry frame is on the stack.
@@ -94,15 +95,12 @@ JavaCallWrapper::JavaCallWrapper(const methodHandle& callee_method, Handle recei
 
   debug_only(_thread->inc_java_call_counter());
   _thread->set_active_handles(new_handles);     // install new handle block and reset Java frame linkage
-
-  MACOS_AARCH64_ONLY(_thread->enable_wx(WXExec));
 }
 
 
 JavaCallWrapper::~JavaCallWrapper() {
   assert(_thread == JavaThread::current(), "must still be the same thread");
 
-  MACOS_AARCH64_ONLY(_thread->enable_wx(WXWrite));
 
   // restore previous handle block & Java frame linkage
   JNIHandleBlock *_old_handles = _thread->active_handles();
@@ -113,6 +111,7 @@ JavaCallWrapper::~JavaCallWrapper() {
   debug_only(_thread->dec_java_call_counter());
 
   // Old thread-local info. has been restored. We are not back in the VM.
+  MACOS_AARCH64_ONLY(_thread->enable_wx(WXWrite));
   ThreadStateTransition::transition_from_java(_thread, _thread_in_vm);
 
   // State has been restored now make the anchor frame visible for the profiler.

@@ -45,6 +45,7 @@ static void check_internal_types() {
     JavaThread* const jt = JavaThread::current();
     DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_native(jt));
     // can safepoint here
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::cast(jt)));
     ThreadInVMfromNative transition(jt);
     visible = JfrUpcalls::unhide_internal_types(jt);
   }
@@ -74,6 +75,7 @@ void JfrMetadataEvent::write(JfrChunkWriter& chunkwriter) {
   JavaThread* const jt = JavaThread::current();
   DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_native(jt));
   // can safepoint here
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::cast(jt)));
   ThreadInVMfromNative transition(jt);
   // header
   const int64_t metadata_offset = chunkwriter.reserve(sizeof(u4));

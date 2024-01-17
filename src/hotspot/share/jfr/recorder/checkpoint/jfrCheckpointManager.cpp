@@ -552,6 +552,7 @@ size_t JfrCheckpointManager::write_static_type_set(Thread* thread) {
 size_t JfrCheckpointManager::write_threads(JavaThread* thread) {
   assert(thread != nullptr, "invariant");
   // can safepoint here
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
   ThreadInVMfromNative transition(thread);
   ResourceMark rm(thread);
   HandleMark hm(thread);
@@ -579,6 +580,7 @@ void JfrCheckpointManager::clear_type_set() {
   JavaThread* thread = JavaThread::current();
   DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_native(thread));
   // can safepoint here
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
   ThreadInVMfromNative transition(thread);
   MutexLocker cld_lock(thread, ClassLoaderDataGraph_lock);
   // Marks leakp. Place prepare_type_set before writer construction.
@@ -603,6 +605,7 @@ void JfrCheckpointManager::write_type_set() {
     JavaThread* const thread = JavaThread::current();
     DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_native(thread));
     // can safepoint here
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
     ThreadInVMfromNative transition(thread);
     MutexLocker cld_lock(thread, ClassLoaderDataGraph_lock);
     // Marks leakp. Place prepare_type_set before writer construction.
@@ -646,6 +649,7 @@ size_t JfrCheckpointManager::flush_type_set() {
     Thread* const thread = Thread::current();
     if (thread->is_Java_thread()) {
       // can safepoint here
+      MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::cast(thread)));
       ThreadInVMfromNative transition(JavaThread::cast(thread));
       elements = ::flush_type_set(thread);
     } else {

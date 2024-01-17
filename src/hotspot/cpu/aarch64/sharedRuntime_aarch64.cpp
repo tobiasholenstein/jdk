@@ -49,6 +49,7 @@
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/signature.hpp"
 #include "runtime/stubRoutines.hpp"
+#include "runtime/threadWXSetters.inline.hpp"
 #include "runtime/vframeArray.hpp"
 #include "utilities/align.hpp"
 #include "utilities/formatBuffer.hpp"
@@ -1365,6 +1366,7 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
                                                 BasicType* in_sig_bt,
                                                 VMRegPair* in_regs,
                                                 BasicType ret_type) {
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, Thread::current()));
   if (method->is_continuation_native_intrinsic()) {
     int exception_offset = -1;
     OopMapSet* oop_maps = new OopMapSet();

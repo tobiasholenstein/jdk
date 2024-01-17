@@ -62,11 +62,13 @@ void* JfrIntrinsicSupport::write_checkpoint(JavaThread* jt) {
     // and suspended the thread. As part of taking a sample, it updated
     // the vthread object and the thread local "for us". We are good.
     DEBUG_ONLY(assert_epoch_identity(jt, current_epoch);)
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, jt));
     ThreadInVMfromJava transition(jt);
     return JfrJavaEventWriter::event_writer(jt);
   }
   const traceid vthread_tid = JfrThreadLocal::vthread_id(jt);
   // Transition before reading the epoch generation anew, now as _thread_in_vm. Can safepoint here.
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, jt));
   ThreadInVMfromJava transition(jt);
   JfrThreadLocal::set_vthread_epoch(jt, vthread_tid, ThreadIdAccess::current_epoch());
   return JfrJavaEventWriter::event_writer(jt);
@@ -74,12 +76,10 @@ void* JfrIntrinsicSupport::write_checkpoint(JavaThread* jt) {
 
 void* JfrIntrinsicSupport::return_lease(JavaThread* jt) {
   DEBUG_ONLY(assert_precondition(jt);)
-  ThreadStateTransition::transition_from_java(jt, _thread_in_native);
   assert(jt->jfr_thread_local()->has_java_event_writer(), "invariant");
   assert(jt->jfr_thread_local()->shelved_buffer() != nullptr, "invariant");
   JfrJavaEventWriter::flush(jt->jfr_thread_local()->java_event_writer(), 0, 0, jt);
   assert(jt->jfr_thread_local()->shelved_buffer() == nullptr, "invariant");
-  ThreadStateTransition::transition_from_native(jt, _thread_in_Java);
   return nullptr;
 }
 
