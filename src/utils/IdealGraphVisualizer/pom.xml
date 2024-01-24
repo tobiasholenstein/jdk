@@ -41,25 +41,25 @@
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-api-visual</artifactId>
-            <version>RELEASE150</version>
+            <version>${netbeans.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-nodes</artifactId>
-            <version>RELEASE150</version>
+            <version>${netbeans.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-explorer</artifactId>
-            <version>RELEASE150</version>
+            <version>${netbeans.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-loaders</artifactId>
-            <version>RELEASE150</version>
+            <version>${netbeans.version}</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
