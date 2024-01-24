@@ -50,6 +50,14 @@ public class LayoutLayer extends ArrayList<LayoutNode> {
     public void swap(int i, int j) {
         LayoutNode n1 = get(i);
         LayoutNode n2 = get(j);
+        int x1 = n1.getX();
+        int x2 = n2.getX();
+        n1.setX(x2);
+        n2.setX(x1);
+        int p1 = n1.getPos();
+        int p2 = n2.getPos();
+        n1.setPos(p2);
+        n2.setPos(p1);
         set(j, n1);
         set(i, n2);
     }
