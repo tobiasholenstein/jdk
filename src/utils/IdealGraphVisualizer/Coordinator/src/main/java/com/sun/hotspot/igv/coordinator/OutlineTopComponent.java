@@ -59,6 +59,7 @@ import org.openide.awt.ToolbarPool;
 import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.BeanTreeView;
+import org.openide.modules.Places;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
@@ -291,10 +292,15 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         super.readExternal(in);
         ((BeanTreeView) this.treeView).setRootVisible(false);
 
-        int pathCount = in.readInt();
-        for (int i = 0; i < pathCount; i++) {
-            String path = in.readUTF();
-            loadFile(path);
+        String igvSettingsPath = getSettingsDocument();
+        if (!igvSettingsPath.isEmpty()) {
+            try {
+                loadFile(igvSettingsPath);
+            } catch (IOException ex) {
+                return;
+            }
+        } else {
+            return;
         }
 
         final GraphViewer viewer = Lookup.getDefault().lookup(GraphViewer.class);
@@ -339,26 +345,27 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
 
             });
-
-
         }
+    }
+
+    private String getSettingsDocument() {
+        String igvSettingsPath = Places.getUserDirectory().getAbsolutePath();
+        if (!igvSettingsPath.isEmpty()) {
+            igvSettingsPath += "/document.xml";
+        }
+        return igvSettingsPath;
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        Set<String> allPaths = new HashSet<>();
-        for (FolderElement e : document.getElements()) {
-            String path = e.getPath();
-            assert path != null;
-            allPaths.add(path);
-        }
-
-        int pathCount = allPaths.size();
-        out.writeInt(pathCount);
-        for (String path : allPaths) {
-            out.writeUTF(path);
+        String igvSettingsPath = getSettingsDocument();
+        if (!igvSettingsPath.isEmpty()) {
+            File file = new File(igvSettingsPath);
+            SaveAsAction.export(file, getDocument());
+        } else {
+            return;
         }
 
         List<EditorTopComponent> editorTabs = new ArrayList<>();
@@ -383,7 +390,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                 InputGraph secondGraph = model.getSecondGraph();
                 out.writeUTF(firstGraph.getPath());
                 out.writeUTF(secondGraph.getPath());
-
             } else {
                 InputGraph graph = model.getGraph();
                 out.writeUTF(graph.getPath());
@@ -393,16 +399,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             out.writeInt(hiddenNodeCount);
             for (int hiddenNodeID : model.getHiddenNodes()) {
                 out.writeInt(hiddenNodeID);
-            }
-
-            boolean saveLayout = model.getShowSea();
-            //out.writeBoolean(saveLayout);
-            if (saveLayout) {
-                // TODO
-                //model.getDiagram().getFigures().get(0).getPosition()
-
-                //link.setControlPoints(points);
-                //vertex.setPosition(point);
             }
         }
     }

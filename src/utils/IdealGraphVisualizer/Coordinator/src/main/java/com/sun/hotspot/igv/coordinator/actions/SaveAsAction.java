@@ -84,14 +84,19 @@ public final class SaveAsAction extends NodeAction {
                 dir = dir.getParentFile();
             }
             Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
-            try {
-                try (Writer writer = new OutputStreamWriter(Files.newOutputStream(file.toPath()))) {
-                    Printer p = new Printer();
-                    p.export(writer, doc);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+
+            export(file, doc);
+        }
+    }
+
+    public static void export(File file, GraphDocument doc) {
+        try {
+            try (Writer writer = new OutputStreamWriter(Files.newOutputStream(file.toPath()))) {
+                Printer p = new Printer();
+                p.export(writer, doc);
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
