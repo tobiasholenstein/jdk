@@ -102,9 +102,7 @@
         <module>SelectionCoordinator</module>
         <module>Graph</module>
         <module>HierarchicalLayout</module>
-        <module>ControlFlow</module>
         <module>Filter</module>
-        <module>Bytecodes</module>
         <module>ServerCompiler</module>
         <module>FilterWindow</module>
         <module>View</module>
