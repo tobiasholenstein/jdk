@@ -52,8 +52,6 @@ public interface DiagramViewer {
 
     Lookup getLookup();
 
-    JComponent createSatelliteView();
-
     Component getComponent();
 
     double getZoomMinFactor();
