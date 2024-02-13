@@ -1,0 +1,11 @@
+.keyword {
+    -fx-fill: blue;
+}
+
+.comment {
+    -fx-fill: green;
+}
+
+.string {
+    -fx-fill: orange;
+}
