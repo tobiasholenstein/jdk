@@ -43,6 +43,16 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-maven-plugin</artifactId>
+                    <version>${javafx.maven.plugin.version}</version>
+                    <configuration>
+                        <jlinkImageName>hellofx</jlinkImageName>
+                        <launcher>launcher</launcher>
+                        <mainClass>hellofx/org.openjfx.App</mainClass>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>nbm-maven-plugin</artifactId>
                     <version>${nbmmvnplugin.version}</version>
@@ -108,6 +118,8 @@
         <module>View</module>
     </modules>
     <properties>
+        <javafx.version>21</javafx.version>
+        <javafx.maven.plugin.version>0.0.8</javafx.maven.plugin.version>
         <netbeans.version>RELEASE200</netbeans.version>
         <swinglayouts.version>1.0.2</swinglayouts.version>
         <nbmmvnplugin.version>3.7</nbmmvnplugin.version>
