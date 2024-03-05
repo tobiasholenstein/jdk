@@ -35,8 +35,8 @@ import java.util.List;
  */
 public class HierarchicalClusterLayoutManager extends LayoutManager {
 
-    private final LayoutManager subManager;
-    private final LayoutManager manager;
+    private final NewHierarchicalLayoutManager subManager;
+    private final NewHierarchicalLayoutManager manager;
 
     public HierarchicalClusterLayoutManager() {
         this.manager =  new NewHierarchicalLayoutManager();

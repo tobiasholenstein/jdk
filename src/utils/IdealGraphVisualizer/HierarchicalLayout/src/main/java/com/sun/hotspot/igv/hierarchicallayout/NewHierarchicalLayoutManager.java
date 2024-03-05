@@ -29,11 +29,18 @@ import com.sun.hotspot.igv.layout.LayoutManager;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
 import com.sun.hotspot.igv.util.Statistics;
+import java.awt.Font;
 import java.awt.Point;
 import java.util.*;
 
 
-public class NewHierarchicalLayoutManager extends LayoutManager  {
+public class NewHierarchicalLayoutManager  {
+
+    public static final int SWEEP_ITERATIONS = 1;
+    public static final int CROSSING_ITERATIONS = 2;
+    public static final int NODE_OFFSET = 8;
+    public static final int LAYER_OFFSET = 8;
+    public static final double SCALE_LAYER_PADDING = 1.5;
 
     private final boolean combine;
 

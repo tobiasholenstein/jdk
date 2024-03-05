@@ -35,7 +35,7 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
     // Lays out nodes within a single cluster (basic block).
     private LayoutManager subManager;
     // Lays out clusters in the CFG.
-    private final LayoutManager manager;
+    private final NewHierarchicalLayoutManager manager;
     private Set<Cluster> clusters;
 
     public HierarchicalCFGLayoutManager() {
