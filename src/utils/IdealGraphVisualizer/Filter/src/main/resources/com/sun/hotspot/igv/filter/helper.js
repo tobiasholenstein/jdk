@@ -214,9 +214,3 @@ function removeEmptySlots(selector) {
     new RemoveEmptySlotsFilter("", selector).apply(graph);
 }
 
-// Remove the selected block.
-function removeBlock(selector) {
-    var f = new RemoveBlockFilter("");
-    f.addRule(new RemoveBlockFilter.RemoveBlockRule(selector));
-    f.apply(graph);
-}

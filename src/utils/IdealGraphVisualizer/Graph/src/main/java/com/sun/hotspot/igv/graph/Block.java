@@ -25,7 +25,6 @@ package com.sun.hotspot.igv.graph;
 
 import com.sun.hotspot.igv.data.InputBlock;
 import com.sun.hotspot.igv.layout.Cluster;
-import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.util.HashSet;
 import java.util.Set;
@@ -37,39 +36,13 @@ import java.util.Set;
 public class Block implements Cluster {
 
     private final InputBlock inputBlock;
-    private Rectangle bounds;
-    private final Diagram diagram;
 
     public Block(InputBlock inputBlock, Diagram diagram) {
         this.inputBlock = inputBlock;
-        this.diagram = diagram;
     }
 
     public InputBlock getInputBlock() {
         return inputBlock;
-    }
-
-    public Set<? extends Cluster> getSuccessors() {
-        Set<Block> succs = new HashSet<Block>();
-        for (InputBlock b : inputBlock.getSuccessors()) {
-            if (diagram.hasBlock(b)) {
-                succs.add(diagram.getBlock(b));
-            }
-        }
-        return succs;
-    }
-
-    @Override
-    public int getID() {
-        return inputBlock.getID();
-    }
-
-    public void setBounds(Rectangle r) {
-        this.bounds = r;
-    }
-
-    public Rectangle getBounds() {
-        return bounds;
     }
 
     public int compareTo(Cluster o) {

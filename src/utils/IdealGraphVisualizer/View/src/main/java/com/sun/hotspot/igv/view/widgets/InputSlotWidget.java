@@ -25,8 +25,7 @@ public class InputSlotWidget extends SlotWidget {
 
     @Override
     protected int yOffset() {
-        return getFigureWidget().getFigure().getDiagram().isCFG() ?
-            calculateClientArea().height / 2 : 0;
+        return 0;
     }
 
     @Override

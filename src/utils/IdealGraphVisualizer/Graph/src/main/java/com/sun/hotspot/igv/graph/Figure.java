@@ -64,7 +64,7 @@ public class Figure extends Properties.Entity implements Vertex {
     public int getSlotsHeight() {
         int slotHeight = 0;
         if (hasNamedInputSlot() || hasNamedOutputSlot()) {
-            slotHeight += diagram.isCFG() ? 2 * Slot.SLOT_HEIGHT : Slot.SLOT_HEIGHT;
+            slotHeight += Slot.SLOT_HEIGHT;
         }
         return slotHeight;
     }
@@ -157,14 +157,6 @@ public class Figure extends Properties.Entity implements Vertex {
 
     public String getWarning() {
         return warning;
-    }
-
-    public boolean hasInputList() {
-        return diagram.isCFG() && !getInputSlots().isEmpty();
-    }
-
-    public void setBlock(Block block) {
-        this.block = block;
     }
 
     public Block getBlock() {
@@ -311,44 +303,6 @@ public class Figure extends Properties.Entity implements Vertex {
 
         for (String string : strings) {
             result.add(getProperties().resolveString(string));
-        }
-
-        if (hasInputList()) {
-            String inputList = " ← ";
-            List<String> inputs = new ArrayList<>(getPredecessors().size());
-            for (InputSlot is : getInputSlots()) {
-                String inputLabel = null;
-                if (is.getConnections().isEmpty()) {
-                    if (is.hasSourceNodes() && is.shouldShowName()) {
-                        inputLabel = "[" + is.getShortName() + "]";
-                    } else {
-                        inputLabel = "_";
-                    }
-                } else {
-                    OutputSlot os = is.getConnections().get(0).getOutputSlot();
-                    Figure f = os.getFigure();
-                    String nodeTinyLabel = f.getProperties().resolveString(diagram.getTinyNodeText());
-                    if (os.hasSourceNodes() && os.shouldShowName()) {
-                        nodeTinyLabel += ":" + os.getShortName();
-                    }
-                    inputLabel = nodeTinyLabel;
-                }
-                int gapSize = is.gapSize();
-                if (gapSize == 1) {
-                    inputs.add("_");
-                } else if (gapSize > 1) {
-                    inputs.add("…");
-                }
-                inputs.add(inputLabel);
-            }
-            inputList += String.join("  ", inputs);
-            if (result.size() == 1) {
-                // Single-line node, append input list to line.
-                result.set(0, result.get(0) + inputList);
-            } else {
-                // Multi-line node, add yet another line for input list.
-                result.add(inputList);
-            }
         }
 
         String extraLabel = getProperties().get("extra_label");

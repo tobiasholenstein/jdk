@@ -32,21 +32,13 @@ import com.sun.hotspot.igv.view.DiagramScene;
  */
 public class OutputSlotWidget extends SlotWidget {
 
-    private final OutputSlot outputSlot;
-
     public OutputSlotWidget(OutputSlot slot, DiagramScene scene, FigureWidget fw) {
         super(slot, scene, fw);
-        outputSlot = slot;
-    }
-
-    public OutputSlot getOutputSlot() {
-        return outputSlot;
     }
 
     @Override
     protected int yOffset() {
-        int overlap = getFigureWidget().getFigure().getDiagram().isCFG() ?
-            calculateClientArea().height / 2 : 0;
+        int overlap = 0;
         return getFigureWidget().getFigureHeight() - overlap;
     }
 }

@@ -32,10 +32,4 @@ import java.util.Set;
  * @author Thomas Wuerthinger
  */
 public interface Cluster extends Comparable<Cluster> {
-
-    void setBounds(Rectangle r);
-
-    Set<? extends Cluster> getSuccessors();
-
-    int getID();
 }
