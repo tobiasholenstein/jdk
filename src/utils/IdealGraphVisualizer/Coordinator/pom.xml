@@ -155,7 +155,6 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>${mvnjarplugin.version}</version>
                 <configuration>
-                    <!-- to have the jar plugin pickup the nbm generated manifest -->
                     <archive>
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
