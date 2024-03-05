@@ -45,15 +45,6 @@ public class RangeSliderModel implements ChangedEventProvider<RangeSliderModel> 
     private int secondPosition;
     private List<Color> colors;
 
-    public RangeSliderModel(RangeSliderModel model) {
-        firstPosition = model.getFirstPosition();
-        secondPosition = model.getSecondPosition();
-        changedEvent = new ChangedEvent<>(this);
-        colorChangedEvent = new ChangedEvent<>(this);
-        positions = new ArrayList<>(model.getPositions());
-        colors = new ArrayList<>(model.getColors());
-    }
-
     public RangeSliderModel() {
         firstPosition = -1;
         secondPosition = -1;

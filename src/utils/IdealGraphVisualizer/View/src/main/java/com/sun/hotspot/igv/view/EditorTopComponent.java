@@ -37,7 +37,7 @@ public final class EditorTopComponent extends TopComponent {
 
         setDisplayName(diagramViewModel.getGraph().getDisplayName());
 
-        getModel().setShowSea(true);
+        getModel().setShowSea();
 
         add(scene.getComponent(), BorderLayout.CENTER);
         Toolbar toolBar = new Toolbar();

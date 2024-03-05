@@ -293,40 +293,7 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         }
     }
 
-    public static void build(JPopupMenu menu, Figure figure, FigureWidget figureWidget, boolean successors, DiagramScene diagramScene) {
-        Set<Figure> set = figure.getPredecessorSet();
-        if (successors) {
-            set = figure.getSuccessorSet();
-        }
-
-        boolean first = true;
-        for (Figure f : set) {
-            if (f == figure) {
-                continue;
-            }
-
-            if (first) {
-                first = false;
-            } else {
-                menu.addSeparator();
-            }
-
-            Action go = diagramScene.createGotoAction(f);
-            menu.add(go);
-
-            JMenu preds = new JMenu("Nodes Above");
-            preds.addMenuListener(figureWidget.new NeighborMenuListener(preds, f, false));
-            menu.add(preds);
-
-            JMenu succs = new JMenu("Nodes Below");
-            succs.addMenuListener(figureWidget.new NeighborMenuListener(succs, f, true));
-            menu.add(succs);
-        }
-
-        if (figure.getPredecessorSet().isEmpty() && figure.getSuccessorSet().isEmpty()) {
-            menu.add("(none)");
-        }
-    }
+    public static void build(JPopupMenu menu, Figure figure, FigureWidget figureWidget, boolean successors, DiagramScene diagramScene) {}
 
     /**
      * Builds the submenu for a figure's neighbors on demand.

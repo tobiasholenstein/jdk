@@ -48,11 +48,7 @@ public class ShowEmptyBlocksAction extends AbstractAction implements PropertyCha
 
     @Override
     public void actionPerformed(ActionEvent ev) {
-        this.selected = isSelected();
-        EditorTopComponent editor = EditorTopComponent.getActive();
-        if (editor != null) {
-            editor.getModel().setShowEmptyBlocks(this.selected);
-        }
+
     }
 
     protected String iconResource() {

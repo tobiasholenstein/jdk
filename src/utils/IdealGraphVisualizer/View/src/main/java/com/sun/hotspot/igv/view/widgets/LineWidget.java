@@ -329,39 +329,7 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
 
     @Override
     public JPopupMenu getPopupMenu(Widget widget, Point localLocation) {
-        JPopupMenu menu = new JPopupMenu();
-        if (outputSlot == null) { // One-to-one block line.
-            assert (connections.size() == 1);
-            Connection c = connections.get(0);
-            menu.add(scene.createGotoAction((Block)c.getFromCluster()));
-            menu.addSeparator();
-            menu.add(scene.createGotoAction((Block)c.getToCluster()));
-        } else { // One-to-many figure line.
-            menu.add(scene.createGotoAction(outputSlot.getFigure()));
-            menu.addSeparator();
-            for (Connection c : connections) {
-                menu.add(scene.createGotoAction((Figure)c.getTo().getVertex()));
-            }
-        }
-        final LineWidget w = this;
-        menu.addPopupMenuListener(new PopupMenuListener() {
-
-            @Override
-            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-                w.setRecursivePopupVisible(true);
-            }
-
-            @Override
-            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-                w.setRecursivePopupVisible(false);
-            }
-
-            @Override
-            public void popupMenuCanceled(PopupMenuEvent e) {
-            }
-        });
-
-        return menu;
+        return new JPopupMenu();
     }
 
     @Override

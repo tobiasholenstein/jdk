@@ -24,25 +24,18 @@
  */
 package com.sun.hotspot.igv.view;
 
-import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.data.*;
-import com.sun.hotspot.igv.data.services.Scheduler;
-import com.sun.hotspot.igv.filter.ColorFilter;
 import com.sun.hotspot.igv.filter.FilterChain;
 import com.sun.hotspot.igv.filter.FilterChainProvider;
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
-import com.sun.hotspot.igv.graph.MatcherSelector;
 import com.sun.hotspot.igv.settings.Settings;
 import com.sun.hotspot.igv.util.RangeSliderModel;
 import java.awt.Color;
 import java.util.*;
 import org.openide.util.Lookup;
 
-/**
- *
- * @author Thomas Wuerthinger
- */
+
 public class DiagramViewModel extends RangeSliderModel implements ChangedListener<RangeSliderModel> {
 
     private final Group group;
@@ -58,14 +51,7 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
     private final ChangedEvent<DiagramViewModel> graphChangedEvent = new ChangedEvent<>(this);
     private final ChangedEvent<DiagramViewModel> selectedNodesChangedEvent = new ChangedEvent<>(this);
     private final ChangedEvent<DiagramViewModel> hiddenNodesChangedEvent = new ChangedEvent<>(this);
-    private ChangedListener<InputGraph> titleChangedListener = g -> {};
-    private boolean showStableSea;
-    private boolean showSea;
-    private boolean showBlocks;
-    private boolean showCFG;
     private boolean showNodeHull;
-    private boolean showEmptyBlocks;
-    private boolean hideDuplicates;
 
     private final ChangedListener<FilterChain> filterChainChangedListener = changedFilterChain -> {
         assert filterChain == changedFilterChain;
@@ -76,50 +62,10 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         return group;
     }
 
-    public boolean getShowStableSea() {
-        return showStableSea;
+    public void setShowSea() {
+        diagramChangedEvent.fire();
     }
 
-    public void setShowStableSea(boolean enable) {
-        showStableSea = enable;
-        if (enable) {
-            diagramChangedEvent.fire();
-        }
-    }
-
-    public boolean getShowSea() {
-        return showSea;
-    }
-
-    public void setShowSea(boolean enable) {
-        showSea = enable;
-        if (enable) {
-            diagramChangedEvent.fire();
-        }
-    }
-
-    public boolean getShowBlocks() {
-        return showBlocks;
-    }
-
-    public void setShowBlocks(boolean enable) {
-        showBlocks = enable;
-        if (enable) {
-            diagramChangedEvent.fire();
-        }
-    }
-
-    public boolean getShowCFG() {
-        return showCFG;
-    }
-
-    public void setShowCFG(boolean enable) {
-        showCFG = enable;
-        diagram.setCFG(enable);
-        if (enable) {
-            diagramChangedEvent.fire();
-        }
-    }
 
     public boolean getShowNodeHull() {
         return showNodeHull;
@@ -128,34 +74,6 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
     public void setShowNodeHull(boolean b) {
         showNodeHull = b;
         diagramChangedEvent.fire();
-    }
-
-    public boolean getShowEmptyBlocks() {
-        return showEmptyBlocks;
-    }
-
-    public void setShowEmptyBlocks(boolean b) {
-        showEmptyBlocks = b;
-        diagramChangedEvent.fire();
-    }
-
-    public void setHideDuplicates(boolean hideDuplicates) {
-        this.hideDuplicates = hideDuplicates;
-        InputGraph currentGraph = getFirstGraph();
-        if (hideDuplicates) {
-            // Back up to the unhidden equivalent graph
-            int index = graphs.indexOf(currentGraph);
-            while (graphs.get(index).getProperties().get("_isDuplicate") != null) {
-                index--;
-            }
-            currentGraph = graphs.get(index);
-        }
-        filterGraphs();
-        selectGraph(currentGraph);
-    }
-
-    public boolean getHideDuplicates() {
-        return hideDuplicates;
     }
 
     private void initGroup() {
@@ -173,33 +91,6 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         super.getChangedEvent().addListener(this);
     }
 
-    public DiagramViewModel(DiagramViewModel model) {
-        super(model);
-        group = model.getGroup();
-        initGroup();
-        graphs = new ArrayList<>(model.graphs);
-
-        // initialize the filters from a model
-        FilterChainProvider provider = Lookup.getDefault().lookup(FilterChainProvider.class);
-        assert provider != null;
-        customFilterChain = provider.createNewCustomFilterChain();
-        customFilterChain.clearFilters();
-        customFilterChain.addFilters(model.getCustomFilterChain().getFilters());
-        setFilterChain(model.getFilterChain());
-        filtersOrder = provider.getAllFiltersOrdered();
-
-        showCFG = model.getShowCFG();
-        showSea = model.getShowSea();
-        showBlocks = model.getShowBlocks();
-        showNodeHull = model.getShowNodeHull();
-        showEmptyBlocks = model.getShowEmptyBlocks();
-        hideDuplicates = model.getHideDuplicates();
-
-        hiddenNodes = new HashSet<>(model.getHiddenNodes());
-        selectedNodes = new HashSet<>();
-        changed(this);
-    }
-
     public DiagramViewModel(InputGraph graph) {
         group = graph.getGroup();
         initGroup();
@@ -209,15 +100,7 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         customFilterChain = provider.createNewCustomFilterChain();
         setFilterChain(provider.getFilterChain());
         filtersOrder = provider.getAllFiltersOrdered();
-
-        showStableSea = Settings.get().getInt(Settings.DEFAULT_VIEW, Settings.DEFAULT_VIEW_DEFAULT) == Settings.DefaultView.STABLE_SEA_OF_NODES;
-        showSea = Settings.get().getInt(Settings.DEFAULT_VIEW, Settings.DEFAULT_VIEW_DEFAULT) == Settings.DefaultView.SEA_OF_NODES;
-        showBlocks = Settings.get().getInt(Settings.DEFAULT_VIEW, Settings.DEFAULT_VIEW_DEFAULT) == Settings.DefaultView.CLUSTERED_SEA_OF_NODES;
-        showCFG = Settings.get().getInt(Settings.DEFAULT_VIEW, Settings.DEFAULT_VIEW_DEFAULT) == Settings.DefaultView.CONTROL_FLOW_GRAPH;
         showNodeHull = true;
-        showEmptyBlocks = true;
-        hideDuplicates = false;
-
         hiddenNodes = new HashSet<>();
         selectedNodes = new HashSet<>();
         selectGraph(graph);
@@ -343,26 +226,11 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
     private void rebuildDiagram() {
         // clear diagram
         InputGraph graph = getGraph();
-        if (graph.getBlocks().isEmpty()) {
-            Scheduler s = Lookup.getDefault().lookup(Scheduler.class);
-            graph.clearBlocks();
-            s.schedule(graph);
-            graph.ensureNodesInBlocks();
-        }
         diagram = new Diagram(graph,
                 Settings.get().get(Settings.NODE_TEXT, Settings.NODE_TEXT_DEFAULT),
                 Settings.get().get(Settings.NODE_SHORT_TEXT, Settings.NODE_SHORT_TEXT_DEFAULT),
                 Settings.get().get(Settings.NODE_TINY_TEXT, Settings.NODE_TINY_TEXT_DEFAULT));
-        diagram.setCFG(getShowCFG());
         filterChain.applyInOrder(diagram, filtersOrder);
-        if (graph.isDiffGraph()) {
-            ColorFilter f = new ColorFilter("");
-            f.addRule(stateColorRule("same",    Color.white));
-            f.addRule(stateColorRule("changed", Color.orange));
-            f.addRule(stateColorRule("new",     Color.green));
-            f.addRule(stateColorRule("deleted", Color.red));
-            f.apply(diagram);
-        }
         diagramChangedEvent.fire();
     }
 
@@ -381,11 +249,8 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         ArrayList<InputGraph> result = new ArrayList<>();
         List<String> positions = new ArrayList<>();
         for (InputGraph graph : group.getGraphs()) {
-            String duplicate = graph.getProperties().get("_isDuplicate");
-            if (duplicate == null || !hideDuplicates) {
-                result.add(graph);
-                positions.add(graph.getName());
-            }
+            result.add(graph);
+            positions.add(graph.getName());
         }
         this.graphs = result;
         setPositions(positions);
@@ -406,17 +271,8 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
 
     public void selectGraph(InputGraph graph) {
         int index = graphs.indexOf(graph);
-        if (index == -1 && hideDuplicates) {
-            // A graph was selected that's currently hidden, so unhide and select it.
-            setHideDuplicates(false);
-            index = graphs.indexOf(graph);
-        }
         assert index != -1;
         setPositions(index, index);
-    }
-
-    private static ColorFilter.ColorRule stateColorRule(String state, Color color) {
-        return new ColorFilter.ColorRule(new MatcherSelector(new Properties.RegexpPropertyMatcher("state", state)), color);
     }
 
     public Diagram getDiagram() {

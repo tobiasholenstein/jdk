@@ -44,6 +44,5 @@ public class EnableCFGLayoutAction extends EnableLayoutAction {
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        editor.getModel().setShowCFG(this.isSelected());
     }
 }

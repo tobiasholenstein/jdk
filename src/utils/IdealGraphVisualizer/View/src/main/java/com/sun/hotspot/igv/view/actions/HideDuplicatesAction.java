@@ -44,11 +44,7 @@ public class HideDuplicatesAction extends AbstractAction {
 
     @Override
     public void actionPerformed(ActionEvent ev) {
-        EditorTopComponent editor = EditorTopComponent.getActive();
-        if (editor != null) {
-            boolean selected = (boolean)getValue(SELECTED_KEY);
-            editor.getModel().setHideDuplicates(selected);
-        }
+
     }
 
     protected String iconResource() {

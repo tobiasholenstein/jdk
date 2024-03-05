@@ -51,7 +51,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private final JScrollPane scrollPane;
     private UndoRedo.Manager undoRedoManager;
     private final LayerWidget mainLayer;
-    private final LayerWidget blockLayer;
     private final LayerWidget connectionLayer;
     private final Widget shadowWidget;
     private final Widget pointerWidget;
@@ -243,9 +242,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
         getActions().addAction(selectAction);
 
-        blockLayer = new LayerWidget(this);
-        addChild(blockLayer);
-
         shadowWidget = new Widget(DiagramScene.this);
         addChild(shadowWidget);
 
@@ -429,44 +425,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return model.getHiddenNodes().isEmpty();
     }
 
-    public Action createGotoAction(final Figure figure) {
-        String name = figure.getLines()[0];
-        name += " (";
-        if (figure.getCluster() != null) {
-            name += "B" + figure.getCluster().toString();
-        }
-        boolean isHidden = !getWidget(figure, FigureWidget.class).isVisible();
-        if (isHidden) {
-            if (figure.getCluster() != null) {
-                name += ", ";
-            }
-            name += "hidden";
-        }
-        name += ")";
-        Action action = new AbstractAction(name, new ColorIcon(figure.getColor())) {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                setFigureSelection(Collections.singleton(figure));
-                model.showFigures(model.getSelectedFigures());
-                centerSelectedFigures();
-            }
-        };
-
-        action.setEnabled(true);
-        return action;
-    }
-
-    public Action createGotoAction(final Block block) {
-        String name = "B" + block.getInputBlock().getName();
-        Action action = new AbstractAction(name) {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                gotoBlock(block);
-            }
-        };
-        action.setEnabled(true);
-        return action;
-    }
 
     private void clearObjects() {
         Collection<Object> objects = new ArrayList<>(getObjects());
@@ -479,25 +437,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         for (Figure figure : getModel().getDiagram().getFigures()) {
             // Update node text, since it might differ across views.
             figure.updateLines();
-        }
-    }
-
-    private void updateFigureWidths() {
-        if (getModel().getShowCFG()) {
-            Map<InputBlock, Integer> maxWidth = new HashMap<>();
-            for (InputBlock inputBlock : getModel().getDiagram().getInputBlocks()) {
-                maxWidth.put(inputBlock, 10);
-            }
-            for (Figure figure : getModel().getDiagram().getFigures()) {
-                // Compute max node width in each block.
-                if (figure.getWidth() > maxWidth.get(figure.getBlock().getInputBlock())) {
-                    maxWidth.put(figure.getBlock().getInputBlock(), figure.getWidth());
-                }
-            }
-            for (Figure figure : getModel().getDiagram().getFigures()) {
-                // Set all nodes' width to the maximum width in the blocks?
-                figure.setWidth(maxWidth.get(figure.getBlock().getInputBlock()));
-            }
         }
     }
 
@@ -537,7 +476,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                 @Override
                 public void movementStarted(Widget widget) {
-                    if (!getModel().getShowSea()) return;
                     widget.bringToFront();
                     startLayerY = widget.getLocation().y;
                     Set<Figure> selectedFigures = model.getSelectedFigures();
@@ -550,7 +488,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                 @Override
                 public void movementFinished(Widget widget) {
-                    if (!getModel().getShowSea()) return;
                     rebuilding = true;
 
                     Set<Figure> selectedFigures = model.getSelectedFigures();
@@ -590,9 +527,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                 @Override
                 public void setNewLocation(Widget widget, Point location) {
-                    if (!getModel().getShowSea()) return;
-                    //if (getModel().getShowCFG()) return;
-
                     int shiftX = location.x - widget.getLocation().x;
                     int shiftY = magnetToStartLayerY(widget, location);
 
@@ -660,26 +594,11 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
-    private void rebuildBlockLayer() {
-        blockLayer.removeChildren();
-        if (getModel().getShowBlocks() || getModel().getShowCFG()) {
-            for (InputBlock inputBlock : getModel().getDiagram().getInputBlocks()) {
-                BlockWidget blockWidget = new BlockWidget(this, inputBlock, LayoutManager.TITLE_FONT);
-                blockWidget.getActions().addAction(new DoubleClickAction(blockWidget));
-                blockWidget.setVisible(false);
-                addObject(inputBlock, blockWidget);
-                blockLayer.addChild(blockWidget);
-            }
-        }
-    }
-
     private void update() {
         rebuilding = true;
         clearObjects();
         updateFigureTexts();
-        updateFigureWidths();
         rebuildMainLayer();
-        rebuildBlockLayer();
         relayout();
         setFigureSelection(model.getSelectedFigures());
         validateAll();
@@ -725,34 +644,11 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return rebuilding;
     }
 
-    public boolean isVisibleBlockConnection(BlockConnection blockConnection) {
-        Widget w1 = getWidget(blockConnection.getFromCluster().getInputBlock());
-        Widget w2 = getWidget(blockConnection.getToCluster().getInputBlock());
-        return w1.isVisible() && w2.isVisible();
-    }
-
     private boolean isVisibleFigureConnection(FigureConnection figureConnection) {
-        // Generally, a connection is visible if its source and destination
-        // widgets are visible. An exception is Figure connections in the CFG
-        // view, which are never shown.
-        if (getModel().getShowCFG()) {
-            return false;
-        }
         Widget w1 = getWidget(figureConnection.getFrom().getVertex());
         Widget w2 = getWidget(figureConnection.getTo().getVertex());
         return w1.isVisible() && w2.isVisible();
     }
-
-    private void doStableSeaLayout(Set<Figure> visibleFigures, Set<Connection> visibleConnections) {}
-
-
-
-    private void doClusteredLayout(Set<Connection> edges) {}
-
-    private void doCFGLayout(Set<Figure> figures, Set<Connection> edges) {}
-
-    private final Point specialNullPoint = new Point(Integer.MAX_VALUE, Integer.MAX_VALUE);
-
 
 
     private void processOutputSlot(OutputSlot outputSlot, List<FigureConnection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
@@ -774,11 +670,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 List<Point> controlPoints = connection.getControlPoints();
                 if (controlPointIndex < controlPoints.size()) {
                     Point currentPoint = controlPoints.get(controlPointIndex);
-                    if (currentPoint == null) { // Long connection, has been cut vertically.
-                        currentPoint = specialNullPoint;
-                    } else {
-                        currentPoint = new Point(currentPoint.x, currentPoint.y);
-                    }
+                    currentPoint = new Point(currentPoint.x, currentPoint.y);
                     if (pointMap.containsKey(currentPoint)) {
                         pointMap.get(currentPoint).add(connection);
                     } else {
@@ -815,7 +707,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             }
 
             LineWidget newPredecessor = predecessor;
-            if (currentPoint != specialNullPoint && lastPoint != specialNullPoint && lastPoint != null) {
+            if (lastPoint != null) {
                 Point src = new Point(lastPoint);
                 Point dest = new Point(currentPoint);
                 newPredecessor = new LineWidget(this, outputSlot, connectionList, src, dest, predecessor, isBold, isDashed);
@@ -838,8 +730,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                     @Override
                     public void movementFinished(Widget widget) {
-                        if (!getModel().getShowSea()) return;
-
                         LineWidget lineWidget = (LineWidget) widget;
                         if (lineWidget.getPredecessor() == null) return;
                         if (lineWidget.getSuccessors().isEmpty()) return;
@@ -851,7 +741,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                         Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
                         boolean wasMoved = seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
                         rebuilding = true;
-                        Set<FigureWidget> oldVisibleFigureWidgets = getVisibleFigureWidgets();
                         seaLayoutManager.writeBack();
                         rebuildConnectionLayer();
                         updateFigureWidgetLocations();
@@ -870,8 +759,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
                     @Override
                     public void setNewLocation(Widget widget, Point location) {
-                        if (!getModel().getShowSea()) return;
-
                         LineWidget lineWidget = (LineWidget) widget;
                         if (lineWidget.getPredecessor() == null) return;
                         if (lineWidget.getSuccessors().isEmpty()) return;
@@ -908,29 +795,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
-    private void processBlockConnection(BlockConnection blockConnection) {
-        boolean isDashed = blockConnection.getStyle() == Connection.ConnectionStyle.DASHED;
-        boolean isBold = blockConnection.getStyle() == Connection.ConnectionStyle.BOLD;
-        boolean isVisible = blockConnection.getStyle() != Connection.ConnectionStyle.INVISIBLE;
-        Point lastPoint = null;
-        LineWidget predecessor = null;
-        for (Point currentPoint : blockConnection.getControlPoints()) {
-            if (currentPoint == null) { // Long connection, has been cut vertically.
-                currentPoint = specialNullPoint;
-            } else if (lastPoint != specialNullPoint && lastPoint != null) {
-                List<BlockConnection> connectionList = Collections.singletonList(blockConnection);
-                Point src = new Point(lastPoint);
-                Point dest = new Point(currentPoint);
-                predecessor = new LineWidget(this, null, connectionList, src, dest, predecessor, isBold, isDashed);
-                predecessor.setVisible(isVisible);
-                connectionLayer.addChild(predecessor);
-                addObject(new ConnectionSet(connectionList), predecessor);
-                predecessor.getActions().addAction(hoverAction);
-            }
-            lastPoint = currentPoint;
-        }
-    }
-
     @Override
     public void setInteractionMode(InteractionMode mode) {
         panAction.setEnabled(mode == InteractionMode.PANNING);
@@ -955,13 +819,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     @Override
     public Lookup getLookup() {
         return lookup;
-    }
-
-    private void gotoBlock(final Block block) {
-        BlockWidget bw = getWidget(block.getInputBlock());
-        if (bw != null) {
-            centerRectangle(bw.getBounds());
-        }
     }
 
     @Override
@@ -1075,14 +932,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 processOutputSlot(outputSlot, connectionList, 0, null, null);
             }
         }
-
-        if (getModel().getShowCFG()) {
-            for (BlockConnection blockConnection : getModel().getDiagram().getBlockConnections()) {
-                if (isVisibleBlockConnection(blockConnection)) {
-                    processBlockConnection(blockConnection);
-                }
-            }
-        }
     }
 
     private Set<FigureWidget> getVisibleFigureWidgets() {
@@ -1094,19 +943,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             }
         }
         return visibleFigureWidgets;
-    }
-
-    private Set<BlockWidget> getVisibleBlockWidgets() {
-        Set<BlockWidget> visibleBlockWidgets = new HashSet<>();
-        if (getModel().getShowBlocks() || getModel().getShowCFG()) {
-            for (InputBlock inputBlock : getModel().getDiagram().getInputBlocks()) {
-                BlockWidget blockWidget = getWidget(inputBlock);
-                if (blockWidget.isVisible()) {
-                    visibleBlockWidgets.add(blockWidget);
-                }
-            }
-        }
-        return visibleBlockWidgets;
     }
 
     private void updateVisibleFigureWidgets() {
@@ -1147,41 +983,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
-    private void updateVisibleBlockWidgets() {
-        if (getModel().getShowBlocks() || getModel().getShowCFG()) {
-            Set<InputBlock> visibleBlocks = new HashSet<>();
-            for (Figure figure : getModel().getDiagram().getFigures()) {
-                FigureWidget figureWidget = getWidget(figure);
-                if (figureWidget.isVisible()) {
-                    visibleBlocks.add(figure.getBlock().getInputBlock());
-                }
-            }
-            if (getModel().getShowCFG() && getModel().getShowEmptyBlocks()) {
-                // Add remaining blocks.
-                visibleBlocks.addAll(getModel().getDiagram().getInputBlocks());
-            }
-            if (getModel().getShowCFG()) {
-                // Blockless figures and artificial blocks are hidden in this view.
-                for (Figure figure : getModel().getDiagram().getFigures()) {
-                    if (figure.getBlock().getInputBlock().isArtificial()) {
-                        FigureWidget figureWidget = getWidget(figure);
-                        figureWidget.setVisible(false);
-                    }
-                }
-            }
-
-            for (InputBlock inputBlock : getModel().getDiagram().getInputBlocks()) {
-                // A block is visible if it is marked as such, except for
-                // artificial or null blocks in the CFG view.
-                boolean visibleAfter = visibleBlocks.contains(inputBlock) &&
-                        !(getModel().getShowCFG() && (inputBlock.isArtificial() || inputBlock.getNodes().isEmpty()));
-
-                BlockWidget blockWidget = getWidget(inputBlock);
-                blockWidget.setVisible(visibleAfter);
-            }
-        }
-    }
-
     private Set<Figure> getVisibleFigures() {
         HashSet<Figure> visibleFigures = new HashSet<>();
         for (Figure figure : getModel().getDiagram().getFigures()) {
@@ -1191,17 +992,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             }
         }
         return visibleFigures;
-    }
-
-    private Set<Cluster> getVisibleBlocks() {
-        Set<Cluster> visibleBlocks = new HashSet<>();
-        for (Block b : getModel().getDiagram().getBlocks()) {
-            BlockWidget w = getWidget(b.getInputBlock());
-            if (w.isVisible()) {
-                visibleBlocks.add(b);
-            }
-        }
-        return visibleBlocks;
     }
 
     private HashSet<Connection> getVisibleConnections() {
@@ -1261,7 +1051,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         rebuilding = true;
         updateVisibleFigureWidgets();
         updateNodeHull();
-        updateVisibleBlockWidgets();
 
         Set<Figure> visibleFigures = getVisibleFigures();
         Set<Connection> visibleConnections = getVisibleConnections();
