@@ -245,18 +245,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         addObjectSceneListener(selectionChangedListener, ObjectSceneEventType.OBJECT_SELECTION_CHANGED, ObjectSceneEventType.OBJECT_HIGHLIGHTING_CHANGED, ObjectSceneEventType.OBJECT_HOVER_CHANGED);
 
         model.getDiagramChangedEvent().addListener(m -> update());
-        model.getHiddenNodesChangedEvent().addListener(m -> hiddenNodesChanged());
-        scrollPane.addHierarchyBoundsListener(new HierarchyBoundsListener() {
-            @Override
-            public void ancestorMoved(HierarchyEvent e) {}
-
-            @Override
-            public void ancestorResized(HierarchyEvent e) {
-                if (scrollPane.getBounds().width > 0) {
-                    scrollPane.removeHierarchyBoundsListener(this);
-                }
-            }
-        });
+        model.getHiddenNodesChangedEvent().addListener(m -> relayout());
 
         seaLayoutManager = new HierarchicalLayoutManager();
 
@@ -407,10 +396,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     public void validateAll() {
         validate();
         scrollPane.validate();
-    }
-
-    private void hiddenNodesChanged() {
-        relayout();
     }
 
     private boolean isVisibleFigureConnection(FigureConnection figureConnection) {

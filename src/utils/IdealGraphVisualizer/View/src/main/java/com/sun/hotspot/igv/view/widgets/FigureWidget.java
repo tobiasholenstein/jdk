@@ -26,7 +26,6 @@ package com.sun.hotspot.igv.view.widgets;
 import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
-import com.sun.hotspot.igv.graph.Slot;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.util.PropertiesConverter;
@@ -38,15 +37,9 @@ import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-import javax.swing.Action;
 import javax.swing.BorderFactory;
-import javax.swing.JMenu;
-import javax.swing.JPopupMenu;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
-import javax.swing.event.MenuEvent;
-import javax.swing.event.MenuListener;
-import org.netbeans.api.visual.action.PopupMenuProvider;
 import org.netbeans.api.visual.action.WidgetAction;
 import org.netbeans.api.visual.layout.LayoutFactory;
 import org.netbeans.api.visual.layout.LayoutFactory.SerialAlignment;
@@ -290,44 +283,6 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
 
         if (boundary) {
             getScene().getGraphics().setComposite(oldComposite);
-        }
-    }
-
-    public static void build(JPopupMenu menu, Figure figure, FigureWidget figureWidget, boolean successors, DiagramScene diagramScene) {}
-
-    /**
-     * Builds the submenu for a figure's neighbors on demand.
-     */
-    public class NeighborMenuListener implements MenuListener {
-
-        private final JMenu menu;
-        private final Figure figure;
-        private final boolean successors;
-
-        public NeighborMenuListener(JMenu menu, Figure figure, boolean successors) {
-            this.menu = menu;
-            this.figure = figure;
-            this.successors = successors;
-        }
-
-        @Override
-        public void menuSelected(MenuEvent e) {
-            if (menu.getItemCount() > 0) {
-                // already built before
-                return;
-            }
-
-            build(menu.getPopupMenu(), figure, FigureWidget.this, successors, diagramScene);
-        }
-
-        @Override
-        public void menuDeselected(MenuEvent e) {
-            // ignore
-        }
-
-        @Override
-        public void menuCanceled(MenuEvent e) {
-            // ignore
         }
     }
 
