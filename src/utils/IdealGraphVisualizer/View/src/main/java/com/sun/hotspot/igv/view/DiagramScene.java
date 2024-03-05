@@ -16,10 +16,6 @@ import javax.swing.*;
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 import javax.swing.border.Border;
-import javax.swing.event.UndoableEditEvent;
-import javax.swing.undo.AbstractUndoableEdit;
-import javax.swing.undo.CannotRedoException;
-import javax.swing.undo.CannotUndoException;
 import org.netbeans.api.visual.action.*;
 import org.netbeans.api.visual.animator.AnimatorEvent;
 import org.netbeans.api.visual.animator.AnimatorListener;
@@ -33,20 +29,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     private final WidgetAction selectAction;
     private final JScrollPane scrollPane;
-    private UndoRedo.Manager undoRedoManager;
     private final LayerWidget mainLayer;
     private final LayerWidget connectionLayer;
-    private final Widget shadowWidget;
-    private final Widget pointerWidget;
     private final DiagramViewModel model;
-    private ModelState modelState;
     private boolean rebuilding;
     private final HierarchicalLayoutManager seaLayoutManager;
     public static final float ALPHA = 0.4f;
     public static final int BORDER_SIZE = 100;
-    public static final int UNDO_REDO_LIMIT = 100;
-    public static final int SCROLL_UNIT_INCREMENT = 80;
-    public static final int SCROLL_BLOCK_INCREMENT = 400;
     public static final float ZOOM_MAX_FACTOR = 4.0f;
     public static final float ZOOM_MIN_FACTOR = 0.25f;
     public static final float ZOOM_INCREMENT = 1.5f;
@@ -144,12 +133,12 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         centeringPanel.setOpaque(true);
         centeringPanel.add(viewComponent);
 
-        JScrollPane scrollPane = new JScrollPane(centeringPanel,  VERTICAL_SCROLLBAR_ALWAYS, HORIZONTAL_SCROLLBAR_ALWAYS);
+        JScrollPane scrollPane = new JScrollPane(centeringPanel, VERTICAL_SCROLLBAR_ALWAYS, HORIZONTAL_SCROLLBAR_ALWAYS);
         scrollPane.setBackground(Color.WHITE);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(SCROLL_UNIT_INCREMENT);
-        scrollPane.getVerticalScrollBar().setBlockIncrement(SCROLL_BLOCK_INCREMENT);
-        scrollPane.getHorizontalScrollBar().setUnitIncrement(SCROLL_UNIT_INCREMENT);
-        scrollPane.getHorizontalScrollBar().setBlockIncrement(SCROLL_BLOCK_INCREMENT);
+        //scrollPane.getVerticalScrollBar().setUnitIncrement(SCROLL_UNIT_INCREMENT);
+        //scrollPane.getVerticalScrollBar().setBlockIncrement(SCROLL_BLOCK_INCREMENT);
+        //scrollPane.getHorizontalScrollBar().setUnitIncrement(SCROLL_UNIT_INCREMENT);
+        //scrollPane.getHorizontalScrollBar().setBlockIncrement(SCROLL_BLOCK_INCREMENT);
         scrollPane.getViewport().setScrollMode(JViewport.BACKINGSTORE_SCROLL_MODE);
 
         // remove the default MouseWheelListener of the JScrollPane
@@ -210,17 +199,11 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
         getActions().addAction(selectAction);
 
-        shadowWidget = new Widget(DiagramScene.this);
-        addChild(shadowWidget);
-
         connectionLayer = new LayerWidget(this);
         addChild(connectionLayer);
 
         mainLayer = new LayerWidget(this);
         addChild(mainLayer);
-
-        pointerWidget = new Widget(DiagramScene.this);
-        addChild(pointerWidget);
 
         setBorder(BorderFactory.createLineBorder(Color.white, BORDER_SIZE));
         setLayout(LayoutFactory.createAbsoluteLayout());
@@ -262,7 +245,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         addObjectSceneListener(selectionChangedListener, ObjectSceneEventType.OBJECT_SELECTION_CHANGED, ObjectSceneEventType.OBJECT_HIGHLIGHTING_CHANGED, ObjectSceneEventType.OBJECT_HOVER_CHANGED);
 
         model.getDiagramChangedEvent().addListener(m -> update());
-        model.getGraphChangedEvent().addListener(m -> graphChanged());
         model.getHiddenNodesChangedEvent().addListener(m -> hiddenNodesChanged());
         scrollPane.addHierarchyBoundsListener(new HierarchyBoundsListener() {
             @Override
@@ -271,7 +253,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             @Override
             public void ancestorResized(HierarchyEvent e) {
                 if (scrollPane.getBounds().width > 0) {
-                    centerRootNode();
                     scrollPane.removeHierarchyBoundsListener(this);
                 }
             }
@@ -280,7 +261,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         seaLayoutManager = new HierarchicalLayoutManager();
 
         this.model = model;
-        modelState = new ModelState(model);
     }
 
     public DiagramViewModel getModel() {
@@ -303,13 +283,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
     }
 
-    private void updateFigureTexts() {
-        for (Figure figure : getModel().getDiagram().getFigures()) {
-            // Update node text, since it might differ across views.
-            figure.updateLines();
-        }
-    }
-
     private void rebuildMainLayer() {
         mainLayer.removeChildren();
         for (Figure figure : getModel().getDiagram().getFigures()) {
@@ -318,41 +291,12 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             figureWidget.getActions().addAction(selectAction);
             figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
 
-                private void setFigureShadow(Figure f) {
-                    FigureWidget fw = getWidget(f);
-                    Color c = f.getColor();
-                    Border border = new FigureWidget.RoundedBorder(new Color(0,0,0, 50), 1);
-                    shadowWidget.setBorder(border);
-                    shadowWidget.setBackground(new Color(c.getRed(), c.getGreen(), c.getBlue(), 50));
-                    shadowWidget.setPreferredLocation(fw.getPreferredLocation());
-                    shadowWidget.setPreferredBounds(fw.getPreferredBounds());
-                    shadowWidget.setVisible(true);
-                    shadowWidget.setOpaque(true);
-                    shadowWidget.revalidate();
-                    shadowWidget.repaint();
-                }
-
-                private void setMovePointer(Figure f) {
-                    Border border = new FigureWidget.RoundedBorder(Color.RED, 1);
-                    pointerWidget.setBorder(border);
-                    pointerWidget.setBackground(Color.RED);
-                    pointerWidget.setPreferredBounds(new Rectangle(0, 0, 3, shadowWidget.getPreferredBounds().height));
-                    pointerWidget.setVisible(false);
-                    pointerWidget.setOpaque(true);
-                }
-
                 private int startLayerY;
 
                 @Override
                 public void movementStarted(Widget widget) {
                     widget.bringToFront();
                     startLayerY = widget.getLocation().y;
-                    Set<Figure> selectedFigures = model.getSelectedFigures();
-                    if (selectedFigures.size() == 1) {
-                        Figure selectedFigure = selectedFigures.iterator().next();
-                        setFigureShadow(selectedFigure);
-                        setMovePointer(selectedFigure);
-                    }
                 }
 
                 @Override
@@ -368,10 +312,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                     rebuildConnectionLayer();
                     updateFigureWidgetLocations();
-                    shadowWidget.setVisible(false);
-                    pointerWidget.setVisible(false);
                     validateAll();
-                    addUndo();
                     rebuilding = false;
                 }
 
@@ -432,14 +373,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                         Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
                         ActionFactory.createDefaultMoveProvider().setNewLocation(fw, newLocation);
                     }
-
-                    if (selectedFigures.size() == 1) {
-                        FigureWidget fw = getWidget(selectedFigures.iterator().next());
-                        pointerWidget.setVisible(true);
-                        Point newLocation = new Point(fw.getLocation().x + shiftX -3, fw.getLocation().y + shiftY);
-                        ActionFactory.createDefaultMoveProvider().setNewLocation(pointerWidget, newLocation);
-                    }
-
                 }
             }));
             addObject(figure, figureWidget);
@@ -464,12 +397,10 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private void update() {
         rebuilding = true;
         clearObjects();
-        updateFigureTexts();
         rebuildMainLayer();
         relayout();
         setFigureSelection(model.getSelectedFigures());
         validateAll();
-        centerSelectedFigures();
         rebuilding = false;
     }
 
@@ -478,37 +409,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         scrollPane.validate();
     }
 
-    private void graphChanged() {
-        centerRootNode();
-        addUndo();
-    }
-
-    private void centerRootNode() {
-        if (getModel().getSelectedNodes().isEmpty()) {
-            Figure rootFigure = getModel().getDiagram().getRootFigure();
-            if (rootFigure != null) {
-                int rootId = rootFigure.getInputNode().getId();
-                if (!getModel().getHiddenNodes().contains(rootId)) {
-                    FigureWidget rootWidget = getWidget(rootFigure);
-                    if (rootWidget != null) {
-                        Rectangle bounds = rootWidget.getBounds();
-                        if (bounds != null) {
-                            Point location = rootWidget.getLocation();
-                            centerRectangle(new Rectangle(location.x, location.y, bounds.width, bounds.height));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     private void hiddenNodesChanged() {
         relayout();
-        addUndo();
-    }
-
-    protected boolean isRebuilding() {
-        return rebuilding;
     }
 
     private boolean isVisibleFigureConnection(FigureConnection figureConnection) {
@@ -605,15 +507,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                         if (shiftX == 0) return;
 
                         Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
-                        boolean wasMoved = seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
+                        seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
+
                         rebuilding = true;
                         seaLayoutManager.writeBack();
                         rebuildConnectionLayer();
                         updateFigureWidgetLocations();
                         validateAll();
-                        if (wasMoved) {
-                            addUndo();
-                        }
                         rebuilding = false;
                     }
 
@@ -698,78 +598,9 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         setSelectedObjects(Collections.emptySet());
     }
 
-    public void centerSelectedFigures() {
-        Set<Figure> selectedFigures = model.getSelectedFigures();
-        Rectangle overallRect = null;
-        for (Figure figure : selectedFigures) {
-            FigureWidget figureWidget = getWidget(figure);
-            if (figureWidget != null) {
-                Rectangle bounds = figureWidget.getBounds();
-                if (bounds != null) {
-                    Point location = figureWidget.getLocation();
-                    Rectangle figureRect = new Rectangle(location.x, location.y, bounds.width, bounds.height);
-                    if (overallRect == null) {
-                        overallRect = figureRect;
-                    } else {
-                        overallRect = overallRect.union(figureRect);
-                    }
-                }
-            }
-        }
-        if (overallRect != null) {
-            centerRectangle(overallRect);
-        }
-    }
-
-    private void centerRectangle(Rectangle r) {
-        Rectangle rect = convertSceneToView(r);
-        Rectangle viewRect = scrollPane.getViewport().getViewRect();
-
-        double factor = Math.min(viewRect.getWidth() / rect.getWidth(),  viewRect.getHeight() / rect.getHeight());
-        double zoomFactor = getZoomFactor();
-        double newZoomFactor = zoomFactor * factor;
-        if (factor < 1.0 || zoomFactor < 1.0) {
-            newZoomFactor = Math.min(1.0, newZoomFactor);
-            centredZoom(newZoomFactor, null);
-            factor = newZoomFactor / zoomFactor;
-            rect.x *= factor;
-            rect.y *= factor;
-            rect.width *= factor;
-            rect.height *= factor;
-        }
-        viewRect.x = rect.x + rect.width / 2 - viewRect.width / 2;
-        viewRect.y = rect.y + rect.height / 2 - viewRect.height / 2;
-        // Ensure to be within area
-        viewRect.x = Math.max(0, viewRect.x);
-        viewRect.x = Math.min(getView().getBounds().width - viewRect.width, viewRect.x);
-        viewRect.y = Math.max(0, viewRect.y);
-        viewRect.y = Math.min(getView().getBounds().height - viewRect.height, viewRect.y);
-        getView().scrollRectToVisible(viewRect);
-    }
-
     private void setFigureSelection(Set<Figure> list) {
         super.setSelectedObjects(new HashSet<>(list));
     }
-
-    public void resetUndoRedoManager() {
-        undoRedoManager = new UndoRedo.Manager();
-        undoRedoManager.setLimit(UNDO_REDO_LIMIT);
-    }
-
-    private UndoRedo.Manager getUndoRedoManager() {
-        if (undoRedoManager == null) {
-            resetUndoRedoManager();
-        }
-        return undoRedoManager;
-    }
-
-    public UndoRedo getUndoRedo() {
-        return getUndoRedoManager();
-    }
-
-    public void componentHidden() {}
-
-    public void componentShowing() {}
 
     private void rebuildConnectionLayer() {
         figureToOutLineWidget.clear();
@@ -781,17 +612,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 processOutputSlot(outputSlot, connectionList, 0, null, null);
             }
         }
-    }
-
-    private Set<FigureWidget> getVisibleFigureWidgets() {
-        Set<FigureWidget> visibleFigureWidgets = new HashSet<>();
-        for (Figure figure : getModel().getDiagram().getFigures()) {
-            FigureWidget figureWidget = getWidget(figure);
-            if (figureWidget != null && figureWidget.isVisible()) {
-                visibleFigureWidgets.add(figureWidget);
-            }
-        }
-        return visibleFigureWidgets;
     }
 
     private void updateVisibleFigureWidgets() {
@@ -862,37 +682,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
         }
     }
-
-    private void centerSingleSelectedFigure() {
-        if (model.getSelectedFigures().size() == 1) {
-            if (getSceneAnimator().getPreferredLocationAnimator().isRunning()) {
-                getSceneAnimator().getPreferredLocationAnimator().addAnimatorListener(new AnimatorListener() {
-                    @Override
-                    public void animatorStarted(AnimatorEvent animatorEvent) {}
-
-                    @Override
-                    public void animatorReset(AnimatorEvent animatorEvent) {}
-
-                    @Override
-                    public void animatorFinished(AnimatorEvent animatorEvent) {
-                        getSceneAnimator().getPreferredLocationAnimator().removeAnimatorListener(this);
-                    }
-
-                    @Override
-                    public void animatorPreTick(AnimatorEvent animatorEvent) {}
-
-                    @Override
-                    public void animatorPostTick(AnimatorEvent animatorEvent) {
-                        validateAll();
-                        centerSelectedFigures();
-                    }
-                });
-            } else {
-                centerSelectedFigures();
-            }
-        }
-    }
-
     Map<Figure, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
     Map<Figure, Set<LineWidget>> figureToInLineWidget = new HashMap<>();
 
@@ -909,69 +698,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         updateFigureWidgetLocations();
         validateAll();
 
-        centerSingleSelectedFigure();
         rebuilding = false;
-    }
-
-    private boolean undoRedoEnabled = true;
-
-    private static class DiagramUndoRedo extends AbstractUndoableEdit {
-
-        private final ModelState oldState;
-        private final ModelState newState;
-        private Point oldScrollPosition;
-        private Point newScrollPosition;
-        private final DiagramScene scene;
-
-        public DiagramUndoRedo(DiagramScene scene, Point oldScrollPosition, ModelState oldState, ModelState newState) {
-            assert oldState != null;
-            assert newState != null;
-            this.oldState = oldState;
-            this.newState = newState;
-            this.scene = scene;
-            this.oldScrollPosition = oldScrollPosition;
-        }
-
-        @Override
-        public void redo() throws CannotRedoException {
-            super.redo();
-            scene.undoRedoEnabled = false;
-            oldScrollPosition = scene.getScrollPosition();
-            scene.getModel().setHiddenNodes(newState.hiddenNodes);
-            scene.getModel().setPosition(newState.firstPos);
-            scene.setScrollPosition(newScrollPosition);
-            scene.undoRedoEnabled = true;
-        }
-
-        @Override
-        public void undo() throws CannotUndoException {
-            super.undo();
-            scene.undoRedoEnabled = false;
-            newScrollPosition = scene.getScrollPosition();
-            scene.getModel().setHiddenNodes(oldState.hiddenNodes);
-            scene.getModel().setPosition(oldState.firstPos);
-            scene.setScrollPosition(oldScrollPosition);
-            scene.undoRedoEnabled = true;
-        }
-    }
-
-    private static class ModelState {
-        public final Set<Integer> hiddenNodes;
-        public final int firstPos;
-
-
-        public ModelState(DiagramViewModel model) {
-            hiddenNodes = new HashSet<>(model.getHiddenNodes());
-            firstPos = model.getPosition();
-        }
-    }
-
-    private void addUndo() {
-        if (undoRedoEnabled) {
-            ModelState newModelState = new ModelState(model);
-            DiagramUndoRedo undoRedo = new DiagramUndoRedo(this, getScrollPosition(), modelState, newModelState);
-            getUndoRedoManager().undoableEditHappened(new UndoableEditEvent(this, undoRedo));
-            modelState = newModelState;
-        }
     }
 }

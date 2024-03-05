@@ -75,10 +75,6 @@ public final class EditorTopComponent extends TopComponent {
         scene.addSelectedNodes(nodes, showIfHidden);
     }
 
-    public void centerSelectedNodes() {
-        scene.centerSelectedFigures();
-    }
-
     public void clearSelectedNodes() {
         scene.clearSelectedNodes();
     }
@@ -110,13 +106,11 @@ public final class EditorTopComponent extends TopComponent {
     @Override
     protected void componentHidden() {
         super.componentHidden();
-        scene.componentHidden();
     }
 
     @Override
     protected void componentShowing() {
         super.componentShowing();
-        scene.componentShowing();
     }
 
     @Override
@@ -125,10 +119,6 @@ public final class EditorTopComponent extends TopComponent {
         scene.getComponent().requestFocus();
     }
 
-    @Override
-    public UndoRedo getUndoRedo() {
-        return scene.getUndoRedo();
-    }
 
     /** This method is called from within the constructor to
      * initialize the form.
