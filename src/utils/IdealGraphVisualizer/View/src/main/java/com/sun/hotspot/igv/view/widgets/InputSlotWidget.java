@@ -54,7 +54,8 @@ public class InputSlotWidget extends SlotWidget {
             if (index > 0) {
                 // Compute X coordinates of previous input slot comparing its
                 // calculateClientArea() with that of the current slot.
-                InputSlotWidget prevWidget = (InputSlotWidget)scene.findWidget(prevSlot);
+                InputSlotWidget prevWidget = (InputSlotWidget)scene.findSlotWidget(prevSlot);
+
                 int prevSlotWidth = prevWidget.calculateClientArea().width;
                 int xStartAbs = inputSlot.getRelativePosition().x - (slotWidth / 2);
                 int prevXStartAbs = prevSlot.getRelativePosition().x - (prevSlotWidth / 2);
@@ -81,7 +82,7 @@ public class InputSlotWidget extends SlotWidget {
         }
         for (FigureConnection c : slot.getConnections()) {
             Figure f = c.getOutputSlot().getFigure();
-            FigureWidget fw = (FigureWidget)scene.findWidget(f);
+            FigureWidget fw = scene.findFigureWidget(f);
             if (fw.isVisible()) {
                 return true;
             }
