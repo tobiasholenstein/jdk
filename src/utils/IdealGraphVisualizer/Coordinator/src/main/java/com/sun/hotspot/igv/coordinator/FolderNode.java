@@ -23,7 +23,6 @@
  */
 package com.sun.hotspot.igv.coordinator;
 
-import com.sun.hotspot.igv.coordinator.actions.RemoveCookie;
 import com.sun.hotspot.igv.data.*;
 import com.sun.hotspot.igv.util.PropertiesSheet;
 import com.sun.hotspot.igv.util.StringUtils;
@@ -32,7 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.swing.Action;
 import org.openide.actions.PropertiesAction;
-import org.openide.actions.RenameAction;
 import org.openide.nodes.*;
 import org.openide.util.ImageUtilities;
 import org.openide.util.lookup.AbstractLookup;
@@ -131,10 +129,6 @@ public class FolderNode extends AbstractNode {
         if (folder instanceof FolderElement) {
             final FolderElement folderElement = (FolderElement) folder;
             this.setDisplayName(folderElement.getName());
-            this.content.add((RemoveCookie) () -> {
-                children.destroyNodes(children.getNodes());
-                folderElement.getParent().removeElement(folderElement);
-            });
         }
     }
 
@@ -187,7 +181,6 @@ public class FolderNode extends AbstractNode {
     @Override
     public Action[] getActions(boolean b) {
         return new Action[]{
-                RenameAction.findObject(RenameAction.class, true),
                 PropertiesAction.findObject(PropertiesAction.class, true),
         };
     }

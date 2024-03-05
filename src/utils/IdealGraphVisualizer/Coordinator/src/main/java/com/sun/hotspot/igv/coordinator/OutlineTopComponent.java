@@ -103,37 +103,15 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
     private void initToolbar() {
         Toolbar toolbar = new Toolbar();
-        toolbar.setBorder((Border) UIManager.get("Nb.Editor.Toolbar.border")); //NOI18N
-        toolbar.setMinimumSize(new Dimension(0,0)); // MacOS BUG with ToolbarWithOverflow
-
-        this.add(toolbar, BorderLayout.NORTH);
-
         toolbar.add(ImportAction.get(ImportAction.class));
-        toolbar.add(SaveAsAction.get(SaveAsAction.class).createContextAwareInstance(this.getLookup()));
+        toolbar.add(SaveAllAction.get(SaveAllAction.class));
+        toolbar.add(RemoveAllAction.get(RemoveAllAction.class));
 
-        saveAllAction = SaveAllAction.get(SaveAllAction.class);
-        saveAllAction.setEnabled(false);
-        toolbar.add(saveAllAction);
-
-        toolbar.add(RemoveAction.get(RemoveAction.class).createContextAwareInstance(this.getLookup()));
-
-        removeAllAction = RemoveAllAction.get(RemoveAllAction.class);
-        removeAllAction.setEnabled(false);
-        toolbar.add(removeAllAction);
-
-        toolbar.add(GarbageCollectAction.get(GarbageCollectAction.class).getToolbarPresenter());
+        add(toolbar, BorderLayout.NORTH);
 
         for (Toolbar tb : ToolbarPool.getDefault().getToolbars()) {
             tb.setVisible(false);
         }
-
-        document.getChangedEvent().addListener(g -> documentChanged());
-    }
-
-    private void documentChanged() {
-        boolean enableButton = !document.getElements().isEmpty();
-        saveAllAction.setEnabled(enableButton);
-        removeAllAction.setEnabled(enableButton);
     }
 
     private void initReceivers() {
@@ -359,7 +337,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             return;
         }
         File file = new File(graphsPath);
-        SaveAsAction.export(file, getDocument());
+        SaveAllAction.export(file, getDocument());
 
         String openedPath = getOpenedPath();
         if (openedPath.isEmpty()) {

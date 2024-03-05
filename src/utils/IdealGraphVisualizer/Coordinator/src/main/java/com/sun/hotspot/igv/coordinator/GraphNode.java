@@ -32,7 +32,6 @@ import com.sun.hotspot.igv.util.StringUtils;
 import java.awt.Image;
 import javax.swing.Action;
 import org.openide.actions.OpenAction;
-import org.openide.actions.RenameAction;
 import org.openide.nodes.*;
 import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
@@ -101,12 +100,6 @@ public class GraphNode extends AbstractNode {
             // Action for opening the graph
             content.add(new GraphOpenCookie(viewer, graph));
         }
-
-        // Action for removing a graph
-        content.add(new GraphRemoveCookie(graph));
-
-        // Action for cloning to the current graph
-        content.add(new NewGraphTabCookie(viewer, graph));
     }
 
     @Override
@@ -137,8 +130,6 @@ public class GraphNode extends AbstractNode {
     @Override
     public Action[] getActions(boolean b) {
         return new Action[]{
-                RenameAction.findObject(RenameAction.class, true),
-                NewGraphTabAction.findObject(NewGraphTabAction.class, true),
                 OpenAction.findObject(OpenAction.class, true)
         };
     }
