@@ -21,7 +21,7 @@ import org.openide.windows.WindowManager;
 
 public final class EditorTopComponent extends TopComponent {
 
-    private final DiagramViewer scene;
+    private final DiagramScene scene;
     private final InstanceContent graphContent;
 
     public EditorTopComponent(InputGraph graph) {
@@ -61,9 +61,9 @@ public final class EditorTopComponent extends TopComponent {
 
     public void setSelectionMode(boolean enable) {
         if (enable) {
-            scene.setInteractionMode(DiagramViewer.InteractionMode.SELECTION);
+            scene.setInteractionMode(DiagramScene.InteractionMode.SELECTION);
         } else {
-            scene.setInteractionMode(DiagramViewer.InteractionMode.PANNING);
+            scene.setInteractionMode(DiagramScene.InteractionMode.PANNING);
         }
     }
 

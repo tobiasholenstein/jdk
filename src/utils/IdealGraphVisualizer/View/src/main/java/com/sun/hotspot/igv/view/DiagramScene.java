@@ -38,7 +38,15 @@ import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 
 
-public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleClickHandler {
+public class DiagramScene extends ObjectScene implements DoubleClickHandler {
+
+    enum InteractionMode {
+
+        SELECTION,
+
+        PANNING,
+
+    }
 
     private final CustomizablePanAction panAction;
     private final WidgetAction hoverAction;
@@ -96,22 +104,18 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return ZOOM_MAX_FACTOR;
     }
 
-    @Override
     public void zoomIn(Point zoomCenter, double factor) {
         centredZoom(getZoomFactor() * factor, zoomCenter);
     }
 
-    @Override
     public void zoomOut(Point zoomCenter, double factor) {
         centredZoom(getZoomFactor() / factor, zoomCenter);
     }
 
-    @Override
     public void setZoomPercentage(int percentage) {
         centredZoom((double)percentage / 100.0, null);
     }
 
-    @Override
     public int getZoomPercentage() {
         return (int) (getZoomFactor() * 100);
     }
@@ -143,10 +147,9 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         zoomChangedEvent.fire();
     }
 
-    private final ChangedEvent<DiagramViewer> zoomChangedEvent = new ChangedEvent<>(this);
+    private final ChangedEvent<DiagramScene> zoomChangedEvent = new ChangedEvent<>(this);
 
-    @Override
-    public ChangedEvent<DiagramViewer> getZoomChangedEvent() {
+    public ChangedEvent<DiagramScene> getZoomChangedEvent() {
         return zoomChangedEvent;
     }
 
@@ -408,12 +411,10 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         modelState = new ModelState(model);
     }
 
-    @Override
     public DiagramViewModel getModel() {
         return model;
     }
 
-    @Override
     public Component getComponent() {
         return scrollPane;
     }
@@ -792,7 +793,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
-    @Override
     public void setInteractionMode(InteractionMode mode) {
         panAction.setEnabled(mode == InteractionMode.PANNING);
         // When panAction is not enabled, it does not consume the event
@@ -818,7 +818,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return lookup;
     }
 
-    @Override
     public void addSelectedNodes(Collection<InputNode> nodes, boolean showIfHidden) {
         Set<Integer> nodeIds = new HashSet<>(model.getSelectedNodes());
         for (InputNode inputNode : nodes) {
@@ -836,12 +835,10 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         }
     }
 
-    @Override
     public void clearSelectedNodes() {
         setSelectedObjects(Collections.emptySet());
     }
 
-    @Override
     public void centerSelectedFigures() {
         Set<Figure> selectedFigures = model.getSelectedFigures();
         Rectangle overallRect = null;
@@ -895,7 +892,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         super.setSelectedObjects(new HashSet<>(list));
     }
 
-    @Override
     public void resetUndoRedoManager() {
         undoRedoManager = new UndoRedo.Manager();
         undoRedoManager.setLimit(UNDO_REDO_LIMIT);
@@ -908,15 +904,12 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return undoRedoManager;
     }
 
-    @Override
     public UndoRedo getUndoRedo() {
         return getUndoRedoManager();
     }
 
-    @Override
     public void componentHidden() {}
 
-    @Override
     public void componentShowing() {}
 
     private void rebuildConnectionLayer() {

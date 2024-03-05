@@ -24,7 +24,7 @@
 package com.sun.hotspot.igv.view.actions;
 
 import com.sun.hotspot.igv.data.ChangedListener;
-import com.sun.hotspot.igv.view.DiagramViewer;
+import com.sun.hotspot.igv.view.DiagramScene;
 import com.sun.hotspot.igv.view.EditorTopComponent;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
@@ -34,11 +34,11 @@ import javax.swing.JComboBox;
 import javax.swing.JTextField;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 
-public final class ZoomLevelAction extends JComboBox<String> implements ChangedListener<DiagramViewer> {
+public final class ZoomLevelAction extends JComboBox<String> implements ChangedListener<DiagramScene> {
 
     private static final String[] CHOICES = { "25%", "50%", "75%", "100%", "125%", "150%", "200%", "400%"};
 
-    private final DiagramViewer diagramScene;
+    private final DiagramScene diagramScene;
 
     boolean updateZoomInScene = true;
 
@@ -68,7 +68,7 @@ public final class ZoomLevelAction extends JComboBox<String> implements ChangedL
         }
     }
 
-    public ZoomLevelAction(DiagramViewer scene) {
+    public ZoomLevelAction(DiagramScene scene) {
         diagramScene = scene;
 
         setModel(new DefaultComboBoxModel<>(CHOICES));
@@ -92,7 +92,7 @@ public final class ZoomLevelAction extends JComboBox<String> implements ChangedL
     }
 
     @Override
-    public void changed(DiagramViewer diagramViewer) {
+    public void changed(DiagramScene diagramViewer) {
         updateZoomInScene = false;
         setZoomLevel(diagramViewer.getZoomPercentage());
         updateZoomInScene = true;
