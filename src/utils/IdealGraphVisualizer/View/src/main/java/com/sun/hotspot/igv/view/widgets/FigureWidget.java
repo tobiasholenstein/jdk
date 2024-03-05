@@ -288,7 +288,7 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
-        if (diagramScene.isAllVisible()) {
+        if (diagramScene. getModel().getHiddenNodes().isEmpty()) {
             final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getModel().getGroup().getAllNodes());
             hiddenNodes.remove(this.getFigure().getInputNode().getId());
             this.diagramScene.getModel().setHiddenNodes(hiddenNodes);
