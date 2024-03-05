@@ -70,6 +70,6 @@ public final class NextDiagramAction extends ModelAwareAction {
 
     @Override
     public boolean isEnabled(DiagramViewModel model) {
-        return model.getPosition() != model.getGroup().getGraphs().size()  - 1;
+        return true;
     }
 }

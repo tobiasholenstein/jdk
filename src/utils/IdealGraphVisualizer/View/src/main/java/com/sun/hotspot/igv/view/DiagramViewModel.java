@@ -22,7 +22,6 @@ public class DiagramViewModel {
     private int position = -1;
     private InputGraph inputGraph;
     private final ChangedEvent<DiagramViewModel> diagramChangedEvent = new ChangedEvent<>(this);
-    private final ChangedEvent<DiagramViewModel> graphChangedEvent = new ChangedEvent<>(this);
     private final ChangedEvent<DiagramViewModel> selectedNodesChangedEvent = new ChangedEvent<>(this);
     private final ChangedEvent<DiagramViewModel> hiddenNodesChangedEvent = new ChangedEvent<>(this);
     private boolean showNodeHull;
@@ -60,7 +59,6 @@ public class DiagramViewModel {
                 inputGraph = graphs.get(graphs.size() - 1);
             }
             rebuildDiagram();
-            graphChangedEvent.fire();
         }
     }
 
@@ -94,13 +92,6 @@ public class DiagramViewModel {
         return diagramChangedEvent;
     }
 
-    public ChangedEvent<DiagramViewModel> getGraphChangedEvent() {
-        return graphChangedEvent;
-    }
-
-    public ChangedEvent<DiagramViewModel> getSelectedNodesChangedEvent() {
-        return selectedNodesChangedEvent;
-    }
 
     public ChangedEvent<DiagramViewModel> getHiddenNodesChangedEvent() {
         return hiddenNodesChangedEvent;
@@ -170,10 +161,7 @@ public class DiagramViewModel {
         filterChain.getChangedEvent().removeListener(filterChainChangedListener);
     }
 
-
     public static final String NODE_TEXT_DEFAULT = "[idx] [name]";
-
-
 
     public static final String NODE_TINY_TEXT_DEFAULT = "[idx]";
 

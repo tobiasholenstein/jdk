@@ -71,6 +71,6 @@ public final class PrevDiagramAction extends ModelAwareAction {
 
     @Override
     public boolean isEnabled(DiagramViewModel model) {
-        return model.getPosition() != 0;
+        return true;
     }
 }

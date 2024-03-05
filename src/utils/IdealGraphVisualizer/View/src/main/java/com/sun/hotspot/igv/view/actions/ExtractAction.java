@@ -69,6 +69,6 @@ public final class ExtractAction extends ModelAwareAction {
 
     @Override
     public boolean isEnabled(DiagramViewModel model) {
-        return model != null && !model.getSelectedNodes().isEmpty();
+        return true;
     }
 }
