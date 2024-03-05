@@ -8,8 +8,6 @@ import com.sun.hotspot.igv.view.actions.*;
 import java.awt.*;
 import java.util.*;
 import javax.swing.*;
-import org.openide.actions.RedoAction;
-import org.openide.actions.UndoAction;
 import org.openide.awt.Toolbar;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
@@ -42,14 +40,10 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.add(HideAction.get(HideAction.class));
         toolBar.add(ShowAllAction.get(ShowAllAction.class));
         toolBar.add(new JToggleButton(new PredSuccAction(diagramViewModel.getShowNodeHull())));
-        toolBar.add(UndoAction.get(UndoAction.class));
-        toolBar.add(RedoAction.get(RedoAction.class));
-        toolBar.add(new ZoomLevelAction(scene));
         add(toolBar, BorderLayout.NORTH);
 
         setDisplayName(diagramViewModel.getGraph().getDisplayName());
     }
-
 
     public DiagramViewModel getModel() {
         return scene.getModel();

@@ -15,15 +15,11 @@ import java.util.*;
 import javax.swing.*;
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
-import javax.swing.border.Border;
 import org.netbeans.api.visual.action.*;
-import org.netbeans.api.visual.animator.AnimatorEvent;
-import org.netbeans.api.visual.animator.AnimatorListener;
 import org.netbeans.api.visual.layout.LayoutFactory;
 import org.netbeans.api.visual.model.*;
 import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
-import org.openide.awt.UndoRedo;
 
 public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
@@ -32,7 +28,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final LayerWidget mainLayer;
     private final LayerWidget connectionLayer;
     private final DiagramViewModel model;
-    private boolean rebuilding;
     private final HierarchicalLayoutManager seaLayoutManager;
     public static final float ALPHA = 0.4f;
     public static final int BORDER_SIZE = 100;
@@ -42,12 +37,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     @SuppressWarnings("unchecked")
     public <T> T getWidget(Object o) {
-        Widget w = findWidget(o);
-        return (T) w;
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> T getWidget(Object o, Class<T> klass) {
         Widget w = findWidget(o);
         return (T) w;
     }
@@ -75,10 +64,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         centredZoom((double)percentage / 100.0, null);
     }
 
-    public int getZoomPercentage() {
-        return (int) (getZoomFactor() * 100);
-    }
-
     private void centredZoom(double zoomFactor, Point zoomCenter) {
         zoomFactor = Math.max(zoomFactor, getZoomMinFactor());
         zoomFactor = Math.min(zoomFactor,  getZoomMaxFactor());
@@ -103,21 +88,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
         getView().scrollRectToVisible(visibleRect);
         validateAll();
-        zoomChangedEvent.fire();
-    }
-
-    private final ChangedEvent<DiagramScene> zoomChangedEvent = new ChangedEvent<>(this);
-
-    public ChangedEvent<DiagramScene> getZoomChangedEvent() {
-        return zoomChangedEvent;
-    }
-
-    private Point getScrollPosition() {
-        return scrollPane.getViewport().getViewPosition();
-    }
-
-    private void setScrollPosition(Point position) {
-        scrollPane.getViewport().setViewPosition(position);
     }
 
     private JScrollPane createScrollPane(MouseZoomAction mouseZoomAction) {
@@ -135,10 +105,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
         JScrollPane scrollPane = new JScrollPane(centeringPanel, VERTICAL_SCROLLBAR_ALWAYS, HORIZONTAL_SCROLLBAR_ALWAYS);
         scrollPane.setBackground(Color.WHITE);
-        //scrollPane.getVerticalScrollBar().setUnitIncrement(SCROLL_UNIT_INCREMENT);
-        //scrollPane.getVerticalScrollBar().setBlockIncrement(SCROLL_BLOCK_INCREMENT);
-        //scrollPane.getHorizontalScrollBar().setUnitIncrement(SCROLL_UNIT_INCREMENT);
-        //scrollPane.getHorizontalScrollBar().setBlockIncrement(SCROLL_BLOCK_INCREMENT);
         scrollPane.getViewport().setScrollMode(JViewport.BACKINGSTORE_SCROLL_MODE);
 
         // remove the default MouseWheelListener of the JScrollPane
@@ -153,9 +119,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     public DiagramScene(DiagramViewModel model) {
-        //content = new InstanceContent();
-        //lookup = new AbstractLookup(content);
-
         setCheckClipping(true);
 
         MouseZoomAction mouseZoomAction = new MouseZoomAction(this);
@@ -290,7 +253,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                 @Override
                 public void movementFinished(Widget widget) {
-                    rebuilding = true;
 
                     Set<Figure> selectedFigures = model.getSelectedFigures();
                     for (Figure figure : selectedFigures) {
@@ -302,7 +264,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     rebuildConnectionLayer();
                     updateFigureWidgetLocations();
                     validateAll();
-                    rebuilding = false;
                 }
 
                 private static final int MAGNET_SIZE = 5;
@@ -384,13 +345,11 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void update() {
-        rebuilding = true;
         clearObjects();
         rebuildMainLayer();
         relayout();
         setFigureSelection(model.getSelectedFigures());
         validateAll();
-        rebuilding = false;
     }
 
     public void validateAll() {
@@ -494,12 +453,10 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                         Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
                         seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
 
-                        rebuilding = true;
                         seaLayoutManager.writeBack();
                         rebuildConnectionLayer();
                         updateFigureWidgetLocations();
                         validateAll();
-                        rebuilding = false;
                     }
 
                     @Override
@@ -671,7 +628,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     Map<Figure, Set<LineWidget>> figureToInLineWidget = new HashMap<>();
 
     private void relayout() {
-        rebuilding = true;
         updateVisibleFigureWidgets();
         updateNodeHull();
 
@@ -683,6 +639,5 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         updateFigureWidgetLocations();
         validateAll();
 
-        rebuilding = false;
     }
 }
