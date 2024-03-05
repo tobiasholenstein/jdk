@@ -1,13 +1,11 @@
 package com.sun.hotspot.igv.view;
 
-import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.data.*;
 import com.sun.hotspot.igv.graph.*;
 import com.sun.hotspot.igv.hierarchicallayout.*;
 import com.sun.hotspot.igv.layout.LayoutGraph;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
-import com.sun.hotspot.igv.util.PropertiesSheet;
 import com.sun.hotspot.igv.view.actions.*;
 import com.sun.hotspot.igv.view.widgets.*;
 import java.awt.*;
@@ -30,29 +28,10 @@ import org.netbeans.api.visual.model.*;
 import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
 import org.openide.awt.UndoRedo;
-import org.openide.nodes.AbstractNode;
-import org.openide.nodes.Children;
-import org.openide.nodes.Sheet;
-import org.openide.util.Lookup;
-import org.openide.util.lookup.AbstractLookup;
-import org.openide.util.lookup.InstanceContent;
-
 
 public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
-    enum InteractionMode {
-
-        SELECTION,
-
-        PANNING,
-
-    }
-
-    private final CustomizablePanAction panAction;
-    private final WidgetAction hoverAction;
     private final WidgetAction selectAction;
-    private final Lookup lookup;
-    private final InstanceContent content;
     private final JScrollPane scrollPane;
     private UndoRedo.Manager undoRedoManager;
     private final LayerWidget mainLayer;
@@ -63,16 +42,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private ModelState modelState;
     private boolean rebuilding;
     private final HierarchicalLayoutManager seaLayoutManager;
-
-
-    /**
-     * The alpha level of partially visible figures.
-     */
     public static final float ALPHA = 0.4f;
-
-    /**
-     * The offset of the graph to the border of the window showing it.
-     */
     public static final int BORDER_SIZE = 100;
     public static final int UNDO_REDO_LIMIT = 100;
     public static final int SCROLL_UNIT_INCREMENT = 80;
@@ -194,20 +164,18 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     public DiagramScene(DiagramViewModel model) {
-        content = new InstanceContent();
-        lookup = new AbstractLookup(content);
+        //content = new InstanceContent();
+        //lookup = new AbstractLookup(content);
 
         setCheckClipping(true);
 
         MouseZoomAction mouseZoomAction = new MouseZoomAction(this);
         scrollPane = createScrollPane(mouseZoomAction);
 
-        hoverAction = createObjectHoverAction();
-
         // This panAction handles the event only when the left mouse button is
         // pressed without any modifier keys, otherwise it will not consume it
         // and the selection action (below) will handle the event
-        panAction = new CustomizablePanAction(MouseEvent.BUTTON1_DOWN_MASK);
+        CustomizablePanAction panAction = new CustomizablePanAction(MouseEvent.BUTTON1_DOWN_MASK);
         getActions().addAction(panAction);
 
         // handle default double-click, when not handled by other DoubleClickHandler
@@ -258,60 +226,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         setLayout(LayoutFactory.createAbsoluteLayout());
         getActions().addAction(mouseZoomAction);
 
-        LayerWidget selectLayer = new LayerWidget(this);
-        addChild(selectLayer);
-        RectangularSelectDecorator rectangularSelectDecorator = () -> {
-            Widget widget = new Widget(this);
-            widget.setBorder(BorderFactory.createLineBorder(Color.black, 2));
-            return widget;
-        };
-        RectangularSelectProvider rectangularSelectProvider = rectangle -> {
-            if (rectangle.width < 0) {
-                rectangle.x += rectangle.width;
-                rectangle.width *= -1;
-            }
-
-            if (rectangle.height < 0) {
-                rectangle.y += rectangle.height;
-                rectangle.height *= -1;
-            }
-
-            Set<Object> selectedObjects = new HashSet<>();
-            for (Figure f : getModel().getDiagram().getFigures()) {
-                FigureWidget w = getWidget(f);
-                if (w != null) {
-                    assert w.getBounds() != null;
-                    Rectangle r = new Rectangle(w.getBounds());
-                    r.setLocation(w.getLocation());
-
-                    if (r.intersects(rectangle)) {
-                        selectedObjects.add(f);
-                    }
-
-                    for (Slot s : f.getSlots()) {
-                        SlotWidget sw = getWidget(s);
-                        assert sw.getBounds() != null;
-                        Rectangle r2 = new Rectangle(sw.getBounds());
-                        r2.setLocation(sw.convertLocalToScene(new Point(0, 0)));
-
-                        if (r2.intersects(rectangle)) {
-                            selectedObjects.add(s);
-                        }
-                    }
-                } else {
-                    assert false : "w should not be null here!";
-                }
-            }
-
-            Set<Object> symmetricDiff = new HashSet<>(getSelectedObjects());
-            symmetricDiff.addAll(selectedObjects);
-            Set<Object> tmp = new HashSet<>(getSelectedObjects());
-            tmp.retainAll(selectedObjects);
-            symmetricDiff.removeAll(tmp);
-            setSelectedObjects(symmetricDiff);
-        };
-        getActions().addAction(ActionFactory.createRectangularSelectAction(rectangularSelectDecorator, selectLayer, rectangularSelectProvider));
-
         ObjectSceneListener selectionChangedListener = new ObjectSceneListener() {
 
             @Override
@@ -325,31 +239,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
             @Override
             public void selectionChanged(ObjectSceneEvent e, Set<Object> oldSet, Set<Object> newSet) {
-                DiagramScene scene = (DiagramScene) e.getObjectScene();
-                if (scene.isRebuilding()) {
-                    return;
-                }
-
-                content.set(newSet, null);
-
                 Set<Integer> nodeSelection = new HashSet<>();
                 for (Object o : newSet) {
-                    if (o instanceof Properties.Provider) {
-                        final Properties.Provider provider = (Properties.Provider) o;
-                        AbstractNode node = new AbstractNode(Children.LEAF) {
-
-                            @Override
-                            protected Sheet createSheet() {
-                                Sheet s = super.createSheet();
-                                PropertiesSheet.initializeSheet(provider.getProperties(), s);
-                                return s;
-                            }
-                        };
-                        node.setDisplayName(provider.getProperties().get("name"));
-                        content.add(node);
-                    }
-
-
                     if (o instanceof Figure) {
                         nodeSelection.add(((Figure) o).getInputNode().getId());
                     } else if (o instanceof Slot) {
@@ -360,32 +251,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
 
             @Override
-            public void highlightingChanged(ObjectSceneEvent e, Set<Object> oldSet, Set<Object> newSet) {
-                Set<Integer> nodeHighlighting = new HashSet<>();
-                for (Object o : newSet) {
-                    if (o instanceof Figure) {
-                        nodeHighlighting.add(((Figure) o).getInputNode().getId());
-                    } else if (o instanceof Slot) {
-                        nodeHighlighting.addAll(((Slot) o).getSource().getSourceNodesAsSet());
-                    }
-                }
-            }
+            public void highlightingChanged(ObjectSceneEvent e, Set<Object> oldSet, Set<Object> newSet) {}
 
             @Override
-            public void hoverChanged(ObjectSceneEvent e, Object oldObject, Object newObject) {
-                Set<Object> newHighlightedObjects = new HashSet<>(getHighlightedObjects());
-                if (oldObject != null) {
-                    newHighlightedObjects.remove(oldObject);
-                }
-                if (newObject != null) {
-                    newHighlightedObjects.add(newObject);
-                }
-                setHighlightedObjects(newHighlightedObjects);
-            }
+            public void hoverChanged(ObjectSceneEvent e, Object oldObject, Object newObject) {}
 
             @Override
-            public void focusChanged(ObjectSceneEvent arg0, Object arg1, Object arg2) {
-            }
+            public void focusChanged(ObjectSceneEvent arg0, Object arg1, Object arg2) {}
         };
         addObjectSceneListener(selectionChangedListener, ObjectSceneEventType.OBJECT_SELECTION_CHANGED, ObjectSceneEventType.OBJECT_HIGHLIGHTING_CHANGED, ObjectSceneEventType.OBJECT_HOVER_CHANGED);
 
@@ -444,7 +316,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             FigureWidget figureWidget = new FigureWidget(figure, this);
             figureWidget.setVisible(false);
             figureWidget.getActions().addAction(selectAction);
-            figureWidget.getActions().addAction(hoverAction);
             figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
 
                 private void setFigureShadow(Figure f) {
@@ -577,7 +448,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             for (InputSlot inputSlot : figure.getInputSlots()) {
                 SlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget);
                 slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
-                slotWidget.getActions().addAction(hoverAction);
                 slotWidget.getActions().addAction(selectAction);
                 addObject(inputSlot, slotWidget);
             }
@@ -585,7 +455,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
                 SlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget);
                 slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
-                slotWidget.getActions().addAction(hoverAction);
                 slotWidget.getActions().addAction(selectAction);
                 addObject(outputSlot, slotWidget);
             }
@@ -713,7 +582,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                 connectionLayer.addChild(newPredecessor);
                 addObject(new ConnectionSet(connectionList), newPredecessor);
-                newPredecessor.getActions().addAction(hoverAction);
                 newPredecessor.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
 
 
@@ -793,12 +661,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
     }
 
-    public void setInteractionMode(InteractionMode mode) {
-        panAction.setEnabled(mode == InteractionMode.PANNING);
-        // When panAction is not enabled, it does not consume the event
-        // and the selection action handles it instead
-    }
-
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
         clearSelectedNodes();
@@ -813,10 +675,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
     }
 
-    @Override
-    public Lookup getLookup() {
-        return lookup;
-    }
+
 
     public void addSelectedNodes(Collection<InputNode> nodes, boolean showIfHidden) {
         Set<Integer> nodeIds = new HashSet<>(model.getSelectedNodes());

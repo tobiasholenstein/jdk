@@ -49,7 +49,6 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.add(new JToggleButton(new PredSuccAction(diagramViewModel.getShowNodeHull())));
         toolBar.add(UndoAction.get(UndoAction.class));
         toolBar.add(RedoAction.get(RedoAction.class));
-        toolBar.add(new JToggleButton(new SelectionModeAction()));
         toolBar.add(new ZoomLevelAction(scene));
         add(toolBar, BorderLayout.NORTH);
     }
@@ -57,14 +56,6 @@ public final class EditorTopComponent extends TopComponent {
 
     public DiagramViewModel getModel() {
         return scene.getModel();
-    }
-
-    public void setSelectionMode(boolean enable) {
-        if (enable) {
-            scene.setInteractionMode(DiagramScene.InteractionMode.SELECTION);
-        } else {
-            scene.setInteractionMode(DiagramScene.InteractionMode.PANNING);
-        }
     }
 
     public void zoomOut() {
