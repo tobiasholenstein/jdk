@@ -25,33 +25,10 @@ package com.sun.hotspot.igv.view;
 
 import com.sun.hotspot.igv.data.InputGraph;
 import com.sun.hotspot.igv.data.services.GraphViewer;
-import com.sun.hotspot.igv.difference.Difference;
 import org.openide.util.lookup.ServiceProvider;
 
-/**
- *
- * @author Thomas Wuerthinger
- */
 @ServiceProvider(service=GraphViewer.class)
 public class GraphViewerImplementation implements GraphViewer {
-
-    @Override
-    public InputGraph viewDifference(InputGraph firstGraph, InputGraph secondGraph) {
-        if (firstGraph.getGroup() != secondGraph.getGroup()) {
-            InputGraph diffGraph = Difference.createDiffGraph(firstGraph, secondGraph);
-            return view(diffGraph, true);
-        } else {
-            if (view(firstGraph, true) != null) {
-                EditorTopComponent etc = EditorTopComponent.findEditorForGraph(firstGraph);
-                if (etc != null) {
-                    etc.getModel().selectDiffGraph(secondGraph);
-                    etc.requestActive();
-                    return etc.getModel().getGraph();
-                }
-            }
-            return null;
-        }
-    }
 
     @Override
     public InputGraph view(InputGraph graph, boolean newTab) {

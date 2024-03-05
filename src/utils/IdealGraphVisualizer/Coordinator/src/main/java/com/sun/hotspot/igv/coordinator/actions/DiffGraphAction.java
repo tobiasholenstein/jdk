@@ -37,9 +37,6 @@ public final class DiffGraphAction extends CookieAction {
 
     @Override
     protected void performAction(Node[] activatedNodes) {
-        DiffGraphCookie c = activatedNodes[0].getCookie(DiffGraphCookie.class);
-        assert c != null;
-        c.openDiff();
     }
 
     @Override
@@ -62,7 +59,7 @@ public final class DiffGraphAction extends CookieAction {
 
     @Override
     public String getName() {
-        return NbBundle.getMessage(DiffGraphAction.class, "CTL_DiffGraphAction");
+        return "";
     }
 
     @Override

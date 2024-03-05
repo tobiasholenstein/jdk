@@ -32,6 +32,4 @@ import com.sun.hotspot.igv.data.InputGraph;
 public interface GraphViewer {
 
     InputGraph view(InputGraph graph, boolean newTab);
-
-    InputGraph viewDifference(InputGraph firstGraph, InputGraph secondGraph);
 }

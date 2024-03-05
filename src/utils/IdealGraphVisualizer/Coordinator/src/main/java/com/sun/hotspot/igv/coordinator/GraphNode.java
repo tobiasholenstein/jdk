@@ -141,7 +141,6 @@ public class GraphNode extends AbstractNode {
     public Action[] getActions(boolean b) {
         return new Action[]{
                 RenameAction.findObject(RenameAction.class, true),
-                DiffGraphAction.findObject(DiffGraphAction.class, true),
                 NewGraphTabAction.findObject(NewGraphTabAction.class, true),
                 OpenAction.findObject(OpenAction.class, true)
         };

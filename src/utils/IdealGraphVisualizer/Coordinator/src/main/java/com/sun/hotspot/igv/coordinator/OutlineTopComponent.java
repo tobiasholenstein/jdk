@@ -26,7 +26,6 @@ package com.sun.hotspot.igv.coordinator;
 import com.sun.hotspot.igv.connection.Server;
 import com.sun.hotspot.igv.coordinator.actions.*;
 import com.sun.hotspot.igv.data.*;
-import com.sun.hotspot.igv.data.serialization.GraphParser;
 import com.sun.hotspot.igv.data.serialization.ParseMonitor;
 import com.sun.hotspot.igv.data.serialization.Parser;
 import com.sun.hotspot.igv.data.services.GraphViewer;
@@ -318,19 +317,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                             !firstGraphTag.equals(firstGraph.getGroup().getName() + "#" + firstGraph.getName())) {
                         break;
                     }
-                    final InputGraph secondGraph;
-                    if (isDiffGraph) {
-                        int secondGroupIdx = in.readInt();
-                        int secondGraphIdx = in.readInt();
-                        String secondGraphTag = in.readUTF();
-                        secondGraph = findGraph(secondGroupIdx, secondGraphIdx);
-                        if (secondGraph == null || secondGraph.getGroup() == null ||
-                                !secondGraphTag.equals(secondGraph.getGroup().getName() + "#" + secondGraph.getName())) {
-                            break;
-                        }
-                    } else {
-                        secondGraph = null;
-                    }
                     final Set<Integer> hiddenNodes = new HashSet<>();
                     int hiddenNodeCount = in.readInt();
                     for (int j = 0; j < hiddenNodeCount; j++) {
@@ -339,12 +325,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                     }
 
                     SwingUtilities.invokeLater(() -> {
-                        InputGraph openedGraph;
-                        if (isDiffGraph) {
-                            openedGraph = viewer.viewDifference(firstGraph, secondGraph);
-                        } else {
-                            openedGraph = viewer.view(firstGraph, true);
-                        }
+                        InputGraph openedGraph = viewer.view(firstGraph, true);
                         if (openedGraph != null) {
                             EditorTopComponent etc = EditorTopComponent.findEditorForGraph(openedGraph);
                             if (etc != null) {

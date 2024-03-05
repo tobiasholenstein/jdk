@@ -99,15 +99,6 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.add(globalSelectionButton);
         toolBar.add(new JToggleButton(new SelectionModeAction()));
         toolBar.add(new ZoomLevelAction(scene));
-
-        // Needed for toolBar to use maximal available width
-        //JPanel toolbarPanel = new JPanel(new GridLayout(1, 0));
-        //toolbarPanel.add(toolBar);
-
-        JPanel topPanel = new JPanel();
-        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.LINE_AXIS));
-        //topPanel.add(toolbarPanel);
-
         add(toolBar, BorderLayout.NORTH);
 
         graphChanged(diagramViewModel);
