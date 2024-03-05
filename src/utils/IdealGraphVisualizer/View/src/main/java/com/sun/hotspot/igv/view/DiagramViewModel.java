@@ -90,23 +90,9 @@ public class DiagramViewModel {
         diagramChangedEvent.fire();
     }
 
-    private void initGroup() {
-        group.getChangedEvent().addListener(g -> {
-            assert g == group;
-            if (group.getGraphs().isEmpty()) {
-                // If the group has been emptied, all corresponding graph views
-                // will be closed, so do nothing.
-                return;
-            }
-            filterGraphs();
-            setSelectedNodes(selectedNodes);
-        });
-        filterGraphs();
-    }
-
     public DiagramViewModel(InputGraph graph) {
         group = graph.getGroup();
-        initGroup();
+        graphs = new ArrayList<>(group.getGraphs());
 
         FilterChainProvider provider = Lookup.getDefault().lookup(FilterChainProvider.class);
         assert provider != null;
@@ -208,13 +194,6 @@ public class DiagramViewModel {
                 Settings.get().get(Settings.NODE_TINY_TEXT, Settings.NODE_TINY_TEXT_DEFAULT));
         filterChain.applyInOrder(diagram, filtersOrder);
         diagramChangedEvent.fire();
-    }
-
-    /*
-     * Select the set of graphs to be presented.
-     */
-    private void filterGraphs() {
-        this.graphs = new ArrayList<>(group.getGraphs());
     }
 
     public InputGraph getFirstGraph() {
