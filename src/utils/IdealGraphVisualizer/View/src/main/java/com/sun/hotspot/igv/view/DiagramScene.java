@@ -147,16 +147,14 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 if (editor != null) {
                     editor.requestActive();
                 }
-                Object object = findObject(widget);
-                setFocusedObject(object);
-                if (object != null) {
-                    if (!invertSelection && getSelectedObjects().contains(object)) {
-                        return;
-                    }
-                    userSelectionSuggested(Collections.singleton(object), invertSelection);
-                } else {
-                    userSelectionSuggested(Collections.emptySet(), invertSelection);
+                Set<Integer> nodeSelection = new HashSet<>();
+                Object o = findObject(widget);
+                if (o instanceof Figure) {
+                    nodeSelection.add(((Figure) o).getInputNode().getId());
+                } else if (o instanceof Slot) {
+                    nodeSelection.addAll(((Slot) o).getSource().getSourceNodesAsSet());
                 }
+                getModel().setSelectedNodes(nodeSelection);
             }
         });
 
@@ -170,41 +168,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
         setBorder(BorderFactory.createLineBorder(Color.white, BORDER_SIZE));
         getActions().addAction(mouseZoomAction);
-
-        ObjectSceneListener selectionChangedListener = new ObjectSceneListener() {
-
-            @Override
-            public void objectAdded(ObjectSceneEvent arg0, Object arg1) {}
-
-            @Override
-            public void objectRemoved(ObjectSceneEvent arg0, Object arg1) {}
-
-            @Override
-            public void objectStateChanged(ObjectSceneEvent e, Object o, ObjectState oldState, ObjectState newState) {}
-
-            @Override
-            public void selectionChanged(ObjectSceneEvent e, Set<Object> oldSet, Set<Object> newSet) {
-                Set<Integer> nodeSelection = new HashSet<>();
-                for (Object o : newSet) {
-                    if (o instanceof Figure) {
-                        nodeSelection.add(((Figure) o).getInputNode().getId());
-                    } else if (o instanceof Slot) {
-                        nodeSelection.addAll(((Slot) o).getSource().getSourceNodesAsSet());
-                    }
-                }
-                getModel().setSelectedNodes(nodeSelection);
-            }
-
-            @Override
-            public void highlightingChanged(ObjectSceneEvent e, Set<Object> oldSet, Set<Object> newSet) {}
-
-            @Override
-            public void hoverChanged(ObjectSceneEvent e, Object oldObject, Object newObject) {}
-
-            @Override
-            public void focusChanged(ObjectSceneEvent arg0, Object arg1, Object arg2) {}
-        };
-        addObjectSceneListener(selectionChangedListener, ObjectSceneEventType.OBJECT_SELECTION_CHANGED);
 
         model.getDiagramChangedEvent().addListener(m -> update());
         model.getHiddenNodesChangedEvent().addListener(m -> relayout());
@@ -225,7 +188,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     public boolean isAllVisible() {
         return model.getHiddenNodes().isEmpty();
     }
-
 
     private void clearObjects() {
         Collection<Object> objects = new ArrayList<>(getObjects());
