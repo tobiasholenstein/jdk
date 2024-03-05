@@ -82,19 +82,11 @@ public class EditorInputGraphProvider implements InputGraphProvider {
 
     @Override
     public Iterable<InputGraph> searchBackward() {
-        if (editor != null && EditorTopComponent.isOpen(editor)) {
-            return editor.getModel().getGraphsBackward();
-        } else {
-            return null;
-        }
+        return null;
     }
 
     @Override
     public Iterable<InputGraph> searchForward() {
-        if (editor != null && EditorTopComponent.isOpen(editor)) {
-            return editor.getModel().getGraphsForward();
-        } else {
-            return null;
-        }
+        return null;
     }
 }

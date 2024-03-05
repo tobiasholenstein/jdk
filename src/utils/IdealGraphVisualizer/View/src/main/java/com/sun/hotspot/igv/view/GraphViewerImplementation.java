@@ -32,8 +32,7 @@ public class GraphViewerImplementation implements GraphViewer {
 
     @Override
     public void view(InputGraph graph, boolean newTab) {
-        DiagramViewModel model = new DiagramViewModel(graph);
-        EditorTopComponent etc = new EditorTopComponent(model);
+        EditorTopComponent etc = new EditorTopComponent(graph);
         etc.open();
         etc.requestActive();
     }

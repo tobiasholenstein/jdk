@@ -288,7 +288,7 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         for (String ignored : getPositions()) {
             colors.add(Color.black);
         }
-        if (nodes.size() >= 1) {
+        if (!nodes.isEmpty()) {
             for (Integer id : nodes) {
                 if (id < 0) {
                     id = -id;
@@ -370,21 +370,6 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         filterChain.getChangedEvent().addListener(filterChainChangedListener);
     }
 
-    void activateModel() {
-        FilterChainProvider provider = Lookup.getDefault().lookup(FilterChainProvider.class);
-        if (provider != null) {
-            provider.setCustomFilterChain(customFilterChain);
-            provider.selectFilterChain(filterChain);
-
-            // link the Filters window with this model
-            provider.setFilterChainSelectionChangedListener(l -> {
-                // this function is called when user selects a different filter profile for this model
-                setFilterChain(provider.getFilterChain());
-                rebuildDiagram();
-            });
-        }
-    }
-
     void close() {
         filterChain.getChangedEvent().removeListener(filterChainChangedListener);
         getChangedEvent().fire();
@@ -454,19 +439,6 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         return firstGraph;
     }
 
-    public InputGraph getSecondGraph() {
-        InputGraph secondGraph;
-        if (getSecondPosition() < graphs.size()) {
-            secondGraph = graphs.get(getSecondPosition());
-        } else {
-            secondGraph = getFirstGraph();
-        }
-        if (secondGraph.isDiffGraph()) {
-            secondGraph = secondGraph.getSecondGraph();
-        }
-        return secondGraph;
-    }
-
     public void selectGraph(InputGraph graph) {
         int index = graphs.indexOf(graph);
         if (index == -1 && hideDuplicates) {
@@ -476,23 +448,6 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         }
         assert index != -1;
         setPositions(index, index);
-    }
-
-    public void selectDiffGraph(InputGraph graph) {
-        int index = graphs.indexOf(graph);
-        if (index == -1 && hideDuplicates) {
-            // A graph was selected that's currently hidden, so unhide and select it.
-            setHideDuplicates(false);
-            index = graphs.indexOf(graph);
-        }
-        assert index != -1;
-        int firstIndex = getFirstPosition();
-        int secondIndex = getSecondPosition();
-        if (firstIndex <= index) {
-            setPositions(firstIndex, index);
-        } else {
-            setPositions(index, secondIndex);
-        }
     }
 
     private static ColorFilter.ColorRule stateColorRule(String state, Color color) {
@@ -509,53 +464,8 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
 
     @Override
     public void changed(RangeSliderModel source) {
-        if (cachedInputGraph != null) {
-            cachedInputGraph.getDisplayNameChangedEvent().removeListener(titleChangedListener);
-        }
-        if (getFirstGraph() != getSecondGraph()) {
-            cachedInputGraph = Difference.createDiffGraph(getFirstGraph(), getSecondGraph());
-        } else {
-            cachedInputGraph = getFirstGraph();
-        }
+        cachedInputGraph = getFirstGraph();
         rebuildDiagram();
         graphChangedEvent.fire();
-        assert titleChangedListener != null;
-        cachedInputGraph.getDisplayNameChangedEvent().addListener(titleChangedListener);
-    }
-
-    void addTitleCallback(Consumer<InputGraph> titleCallback) {
-        titleChangedListener = titleCallback::accept;
-    }
-
-    Iterable<InputGraph> getGraphsForward() {
-        return () -> new Iterator<InputGraph>() {
-            int index = getFirstPosition();
-
-            @Override
-            public boolean hasNext() {
-                return index + 1 < graphs.size();
-            }
-
-            @Override
-            public InputGraph next() {
-                return graphs.get(++index);
-            }
-        };
-    }
-
-    Iterable<InputGraph> getGraphsBackward() {
-        return () -> new Iterator<InputGraph>() {
-            int index = getFirstPosition();
-
-            @Override
-            public boolean hasNext() {
-                return index - 1 > 0;
-            }
-
-            @Override
-            public InputGraph next() {
-                return graphs.get(--index);
-            }
-        };
     }
 }

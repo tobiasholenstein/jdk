@@ -78,10 +78,6 @@ public class InputGraph extends Properties.Entity implements FolderElement {
         return firstGraph;
     }
 
-    public InputGraph getSecondGraph() {
-        return secondGraph;
-    }
-
     @Override
     public void setParent(Folder parent) {
         this.parent = parent;

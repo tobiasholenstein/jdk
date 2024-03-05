@@ -32,8 +32,10 @@ public final class EditorTopComponent extends TopComponent {
     private final DiagramViewer scene;
     private final InstanceContent graphContent;
 
-    public EditorTopComponent(DiagramViewModel diagramViewModel) {
+    public EditorTopComponent(InputGraph graph) {
         initComponents();
+
+        DiagramViewModel diagramViewModel = new DiagramViewModel(graph);
         LookupHistory.init(InputGraphProvider.class);
         scene = new DiagramScene(diagramViewModel);
         graphContent = new InstanceContent();

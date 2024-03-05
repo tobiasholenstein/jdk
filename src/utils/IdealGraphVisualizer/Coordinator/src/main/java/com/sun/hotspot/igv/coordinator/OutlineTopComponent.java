@@ -249,11 +249,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                     if (editor != null) {
                         InputGraph firstGraph = editor.getModel().getFirstGraph();
                         GraphNode firstNode = FolderNode.getGraphNode(firstGraph);
-                        InputGraph secondGraph = editor.getModel().getSecondGraph();
-                        GraphNode secondNode = FolderNode.getGraphNode(secondGraph);
-                        if (firstNode != null && secondNode != null) {
-                            selectedGraphs = new GraphNode[]{firstNode, secondNode};
-                        }
                     }
                 } else {
                     GraphNode graphNode = FolderNode.getGraphNode(graph);
@@ -388,23 +383,11 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         out.writeInt(tabCount);
         for (EditorTopComponent etc : editorTabs) {
             DiagramViewModel model = etc.getModel();
-            boolean isDiffGraph = model.getGraph().isDiffGraph();
-            out.writeBoolean(isDiffGraph);
-            if (isDiffGraph) {
-                InputGraph firstGraph = model.getFirstGraph();
-                InputGraph secondGraph = model.getSecondGraph();
-                out.writeInt(firstGraph.getGroup().getIndex());
-                out.writeInt(firstGraph.getIndex());
-                out.writeUTF(firstGraph.getGroup().getName() + "#" + firstGraph.getName());
-                out.writeInt(secondGraph.getGroup().getIndex());
-                out.writeInt(secondGraph.getIndex());
-                out.writeUTF(secondGraph.getGroup().getName() + "#" + secondGraph.getName());
-            } else {
-                InputGraph graph = model.getGraph();
-                out.writeInt(graph.getGroup().getIndex());
-                out.writeInt(graph.getIndex());
-                out.writeUTF(graph.getGroup().getName() + "#" + graph.getName());
-            }
+            out.writeBoolean(false);
+            InputGraph graph = model.getGraph();
+            out.writeInt(graph.getGroup().getIndex());
+            out.writeInt(graph.getIndex());
+            out.writeUTF(graph.getGroup().getName() + "#" + graph.getName());
             int hiddenNodeCount = model.getHiddenNodes().size();
             out.writeInt(hiddenNodeCount);
             for (int hiddenNodeID : model.getHiddenNodes()) {
