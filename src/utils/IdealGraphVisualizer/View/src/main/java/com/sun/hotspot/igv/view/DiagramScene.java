@@ -54,7 +54,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private final DiagramViewModel model;
     private ModelState modelState;
     private boolean rebuilding;
-    private final NewHierarchicalLayoutManager seaLayoutManager;
+    private final HierarchicalLayoutManager seaLayoutManager;
 
 
     /**
@@ -402,7 +402,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             }
         });
 
-        seaLayoutManager = new NewHierarchicalLayoutManager();
+        seaLayoutManager = new HierarchicalLayoutManager();
 
         this.model = model;
         modelState = new ModelState(model);

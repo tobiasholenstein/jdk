@@ -96,7 +96,6 @@ public class Parser implements GraphParser {
     private final Map<Group, InputGraph> lastParsedGraph = new HashMap<>();
     private final GroupCallback groupCallback;
     private final HashMap<String, Integer> idCache = new HashMap<>();
-    private final ArrayList<Pair<String, String>> blockConnections = new ArrayList<>();
     private int maxId = 0;
     private GraphDocument graphDocument;
     private final ParseMonitor monitor;
@@ -238,46 +237,6 @@ public class Parser implements GraphParser {
 
             final InputGraph graph = getObject();
             final Group parent = getParentObject();
-            if (graph.getBlocks().size() > 0) {
-                boolean blocksContainNodes = false;
-                for (InputBlock b : graph.getBlocks()) {
-                    if (b.getNodes().size() > 0) {
-                        blocksContainNodes = true;
-                        break;
-                    }
-                }
-
-                if (!blocksContainNodes) {
-                    graph.clearBlocks();
-                    blockConnections.clear();
-                } else {
-                    // Blocks and their nodes defined: add other nodes to an
-                    //  artificial "no block" block
-                    InputBlock noBlock = null;
-                    for (InputNode n : graph.getNodes()) {
-                        if (graph.getBlock(n) == null) {
-                            if (noBlock == null) {
-                                noBlock = graph.addArtificialBlock();
-                            }
-
-                            noBlock.addNode(n.getId());
-                        }
-
-                        assert graph.getBlock(n) != null;
-                    }
-                }
-            }
-
-            // Resolve block successors
-            for (Pair<String, String> p : blockConnections) {
-                final InputBlock left = graph.getBlock(p.getLeft());
-                assert left != null;
-                final InputBlock right = graph.getBlock(p.getRight());
-                assert right != null;
-                graph.addBlockEdge(left, right);
-            }
-            blockConnections.clear();
-
             Runnable addToParent = () -> parent.addElement(graph);
             if (invokeLater) {
                 SwingUtilities.invokeLater(addToParent);
@@ -331,7 +290,6 @@ public class Parser implements GraphParser {
         @Override
         protected InputBlock start() throws SAXException {
             String name = readRequiredAttribute(BLOCK_NAME_PROPERTY);
-            blockConnections.add(new Pair<>(getParentObject().getName(), name));
             return getParentObject();
         }
     };

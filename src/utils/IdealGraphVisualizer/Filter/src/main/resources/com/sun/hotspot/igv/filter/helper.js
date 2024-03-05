@@ -52,11 +52,6 @@ function successorOf(selector) {
     return new SuccessorSelector(selector);
 }
 
-// Select the blocks where at least one node is selected by the given selector.
-function hasAnyNode(selector) {
-    return new AnySelector(selector);
-}
-
 // Select the nodes whose given property matches a given regular expression.
 function matches(property, regexp) {
     return new MatcherSelector(new Properties.RegexpPropertyMatcher(property, regexp));
