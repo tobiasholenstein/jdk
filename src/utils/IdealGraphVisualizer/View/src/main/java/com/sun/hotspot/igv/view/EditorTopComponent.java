@@ -1,26 +1,3 @@
-/*
- * Copyright (c) 2008, 2023, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have any
- * questions.
- *
- */
 package com.sun.hotspot.igv.view;
 
 import com.sun.hotspot.igv.data.GraphDocument;
@@ -28,10 +5,8 @@ import com.sun.hotspot.igv.data.Group;
 import com.sun.hotspot.igv.data.InputGraph;
 import com.sun.hotspot.igv.data.InputNode;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
-import com.sun.hotspot.igv.graph.Figure;
 import com.sun.hotspot.igv.util.LookupHistory;
 import com.sun.hotspot.igv.util.RangeSlider;
-import com.sun.hotspot.igv.util.StringUtils;
 import com.sun.hotspot.igv.view.actions.*;
 import java.awt.*;
 import java.util.List;
@@ -44,8 +19,6 @@ import org.openide.awt.Toolbar;
 import org.openide.awt.ToolbarPool;
 import org.openide.awt.UndoRedo;
 import org.openide.util.NbBundle;
-import org.openide.util.Utilities;
-import org.openide.util.actions.Presenter;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 import org.openide.util.lookup.ProxyLookup;
@@ -54,20 +27,10 @@ import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
 
 
-/**
- *
- * @author Thomas Wuerthinger
- */
-public final class EditorTopComponent extends TopComponent implements TopComponent.Cloneable {
+public final class EditorTopComponent extends TopComponent {
 
     private final DiagramViewer scene;
     private final InstanceContent graphContent;
-    private final Toolbar quickSearchToolbar;
-    private boolean useBoldDisplayName = false;
-    private static final JPanel quickSearchPresenter = (JPanel) ((Presenter.Toolbar) Utilities.actionsForPath("Actions/Search").get(0)).getToolbarPresenter();
-    private static final String PREFERRED_ID = "EditorTopComponent";
-    private static final String SATELLITE_STRING = "satellite";
-    private static final String SCENE_STRING = "scene";
 
     public EditorTopComponent(DiagramViewModel diagramViewModel) {
         initComponents();
@@ -95,27 +58,16 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
                 HideAction.get(HideAction.class),
         };
 
-        JPanel container = new JPanel(new BorderLayout());
-        add(container, BorderLayout.NORTH);
-
-        RangeSlider rangeSlider = new RangeSlider(diagramViewModel);
-        if (diagramViewModel.getGroup().getGraphs().size() == 1) {
-            rangeSlider.setVisible(false);
-        }
-        JScrollPane pane = new JScrollPane(rangeSlider, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        container.add(BorderLayout.CENTER, pane);
 
         scene = new DiagramScene(actions, actionsWithSelection, diagramViewModel);
         graphContent = new InstanceContent();
         InstanceContent content = new InstanceContent();
-        content.add(new ExportGraph());
         content.add(diagramViewModel);
         associateLookup(new ProxyLookup(scene.getLookup(), new AbstractLookup(graphContent), new AbstractLookup(content)));
 
         Group group = diagramViewModel.getGroup();
         group.getChangedEvent().addListener(g -> closeOnRemovedOrEmptyGroup());
-        if (group.getParent() instanceof GraphDocument) {
-            final GraphDocument doc = (GraphDocument) group.getParent();
+        if (group.getParent() instanceof GraphDocument doc) {
             doc.getChangedEvent().addListener(d -> closeOnRemovedOrEmptyGroup());
         }
 
@@ -126,102 +78,37 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
 
         diagramViewModel.getGraphChangedEvent().addListener(this::graphChanged);
 
+
+        getModel().setShowSea(true);
+
         add(scene.getComponent(), BorderLayout.CENTER);
-
-        ToolbarPool.getDefault().setPreferredIconSize(16);
         Toolbar toolBar = new Toolbar();
-        toolBar.setBorder((Border) UIManager.get("Nb.Editor.Toolbar.border")); //NOI18N
-        toolBar.setMinimumSize(new Dimension(0,0)); // MacOS BUG with ToolbarWithOverflow
-
         toolBar.add(PrevDiagramAction.get(PrevDiagramAction.class));
         toolBar.add(NextDiagramAction.get(NextDiagramAction.class));
-        toolBar.addSeparator();
-        toolBar.add(ReduceDiffAction.get(ReduceDiffAction.class));
-        toolBar.add(ExpandDiffAction.get(ExpandDiffAction.class));
-        toolBar.addSeparator();
         toolBar.add(ExtractAction.get(ExtractAction.class));
         toolBar.add(HideAction.get(HideAction.class));
         toolBar.add(ShowAllAction.get(ShowAllAction.class));
-
-        toolBar.addSeparator();
-        ButtonGroup layoutButtons = new ButtonGroup();
-
-        JToggleButton stableSeaLayoutButton = new JToggleButton(new EnableStableSeaLayoutAction(this));
-        stableSeaLayoutButton.setSelected(diagramViewModel.getShowStableSea());
-        layoutButtons.add(stableSeaLayoutButton);
-        toolBar.add(stableSeaLayoutButton);
-
-        JToggleButton seaLayoutButton = new JToggleButton(new EnableSeaLayoutAction(this));
-        seaLayoutButton.setSelected(diagramViewModel.getShowSea());
-        layoutButtons.add(seaLayoutButton);
-        toolBar.add(seaLayoutButton);
-
-        JToggleButton blockLayoutButton = new JToggleButton(new EnableBlockLayoutAction(this));
-        blockLayoutButton.setSelected(diagramViewModel.getShowBlocks());
-        layoutButtons.add(blockLayoutButton);
-        toolBar.add(blockLayoutButton);
-
-        EnableCFGLayoutAction cfgLayoutAction = new EnableCFGLayoutAction(this);
-        JToggleButton cfgLayoutButton = new JToggleButton(cfgLayoutAction);
-        cfgLayoutButton.setSelected(diagramViewModel.getShowCFG());
-        layoutButtons.add(cfgLayoutButton);
-        toolBar.add(cfgLayoutButton);
-
-        diagramViewModel.getGraphChangedEvent().addListener(model -> {
-            // HierarchicalStableLayoutManager is not reliable for difference graphs
-            boolean isDiffGraph = model.getGraph().isDiffGraph();
-            // deactivate HierarchicalStableLayoutManager for difference graphs
-            stableSeaLayoutButton.setEnabled(!isDiffGraph);
-            if (stableSeaLayoutButton.isSelected() && isDiffGraph) {
-                // fallback to HierarchicalLayoutManager for difference graphs
-                seaLayoutButton.setSelected(true);
-            }
-        });
-
-        toolBar.addSeparator();
         toolBar.add(new JToggleButton(new PredSuccAction(diagramViewModel.getShowNodeHull())));
-        toolBar.add(new JToggleButton(new ShowEmptyBlocksAction(cfgLayoutAction, diagramViewModel.getShowEmptyBlocks())));
-        toolBar.add(new JToggleButton(new HideDuplicatesAction(diagramViewModel.getHideDuplicates())));
-
-        toolBar.addSeparator();
-        UndoAction undoAction = UndoAction.get(UndoAction.class);
-        undoAction.putValue(Action.SHORT_DESCRIPTION, "Undo");
-        toolBar.add(undoAction);
-        RedoAction redoAction = RedoAction.get(RedoAction.class);
-        redoAction.putValue(Action.SHORT_DESCRIPTION, "Redo");
-        toolBar.add(redoAction);
-
-        toolBar.addSeparator();
-
-
+        toolBar.add(UndoAction.get(UndoAction.class));
+        toolBar.add(RedoAction.get(RedoAction.class));
         JToggleButton cutEdgesButton = new JToggleButton(CutEdgesAction.get(CutEdgesAction.class));
         cutEdgesButton.setHideActionText(true);
         toolBar.add(cutEdgesButton);
-
         JToggleButton globalSelectionButton = new JToggleButton(GlobalSelectionAction.get(GlobalSelectionAction.class));
         globalSelectionButton.setHideActionText(true);
         toolBar.add(globalSelectionButton);
         toolBar.add(new JToggleButton(new SelectionModeAction()));
-        toolBar.addSeparator();
         toolBar.add(new ZoomLevelAction(scene));
-        toolBar.add(Box.createHorizontalGlue());
-
-        quickSearchToolbar = new Toolbar();
-        quickSearchToolbar.setLayout(new BoxLayout(quickSearchToolbar, BoxLayout.LINE_AXIS));
-        quickSearchToolbar.setBorder((Border) UIManager.get("Nb.Editor.Toolbar.border")); //NOI18N
-        quickSearchPresenter.setMinimumSize(quickSearchPresenter.getPreferredSize());
-        quickSearchPresenter.setAlignmentX(Component.RIGHT_ALIGNMENT);
-        quickSearchToolbar.add(quickSearchPresenter);
 
         // Needed for toolBar to use maximal available width
-        JPanel toolbarPanel = new JPanel(new GridLayout(1, 0));
-        toolbarPanel.add(toolBar);
+        //JPanel toolbarPanel = new JPanel(new GridLayout(1, 0));
+        //toolbarPanel.add(toolBar);
 
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.LINE_AXIS));
-        topPanel.add(toolbarPanel);
-        topPanel.add(quickSearchToolbar);
-        container.add(BorderLayout.NORTH, topPanel);
+        //topPanel.add(toolbarPanel);
+
+        add(toolBar, BorderLayout.NORTH);
 
         graphChanged(diagramViewModel);
     }
@@ -320,11 +207,6 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
     }
 
     @Override
-    protected String preferredID() {
-        return PREFERRED_ID;
-    }
-
-    @Override
     public void componentClosed() {
         super.componentClosed();
         getModel().close();
@@ -350,68 +232,8 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
     }
 
     @Override
-    public void setDisplayName(String displayName) {
-        super.setDisplayName(displayName);
-        if (useBoldDisplayName) {
-            setHtmlDisplayName("<html><b>" + StringUtils.escapeHTML(getDisplayName()) + "</b>");
-        } else {
-            setHtmlDisplayName(getDisplayName());
-        }
-    }
-
-    private void setBoldDisplayName(boolean bold) {
-        useBoldDisplayName = bold;
-        setDisplayName(getDisplayName());
-    }
-
-    @Override
-    protected void componentActivated() {
-        super.componentActivated();
-        getModel().activateModel();
-        WindowManager manager = WindowManager.getDefault();
-        for (Mode m : manager.getModes()) {
-            for (TopComponent topComponent : manager.getOpenedTopComponents(m)) {
-                if (topComponent instanceof EditorTopComponent) {
-                    EditorTopComponent editor = (EditorTopComponent) topComponent;
-                    editor.setBoldDisplayName(false);
-                }
-            }
-        }
-        setBoldDisplayName(true);
-        quickSearchToolbar.add(quickSearchPresenter);
-        quickSearchPresenter.revalidate();
-    }
-
-    @Override
     public UndoRedo getUndoRedo() {
         return scene.getUndoRedo();
-    }
-
-    public void resetUndoRedo() {
-        scene.resetUndoRedoManager();
-    }
-
-    @Override
-    public TopComponent cloneComponent() {
-        DiagramViewModel model = new DiagramViewModel(getModel());
-        model.setGlobalSelection(false, false);
-        EditorTopComponent etc = new EditorTopComponent(model);
-
-        Set<InputNode> selectedNodes = new HashSet<>();
-        for (Figure figure : getModel().getSelectedFigures()) {
-            selectedNodes.add(figure.getInputNode());
-        }
-        etc.addSelectedNodes(selectedNodes, false);
-        model.setGlobalSelection(GlobalSelectionAction.get(GlobalSelectionAction.class).isSelected(), false);
-        model.setCutEdges(CutEdgesAction.get(CutEdgesAction.class).isSelected(), false);
-        etc.resetUndoRedo();
-
-        int currentZoomLevel = scene.getZoomPercentage();
-        SwingUtilities.invokeLater(() -> {
-            etc.setZoomLevel(currentZoomLevel);
-            etc.centerSelectedNodes();
-        });
-        return etc;
     }
 
     /** This method is called from within the constructor to
