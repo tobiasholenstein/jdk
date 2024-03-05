@@ -11,7 +11,6 @@ import javax.swing.*;
 import org.openide.actions.RedoAction;
 import org.openide.actions.UndoAction;
 import org.openide.awt.Toolbar;
-import org.openide.awt.UndoRedo;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 import org.openide.util.lookup.ProxyLookup;
@@ -22,22 +21,18 @@ import org.openide.windows.WindowManager;
 public final class EditorTopComponent extends TopComponent {
 
     private final DiagramScene scene;
-    private final InstanceContent graphContent;
 
     public EditorTopComponent(InputGraph graph) {
         initComponents();
 
         DiagramViewModel diagramViewModel = new DiagramViewModel(graph);
-        LookupHistory.init(InputGraphProvider.class);
         scene = new DiagramScene(diagramViewModel);
-        graphContent = new InstanceContent();
+        getModel().showDiagram();
+
+        LookupHistory.init(InputGraphProvider.class);
         InstanceContent content = new InstanceContent();
         content.add(diagramViewModel);
-        associateLookup(new ProxyLookup(scene.getLookup(), new AbstractLookup(graphContent), new AbstractLookup(content)));
-
-        setDisplayName(diagramViewModel.getGraph().getDisplayName());
-
-        getModel().showDiagram();
+        associateLookup(new ProxyLookup(scene.getLookup(), new AbstractLookup(content)));
 
         add(scene.getComponent(), BorderLayout.CENTER);
         Toolbar toolBar = new Toolbar();
@@ -51,6 +46,8 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.add(RedoAction.get(RedoAction.class));
         toolBar.add(new ZoomLevelAction(scene));
         add(toolBar, BorderLayout.NORTH);
+
+        setDisplayName(diagramViewModel.getGraph().getDisplayName());
     }
 
 
