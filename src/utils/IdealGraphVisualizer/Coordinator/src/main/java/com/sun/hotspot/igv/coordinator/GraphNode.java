@@ -105,9 +105,6 @@ public class GraphNode extends AbstractNode {
         // Action for removing a graph
         content.add(new GraphRemoveCookie(graph));
 
-        // Action for diffing to the current graph
-        content.add(new DiffGraphCookie(graph));
-
         // Action for cloning to the current graph
         content.add(new NewGraphTabCookie(viewer, graph));
     }

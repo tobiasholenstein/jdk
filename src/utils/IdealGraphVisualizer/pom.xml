@@ -96,7 +96,6 @@
         <module>Settings</module>
         <module>Util</module>
         <module>Layout</module>
-        <module>Difference</module>
         <module>NetworkConnection</module>
         <module>Coordinator</module>
         <module>SelectionCoordinator</module>
