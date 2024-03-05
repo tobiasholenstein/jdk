@@ -49,7 +49,7 @@ import org.openide.util.actions.CallableSystemAction;
 })
 public final class GlobalSelectionAction extends CallableSystemAction {
 
-    private boolean isSelected;
+    private final boolean isSelected;
 
     public GlobalSelectionAction() {
         putValue(AbstractAction.SMALL_ICON, new ImageIcon(ImageUtilities.loadImage(iconResource())));
@@ -70,12 +70,6 @@ public final class GlobalSelectionAction extends CallableSystemAction {
 
     @Override
     public void performAction() {
-        isSelected = !isSelected;
-        putValue(SELECTED_KEY, isSelected);
-        EditorTopComponent editor = EditorTopComponent.getActive();
-        if (editor != null) {
-            SwingUtilities.invokeLater(() -> editor.getModel().setGlobalSelection(isSelected, true));
-        }
     }
 
     public boolean isSelected() {

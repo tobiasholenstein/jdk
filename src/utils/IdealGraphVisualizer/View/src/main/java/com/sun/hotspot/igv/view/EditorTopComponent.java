@@ -1,28 +1,20 @@
 package com.sun.hotspot.igv.view;
 
-import com.sun.hotspot.igv.data.GraphDocument;
-import com.sun.hotspot.igv.data.Group;
 import com.sun.hotspot.igv.data.InputGraph;
 import com.sun.hotspot.igv.data.InputNode;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
 import com.sun.hotspot.igv.util.LookupHistory;
-import com.sun.hotspot.igv.util.RangeSlider;
 import com.sun.hotspot.igv.view.actions.*;
 import java.awt.*;
-import java.util.List;
 import java.util.*;
 import javax.swing.*;
-import javax.swing.border.Border;
 import org.openide.actions.RedoAction;
 import org.openide.actions.UndoAction;
 import org.openide.awt.Toolbar;
-import org.openide.awt.ToolbarPool;
 import org.openide.awt.UndoRedo;
-import org.openide.util.NbBundle;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 import org.openide.util.lookup.ProxyLookup;
-import org.openide.windows.Mode;
 import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
 
@@ -57,12 +49,6 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.add(new JToggleButton(new PredSuccAction(diagramViewModel.getShowNodeHull())));
         toolBar.add(UndoAction.get(UndoAction.class));
         toolBar.add(RedoAction.get(RedoAction.class));
-        JToggleButton cutEdgesButton = new JToggleButton(CutEdgesAction.get(CutEdgesAction.class));
-        cutEdgesButton.setHideActionText(true);
-        toolBar.add(cutEdgesButton);
-        JToggleButton globalSelectionButton = new JToggleButton(GlobalSelectionAction.get(GlobalSelectionAction.class));
-        globalSelectionButton.setHideActionText(true);
-        toolBar.add(globalSelectionButton);
         toolBar.add(new JToggleButton(new SelectionModeAction()));
         toolBar.add(new ZoomLevelAction(scene));
         add(toolBar, BorderLayout.NORTH);

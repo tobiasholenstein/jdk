@@ -53,13 +53,6 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
         this.clusters = clusters;
     }
 
-    @Override
-    public void setCutEdges(boolean enable) {
-        manager.setCutEdges(enable);
-        subManager.setCutEdges(enable);
-        maxLayerLength = enable ? 10 : -1;
-    }
-
     public void doLayout(LayoutGraph graph) {
 
         // Create cluster-level nodes and edges.

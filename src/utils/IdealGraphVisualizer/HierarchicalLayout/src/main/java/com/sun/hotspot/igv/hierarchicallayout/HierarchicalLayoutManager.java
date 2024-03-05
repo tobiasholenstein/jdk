@@ -78,11 +78,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
     }
 
     @Override
-    public void setCutEdges(boolean enable) {
-        maxLayerLength = enable ? 10 : -1;
-    }
-
-    @Override
     public void doLayout(LayoutGraph graph) {
         this.graph = graph;
 
@@ -788,53 +783,11 @@ public class HierarchicalLayoutManager extends LayoutManager {
                     for (LayoutEdge e : succs) {
                         assert e.getFrom().getLayer() < e.getTo().getLayer();
                         if (e.getFrom().getLayer() != e.getTo().getLayer() - 1) {
-                            if (maxLayerLength != -1 && e.getTo().getLayer() - e.getFrom().getLayer() > maxLayerLength) {
-                                assert maxLayerLength > 2;
-                                e.getTo().getPreds().remove(e);
-                                e.getFrom().getSuccs().remove(e);
-
-                                LayoutEdge topEdge;
-
-                                if (topNodeHash.containsKey(e.getRelativeFromX())) {
-                                    LayoutNode topNode = topNodeHash.get(e.getRelativeFromX());
-                                    topEdge = new LayoutEdge(e.getFrom(), topNode, e.getRelativeFromX(), topNode.getWidth() / 2, e.getLink());
-                                    e.getFrom().getSuccs().add(topEdge);
-                                    topNode.getPreds().add(topEdge);
-                                } else {
-
-                                    LayoutNode topNode = new LayoutNode();
-                                    topNode.setLayer(e.getFrom().getLayer() + 1);
-                                    nodes.add(topNode);
-                                    topEdge = new LayoutEdge(e.getFrom(), topNode, e.getRelativeFromX(), 0, e.getLink());
-                                    e.getFrom().getSuccs().add(topEdge);
-                                    topNode.getPreds().add(topEdge);
-                                    topNodeHash.put(e.getRelativeFromX(), topNode);
-                                    bottomNodeHash.put(e.getRelativeFromX(), new HashMap<>());
-                                }
-
-                                HashMap<Integer, LayoutNode> hash = bottomNodeHash.get(e.getRelativeFromX());
-
-                                LayoutNode bottomNode;
-                                if (hash.containsKey(e.getTo().getLayer())) {
-                                    bottomNode = hash.get(e.getTo().getLayer());
-                                } else {
-
-                                    bottomNode = new LayoutNode();
-                                    bottomNode.setLayer(e.getTo().getLayer() - 1);
-                                    nodes.add(bottomNode);
-                                    hash.put(e.getTo().getLayer(), bottomNode);
-                                }
-                                LayoutEdge bottomEdge = new LayoutEdge(bottomNode, e.getTo(), bottomNode.getWidth() / 2, e.getRelativeToX(), e.getLink());
-                                e.getTo().getPreds().add(bottomEdge);
-                                bottomNode.getSuccs().add(bottomEdge);
-
-                            } else {
-                                Integer i = e.getRelativeFromX();
-                                if (!portHash.containsKey(i)) {
-                                    portHash.put(i, new ArrayList<>());
-                                }
-                                portHash.get(i).add(e);
+                            Integer i = e.getRelativeFromX();
+                            if (!portHash.containsKey(i)) {
+                                portHash.put(i, new ArrayList<>());
                             }
+                            portHash.get(i).add(e);
                         }
                     }
 

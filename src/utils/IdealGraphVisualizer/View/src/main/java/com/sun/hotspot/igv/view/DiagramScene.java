@@ -1,26 +1,3 @@
-/*
- * Copyright (c) 2008, 2023, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have any
- * questions.
- *
- */
 package com.sun.hotspot.igv.view;
 
 import com.sun.hotspot.igv.data.Properties;
@@ -30,7 +7,6 @@ import com.sun.hotspot.igv.hierarchicallayout.*;
 import com.sun.hotspot.igv.layout.Cluster;
 import com.sun.hotspot.igv.layout.LayoutGraph;
 import com.sun.hotspot.igv.layout.LayoutManager;
-import com.sun.hotspot.igv.selectioncoordinator.SelectionCoordinator;
 import com.sun.hotspot.igv.util.ColorIcon;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
@@ -64,10 +40,7 @@ import org.openide.util.Lookup;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 
-/**
- *
- * @author Thomas Wuerthinger
- */
+
 public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleClickHandler {
 
     private final CustomizablePanAction panAction;
@@ -85,7 +58,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private final DiagramViewModel model;
     private ModelState modelState;
     private boolean rebuilding;
-    private final HierarchicalStableLayoutManager hierarchicalStableLayoutManager;
     private final NewHierarchicalLayoutManager seaLayoutManager;
 
 
@@ -104,7 +76,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     public static final float ZOOM_MAX_FACTOR = 4.0f;
     public static final float ZOOM_MIN_FACTOR = 0.25f;
     public static final float ZOOM_INCREMENT = 1.5f;
-    public static final int ANIMATION_LIMIT = 40;
 
     @SuppressWarnings("unchecked")
     public <T> T getWidget(Object o) {
@@ -182,47 +153,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     public ChangedEvent<DiagramViewer> getZoomChangedEvent() {
         return zoomChangedEvent;
     }
-
-    private final ControllableChangedListener<SelectionCoordinator> highlightedCoordinatorListener = new ControllableChangedListener<SelectionCoordinator>() {
-
-        @Override
-        public void filteredChanged(SelectionCoordinator coordinator) {
-            if (model.getGlobalSelection()) {
-                Set<Integer> ids = coordinator.getHighlightedObjects();
-                Set<Object> highlightedObjects = new HashSet<>();
-                for (Figure figure : getModel().getDiagram().getFigures()) {
-                    if (ids.contains(figure.getInputNode().getId())) {
-                        highlightedObjects.add(figure);
-                    }
-                    for (Slot slot : figure.getSlots()) {
-                        if (!Collections.disjoint(slot.getSource().getSourceNodesAsSet(), ids)) {
-                            highlightedObjects.add(slot);
-                        }
-                    }
-                }
-                setHighlightedObjects(highlightedObjects);
-                validateAll();
-            }
-        }
-    };
-    private final ControllableChangedListener<SelectionCoordinator> selectedCoordinatorListener = new ControllableChangedListener<SelectionCoordinator>() {
-
-        @Override
-        public void filteredChanged(SelectionCoordinator coordinator) {
-            if (model.getGlobalSelection()) {
-                Set<Integer> ids = coordinator.getSelectedObjects();
-                Set<Figure> selectedFigures = new HashSet<>();
-                for (Figure figure : getModel().getDiagram().getFigures()) {
-                    if (ids.contains(figure.getInputNode().getId())) {
-                        selectedFigures.add(figure);
-                    }
-                }
-                setFigureSelection(selectedFigures);
-                centerSelectedFigures();
-                validateAll();
-            }
-        }
-    };
 
     private Point getScrollPosition() {
         return scrollPane.getViewport().getViewPosition();
@@ -431,11 +361,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     }
                 }
                 getModel().setSelectedNodes(nodeSelection);
-
-                boolean b = selectedCoordinatorListener.isEnabled();
-                selectedCoordinatorListener.setEnabled(false);
-                SelectionCoordinator.getInstance().setSelectedObjects(nodeSelection);
-                selectedCoordinatorListener.setEnabled(b);
             }
 
             @Override
@@ -448,9 +373,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                         nodeHighlighting.addAll(((Slot) o).getSource().getSourceNodesAsSet());
                     }
                 }
-                highlightedCoordinatorListener.setEnabled(false);
-                SelectionCoordinator.getInstance().setHighlightedObjects(nodeHighlighting);
-                highlightedCoordinatorListener.setEnabled(true);
             }
 
             @Override
@@ -487,7 +409,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             }
         });
 
-        hierarchicalStableLayoutManager = new HierarchicalStableLayoutManager();
         seaLayoutManager = new NewHierarchicalLayoutManager();
 
         this.model = model;
@@ -631,8 +552,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                 public void movementFinished(Widget widget) {
                     if (!getModel().getShowSea()) return;
                     rebuilding = true;
-                    Set<FigureWidget> oldVisibleFigureWidgets = getVisibleFigureWidgets();
-                    Set<BlockWidget> oldVisibleBlockWidgets = getVisibleBlockWidgets();
 
                     Set<Figure> selectedFigures = model.getSelectedFigures();
                     for (Figure figure : selectedFigures) {
@@ -642,8 +561,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                     }
 
                     rebuildConnectionLayer();
-                    updateFigureWidgetLocations(oldVisibleFigureWidgets);
-                    updateBlockWidgetBounds(oldVisibleBlockWidgets);
+                    updateFigureWidgetLocations();
                     shadowWidget.setVisible(false);
                     pointerWidget.setVisible(false);
                     validateAll();
@@ -825,79 +743,13 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return w1.isVisible() && w2.isVisible();
     }
 
-    private void doStableSeaLayout(Set<Figure> visibleFigures, Set<Connection> visibleConnections) {
-        boolean enable = model.getCutEdges();
-        boolean previous = hierarchicalStableLayoutManager.cutEdges();
-        if (enable != previous) {
-            hierarchicalStableLayoutManager.setShouldRedrawLayout(true);
-        }
-        hierarchicalStableLayoutManager.setCutEdges(enable);
-        hierarchicalStableLayoutManager.updateLayout(visibleFigures, visibleConnections);
-    }
-
-    private void doSeaLayout(Set<Figure> figures, Set<Connection> edges) {
-        seaLayoutManager.setCutEdges(model.getCutEdges());
-        seaLayoutManager.doLayout(new LayoutGraph(edges, figures));
-        hierarchicalStableLayoutManager.setShouldRedrawLayout(true);
-    }
-
-    private void doClusteredLayout(Set<Connection> edges) {
-        HierarchicalClusterLayoutManager clusterLayoutManager = new HierarchicalClusterLayoutManager();
-        clusterLayoutManager.setCutEdges(model.getCutEdges());
-        clusterLayoutManager.doLayout(new LayoutGraph(edges));
-    }
-
-    private void doCFGLayout(Set<Figure> figures, Set<Connection> edges) {
-        HierarchicalCFGLayoutManager cfgLayoutManager = new HierarchicalCFGLayoutManager();
-
-        Diagram diagram = getModel().getDiagram();
-
-        Map<InputNode, Figure> nodeFig = new HashMap<>();
-        for (Figure f : figures) {
-            InputNode n = f.getInputNode();
-            if (n != null) {
-                nodeFig.put(n, f);
-            }
-        }
-        // Compute global ranking among figures given by in-block order. If
-        // needed, this could be cached as long as it is computed for all the
-        // figures in the model, not just the visible ones.
-        Map<Figure, Integer> figureRank = new HashMap<>(figures.size());
-        int r = 0;
-        for (InputBlock b : diagram.getInputBlocks()) {
-            for (InputNode n : b.getNodes()) {
-                Figure f = nodeFig.get(n);
-                if (f != null) {
-                    figureRank.put(f, r);
-                    r++;
-                }
-            }
-        }
-
-        // Add visible connections for CFG edges.
-        for (BlockConnection c : diagram.getBlockConnections()) {
-            if (isVisibleBlockConnection(c)) {
-                edges.add(c);
-            }
-        }
-
-        cfgLayoutManager.setSubManager(new LinearLayoutManager(figureRank));
-        cfgLayoutManager.setClusters(getVisibleBlocks());
-        cfgLayoutManager.setCutEdges(model.getCutEdges());
-        cfgLayoutManager.doLayout(new LayoutGraph(edges, figures));
-    }
+    private void doStableSeaLayout(Set<Figure> visibleFigures, Set<Connection> visibleConnections) {}
 
 
 
-    private boolean shouldAnimate() {
-        int visibleFigureCount = 0;
-        for (Figure figure : getModel().getDiagram().getFigures()) {
-            if (getWidget(figure, FigureWidget.class).isVisible()) {
-                visibleFigureCount++;
-            }
-        }
-        return visibleFigureCount <= ANIMATION_LIMIT;
-    }
+    private void doClusteredLayout(Set<Connection> edges) {}
+
+    private void doCFGLayout(Set<Figure> figures, Set<Connection> edges) {}
 
     private final Point specialNullPoint = new Point(Integer.MAX_VALUE, Integer.MAX_VALUE);
 
@@ -1000,11 +852,9 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
                         boolean wasMoved = seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
                         rebuilding = true;
                         Set<FigureWidget> oldVisibleFigureWidgets = getVisibleFigureWidgets();
-                        Set<BlockWidget> oldVisibleBlockWidgets = getVisibleBlockWidgets();
                         seaLayoutManager.writeBack();
                         rebuildConnectionLayer();
-                        updateFigureWidgetLocations(oldVisibleFigureWidgets);
-                        updateBlockWidgetBounds(oldVisibleBlockWidgets);
+                        updateFigureWidgetLocations();
                         validateAll();
                         if (wasMoved) {
                             addUndo();
@@ -1210,16 +1060,10 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     @Override
-    public void componentHidden() {
-        SelectionCoordinator.getInstance().getHighlightedChangedEvent().removeListener(highlightedCoordinatorListener);
-        SelectionCoordinator.getInstance().getSelectedChangedEvent().removeListener(selectedCoordinatorListener);
-    }
+    public void componentHidden() {}
 
     @Override
-    public void componentShowing() {
-        SelectionCoordinator.getInstance().getHighlightedChangedEvent().addListener(highlightedCoordinatorListener);
-        SelectionCoordinator.getInstance().getSelectedChangedEvent().addListener(selectedCoordinatorListener);
-    }
+    public void componentShowing() {}
 
     private void rebuildConnectionLayer() {
         figureToOutLineWidget.clear();
@@ -1370,34 +1214,12 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return visibleConnections;
     }
 
-    private void updateFigureWidgetLocations(Set<FigureWidget> oldVisibleFigureWidgets) {
-        boolean doAnimation = shouldAnimate();
+    private void updateFigureWidgetLocations() {
         for (Figure figure : getModel().getDiagram().getFigures()) {
             FigureWidget figureWidget = getWidget(figure);
             if (figureWidget.isVisible()) {
                 Point location = new Point(figure.getPosition());
-                if (doAnimation && oldVisibleFigureWidgets.contains(figureWidget)) {
-                    getSceneAnimator().animatePreferredLocation(figureWidget, location);
-                } else {
-                    figureWidget.setPreferredLocation(location);
-                }
-            }
-        }
-    }
-
-    private void updateBlockWidgetBounds(Set<BlockWidget> oldVisibleBlockWidgets) {
-        if (getModel().getShowBlocks() || getModel().getShowCFG()) {
-            boolean doAnimation = shouldAnimate();
-            for (Block block : getModel().getDiagram().getBlocks()) {
-                BlockWidget blockWidget = getWidget(block.getInputBlock());
-                if (blockWidget != null && blockWidget.isVisible()) {
-                    Rectangle bounds = new Rectangle(block.getBounds());
-                    if (doAnimation && oldVisibleBlockWidgets.contains(blockWidget)) {
-                        getSceneAnimator().animatePreferredBounds(blockWidget, bounds);
-                    } else {
-                        blockWidget.setPreferredBounds(bounds);
-                    }
-                }
+                figureWidget.setPreferredLocation(location);
             }
         }
     }
@@ -1437,28 +1259,16 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
     private void relayout() {
         rebuilding = true;
-        Set<FigureWidget> oldVisibleFigureWidgets = getVisibleFigureWidgets();
-        Set<BlockWidget> oldVisibleBlockWidgets = getVisibleBlockWidgets();
-
         updateVisibleFigureWidgets();
         updateNodeHull();
         updateVisibleBlockWidgets();
 
         Set<Figure> visibleFigures = getVisibleFigures();
         Set<Connection> visibleConnections = getVisibleConnections();
-        if (getModel().getShowStableSea()) {
-            doStableSeaLayout(visibleFigures, visibleConnections);
-        } else if (getModel().getShowSea()) {
-            doSeaLayout(visibleFigures, visibleConnections);
-        } else if (getModel().getShowBlocks()) {
-            doClusteredLayout(visibleConnections);
-        } else if (getModel().getShowCFG()) {
-            doCFGLayout(visibleFigures, visibleConnections);
-        }
+        seaLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
         rebuildConnectionLayer();
 
-        updateFigureWidgetLocations(oldVisibleFigureWidgets);
-        updateBlockWidgetBounds(oldVisibleBlockWidgets);
+        updateFigureWidgetLocations();
         validateAll();
 
         centerSingleSelectedFigure();

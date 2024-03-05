@@ -40,11 +40,6 @@ public class LinearLayoutManager extends LayoutManager {
     }
 
     @Override
-    public void setCutEdges(boolean enable) {
-        maxLayerLength = enable ? 10 : -1;
-    }
-
-    @Override
     public void doLayout(LayoutGraph graph) {
 
         assert (graph.getLinks().isEmpty());

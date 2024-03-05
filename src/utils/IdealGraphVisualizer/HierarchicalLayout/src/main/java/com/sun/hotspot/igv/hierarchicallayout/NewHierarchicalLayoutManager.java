@@ -749,14 +749,8 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
 
     public NewHierarchicalLayoutManager(boolean combineEdges) {
         combine = combineEdges;
-        maxLayerLength = -1;
         vertexToLayoutNode = new LinkedHashMap<>();
         dummyNodes = new ArrayList<>();
-    }
-
-    @Override
-    public void setCutEdges(boolean enable) {
-        maxLayerLength = enable ? 10 : -1;
     }
 
     public void doLayout(LayoutGraph graph) {
@@ -1349,61 +1343,9 @@ public class NewHierarchicalLayoutManager extends LayoutManager  {
                 // edge is longer than one layer => needs dummy nodes
                 if (fromNode.getLayer() != toNode.getLayer() - 1) {
                     // the edge needs to be cut
-                    if (maxLayerLength != -1 && toNode.getLayer() - fromNode.getLayer() > maxLayerLength) {
-                        assert maxLayerLength > 2;
-                        // remove the succEdge before replacing it
-                        toNode.getPreds().remove(succEdge);
-                        fromNode.getSuccs().remove(succEdge);
-
-                        LayoutNode topCutNode = portToTopNode.get(startPort);
-                        if (topCutNode == null) {
-                            topCutNode = new LayoutNode();
-                            topCutNode.setLayer(fromNode.getLayer() + 1);
-                            if (optimalPos) {
-                                topCutNode.setPos(optimalPosition(topCutNode, topCutNode.getLayer()));
-                                topCutNode.setX(0);
-                                insertNodeAndAdjustLayer(topCutNode);
-                            } else {
-                                assert topCutNode.isDummy();
-                                dummyNodes.add(topCutNode);
-                                layers[topCutNode.getLayer()].add(topCutNode);
-                            }
-                            portToTopNode.put(startPort, topCutNode);
-                            portToBottomNodeMapping.put(startPort, new HashMap<>());
-                        }
-                        assert !fromNode.isDummy();
-                        LayoutEdge edgeToTopCut = new LayoutEdge(fromNode, topCutNode, succEdge.getRelativeFromX(), topCutNode.getWidth() / 2, succEdge.getLink());
-                        if (succEdge.isReversed()) edgeToTopCut.reverse();
-                        fromNode.getSuccs().add(edgeToTopCut);
-                        topCutNode.getPreds().add(edgeToTopCut);
-                        assert topCutNode.isDummy();
-
-                        HashMap<Integer, LayoutNode> layerToBottomNode = portToBottomNodeMapping.get(startPort);
-                        LayoutNode bottomCutNode = layerToBottomNode.get(toNode.getLayer());
-                        if (bottomCutNode == null) {
-                            bottomCutNode = new LayoutNode();
-                            bottomCutNode.setLayer(toNode.getLayer() - 1);
-                            if (optimalPos) {
-                                bottomCutNode.setPos(optimalPosition(bottomCutNode, bottomCutNode.getLayer()));
-                                bottomCutNode.setX(0);
-                                insertNodeAndAdjustLayer(bottomCutNode);
-                            } else {
-                                assert bottomCutNode.isDummy();
-                                dummyNodes.add(bottomCutNode);
-                                layers[bottomCutNode.getLayer()].add(bottomCutNode);
-                            }
-                            layerToBottomNode.put(toNode.getLayer(), bottomCutNode);
-                        }
-                        LayoutEdge bottomEdge = new LayoutEdge(bottomCutNode, toNode, bottomCutNode.getWidth() / 2, succEdge.getRelativeToX(), succEdge.getLink());
-                        if (succEdge.isReversed()) bottomEdge.reverse();
-                        toNode.getPreds().add(bottomEdge);
-                        bottomCutNode.getSuccs().add(bottomEdge);
-                        assert bottomCutNode.isDummy();
-
-                    } else { // the edge is not cut, but needs dummy nodes
-                        portsToUnprocessedEdges.putIfAbsent(startPort, new ArrayList<>());
-                        portsToUnprocessedEdges.get(startPort).add(succEdge);
-                    }
+                    // the edge is not cut, but needs dummy nodes
+                    portsToUnprocessedEdges.putIfAbsent(startPort, new ArrayList<>());
+                    portsToUnprocessedEdges.get(startPort).add(succEdge);
                 }
             }
 

@@ -69,12 +69,6 @@ public final class CutEdgesAction extends CallableSystemAction {
 
     @Override
     public void performAction() {
-        isSelected = !isSelected;
-        putValue(SELECTED_KEY, isSelected);
-        EditorTopComponent editor = EditorTopComponent.getActive();
-        if (editor != null) {
-            SwingUtilities.invokeLater(() -> editor.getModel().setCutEdges(isSelected, true));
-        }
     }
 
     public boolean isSelected() {

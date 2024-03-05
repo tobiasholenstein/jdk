@@ -43,13 +43,6 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
         this.subManager =  new NewHierarchicalLayoutManager();
     }
 
-    @Override
-    public void setCutEdges(boolean enable) {
-        manager.setCutEdges(enable);
-        subManager.setCutEdges(enable);
-        maxLayerLength = enable ? 10 : -1;
-    }
-
     public void doLayout(LayoutGraph graph) {
 
         assert graph.verify();
