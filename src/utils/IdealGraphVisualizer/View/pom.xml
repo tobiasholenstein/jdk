@@ -75,11 +75,6 @@
         </dependency>
         <dependency>
             <groupId>com.sun.hotspot.igv</groupId>
-            <artifactId>SelectionCoordinator</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.hotspot.igv</groupId>
             <artifactId>Settings</artifactId>
             <version>${project.version}</version>
         </dependency>

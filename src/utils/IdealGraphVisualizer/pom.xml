@@ -98,7 +98,6 @@
         <module>Layout</module>
         <module>NetworkConnection</module>
         <module>Coordinator</module>
-        <module>SelectionCoordinator</module>
         <module>Graph</module>
         <module>HierarchicalLayout</module>
         <module>Filter</module>
