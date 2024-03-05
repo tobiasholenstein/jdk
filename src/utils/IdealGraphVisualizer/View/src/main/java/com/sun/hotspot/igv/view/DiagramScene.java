@@ -16,7 +16,6 @@ import javax.swing.*;
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 import org.netbeans.api.visual.action.*;
-import org.netbeans.api.visual.layout.LayoutFactory;
 import org.netbeans.api.visual.model.*;
 import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
@@ -36,8 +35,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     public static final float ZOOM_INCREMENT = 1.5f;
 
     public double getZoomMinFactor() {
-        double factorWidth = scrollPane.getViewport().getViewRect().getWidth() / getBounds().getWidth() ;
-        double factorHeight = scrollPane.getViewport().getViewRect().getHeight() / getBounds().getHeight();
+        double factorWidth = scrollPane.getViewport().getViewRect().getWidth() / super.getBounds().getWidth() ;
+        double factorHeight = scrollPane.getViewport().getViewRect().getHeight() / super.getBounds().getHeight();
         double zoomToFit = 0.98 * Math.min(factorWidth, factorHeight);
         return Math.min(zoomToFit, ZOOM_MIN_FACTOR);
     }
@@ -47,11 +46,11 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     public void zoomIn(Point zoomCenter, double factor) {
-        centredZoom(getZoomFactor() * factor, zoomCenter);
+        centredZoom(super.getZoomFactor() * factor, zoomCenter);
     }
 
     public void zoomOut(Point zoomCenter, double factor) {
-        centredZoom(getZoomFactor() / factor, zoomCenter);
+        centredZoom(super.getZoomFactor() / factor, zoomCenter);
     }
 
     public void setZoomPercentage(int percentage) {
@@ -62,17 +61,17 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         zoomFactor = Math.max(zoomFactor, getZoomMinFactor());
         zoomFactor = Math.min(zoomFactor,  getZoomMaxFactor());
 
-        double oldZoom = getZoomFactor();
-        Rectangle visibleRect = getView().getVisibleRect();
+        double oldZoom = super.getZoomFactor();
+        Rectangle visibleRect = super.getView().getVisibleRect();
         if (zoomCenter == null) {
             zoomCenter = new Point(visibleRect.x + visibleRect.width / 2, visibleRect.y + visibleRect.height / 2);
-            zoomCenter =  getScene().convertViewToScene(zoomCenter);
+            zoomCenter =  super.getScene().convertViewToScene(zoomCenter);
         }
 
-        setZoomFactor(zoomFactor);
+        super.setZoomFactor(zoomFactor);
         validateAll();
 
-        Point location = getScene().getLocation();
+        Point location = super.getScene().getLocation();
         visibleRect.x += (int)(zoomFactor * (double)(location.x + zoomCenter.x)) - (int)(oldZoom * (double)(location.x + zoomCenter.x));
         visibleRect.y += (int)(zoomFactor * (double)(location.y + zoomCenter.y)) - (int)(oldZoom * (double)(location.y + zoomCenter.y));
 
@@ -80,15 +79,15 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         visibleRect.x = Math.max(0, visibleRect.x);
         visibleRect.y = Math.max(0, visibleRect.y);
 
-        getView().scrollRectToVisible(visibleRect);
+        super.getView().scrollRectToVisible(visibleRect);
         validateAll();
     }
 
     private JScrollPane createScrollPane(MouseZoomAction mouseZoomAction) {
-        setBackground(Color.WHITE);
-        setOpaque(true);
+        super.setBackground(Color.WHITE);
+        super.setOpaque(true);
 
-        JComponent viewComponent = createView();
+        JComponent viewComponent = super.createView();
         viewComponent.setBackground(Color.WHITE);
         viewComponent.setOpaque(true);
 
@@ -113,7 +112,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     public DiagramScene(DiagramViewModel model) {
-        setCheckClipping(true);
+        super.setCheckClipping(true);
 
         MouseZoomAction mouseZoomAction = new MouseZoomAction(this);
         scrollPane = createScrollPane(mouseZoomAction);
@@ -122,10 +121,10 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         // pressed without any modifier keys, otherwise it will not consume it
         // and the selection action (below) will handle the event
         CustomizablePanAction panAction = new CustomizablePanAction(MouseEvent.BUTTON1_DOWN_MASK);
-        getActions().addAction(panAction);
+        super.getActions().addAction(panAction);
 
         // handle default double-click, when not handled by other DoubleClickHandler
-        getActions().addAction(new DoubleClickAction(this));
+        super.getActions().addAction(new DoubleClickAction(this));
 
         selectAction = new CustomSelectAction(new SelectProvider() {
             public boolean isAimingAllowed(Widget widget, Point localLocation, boolean invertSelection) {
@@ -133,7 +132,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
 
             public boolean isSelectionAllowed(Widget widget, Point localLocation, boolean invertSelection) {
-                return findObject(widget) != null;
+                return DiagramScene.super.findObject(widget) != null;
             }
 
             public void select(Widget widget, Point localLocation, boolean invertSelection) {
@@ -142,7 +141,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     editor.requestActive();
                 }
                 Set<Integer> nodeSelection = new HashSet<>();
-                Object o = findObject(widget);
+                Object o = DiagramScene.super.findObject(widget);
                 if (o instanceof Figure) {
                     nodeSelection.add(((Figure) o).getInputNode().getId());
                 } else if (o instanceof Slot) {
@@ -152,16 +151,16 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
         });
 
-        getActions().addAction(selectAction);
+        super.getActions().addAction(selectAction);
 
         connectionLayer = new LayerWidget(this);
-        addChild(connectionLayer);
+        super.addChild(connectionLayer);
 
         mainLayer = new LayerWidget(this);
-        addChild(mainLayer);
+        super.addChild(mainLayer);
 
-        setBorder(BorderFactory.createLineBorder(Color.white, BORDER_SIZE));
-        getActions().addAction(mouseZoomAction);
+        super.setBorder(BorderFactory.createLineBorder(Color.white, BORDER_SIZE));
+        super.getActions().addAction(mouseZoomAction);
 
         model.getDiagramChangedEvent().addListener(m -> update());
         model.getHiddenNodesChangedEvent().addListener(m -> relayout());
@@ -186,8 +185,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private void clearObjects() {
         slotMap.clear();
         figureMap.clear();
-        for (Object o : getObjects()) {
-            removeObject(o);
+        for (Object o : super.getObjects()) {
+            super.removeObject(o);
         }
     }
 
@@ -281,7 +280,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     }
                 }
             }));
-            addObject(figure, figureWidget);
+            super.addObject(figure, figureWidget);
             figureMap.put(figure, figureWidget);
             mainLayer.addChild(figureWidget);
 
@@ -297,7 +296,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 SlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget);
                 slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
                 slotWidget.getActions().addAction(selectAction);
-                addObject(outputSlot, slotWidget);
                 slotMap.put(outputSlot, slotWidget);
             }
         }
@@ -325,7 +323,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     public void validateAll() {
-        validate();
+        super.validate();
         scrollPane.validate();
     }
 
@@ -497,7 +495,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     public void clearSelectedNodes() {
-        setSelectedObjects(Collections.emptySet());
+        super.setSelectedObjects(Collections.emptySet());
     }
 
     private void setFigureSelection(Set<Figure> list) {
