@@ -33,10 +33,8 @@ public class InputBlock {
 
     private List<InputNode> nodes;
     private final String name;
-    private final int id;
     private final InputGraph graph;
     private final Set<InputBlock> successors;
-    private boolean artificial;
 
     @Override
     public int hashCode() {
@@ -77,10 +75,8 @@ public class InputBlock {
     InputBlock(InputGraph graph, String name, int id) {
         this.graph = graph;
         this.name = name;
-        this.id = id;
         nodes = new ArrayList<>();
         successors = new LinkedHashSet<>(2);
-        artificial = false;
     }
 
     public String getName() {
@@ -112,21 +108,5 @@ public class InputBlock {
     @Override
     public String toString() {
         return "Block " + this.getName();
-    }
-
-    void addSuccessor(InputBlock b) {
-        successors.add(b);
-    }
-
-    void setArtificial() {
-        this.artificial = true;
-    }
-
-    public boolean isArtificial() {
-        return artificial;
-    }
-
-    public int getID() {
-        return id;
     }
 }

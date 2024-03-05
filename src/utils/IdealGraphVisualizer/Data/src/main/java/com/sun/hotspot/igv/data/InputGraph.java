@@ -90,17 +90,6 @@ public class InputGraph extends Properties.Entity implements FolderElement {
         }
     }
 
-    public InputBlockEdge addBlockEdge(InputBlock left, InputBlock right) {
-        return addBlockEdge(left, right, null);
-    }
-
-    public InputBlockEdge addBlockEdge(InputBlock left, InputBlock right, String label) {
-        InputBlockEdge edge = new InputBlockEdge(left, right, label);
-        blockEdges.add(edge);
-        left.addSuccessor(right);
-        return edge;
-    }
-
     public List<InputNode> findRootNodes() {
         List<InputNode> result = new ArrayList<>();
         Set<Integer> nonRoot = new HashSet<>();
@@ -173,35 +162,6 @@ public class InputGraph extends Properties.Entity implements FolderElement {
         result.sort(InputEdge.OUTGOING_COMPARATOR);
 
         return result;
-    }
-
-    public void clearBlocks() {
-        blocks.clear();
-        blockEdges.clear();
-        nodeToBlock.clear();
-    }
-
-    public void ensureNodesInBlocks() {
-        InputBlock noBlock = null;
-        Set<InputNode> scheduledNodes = new HashSet<>();
-
-        for (InputBlock b : getBlocks()) {
-            for (InputNode n : b.getNodes()) {
-                assert !scheduledNodes.contains(n);
-                scheduledNodes.add(n);
-            }
-        }
-
-        for (InputNode n : this.getNodes()) {
-            assert nodes.get(n.getId()) == n;
-            if (!scheduledNodes.contains(n)) {
-                if (noBlock == null) {
-                    noBlock = addArtificialBlock();
-                }
-                noBlock.addNode(n.getId());
-            }
-            assert this.getBlock(n) != null;
-        }
     }
 
     public void setBlock(InputNode node, InputBlock block) {
@@ -323,29 +283,10 @@ public class InputGraph extends Properties.Entity implements FolderElement {
         return sb.toString();
     }
 
-    public InputBlock addArtificialBlock() {
-        return addBlock("(no block)", true);
-    }
-
     public InputBlock addBlock(String name) {
-        return addBlock(name, false);
-    }
-
-    public InputBlock addBlock(String name, boolean artificial) {
-        final InputBlock b = new InputBlock(this, name, artificial ? -1 : blocks.size());
-        if (artificial) {
-            b.setArtificial();
-        }
+        final InputBlock b = new InputBlock(this, name, blocks.size());
         blocks.put(b.getName(), b);
         return b;
-    }
-
-    public InputBlock getBlock(String s) {
-        return blocks.get(s);
-    }
-
-    public Collection<InputBlockEdge> getBlockEdges() {
-        return Collections.unmodifiableList(blockEdges);
     }
 
     @Override

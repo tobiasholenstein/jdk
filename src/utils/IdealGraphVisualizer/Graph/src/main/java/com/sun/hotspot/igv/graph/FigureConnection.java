@@ -23,17 +23,12 @@
  */
 package com.sun.hotspot.igv.graph;
 
-import com.sun.hotspot.igv.layout.Cluster;
 import com.sun.hotspot.igv.layout.Port;
 import java.awt.Color;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author Thomas Wuerthinger
- */
 public class FigureConnection implements Connection {
 
     private final InputSlot inputSlot;
@@ -121,24 +116,10 @@ public class FigureConnection implements Connection {
         return outputSlot;
     }
 
-    @Override
-    public Cluster getFromCluster() {
-        return getFrom().getVertex().getCluster();
-    }
 
     @Override
     public Port getTo() {
         return inputSlot;
-    }
-
-    @Override
-    public Cluster getToCluster() {
-        return getTo().getVertex().getCluster();
-    }
-
-    @Override
-    public boolean isVIP() {
-        return style == ConnectionStyle.BOLD;
     }
 
     @Override

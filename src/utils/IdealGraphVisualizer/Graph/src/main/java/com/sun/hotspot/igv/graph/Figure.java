@@ -25,7 +25,6 @@ package com.sun.hotspot.igv.graph;
 
 import com.sun.hotspot.igv.data.InputNode;
 import com.sun.hotspot.igv.data.Properties;
-import com.sun.hotspot.igv.layout.Cluster;
 import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.*;
 import java.util.List;
@@ -51,7 +50,6 @@ public class Figure extends Properties.Entity implements Vertex {
     private String[] lines;
     private int height = -1;
     private int width = -1;
-    private Block block;
     private final FontMetrics metrics;
 
     public int getHeight() {
@@ -157,10 +155,6 @@ public class Figure extends Properties.Entity implements Vertex {
 
     public String getWarning() {
         return warning;
-    }
-
-    public Block getBlock() {
-        return block;
     }
 
     public List<Figure> getPredecessors() {
@@ -363,15 +357,6 @@ public class Figure extends Properties.Entity implements Vertex {
     @Override
     public String toString() {
         return Integer.toString(id);
-    }
-
-    public Cluster getCluster() {
-        return block;
-    }
-
-    @Override
-    public int getID() {
-        return id;
     }
 
     @Override
