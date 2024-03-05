@@ -65,7 +65,7 @@ public final class PrevDiagramAction extends ModelAwareAction {
     @Override
     public void performAction(DiagramViewModel model) {
         if (model.getFirstPosition() != 0) {
-            model.setPositions(model.getFirstPosition() - 1, model.getSecondPosition() - 1);
+            model.setPosition(model.getFirstPosition() - 1);
         }
     }
 

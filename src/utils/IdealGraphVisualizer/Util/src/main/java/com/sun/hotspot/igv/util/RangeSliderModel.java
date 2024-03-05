@@ -39,40 +39,19 @@ public class RangeSliderModel implements ChangedEventProvider<RangeSliderModel> 
 
     // Warning: Update setData method if fields are added
     private final ChangedEvent<RangeSliderModel> changedEvent;
-    private final ChangedEvent<RangeSliderModel> colorChangedEvent;
     private List<String> positions;
     private int firstPosition;
-    private int secondPosition;
-    private List<Color> colors;
 
     public RangeSliderModel() {
         firstPosition = -1;
-        secondPosition = -1;
         changedEvent = new ChangedEvent<>(this);
-        colorChangedEvent = new ChangedEvent<>(this);
         positions = new ArrayList<>();
-        colors = new ArrayList<>();
     }
 
     protected void setPositions(List<String> positions) {
         this.positions = positions;
-        colors = new ArrayList<>();
-        for (int i = 0; i < positions.size(); i++) {
-            colors.add(Color.black);
-        }
         firstPosition = Math.min(firstPosition, positions.size() - 1);
-        secondPosition = Math.min(secondPosition, positions.size() - 1);
         changedEvent.fire();
-        colorChangedEvent.fire();
-    }
-
-    public void setColors(List<Color> colors) {
-        this.colors = colors;
-        colorChangedEvent.fire();
-    }
-
-    public List<Color> getColors() {
-        return colors;
     }
 
     public List<String> getPositions() {
@@ -83,31 +62,11 @@ public class RangeSliderModel implements ChangedEventProvider<RangeSliderModel> 
         return firstPosition;
     }
 
-    public int getSecondPosition() {
-        return secondPosition;
-    }
-
-    public void setPositions(int fp, int sp) {
-        assert fp >= 0 && fp < positions.size();
-        assert sp >= 0 && sp < positions.size();
-        if (firstPosition != fp || secondPosition != sp) {
+    public void setPosition(int fp) {
+        if (firstPosition != fp) {
             firstPosition = fp;
-            secondPosition = sp;
-            ensureOrder();
             changedEvent.fire();
         }
-    }
-
-    private void ensureOrder() {
-        if (secondPosition < firstPosition) {
-            int tmp = secondPosition;
-            secondPosition = firstPosition;
-            firstPosition = tmp;
-        }
-    }
-
-    public ChangedEvent<RangeSliderModel> getColorChangedEvent() {
-        return colorChangedEvent;
     }
 
     @Override

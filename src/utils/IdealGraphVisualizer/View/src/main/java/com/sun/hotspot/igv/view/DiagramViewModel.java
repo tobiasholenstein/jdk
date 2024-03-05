@@ -132,42 +132,6 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
 
     public void setSelectedNodes(Set<Integer> nodes) {
         selectedNodes = nodes;
-        List<Color> colors = new ArrayList<>();
-        for (String ignored : getPositions()) {
-            colors.add(Color.black);
-        }
-        if (!nodes.isEmpty()) {
-            for (Integer id : nodes) {
-                if (id < 0) {
-                    id = -id;
-                }
-                InputNode last = null;
-                int index = 0;
-                for (InputGraph g : graphs) {
-                    Color curColor = colors.get(index);
-                    InputNode cur = g.getNode(id);
-                    if (cur != null) {
-                        if (last == null) {
-                            curColor = Color.green;
-                        } else {
-                            if (last.equals(cur) && last.getProperties().equals(cur.getProperties())) {
-                                if (curColor == Color.black) {
-                                    curColor = Color.white;
-                                }
-                            } else {
-                                if (curColor != Color.green) {
-                                    curColor = Color.orange;
-                                }
-                            }
-                        }
-                    }
-                    last = cur;
-                    colors.set(index, curColor);
-                    index++;
-                }
-            }
-        }
-        setColors(colors);
         selectedNodesChangedEvent.fire();
     }
 
@@ -270,9 +234,7 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
     }
 
     public void selectGraph(InputGraph graph) {
-        int index = graphs.indexOf(graph);
-        assert index != -1;
-        setPositions(index, index);
+        setPosition(graphs.indexOf(graph));
     }
 
     public Diagram getDiagram() {

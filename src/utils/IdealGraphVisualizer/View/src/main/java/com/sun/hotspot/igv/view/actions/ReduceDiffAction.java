@@ -62,15 +62,11 @@ public final class ReduceDiffAction extends ModelAwareAction {
 
     @Override
     public void performAction(DiagramViewModel model) {
-        int firstPos = model.getFirstPosition();
-        int secondPos = model.getSecondPosition();
-        if (firstPos < secondPos) {
-            model.setPositions(firstPos, secondPos - 1);
-        }
+
     }
 
     @Override
     public boolean isEnabled(DiagramViewModel model) {
-        return model.getFirstPosition() != model.getSecondPosition();
+        return false;
     }
 }

@@ -1089,7 +1089,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             scene.undoRedoEnabled = false;
             oldScrollPosition = scene.getScrollPosition();
             scene.getModel().setHiddenNodes(newState.hiddenNodes);
-            scene.getModel().setPositions(newState.firstPos, newState.secondPos);
+            scene.getModel().setPosition(newState.firstPos);
             scene.setScrollPosition(newScrollPosition);
             scene.undoRedoEnabled = true;
         }
@@ -1100,7 +1100,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
             scene.undoRedoEnabled = false;
             newScrollPosition = scene.getScrollPosition();
             scene.getModel().setHiddenNodes(oldState.hiddenNodes);
-            scene.getModel().setPositions(oldState.firstPos, oldState.secondPos);
+            scene.getModel().setPosition(oldState.firstPos);
             scene.setScrollPosition(oldScrollPosition);
             scene.undoRedoEnabled = true;
         }
@@ -1109,13 +1109,11 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private static class ModelState {
         public final Set<Integer> hiddenNodes;
         public final int firstPos;
-        public final int secondPos;
 
 
         public ModelState(DiagramViewModel model) {
             hiddenNodes = new HashSet<>(model.getHiddenNodes());
             firstPos = model.getFirstPosition();
-            secondPos = model.getSecondPosition();
         }
     }
 

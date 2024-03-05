@@ -40,32 +40,6 @@ public class GraphRemoveCookie implements RemoveCookie {
 
     @Override
     public void remove() {
-        List<InputGraph> list = graph.getGroup().getGraphs();
-        WindowManager manager = WindowManager.getDefault();
-        for (Mode m : manager.getModes()) {
-            for (TopComponent t : manager.getOpenedTopComponents(m)) {
-                if (t instanceof EditorTopComponent) {
-                    DiagramViewModel model = ((EditorTopComponent) t).getModel();
-                    if (!model.getGroup().getGraphs().contains(graph)) {
-                        continue;
-                    }
-                    int firstPosition = model.getFirstPosition();
-                    int secondPosition = model.getSecondPosition();
-                    int targetPosition = list.indexOf(graph);
-                    if (targetPosition == firstPosition || targetPosition == secondPosition) {
-                        t.close();
-                        continue;
-                    }
-                    if (targetPosition < firstPosition) {
-                        firstPosition--;
-                    }
-                    if (targetPosition < secondPosition) {
-                        secondPosition--;
-                    }
-                    model.setPositions(firstPosition, secondPosition);
-                }
-            }
-        }
-        graph.getGroup().removeElement(graph);
+
     }
 }
