@@ -25,7 +25,6 @@
 package com.sun.hotspot.igv.connection;
 
 import com.sun.hotspot.igv.data.services.GroupCallback;
-import com.sun.hotspot.igv.settings.Settings;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
@@ -49,19 +48,18 @@ public class Server implements PreferenceChangeListener {
     public Server(GroupCallback callback) {
         this.callback = callback;
         initializeNetwork();
-        Settings.get().addPreferenceChangeListener(this);
     }
 
     @Override
     public void preferenceChange(PreferenceChangeEvent e) {
-        int curPort = Integer.parseInt(Settings.get().get(Settings.PORT, Settings.PORT_DEFAULT));
+        int curPort = 4444;
         if (curPort != port) {
             initializeNetwork();
         }
     }
 
     private void initializeNetwork() {
-        int curPort = Integer.parseInt(Settings.get().get(Settings.PORT, Settings.PORT_DEFAULT));
+        int curPort = 4444;
         this.port = curPort;
         try {
             serverSocket = ServerSocketChannel.open();

@@ -25,7 +25,7 @@
 package com.sun.hotspot.igv.coordinator.actions;
 
 import com.sun.hotspot.igv.coordinator.OutlineTopComponent;
-import com.sun.hotspot.igv.settings.Settings;
+import com.sun.hotspot.igv.data.GraphDocument;
 import java.io.File;
 import java.io.IOException;
 import javax.swing.Action;
@@ -60,7 +60,7 @@ public final class ImportAction extends CallableSystemAction {
     public void performAction() {
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(ImportAction.getFileFilter());
-        fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
+        fc.setCurrentDirectory(new File(GraphDocument.DIRECTORY_DEFAULT));
         fc.setMultiSelectionEnabled(true);
 
         if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
@@ -70,7 +70,7 @@ public final class ImportAction extends CallableSystemAction {
                     dir = dir.getParentFile();
                 }
 
-                Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
+                GraphDocument.DIRECTORY_DEFAULT = dir.getAbsolutePath();
                 try {
                     final OutlineTopComponent component = OutlineTopComponent.findInstance();
                     component.loadFile(file.getAbsolutePath());

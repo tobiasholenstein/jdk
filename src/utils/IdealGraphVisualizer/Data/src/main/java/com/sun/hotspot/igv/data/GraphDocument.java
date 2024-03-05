@@ -32,6 +32,7 @@ import java.util.List;
  */
 public class GraphDocument extends Properties.Entity implements ChangedEventProvider<GraphDocument>, Folder {
 
+    public static String DIRECTORY_DEFAULT = System.getProperty("user.dir");
     private final List<FolderElement> elements;
     private final ChangedEvent<GraphDocument> changedEvent;
     private String name;

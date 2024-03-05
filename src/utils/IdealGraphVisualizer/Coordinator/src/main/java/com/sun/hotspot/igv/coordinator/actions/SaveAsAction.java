@@ -29,7 +29,6 @@ import com.sun.hotspot.igv.data.Folder;
 import com.sun.hotspot.igv.data.GraphDocument;
 import com.sun.hotspot.igv.data.Group;
 import com.sun.hotspot.igv.data.serialization.Printer;
-import com.sun.hotspot.igv.settings.Settings;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -71,7 +70,7 @@ public final class SaveAsAction extends NodeAction {
     public static void save(GraphDocument doc) {
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(ImportAction.getFileFilter());
-        fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
+        fc.setCurrentDirectory(new File(GraphDocument.DIRECTORY_DEFAULT));
 
         if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
@@ -83,7 +82,7 @@ public final class SaveAsAction extends NodeAction {
             if (!dir.isDirectory()) {
                 dir = dir.getParentFile();
             }
-            Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
+            GraphDocument.DIRECTORY_DEFAULT =dir.getAbsolutePath();
 
             export(file, doc);
         }

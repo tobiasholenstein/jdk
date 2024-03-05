@@ -5,7 +5,6 @@ import com.sun.hotspot.igv.filter.FilterChain;
 import com.sun.hotspot.igv.filter.FilterChainProvider;
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
-import com.sun.hotspot.igv.settings.Settings;
 import java.util.*;
 import org.openide.util.Lookup;
 
@@ -171,13 +170,23 @@ public class DiagramViewModel {
         filterChain.getChangedEvent().removeListener(filterChainChangedListener);
     }
 
+
+    public static final String NODE_TEXT_DEFAULT = "[idx] [name]";
+
+
+
+    public static final String NODE_TINY_TEXT_DEFAULT = "[idx]";
+
+    public static final String NODE_SHORT_TEXT_DEFAULT = "[idx] [name]";
+
+
     private void rebuildDiagram() {
         // clear diagram
         InputGraph graph = getGraph();
         diagram = new Diagram(graph,
-                Settings.get().get(Settings.NODE_TEXT, Settings.NODE_TEXT_DEFAULT),
-                Settings.get().get(Settings.NODE_SHORT_TEXT, Settings.NODE_SHORT_TEXT_DEFAULT),
-                Settings.get().get(Settings.NODE_TINY_TEXT, Settings.NODE_TINY_TEXT_DEFAULT));
+                NODE_TEXT_DEFAULT,
+                NODE_SHORT_TEXT_DEFAULT,
+                NODE_TINY_TEXT_DEFAULT);
         filterChain.applyInOrder(diagram, filtersOrder);
         diagramChangedEvent.fire();
     }
