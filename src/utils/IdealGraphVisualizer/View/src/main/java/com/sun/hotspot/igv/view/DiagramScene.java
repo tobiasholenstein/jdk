@@ -169,7 +169,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         addChild(mainLayer);
 
         setBorder(BorderFactory.createLineBorder(Color.white, BORDER_SIZE));
-        setLayout(LayoutFactory.createAbsoluteLayout());
         getActions().addAction(mouseZoomAction);
 
         ObjectSceneListener selectionChangedListener = new ObjectSceneListener() {
@@ -205,7 +204,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             @Override
             public void focusChanged(ObjectSceneEvent arg0, Object arg1, Object arg2) {}
         };
-        addObjectSceneListener(selectionChangedListener, ObjectSceneEventType.OBJECT_SELECTION_CHANGED, ObjectSceneEventType.OBJECT_HIGHLIGHTING_CHANGED, ObjectSceneEventType.OBJECT_HOVER_CHANGED);
+        addObjectSceneListener(selectionChangedListener, ObjectSceneEventType.OBJECT_SELECTION_CHANGED);
 
         model.getDiagramChangedEvent().addListener(m -> update());
         model.getHiddenNodesChangedEvent().addListener(m -> relayout());
