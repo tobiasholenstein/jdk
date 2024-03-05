@@ -1,6 +1,5 @@
 package com.sun.hotspot.igv.graph;
 
-import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.data.*;
 import java.awt.Font;
 import java.util.*;
@@ -11,19 +10,15 @@ public class Diagram {
     private List<Figure> figures;
     private final String nodeText;
     private final String shortNodeText;
-    private final String tinyNodeText;
     public static final Font FONT = new Font("Arial", Font.PLAIN, 12);
     public static final Font SLOT_FONT = new Font("Arial", Font.PLAIN, 10);
     public static final Font BOLD_FONT = FONT.deriveFont(Font.BOLD);
 
 
-    public Diagram(InputGraph graph, String nodeText, String shortNodeText,
-                   String tinyNodeText) {
+    public Diagram(InputGraph graph) {
         assert graph != null;
-
-        this.nodeText = nodeText;
-        this.shortNodeText = shortNodeText;
-        this.tinyNodeText = tinyNodeText;
+        this.nodeText = "[idx] [name]";
+        this.shortNodeText = "[idx] [name]";
         this.figures = new ArrayList<>();
         int curId = 0;
 
@@ -84,10 +79,6 @@ public class Diagram {
         return shortNodeText;
     }
 
-    public String getTinyNodeText() {
-        return tinyNodeText;
-    }
-
     public List<Figure> getFigures() {
         return Collections.unmodifiableList(figures);
     }
@@ -139,14 +130,4 @@ public class Diagram {
         }
         return connections;
     }
-
-    public Figure getRootFigure() {
-        Properties.PropertySelector<Figure> selector = new Properties.PropertySelector<>(figures);
-        Figure root = selector.selectSingle(new Properties.StringPropertyMatcher("name", "Root"));
-        if (root == null) {
-            root = selector.selectSingle(new Properties.StringPropertyMatcher("name", "Start"));
-        }
-        return root;
-    }
-
 }

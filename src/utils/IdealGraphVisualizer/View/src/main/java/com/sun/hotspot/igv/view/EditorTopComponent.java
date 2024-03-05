@@ -42,7 +42,7 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.add(new JToggleButton(new PredSuccAction(diagramViewModel.getShowNodeHull())));
         add(toolBar, BorderLayout.NORTH);
 
-        setDisplayName(diagramViewModel.getGraph().getDisplayName());
+        setDisplayName(graph.getDisplayName());
     }
 
     public DiagramViewModel getModel() {

@@ -43,7 +43,7 @@ public class DiagramViewModel {
         showNodeHull = true;
         hiddenNodes = new HashSet<>();
         selectedNodes = new HashSet<>();
-        selectGraph(graph);
+        setPosition(graphs.indexOf(graph));
     }
 
     public int getPosition() {
@@ -60,10 +60,6 @@ public class DiagramViewModel {
             }
             rebuildDiagram();
         }
-    }
-
-    public void selectGraph(InputGraph graph) {
-        setPosition(graphs.indexOf(graph));
     }
 
     public InputGraph getGraph() {
@@ -161,20 +157,10 @@ public class DiagramViewModel {
         filterChain.getChangedEvent().removeListener(filterChainChangedListener);
     }
 
-    public static final String NODE_TEXT_DEFAULT = "[idx] [name]";
-
-    public static final String NODE_TINY_TEXT_DEFAULT = "[idx]";
-
-    public static final String NODE_SHORT_TEXT_DEFAULT = "[idx] [name]";
-
-
     private void rebuildDiagram() {
         // clear diagram
         InputGraph graph = getGraph();
-        diagram = new Diagram(graph,
-                NODE_TEXT_DEFAULT,
-                NODE_SHORT_TEXT_DEFAULT,
-                NODE_TINY_TEXT_DEFAULT);
+        diagram = new Diagram(graph);
         filterChain.applyInOrder(diagram, filtersOrder);
         diagramChangedEvent.fire();
     }
