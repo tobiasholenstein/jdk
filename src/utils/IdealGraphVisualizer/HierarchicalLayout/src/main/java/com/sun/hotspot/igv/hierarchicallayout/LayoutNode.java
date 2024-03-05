@@ -45,13 +45,10 @@ public class LayoutNode {
     private int rightMargin;
     private int leftMargin;
 
-    // TODO make final
     private Vertex vertex; // Only used for non-dummy nodes, otherwise null
 
     private final List<LayoutEdge> preds = new ArrayList<>();
     private final List<LayoutEdge> succs = new ArrayList<>();
-    private final HashMap<Integer, Integer> outOffsets = new HashMap<>(); // deprecated
-    private final HashMap<Integer, Integer> inOffsets = new HashMap<>(); // deprecated
     private final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();
     private final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
     private int pos = -1; // Position within layer
@@ -250,14 +247,6 @@ public class LayoutNode {
 
     public List<LayoutEdge> getSuccs() {
         return succs;
-    }
-
-    public HashMap<Integer, Integer> getOutOffsets() {
-        return outOffsets;
-    }
-
-    public HashMap<Integer, Integer> getInOffsets() {
-        return inOffsets;
     }
 
     public HashMap<Link, List<Point>> getReversedLinkStartPoints() {
