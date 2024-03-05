@@ -23,25 +23,23 @@
  */
 package com.sun.hotspot.igv.coordinator;
 
-import com.sun.hotspot.igv.coordinator.actions.*;
 import com.sun.hotspot.igv.data.InputGraph;
 import com.sun.hotspot.igv.data.Properties;
-import com.sun.hotspot.igv.data.services.GraphViewer;
 import com.sun.hotspot.igv.util.PropertiesSheet;
 import com.sun.hotspot.igv.util.StringUtils;
+import com.sun.hotspot.igv.view.EditorTopComponent;
 import java.awt.Image;
+import java.awt.event.ActionEvent;
+import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.SwingUtilities;
 import org.openide.actions.OpenAction;
 import org.openide.nodes.*;
 import org.openide.util.ImageUtilities;
-import org.openide.util.Lookup;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 
-/**
- *
- * @author Thomas Wuerthinger
- */
+
 public class GraphNode extends AbstractNode {
 
     private final InputGraph graph;
@@ -92,14 +90,8 @@ public class GraphNode extends AbstractNode {
         super(Children.LEAF, new AbstractLookup(content));
         this.graph = graph;
         this.setDisplayName(graph.getName());
+
         content.add(graph);
-
-        final GraphViewer viewer = Lookup.getDefault().lookup(GraphViewer.class);
-
-        if (viewer != null) {
-            // Action for opening the graph
-            content.add(new GraphOpenCookie(viewer, graph));
-        }
     }
 
     @Override
@@ -136,7 +128,17 @@ public class GraphNode extends AbstractNode {
 
     @Override
     public Action getPreferredAction() {
-        return OpenAction.findObject(OpenAction.class, true);
+        // Return an Action that should be performed on double-click
+        return new AbstractAction("Open") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    EditorTopComponent etc = new EditorTopComponent(graph);
+                    etc.open();
+                    etc.requestActive();
+                });
+            }
+        };
     }
 
     @Override

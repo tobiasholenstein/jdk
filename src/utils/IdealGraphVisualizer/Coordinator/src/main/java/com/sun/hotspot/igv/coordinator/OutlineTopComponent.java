@@ -28,7 +28,6 @@ import com.sun.hotspot.igv.coordinator.actions.*;
 import com.sun.hotspot.igv.data.*;
 import com.sun.hotspot.igv.data.serialization.ParseMonitor;
 import com.sun.hotspot.igv.data.serialization.Parser;
-import com.sun.hotspot.igv.data.services.GraphViewer;
 import com.sun.hotspot.igv.data.services.GroupCallback;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
 import com.sun.hotspot.igv.util.LookupHistory;
@@ -277,8 +276,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             try {
                 FileInputStream fis = new FileInputStream(openedPath);
                 ObjectInputStream in = new ObjectInputStream(fis);
-                final GraphViewer viewer = Lookup.getDefault().lookup(GraphViewer.class);
-                assert viewer != null;
                 int tabCount = in.readInt();
                 for (int i = 0; i < tabCount; i++) {
                     final boolean isDiffGraph = in.readBoolean();
@@ -298,7 +295,9 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                     }
 
                     SwingUtilities.invokeLater(() -> {
-                        viewer.view(firstGraph, true);
+                        EditorTopComponent etc = new EditorTopComponent(firstGraph);
+                        etc.open();
+                        etc.requestActive();
                     });
                 }
                 in.close();
