@@ -67,7 +67,7 @@ public class OverviewAction extends AbstractAction {
         EditorTopComponent editor = EditorTopComponent.getActive();
         if (editor != null) {
             boolean selected = (boolean)getValue(SELECTED_KEY);
-            editor.showSatellite(selected);
+            //editor.showSatellite(selected);
         }
     }
 
@@ -75,7 +75,7 @@ public class OverviewAction extends AbstractAction {
         EditorTopComponent editor = EditorTopComponent.getActive();
         if (editor != null) {
             putValue(Action.SELECTED_KEY, selected);
-            editor.showSatellite(selected);
+            //editor.showSatellite(selected);
         }
     }
 

@@ -34,8 +34,6 @@ import com.sun.hotspot.igv.util.RangeSlider;
 import com.sun.hotspot.igv.util.StringUtils;
 import com.sun.hotspot.igv.view.actions.*;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
 import java.util.List;
 import java.util.*;
 import javax.swing.*;
@@ -64,9 +62,6 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
 
     private final DiagramViewer scene;
     private final InstanceContent graphContent;
-    private final JComponent satelliteComponent;
-    private final JPanel centerPanel;
-    private final CardLayout cardLayout;
     private final Toolbar quickSearchToolbar;
     private boolean useBoldDisplayName = false;
     private static final JPanel quickSearchPresenter = (JPanel) ((Presenter.Toolbar) Utilities.actionsForPath("Actions/Search").get(0)).getToolbarPresenter();
@@ -87,9 +82,6 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
                 PrevDiagramAction.get(PrevDiagramAction.class),
                 NextDiagramAction.get(NextDiagramAction.class),
                 null,
-                ReduceDiffAction.get(ReduceDiffAction.class),
-                ExpandDiffAction.get(ExpandDiffAction.class),
-                null,
                 ExtractAction.get(ExtractAction.class),
                 HideAction.get(HideAction.class),
                 ShowAllAction.get(ShowAllAction.class),
@@ -101,9 +93,6 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
         Action[] actionsWithSelection = new Action[]{
                 ExtractAction.get(ExtractAction.class),
                 HideAction.get(HideAction.class),
-                null,
-                ExpandPredecessorsAction.get(ExpandPredecessorsAction.class),
-                ExpandSuccessorsAction.get(ExpandSuccessorsAction.class)
         };
 
         JPanel container = new JPanel(new BorderLayout());
@@ -137,25 +126,7 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
 
         diagramViewModel.getGraphChangedEvent().addListener(this::graphChanged);
 
-        cardLayout = new CardLayout();
-        centerPanel = new JPanel();
-        centerPanel.setLayout(cardLayout);
-        centerPanel.setBackground(Color.WHITE);
-        satelliteComponent = scene.createSatelliteView();
-        satelliteComponent.setSize(200, 200);
-        // needed to update when the satellite component is moved
-        satelliteComponent.addMouseMotionListener(new MouseMotionListener() {
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                centerPanel.repaint();
-            }
-
-            @Override
-            public void mouseMoved(MouseEvent e) {}
-        });
-        centerPanel.add(SCENE_STRING, scene.getComponent());
-        centerPanel.add(SATELLITE_STRING, satelliteComponent);
-        add(centerPanel, BorderLayout.CENTER);
+        add(scene.getComponent(), BorderLayout.CENTER);
 
         ToolbarPool.getDefault().setPreferredIconSize(16);
         Toolbar toolBar = new Toolbar();
@@ -232,7 +203,6 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
         toolBar.add(globalSelectionButton);
         toolBar.add(new JToggleButton(new SelectionModeAction()));
         toolBar.addSeparator();
-        toolBar.add(new JToggleButton(new OverviewAction(centerPanel)));
         toolBar.add(new ZoomLevelAction(scene));
         toolBar.add(Box.createHorizontalGlue());
 
@@ -271,16 +241,6 @@ public final class EditorTopComponent extends TopComponent implements TopCompone
             scene.setInteractionMode(DiagramViewer.InteractionMode.SELECTION);
         } else {
             scene.setInteractionMode(DiagramViewer.InteractionMode.PANNING);
-        }
-    }
-
-    public void showSatellite(boolean enable) {
-        if (enable) {
-            cardLayout.show(centerPanel, SATELLITE_STRING);
-            satelliteComponent.requestFocus();
-        } else {
-            cardLayout.show(centerPanel, SCENE_STRING);
-            scene.getComponent().requestFocus();
         }
     }
 
