@@ -30,6 +30,5 @@ import com.sun.hotspot.igv.data.InputGraph;
  * @author Thomas Wuerthinger
  */
 public interface GraphViewer {
-
-    InputGraph view(InputGraph graph, boolean newTab);
+    void view(InputGraph graph, boolean newTab);
 }

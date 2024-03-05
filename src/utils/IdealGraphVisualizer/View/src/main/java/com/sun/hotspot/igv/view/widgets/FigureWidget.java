@@ -64,7 +64,7 @@ import org.openide.util.ImageUtilities;
  *
  * @author Thomas Wuerthinger
  */
-public class FigureWidget extends Widget implements Properties.Provider, PopupMenuProvider, DoubleClickHandler {
+public class FigureWidget extends Widget implements Properties.Provider, DoubleClickHandler {
 
     private static final double LABEL_ZOOM_FACTOR = 0.3;
     private final Figure figure;
@@ -291,18 +291,6 @@ public class FigureWidget extends Widget implements Properties.Provider, PopupMe
         if (boundary) {
             getScene().getGraphics().setComposite(oldComposite);
         }
-    }
-
-    @Override
-    public JPopupMenu getPopupMenu(Widget widget, Point point) {
-        JPopupMenu menu = diagramScene.createPopupMenu();
-        menu.addSeparator();
-
-        build(menu, getFigure(), this, false, diagramScene);
-        menu.addSeparator();
-        build(menu, getFigure(), this, true, diagramScene);
-
-        return menu;
     }
 
     public static void build(JPopupMenu menu, Figure figure, FigureWidget figureWidget, boolean successors, DiagramScene diagramScene) {

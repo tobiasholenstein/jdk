@@ -31,19 +31,10 @@ import org.openide.util.lookup.ServiceProvider;
 public class GraphViewerImplementation implements GraphViewer {
 
     @Override
-    public InputGraph view(InputGraph graph, boolean newTab) {
-        if (!newTab) {
-            EditorTopComponent etc = EditorTopComponent.findEditorForGraph(graph);
-            if (etc != null) {
-                etc.getModel().selectGraph(graph);
-                etc.requestActive();
-                return etc.getModel().getGraph();
-            }
-        }
+    public void view(InputGraph graph, boolean newTab) {
         DiagramViewModel model = new DiagramViewModel(graph);
         EditorTopComponent etc = new EditorTopComponent(model);
         etc.open();
         etc.requestActive();
-        return etc.getModel().getGraph();
     }
 }

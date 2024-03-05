@@ -35,9 +35,7 @@ import com.sun.hotspot.igv.util.ColorIcon;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.util.PropertiesSheet;
-import com.sun.hotspot.igv.view.actions.CustomSelectAction;
-import com.sun.hotspot.igv.view.actions.CustomizablePanAction;
-import com.sun.hotspot.igv.view.actions.MouseZoomAction;
+import com.sun.hotspot.igv.view.actions.*;
 import com.sun.hotspot.igv.view.widgets.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -77,8 +75,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private final WidgetAction selectAction;
     private final Lookup lookup;
     private final InstanceContent content;
-    private final Action[] actions;
-    private final Action[] actionsWithSelection;
     private final JScrollPane scrollPane;
     private UndoRedo.Manager undoRedoManager;
     private final LayerWidget mainLayer;
@@ -268,10 +264,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         return scrollPane;
     }
 
-    public DiagramScene(Action[] actions, Action[] actionsWithSelection, DiagramViewModel model) {
-        this.actions = actions;
-        this.actionsWithSelection = actionsWithSelection;
-
+    public DiagramScene(DiagramViewModel model) {
         content = new InstanceContent();
         lookup = new AbstractLookup(content);
 
@@ -338,7 +331,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         setBorder(BorderFactory.createLineBorder(Color.white, BORDER_SIZE));
         setLayout(LayoutFactory.createAbsoluteLayout());
         getActions().addAction(mouseZoomAction);
-        getActions().addAction(ActionFactory.createPopupMenuAction((widget, localLocation) -> createPopupMenu()));
 
         LayerWidget selectLayer = new LayerWidget(this);
         addChild(selectLayer);
@@ -593,7 +585,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
         for (Figure figure : getModel().getDiagram().getFigures()) {
             FigureWidget figureWidget = new FigureWidget(figure, this);
             figureWidget.setVisible(false);
-            figureWidget.getActions().addAction(ActionFactory.createPopupMenuAction(figureWidget));
             figureWidget.getActions().addAction(selectAction);
             figureWidget.getActions().addAction(hoverAction);
             figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
@@ -1472,23 +1463,6 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
         centerSingleSelectedFigure();
         rebuilding = false;
-    }
-
-    public JPopupMenu createPopupMenu() {
-        JPopupMenu menu = new JPopupMenu();
-
-        Action[] currentActions = actionsWithSelection;
-        if (getSelectedObjects().isEmpty()) {
-            currentActions = actions;
-        }
-        for (Action a : currentActions) {
-            if (a == null) {
-                menu.addSeparator();
-            } else {
-                menu.add(a);
-            }
-        }
-        return menu;
     }
 
     private boolean undoRedoEnabled = true;

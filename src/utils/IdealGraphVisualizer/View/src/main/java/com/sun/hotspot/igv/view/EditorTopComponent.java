@@ -34,50 +34,14 @@ public final class EditorTopComponent extends TopComponent {
 
     public EditorTopComponent(DiagramViewModel diagramViewModel) {
         initComponents();
-
         LookupHistory.init(InputGraphProvider.class);
-        setFocusable(true);
-
-        setName(NbBundle.getMessage(EditorTopComponent.class, "CTL_EditorTopComponent"));
-        setToolTipText(NbBundle.getMessage(EditorTopComponent.class, "HINT_EditorTopComponent"));
-
-        Action[] actions = new Action[]{
-                PrevDiagramAction.get(PrevDiagramAction.class),
-                NextDiagramAction.get(NextDiagramAction.class),
-                null,
-                ExtractAction.get(ExtractAction.class),
-                HideAction.get(HideAction.class),
-                ShowAllAction.get(ShowAllAction.class),
-                null,
-                ZoomOutAction.get(ZoomOutAction.class),
-                ZoomInAction.get(ZoomInAction.class),
-        };
-
-        Action[] actionsWithSelection = new Action[]{
-                ExtractAction.get(ExtractAction.class),
-                HideAction.get(HideAction.class),
-        };
-
-
-        scene = new DiagramScene(actions, actionsWithSelection, diagramViewModel);
+        scene = new DiagramScene(diagramViewModel);
         graphContent = new InstanceContent();
         InstanceContent content = new InstanceContent();
         content.add(diagramViewModel);
         associateLookup(new ProxyLookup(scene.getLookup(), new AbstractLookup(graphContent), new AbstractLookup(content)));
 
-        Group group = diagramViewModel.getGroup();
-        group.getChangedEvent().addListener(g -> closeOnRemovedOrEmptyGroup());
-        if (group.getParent() instanceof GraphDocument doc) {
-            doc.getChangedEvent().addListener(d -> closeOnRemovedOrEmptyGroup());
-        }
-
-        diagramViewModel.addTitleCallback(changedGraph -> {
-            setDisplayName(changedGraph.getDisplayName());
-            setToolTipText(diagramViewModel.getGroup().getDisplayName());
-        });
-
-        diagramViewModel.getGraphChangedEvent().addListener(this::graphChanged);
-
+        setDisplayName(diagramViewModel.getGraph().getDisplayName());
 
         getModel().setShowSea(true);
 
@@ -100,15 +64,8 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.add(new JToggleButton(new SelectionModeAction()));
         toolBar.add(new ZoomLevelAction(scene));
         add(toolBar, BorderLayout.NORTH);
-
-        graphChanged(diagramViewModel);
     }
 
-    private void graphChanged(DiagramViewModel model) {
-        setDisplayName(model.getGraph().getDisplayName());
-        setToolTipText(model.getGroup().getDisplayName());
-        graphContent.set(Collections.singletonList(new EditorInputGraphProvider(this)), null);
-    }
 
     public DiagramViewModel getModel() {
         return scene.getModel();
@@ -134,48 +91,6 @@ public final class EditorTopComponent extends TopComponent {
         scene.setZoomPercentage(percentage);
     }
 
-    public static boolean isOpen(EditorTopComponent editor) {
-        return WindowManager.getDefault().isOpenedEditorTopComponent(editor);
-    }
-
-    public static EditorTopComponent getActive() {
-        TopComponent topComponent = getRegistry().getActivated();
-        if (topComponent instanceof EditorTopComponent) {
-            return (EditorTopComponent) topComponent;
-        }
-        return null;
-    }
-
-    public static EditorTopComponent findEditorForGraph(InputGraph graph) {
-        WindowManager manager = WindowManager.getDefault();
-        for (Mode m : manager.getModes()) {
-            List<TopComponent> l = new ArrayList<>();
-            l.add(m.getSelectedTopComponent());
-            l.addAll(Arrays.asList(manager.getOpenedTopComponents(m)));
-            for (TopComponent t : l) {
-                if (t instanceof EditorTopComponent) {
-                    EditorTopComponent etc = (EditorTopComponent) t;
-                    if (etc.getModel().getGroup().getGraphs().contains(graph)) {
-                        return etc;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public int getPersistenceType() {
-        return TopComponent.PERSISTENCE_NEVER;
-    }
-
-    private void closeOnRemovedOrEmptyGroup() {
-        Group group = getModel().getGroup();
-        if (!group.getParent().getElements().contains(group) ||
-            group.getGraphs().isEmpty()) {
-            close();
-        }
-    }
 
     public void addSelectedNodes(Collection<InputNode> nodes, boolean showIfHidden) {
         scene.addSelectedNodes(nodes, showIfHidden);
@@ -189,12 +104,21 @@ public final class EditorTopComponent extends TopComponent {
         scene.clearSelectedNodes();
     }
 
-    public Rectangle getSceneBounds() {
-        return scene.getBounds();
+    public static boolean isOpen(EditorTopComponent editor) {
+        return WindowManager.getDefault().isOpenedEditorTopComponent(editor);
     }
 
-    public void paintScene(Graphics2D generator) {
-        scene.paint(generator);
+    public static EditorTopComponent getActive() {
+        TopComponent topComponent = getRegistry().getActivated();
+        if (topComponent instanceof EditorTopComponent) {
+            return (EditorTopComponent) topComponent;
+        }
+        return null;
+    }
+
+    @Override
+    public int getPersistenceType() {
+        return TopComponent.PERSISTENCE_NEVER;
     }
 
     @Override

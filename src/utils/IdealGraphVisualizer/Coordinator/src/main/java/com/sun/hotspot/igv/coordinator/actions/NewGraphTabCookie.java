@@ -39,7 +39,7 @@ public class NewGraphTabCookie implements Node.Cookie {
     }
 
     public boolean isActive() {
-        return EditorTopComponent.findEditorForGraph(graph) != null;
+        return true;
     }
 
     public void openNewTab() {

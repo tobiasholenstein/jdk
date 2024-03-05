@@ -325,13 +325,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                     }
 
                     SwingUtilities.invokeLater(() -> {
-                        InputGraph openedGraph = viewer.view(firstGraph, true);
-                        if (openedGraph != null) {
-                            EditorTopComponent etc = EditorTopComponent.findEditorForGraph(openedGraph);
-                            if (etc != null) {
-                                etc.getModel().setHiddenNodes(hiddenNodes);
-                            }
-                        }
+                        viewer.view(firstGraph, true);
                     });
                 }
                 in.close();

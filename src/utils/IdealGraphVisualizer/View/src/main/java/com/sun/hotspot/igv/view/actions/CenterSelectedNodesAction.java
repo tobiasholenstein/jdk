@@ -60,10 +60,6 @@ public final class CenterSelectedNodesAction extends ModelAwareAction {
 
     @Override
     public void performAction(DiagramViewModel model) {
-        EditorTopComponent editor = EditorTopComponent.findEditorForGraph(model.getGraph());
-        if (editor != null) {
-            editor.centerSelectedNodes();
-        }
     }
 
     @Override
