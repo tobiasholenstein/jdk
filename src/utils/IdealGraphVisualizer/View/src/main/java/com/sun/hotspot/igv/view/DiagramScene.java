@@ -427,7 +427,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 newPredecessor.setVisible(isVisible);
 
                 connectionLayer.addChild(newPredecessor);
-                addObject(new ConnectionSet(connectionList), newPredecessor);
                 newPredecessor.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
 
 
@@ -507,17 +506,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
         clearSelectedNodes();
     }
-
-    private class ConnectionSet {
-
-        private Collection<? extends Connection> connections;
-
-        public ConnectionSet(Collection<? extends Connection> connections) {
-            this.connections = connections;
-        }
-    }
-
-
 
     public void addSelectedNodes(Collection<InputNode> nodes, boolean showIfHidden) {
         Set<Integer> nodeIds = new HashSet<>(model.getSelectedNodes());
