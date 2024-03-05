@@ -30,13 +30,27 @@ import com.sun.hotspot.igv.filter.FilterChainProvider;
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
 import com.sun.hotspot.igv.settings.Settings;
-import com.sun.hotspot.igv.util.RangeSliderModel;
-import java.awt.Color;
 import java.util.*;
 import org.openide.util.Lookup;
 
 
-public class DiagramViewModel extends RangeSliderModel implements ChangedListener<RangeSliderModel> {
+public class DiagramViewModel {
+
+    private int firstPosition = -1;
+
+
+    public int getFirstPosition() {
+        return firstPosition;
+    }
+
+    public void setPosition(int fp) {
+        if (firstPosition != fp) {
+            firstPosition = fp;
+            cachedInputGraph = getFirstGraph();
+            rebuildDiagram();
+            graphChangedEvent.fire();
+        }
+    }
 
     private final Group group;
     private ArrayList<InputGraph> graphs;
@@ -88,7 +102,6 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
             setSelectedNodes(selectedNodes);
         });
         filterGraphs();
-        super.getChangedEvent().addListener(this);
     }
 
     public DiagramViewModel(InputGraph graph) {
@@ -184,7 +197,6 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
 
     void close() {
         filterChain.getChangedEvent().removeListener(filterChainChangedListener);
-        getChangedEvent().fire();
     }
 
     private void rebuildDiagram() {
@@ -198,26 +210,11 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
         diagramChangedEvent.fire();
     }
 
-    public FilterChain getFilterChain() {
-        return filterChain;
-    }
-
-    public FilterChain getCustomFilterChain() {
-        return customFilterChain;
-    }
-
     /*
      * Select the set of graphs to be presented.
      */
     private void filterGraphs() {
-        ArrayList<InputGraph> result = new ArrayList<>();
-        List<String> positions = new ArrayList<>();
-        for (InputGraph graph : group.getGraphs()) {
-            result.add(graph);
-            positions.add(graph.getName());
-        }
-        this.graphs = result;
-        setPositions(positions);
+        this.graphs = new ArrayList<>(group.getGraphs());
     }
 
     public InputGraph getFirstGraph() {
@@ -243,12 +240,5 @@ public class DiagramViewModel extends RangeSliderModel implements ChangedListene
 
     public InputGraph getGraph() {
         return cachedInputGraph;
-    }
-
-    @Override
-    public void changed(RangeSliderModel source) {
-        cachedInputGraph = getFirstGraph();
-        rebuildDiagram();
-        graphChangedEvent.fire();
     }
 }

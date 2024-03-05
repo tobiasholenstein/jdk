@@ -34,7 +34,7 @@ import javax.swing.JComponent;
  */
 public class RangeSlider extends JComponent {
 
-    public RangeSlider(RangeSliderModel newModel) {}
+    public RangeSlider() {}
 
 
 

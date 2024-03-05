@@ -63,13 +63,13 @@ public final class NextDiagramAction extends ModelAwareAction {
 
     @Override
     public void performAction(DiagramViewModel model) {
-        if (model.getFirstPosition() != model.getPositions().size() - 1) {
+        if (model.getFirstPosition() != model.getGroup().getGraphs().size() - 1) {
             model.setPosition(model.getFirstPosition() + 1);
         }
     }
 
     @Override
     public boolean isEnabled(DiagramViewModel model) {
-        return model.getFirstPosition() != model.getPositions().size() - 1;
+        return model.getFirstPosition() != model.getGroup().getGraphs().size()  - 1;
     }
 }
