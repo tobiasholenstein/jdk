@@ -4,10 +4,7 @@ import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.data.*;
 import com.sun.hotspot.igv.graph.*;
 import com.sun.hotspot.igv.hierarchicallayout.*;
-import com.sun.hotspot.igv.layout.Cluster;
 import com.sun.hotspot.igv.layout.LayoutGraph;
-import com.sun.hotspot.igv.layout.LayoutManager;
-import com.sun.hotspot.igv.util.ColorIcon;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.util.PropertiesSheet;
@@ -1113,7 +1110,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
 
         public ModelState(DiagramViewModel model) {
             hiddenNodes = new HashSet<>(model.getHiddenNodes());
-            firstPos = model.getFirstPosition();
+            firstPos = model.getPosition();
         }
     }
 

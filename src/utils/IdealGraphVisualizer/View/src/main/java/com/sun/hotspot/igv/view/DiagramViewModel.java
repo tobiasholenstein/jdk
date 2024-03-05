@@ -1,27 +1,3 @@
-/*
- * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have any
- * questions.
- */
 package com.sun.hotspot.igv.view;
 
 import com.sun.hotspot.igv.data.*;
@@ -36,31 +12,16 @@ import org.openide.util.Lookup;
 
 public class DiagramViewModel {
 
-    private int firstPosition = -1;
-
-
-    public int getFirstPosition() {
-        return firstPosition;
-    }
-
-    public void setPosition(int fp) {
-        if (firstPosition != fp) {
-            firstPosition = fp;
-            cachedInputGraph = getFirstGraph();
-            rebuildDiagram();
-            graphChangedEvent.fire();
-        }
-    }
-
     private final Group group;
-    private ArrayList<InputGraph> graphs;
+    private final ArrayList<InputGraph> graphs;
     private Set<Integer> hiddenNodes;
     private Set<Integer> selectedNodes;
     private FilterChain filterChain;
     private final FilterChain customFilterChain;
     private final FilterChain filtersOrder;
     private Diagram diagram;
-    private InputGraph cachedInputGraph;
+    private int position = -1;
+    private InputGraph inputGraph;
     private final ChangedEvent<DiagramViewModel> diagramChangedEvent = new ChangedEvent<>(this);
     private final ChangedEvent<DiagramViewModel> graphChangedEvent = new ChangedEvent<>(this);
     private final ChangedEvent<DiagramViewModel> selectedNodesChangedEvent = new ChangedEvent<>(this);
@@ -71,24 +32,6 @@ public class DiagramViewModel {
         assert filterChain == changedFilterChain;
         rebuildDiagram();
     };
-
-    public Group getGroup() {
-        return group;
-    }
-
-    public void setShowSea() {
-        diagramChangedEvent.fire();
-    }
-
-
-    public boolean getShowNodeHull() {
-        return showNodeHull;
-    }
-
-    public void setShowNodeHull(boolean b) {
-        showNodeHull = b;
-        diagramChangedEvent.fire();
-    }
 
     public DiagramViewModel(InputGraph graph) {
         group = graph.getGroup();
@@ -103,6 +46,49 @@ public class DiagramViewModel {
         hiddenNodes = new HashSet<>();
         selectedNodes = new HashSet<>();
         selectGraph(graph);
+    }
+
+    public int getPosition() {
+        return position;
+    }
+
+    public void setPosition(int fp) {
+        if (position != fp) {
+            position = fp;
+            if (position < graphs.size()) {
+                inputGraph = graphs.get(position);
+            } else {
+                inputGraph = graphs.get(graphs.size() - 1);
+            }
+            rebuildDiagram();
+            graphChangedEvent.fire();
+        }
+    }
+
+    public void selectGraph(InputGraph graph) {
+        setPosition(graphs.indexOf(graph));
+    }
+
+    public InputGraph getGraph() {
+        return inputGraph;
+    }
+
+    public Group getGroup() {
+        return group;
+    }
+
+    public void showDiagram() {
+        diagramChangedEvent.fire();
+    }
+
+
+    public boolean getShowNodeHull() {
+        return showNodeHull;
+    }
+
+    public void setShowNodeHull(boolean b) {
+        showNodeHull = b;
+        diagramChangedEvent.fire();
     }
 
     public ChangedEvent<DiagramViewModel> getDiagramChangedEvent() {
@@ -196,28 +182,7 @@ public class DiagramViewModel {
         diagramChangedEvent.fire();
     }
 
-    public InputGraph getFirstGraph() {
-        InputGraph firstGraph;
-        if (getFirstPosition() < graphs.size()) {
-            firstGraph = graphs.get(getFirstPosition());
-        } else {
-            firstGraph = graphs.get(graphs.size() - 1);
-        }
-        if (firstGraph.isDiffGraph()) {
-            firstGraph = firstGraph.getFirstGraph();
-        }
-        return firstGraph;
-    }
-
-    public void selectGraph(InputGraph graph) {
-        setPosition(graphs.indexOf(graph));
-    }
-
     public Diagram getDiagram() {
         return diagram;
-    }
-
-    public InputGraph getGraph() {
-        return cachedInputGraph;
     }
 }

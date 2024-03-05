@@ -62,13 +62,10 @@ public final class ExpandDiffAction extends ModelAwareAction {
 
     @Override
     public void performAction(DiagramViewModel model) {
-        if (model.getFirstPosition() != model.getGroup().getGraphs().size()  - 1) {
-            model.setPosition(model.getFirstPosition());
-        }
     }
 
     @Override
     public boolean isEnabled(DiagramViewModel model) {
-        return model.getFirstPosition() != model.getGroup().getGraphs().size()  - 1;
+        return false;
     }
 }

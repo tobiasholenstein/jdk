@@ -247,7 +247,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                 if (graph.isDiffGraph()) {
                     EditorTopComponent editor = EditorTopComponent.getActive();
                     if (editor != null) {
-                        InputGraph firstGraph = editor.getModel().getFirstGraph();
+                        InputGraph firstGraph = editor.getModel().getGraph();
                         GraphNode firstNode = FolderNode.getGraphNode(firstGraph);
                     }
                 } else {
