@@ -25,6 +25,7 @@ package com.sun.hotspot.igv.graph;
 
 import com.sun.hotspot.igv.data.InputNode;
 import com.sun.hotspot.igv.data.Properties;
+import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.*;
 import java.util.List;
@@ -328,6 +329,24 @@ public class Figure extends Properties.Entity implements Vertex {
             case "memory" -> 1;
             default -> 0;
         };
+    }
+
+    @Override
+    public Set<Link> getInputLinks() {
+        Set<Link> inputLinks = new HashSet<>();
+        for (Slot slot : inputSlots) {
+            inputLinks.addAll(slot.getConnections());
+        }
+        return inputLinks;
+    }
+
+    @Override
+    public Set<Link> getOutputLinks() {
+        Set<Link> outputLinks = new HashSet<>();
+        for (Slot slot : outputSlots) {
+            outputLinks.addAll(slot.getConnections());
+        }
+        return outputLinks;
     }
 
     @Override
