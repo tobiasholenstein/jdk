@@ -26,11 +26,9 @@ package com.sun.hotspot.igv.filterwindow;
 import com.sun.hotspot.igv.data.ChangedListener;
 import com.sun.hotspot.igv.filter.Filter;
 
-import com.sun.hotspot.igv.util.PropertiesSheet;
 import javax.swing.Action;
 import org.openide.actions.OpenAction;
 import org.openide.nodes.Children;
-import org.openide.nodes.Sheet;
 import org.openide.util.Utilities;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
@@ -59,8 +57,6 @@ public class FilterNode extends CheckNode implements ChangedListener<FilterTopCo
 
         FilterTopComponent.findInstance().getFilterSettingsChangedEvent().addListener(this);
         changed(FilterTopComponent.findInstance());
-
-        setShortDescription("Double-click to open filter");
     }
 
     private void update() {
@@ -69,13 +65,6 @@ public class FilterNode extends CheckNode implements ChangedListener<FilterTopCo
 
     public Filter getFilter() {
         return filter;
-    }
-
-    @Override
-    protected Sheet createSheet() {
-        Sheet s = super.createSheet();
-        PropertiesSheet.initializeSheet(getFilter().getProperties(), s);
-        return s;
     }
 
     @Override
