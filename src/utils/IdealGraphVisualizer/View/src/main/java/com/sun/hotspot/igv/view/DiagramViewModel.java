@@ -36,8 +36,10 @@ public class DiagramViewModel {
 
         FilterChainProvider provider = Lookup.getDefault().lookup(FilterChainProvider.class);
         assert provider != null;
-        setFilterChain(provider.getFilterChain());
+        filterChain = provider.getFilterChain();
+        filterChain.getChangedEvent().addListener(filterChainChangedListener);
         filtersOrder = provider.getAllFiltersOrdered();
+
         showNodeHull = true;
         hiddenNodes = new HashSet<>();
         selectedNodes = new HashSet<>();
@@ -136,15 +138,6 @@ public class DiagramViewModel {
         hiddenNodes = nodes;
         selectedNodes.removeAll(hiddenNodes);
         hiddenNodesChangedEvent.fire();
-    }
-
-    private void setFilterChain(FilterChain newFC) {
-        assert newFC != null;
-        if (filterChain != null) {
-            filterChain.getChangedEvent().removeListener(filterChainChangedListener);
-        }
-        filterChain = newFC;
-        filterChain.getChangedEvent().addListener(filterChainChangedListener);
     }
 
     void close() {
