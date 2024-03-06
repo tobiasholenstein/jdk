@@ -65,7 +65,7 @@ public final class EditorTopComponent extends TopComponent {
     @Override
     public void componentClosed() {
         super.componentClosed();
-        getScene().close();
+        scene.close();
         LookupHistory.terminate(InputGraphProvider.class);
     }
 
