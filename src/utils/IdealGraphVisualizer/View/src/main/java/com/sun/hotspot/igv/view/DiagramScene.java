@@ -219,13 +219,46 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     private void relayout() {  // visible nodes changed
         updateVisibleFigureWidgets();
-        updateNodeHull();
         Set<Figure> visibleFigures = getVisibleFigures();
         Set<Connection> visibleConnections = getVisibleConnections();
         seaLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
         rebuildConnectionLayer();
-        updateFigureWidgetLocations();
-        validateAll();
+    }
+
+    private void updateVisibleFigureWidgets() {
+        for (Figure figure : getDiagram().getFigures()) {
+            FigureWidget figureWidget = findFigureWidget(figure);
+            figureWidget.setBoundary(false);
+            figureWidget.setVisible(!getHiddenNodes().contains(figure.getInputNode().getId()));
+        }
+
+        if (showNodeHull) { // update node hull
+            List<FigureWidget> boundaries = new ArrayList<>();
+            for (Figure figure : getDiagram().getFigures()) {
+                FigureWidget figureWidget = findFigureWidget(figure);
+                if (!figureWidget.isVisible()) {
+                    Set<Figure> neighborSet = new HashSet<>(figure.getPredecessorSet());
+                    neighborSet.addAll(figure.getSuccessorSet());
+                    boolean hasVisibleNeighbor = false;
+                    for (Figure neighbor : neighborSet) {
+                        FigureWidget neighborWidget = findFigureWidget(neighbor);
+                        if (neighborWidget.isVisible()) {
+                            hasVisibleNeighbor = true;
+                            break;
+                        }
+                    }
+                    if (hasVisibleNeighbor) {
+                        figureWidget.setBoundary(true);
+                        boundaries.add(figureWidget);
+                    }
+                }
+            }
+            for (FigureWidget figureWidget : boundaries) {
+                figureWidget.setVisible(true);
+            }
+        } else {
+            getSelectedNodes().removeAll(getHiddenNodes());
+        }
     }
 
     public boolean getShowNodeHull() {
@@ -299,7 +332,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         mainLayer.removeChildren();
         for (Figure figure : getDiagram().getFigures()) {
             FigureWidget figureWidget = new FigureWidget(figure, this);
-            figureWidget.setVisible(false);
             figureWidget.getActions().addAction(selectAction);
             figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
 
@@ -314,17 +346,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                 @Override
                 public void movementFinished(Widget widget) {
-
                     Set<Figure> selectedFigures = getSelectedFigures();
                     for (Figure figure : selectedFigures) {
                         FigureWidget fw = findFigureWidget(figure);
                         Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
                         seaLayoutManager.moveVertex(figure, newLocation);
                     }
-
                     rebuildConnectionLayer();
-                    updateFigureWidgetLocations();
-                    validateAll();
                 }
 
                 private int magnetToStartLayerY(Widget widget, Point location) {
@@ -511,11 +539,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                         Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
                         seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
-
                         seaLayoutManager.writeBack();
                         rebuildConnectionLayer();
-                        updateFigureWidgetLocations();
-                        validateAll();
                     }
 
                     @Override
@@ -602,43 +627,18 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 processOutputSlot(outputSlot, connectionList, 0, null, null);
             }
         }
+
+        updateFigureWidgetLocations();
+        validateAll();
     }
 
-    private void updateVisibleFigureWidgets() {
+    private void updateFigureWidgetLocations() {
         for (Figure figure : getDiagram().getFigures()) {
             FigureWidget figureWidget = findFigureWidget(figure);
-            figureWidget.setBoundary(false);
-            figureWidget.setVisible(!getHiddenNodes().contains(figure.getInputNode().getId()));
-        }
-    }
-
-    private void updateNodeHull() {
-        if (showNodeHull) {
-            List<FigureWidget> boundaries = new ArrayList<>();
-            for (Figure figure : getDiagram().getFigures()) {
-                FigureWidget figureWidget = findFigureWidget(figure);
-                if (!figureWidget.isVisible()) {
-                    Set<Figure> neighborSet = new HashSet<>(figure.getPredecessorSet());
-                    neighborSet.addAll(figure.getSuccessorSet());
-                    boolean hasVisibleNeighbor = false;
-                    for (Figure neighbor : neighborSet) {
-                        FigureWidget neighborWidget = findFigureWidget(neighbor);
-                        if (neighborWidget.isVisible()) {
-                            hasVisibleNeighbor = true;
-                            break;
-                        }
-                    }
-                    if (hasVisibleNeighbor) {
-                        figureWidget.setBoundary(true);
-                        boundaries.add(figureWidget);
-                    }
-                }
+            if (figureWidget.isVisible()) {
+                Point location = new Point(figure.getPosition());
+                figureWidget.setPreferredLocation(location);
             }
-            for (FigureWidget figureWidget : boundaries) {
-                figureWidget.setVisible(true);
-            }
-        } else {
-            getSelectedNodes().removeAll(getHiddenNodes());
         }
     }
 
@@ -661,15 +661,5 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
         }
         return visibleConnections;
-    }
-
-    private void updateFigureWidgetLocations() {
-        for (Figure figure : getDiagram().getFigures()) {
-            FigureWidget figureWidget = findFigureWidget(figure);
-            if (figureWidget.isVisible()) {
-                Point location = new Point(figure.getPosition());
-                figureWidget.setPreferredLocation(location);
-            }
-        }
     }
 }
