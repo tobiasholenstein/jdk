@@ -78,7 +78,7 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     private final ExplorerManager manager;
     private final ScriptEngine engine;
     private final FilterChain allFiltersOrdered = new FilterChain();
-    private static final FilterChain defaultFilterChain = new FilterChain("Global");
+    private static final FilterChain defaultFilterChain = new FilterChain();
     private final ChangedEvent<FilterTopComponent> filterSettingsChangedEvent = new ChangedEvent<>(this);
 
 

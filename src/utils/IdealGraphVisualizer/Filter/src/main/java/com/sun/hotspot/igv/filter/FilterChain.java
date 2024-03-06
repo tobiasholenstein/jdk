@@ -40,27 +40,17 @@ public class FilterChain implements ChangedEventProvider<FilterChain> {
 
     private final List<Filter> filters;
     private final transient ChangedEvent<FilterChain> changedEvent;
-    private final String name;
 
-    private final ChangedListener<Filter> changedListener = new ChangedListener<Filter>() {
+    private final ChangedListener<Filter> changedListener = new ChangedListener<>() {
         @Override
         public void changed(Filter source) {
             changedEvent.fire();
         }
     };
 
-    public FilterChain(String name) {
-        this.name = name;
+    public FilterChain() {
         filters = new ArrayList<>();
         changedEvent = new ChangedEvent<>(this);
-    }
-
-    public FilterChain() {
-        this("");
-    }
-
-    public void sortBy(List<String> order) {
-        filters.sort(Comparator.comparingInt(f -> order.indexOf(f.getName())));
     }
 
     @Override
@@ -96,14 +86,5 @@ public class FilterChain implements ChangedEventProvider<FilterChain> {
 
     public List<Filter> getFilters() {
         return Collections.unmodifiableList(filters);
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public String toString() {
-        return getName();
     }
 }
