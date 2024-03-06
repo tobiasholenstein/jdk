@@ -77,7 +77,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     private final CheckListView view;
     private final ExplorerManager manager;
     private final ScriptEngine engine;
-    private final JComboBox<FilterChain> comboBox;
     private final FilterChain allFiltersOrdered = new FilterChain();
     private static final FilterChain defaultFilterChain = new FilterChain("Global");
     private final ChangedEvent<FilterTopComponent> filterSettingsChangedEvent = new ChangedEvent<>(this);
@@ -98,9 +97,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         engine.getContext().getBindings(ScriptContext.ENGINE_SCOPE).put("IO", System.out);
 
         initFilters();
-        comboBox = new JComboBox<>();
-        comboBox.addItem(defaultFilterChain);
-        comboBox.setSelectedItem(defaultFilterChain);
 
         manager = new ExplorerManager();
         manager.setRootContext(new AbstractNode(new FilterChildren()));
@@ -108,7 +104,7 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         view = new CheckListView();
         this.add(view, BorderLayout.CENTER);
 
-        comboBoxSelectionChanged();
+        filterSettingsChangedEvent.fire();
     }
 
     public ChangedEvent<FilterTopComponent> getFilterSettingsChangedEvent() {
@@ -120,14 +116,7 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     }
 
     public FilterChain getCurrentChain() {
-        return (FilterChain) comboBox.getSelectedItem();
-    }
-
-    private void comboBoxSelectionChanged() {
-        FilterChain currentChain = getCurrentChain();
-        if (currentChain != null) {
-            filterSettingsChangedEvent.fire(); // notify all FilterNodes to update checkbox selection
-        }
+        return defaultFilterChain;
     }
 
     private class FilterChildren extends Children.Keys<Filter> implements ChangedListener<CheckNode> {
