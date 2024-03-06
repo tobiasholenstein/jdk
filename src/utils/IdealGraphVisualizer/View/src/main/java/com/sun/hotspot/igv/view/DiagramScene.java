@@ -49,10 +49,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final ArrayList<InputGraph> graphs;
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
-    private final ChangedEvent<DiagramScene> selectedNodesChangedEvent = new ChangedEvent<>(this);
-    private final ChangedEvent<DiagramScene> hiddenNodesChangedEvent = new ChangedEvent<>(this);
-    private final ChangedListener<FilterChain> filterChainChangedListener = filter -> rebuildDiagram();
-
+    private final ChangedListener<FilterChain> filterChangedListener = filter -> rebuildDiagram();
     private final Map<Figure, FigureWidget> figureMap = new HashMap<>();
     private final Map<Slot, SlotWidget> slotMap = new HashMap<>();
     private final Map<Figure, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
@@ -72,7 +69,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         FilterChainProvider provider = Lookup.getDefault().lookup(FilterChainProvider.class);
         assert provider != null;
         filterChain = provider.getFilterChain();
-        filterChain.getChangedEvent().addListener(filterChainChangedListener);
+        filterChain.getChangedEvent().addListener(filterChangedListener);
         filtersOrder = provider.getAllFiltersOrdered();
 
         showNodeHull = true;
@@ -110,7 +107,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     nodeSelection.addAll(((Slot) object).getSource().getSourceNodesAsSet());
                 }
                 selectedNodes = nodeSelection;
-                selectedNodesChangedEvent.fire();
             }
         });
 
@@ -118,8 +114,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         super.getActions().addAction(new CustomizablePanAction(MouseEvent.BUTTON1_DOWN_MASK));
         super.getActions().addAction(new DoubleClickAction(this));
         super.getActions().addAction(mouseZoomAction);
-
-        getHiddenNodesChangedEvent().addListener(m -> relayout());
 
         seaLayoutManager = new NewHierarchicalLayoutManager();
 
@@ -232,10 +226,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         updateDiagram();
     }
 
-    public ChangedEvent<DiagramScene> getHiddenNodesChangedEvent() {
-        return hiddenNodesChangedEvent;
-    }
-
     public Set<Integer> getSelectedNodes() {
         return selectedNodes;
     }
@@ -247,7 +237,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     public void setHiddenNodes(Set<Integer> nodes) {
         hiddenNodes = nodes;
         selectedNodes.removeAll(hiddenNodes);
-        hiddenNodesChangedEvent.fire();
+        relayout();
     }
 
     public void showFigures(Collection<Figure> figures) {
@@ -258,7 +248,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
         }
         if (somethingChanged) {
-            hiddenNodesChangedEvent.fire();
+            relayout();
         }
     }
 
@@ -279,7 +269,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     void close() {
-        filterChain.getChangedEvent().removeListener(filterChainChangedListener);
+        filterChain.getChangedEvent().removeListener(filterChangedListener);
     }
 
     public Component getComponent() {
@@ -612,7 +602,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void updateNodeHull() {
-        if (getShowNodeHull()) {
+        if (showNodeHull) {
             List<FigureWidget> boundaries = new ArrayList<>();
             for (Figure figure : getDiagram().getFigures()) {
                 FigureWidget figureWidget = findFigureWidget(figure);
