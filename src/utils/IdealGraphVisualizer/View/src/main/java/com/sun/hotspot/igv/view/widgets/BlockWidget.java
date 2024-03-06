@@ -36,7 +36,6 @@ import org.netbeans.api.visual.widget.Widget;
 import org.openide.util.Utilities;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class BlockWidget extends Widget implements DoubleClickHandler {
@@ -89,7 +88,7 @@ public class BlockWidget extends Widget implements DoubleClickHandler {
         }
     }
 
-    private int getModifierMask () {
+    private int getModifierMask() {
         return Utilities.isMac() ? MouseEvent.META_DOWN_MASK : MouseEvent.CTRL_DOWN_MASK;
     }
 

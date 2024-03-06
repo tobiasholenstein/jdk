@@ -27,7 +27,6 @@ import com.sun.hotspot.igv.graph.OutputSlot;
 import com.sun.hotspot.igv.view.DiagramScene;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class OutputSlotWidget extends SlotWidget {

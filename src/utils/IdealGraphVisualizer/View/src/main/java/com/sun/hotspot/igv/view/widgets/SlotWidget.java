@@ -38,15 +38,14 @@ import org.netbeans.api.visual.model.ObjectState;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public abstract class SlotWidget extends Widget implements DoubleClickHandler {
 
-    private final Slot slot;
-    private final FigureWidget figureWidget;
     protected static double TEXT_ZOOM_FACTOR = 0.9;
     protected static double ZOOM_FACTOR = 0.6;
+    private final Slot slot;
+    private final FigureWidget figureWidget;
     private final DiagramScene diagramScene;
 
     public SlotWidget(Slot slot, DiagramScene scene, FigureWidget fw) {

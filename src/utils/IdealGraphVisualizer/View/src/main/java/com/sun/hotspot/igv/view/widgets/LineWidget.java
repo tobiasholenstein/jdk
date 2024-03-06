@@ -37,8 +37,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.swing.JPopupMenu;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.PopupMenuProvider;
 import org.netbeans.api.visual.action.WidgetAction;
@@ -46,30 +44,29 @@ import org.netbeans.api.visual.model.ObjectState;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class LineWidget extends Widget implements PopupMenuProvider, DoubleClickHandler {
 
+    private final static double ZOOM_FACTOR = 0.1;
     public final int BORDER = 5;
     public final int ARROW_SIZE = 6;
     public final int BOLD_ARROW_SIZE = 7;
     public final int HOVER_ARROW_SIZE = 8;
     public final int BOLD_STROKE_WIDTH = 2;
     public final int HOVER_STROKE_WIDTH = 3;
-    private final static double ZOOM_FACTOR = 0.1;
     private final OutputSlot outputSlot;
     private final DiagramScene scene;
     private final List<? extends Connection> connections;
+    private final LineWidget predecessor;
+    private final List<LineWidget> successors;
+    private final boolean isBold;
+    private final boolean isDashed;
     private Point from;
     private Point to;
     private Rectangle clientArea;
-    private final LineWidget predecessor;
-    private final List<LineWidget> successors;
     private boolean highlighted;
     private boolean popupVisible;
-    private final boolean isBold;
-    private final boolean isDashed;
 
     public LineWidget(DiagramScene scene, OutputSlot s, List<? extends Connection> connections, Point from, Point to, LineWidget predecessor, boolean isBold, boolean isDashed) {
         super(scene);
@@ -138,23 +135,22 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
         return sb.toString();
     }
 
+    public Point getFrom() {
+        return from;
+    }
 
     public void setFrom(Point from) {
         this.from = from;
         computeClientArea();
     }
 
-    public void setTo(Point to) {
-        this.to= to;
-        computeClientArea();
-    }
-
-    public Point getFrom() {
-        return from;
-    }
-
     public Point getTo() {
         return to;
+    }
+
+    public void setTo(Point to) {
+        this.to = to;
+        computeClientArea();
     }
 
     private void addSuccessor(LineWidget widget) {

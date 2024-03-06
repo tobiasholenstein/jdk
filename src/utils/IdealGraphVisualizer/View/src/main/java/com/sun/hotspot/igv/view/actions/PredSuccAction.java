@@ -31,7 +31,6 @@ import javax.swing.ImageIcon;
 import org.openide.util.ImageUtilities;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class PredSuccAction extends AbstractAction {
@@ -47,7 +46,7 @@ public class PredSuccAction extends AbstractAction {
     public void actionPerformed(ActionEvent ev) {
         EditorTopComponent editor = EditorTopComponent.getActive();
         if (editor != null) {
-            boolean selected = (boolean)getValue(SELECTED_KEY);
+            boolean selected = (boolean) getValue(SELECTED_KEY);
             editor.getScene().setShowNodeHull(selected);
         }
     }

@@ -59,14 +59,13 @@ import org.netbeans.api.visual.widget.Widget;
  * @author Peter Hofer
  */
 public class CustomizablePanAction extends WidgetAction.LockedAdapter {
+    private final int modifiersEx;
     private boolean enabled = true;
     private boolean active = true;
-
     private Scene scene;
     private JScrollPane scrollPane;
     private Point lastLocation;
     private Rectangle rectangle;
-    private final int modifiersEx;
 
     public CustomizablePanAction(int modifiersEx) {
         this.modifiersEx = modifiersEx;
@@ -125,7 +124,7 @@ public class CustomizablePanAction extends WidgetAction.LockedAdapter {
     }
 
     private JScrollPane findScrollPane(JComponent component) {
-        for (;;) {
+        for (; ; ) {
             if (component == null) {
                 return null;
             }

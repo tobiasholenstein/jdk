@@ -4,110 +4,67 @@ import com.sun.hotspot.igv.data.*;
 import com.sun.hotspot.igv.filter.FilterChain;
 import com.sun.hotspot.igv.filter.FilterChainProvider;
 import com.sun.hotspot.igv.graph.*;
-import com.sun.hotspot.igv.hierarchicallayout.*;
+import com.sun.hotspot.igv.hierarchicallayout.NewHierarchicalLayoutManager;
 import com.sun.hotspot.igv.layout.LayoutGraph;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
-import com.sun.hotspot.igv.view.actions.*;
+import com.sun.hotspot.igv.view.actions.CustomSelectAction;
+import com.sun.hotspot.igv.view.actions.CustomizablePanAction;
+import com.sun.hotspot.igv.view.actions.MouseZoomAction;
 import com.sun.hotspot.igv.view.widgets.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.util.List;
+import java.awt.Component;
+import java.awt.GridBagLayout;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelListener;
 import java.util.*;
-import javax.swing.*;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
-import org.netbeans.api.visual.action.*;
-import org.netbeans.api.visual.model.*;
+import org.netbeans.api.visual.action.ActionFactory;
+import org.netbeans.api.visual.action.MoveProvider;
+import org.netbeans.api.visual.action.SelectProvider;
+import org.netbeans.api.visual.action.WidgetAction;
+import org.netbeans.api.visual.model.ObjectScene;
 import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
 import org.openide.util.Lookup;
 
 public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
-    private final WidgetAction selectAction;
-    private final JScrollPane scrollPane;
-    private final LayerWidget mainLayer;
-    private final LayerWidget connectionLayer;
-    private final NewHierarchicalLayoutManager seaLayoutManager;
     public static final float ALPHA = 0.4f;
     public static final float ZOOM_MAX_FACTOR = 4.0f;
     public static final float ZOOM_MIN_FACTOR = 0.25f;
     public static final float ZOOM_INCREMENT = 1.5f;
 
-    public void zoomIn(Point zoomCenter, double factor) {
-        centredZoom(super.getZoomFactor() * factor, zoomCenter);
-    }
-
-    public void zoomOut(Point zoomCenter, double factor) {
-        centredZoom(super.getZoomFactor() / factor, zoomCenter);
-    }
-
-    public void setZoomPercentage(int percentage) {
-        centredZoom((double)percentage / 100.0, null);
-    }
-
-    private void centredZoom(double zoomFactor, Point zoomCenter) {
-        zoomFactor = Math.max(zoomFactor, ZOOM_MIN_FACTOR);
-        zoomFactor = Math.min(zoomFactor,  ZOOM_MAX_FACTOR);
-
-        double oldZoom = super.getZoomFactor();
-        Rectangle visibleRect = super.getView().getVisibleRect();
-        if (zoomCenter == null) {
-            zoomCenter = new Point(visibleRect.x + visibleRect.width / 2, visibleRect.y + visibleRect.height / 2);
-            zoomCenter =  super.getScene().convertViewToScene(zoomCenter);
-        }
-
-        super.setZoomFactor(zoomFactor);
-        validateAll();
-
-        Point location = super.getScene().getLocation();
-        visibleRect.x += (int)(zoomFactor * (double)(location.x + zoomCenter.x)) - (int)(oldZoom * (double)(location.x + zoomCenter.x));
-        visibleRect.y += (int)(zoomFactor * (double)(location.y + zoomCenter.y)) - (int)(oldZoom * (double)(location.y + zoomCenter.y));
-
-        // Ensure to be within area
-        visibleRect.x = Math.max(0, visibleRect.x);
-        visibleRect.y = Math.max(0, visibleRect.y);
-
-        super.getView().scrollRectToVisible(visibleRect);
-        validateAll();
-    }
-
-    private JScrollPane createScrollPane(MouseZoomAction mouseZoomAction) {
-        JComponent viewComponent = super.createView();
-        JPanel centeringPanel = new JPanel(new GridBagLayout());
-        centeringPanel.add(viewComponent);
-        JScrollPane scrollPane = new JScrollPane(centeringPanel, VERTICAL_SCROLLBAR_ALWAYS, HORIZONTAL_SCROLLBAR_ALWAYS);
-
-        // remove the default MouseWheelListener of the JScrollPane
-        for (MouseWheelListener listener: scrollPane.getMouseWheelListeners()) {
-            scrollPane.removeMouseWheelListener(listener);
-        }
-
-        // add a new MouseWheelListener for zooming if the mouse is outside the viewComponent
-        // but still inside the scrollPane
-        scrollPane.addMouseWheelListener(mouseZoomAction);
-        return scrollPane;
-    }
-
+    private final WidgetAction selectAction;
+    private final JScrollPane scrollPane;
+    private final LayerWidget mainLayer;
+    private final LayerWidget connectionLayer;
+    private final NewHierarchicalLayoutManager seaLayoutManager;
     private final Group group;
     private final ArrayList<InputGraph> graphs;
-    private Set<Integer> hiddenNodes;
-    private Set<Integer> selectedNodes;
-    private FilterChain filterChain;
     private final FilterChain filtersOrder;
-    private Diagram diagram;
-    private int position = -1;
-    private InputGraph inputGraph;
+    private final FilterChain filterChain;
     private final ChangedEvent<DiagramScene> diagramChangedEvent = new ChangedEvent<>(this);
     private final ChangedEvent<DiagramScene> selectedNodesChangedEvent = new ChangedEvent<>(this);
     private final ChangedEvent<DiagramScene> hiddenNodesChangedEvent = new ChangedEvent<>(this);
-    private boolean showNodeHull;
+    private final ChangedListener<FilterChain> filterChainChangedListener = filter -> rebuildDiagram();
 
-    private final ChangedListener<FilterChain> filterChainChangedListener = changedFilterChain -> {
-        assert filterChain == changedFilterChain;
-        rebuildDiagram();
-    };
+    private final Map<Figure, FigureWidget> figureMap = new HashMap<>();
+    private final Map<Slot, SlotWidget> slotMap = new HashMap<>();
+    private final Map<Figure, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
+    private final Map<Figure, Set<LineWidget>> figureToInLineWidget = new HashMap<>();
+
+    private Set<Integer> hiddenNodes;
+    private Set<Integer> selectedNodes;
+    private Diagram diagram;
+    private int position = -1;
+    private InputGraph inputGraph;
+    private boolean showNodeHull;
 
     public DiagramScene(InputGraph inputGraph) {
         group = inputGraph.getGroup();
@@ -125,7 +82,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         setPosition(graphs.indexOf(inputGraph));
 
 
-        //////
         MouseZoomAction mouseZoomAction = new MouseZoomAction(this);
         scrollPane = createScrollPane(mouseZoomAction);
 
@@ -171,6 +127,61 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         seaLayoutManager = new NewHierarchicalLayoutManager();
     }
 
+    public void zoomIn(Point zoomCenter, double factor) {
+        centredZoom(super.getZoomFactor() * factor, zoomCenter);
+    }
+
+    public void zoomOut(Point zoomCenter, double factor) {
+        centredZoom(super.getZoomFactor() / factor, zoomCenter);
+    }
+
+    public void setZoomPercentage(int percentage) {
+        centredZoom((double) percentage / 100.0, null);
+    }
+
+    private void centredZoom(double zoomFactor, Point zoomCenter) {
+        zoomFactor = Math.max(zoomFactor, ZOOM_MIN_FACTOR);
+        zoomFactor = Math.min(zoomFactor, ZOOM_MAX_FACTOR);
+
+        double oldZoom = super.getZoomFactor();
+        Rectangle visibleRect = super.getView().getVisibleRect();
+        if (zoomCenter == null) {
+            zoomCenter = new Point(visibleRect.x + visibleRect.width / 2, visibleRect.y + visibleRect.height / 2);
+            zoomCenter = super.getScene().convertViewToScene(zoomCenter);
+        }
+
+        super.setZoomFactor(zoomFactor);
+        validateAll();
+
+        Point location = super.getScene().getLocation();
+        visibleRect.x += (int) (zoomFactor * (double) (location.x + zoomCenter.x)) - (int) (oldZoom * (double) (location.x + zoomCenter.x));
+        visibleRect.y += (int) (zoomFactor * (double) (location.y + zoomCenter.y)) - (int) (oldZoom * (double) (location.y + zoomCenter.y));
+
+        // Ensure to be within area
+        visibleRect.x = Math.max(0, visibleRect.x);
+        visibleRect.y = Math.max(0, visibleRect.y);
+
+        super.getView().scrollRectToVisible(visibleRect);
+        validateAll();
+    }
+
+    private JScrollPane createScrollPane(MouseZoomAction mouseZoomAction) {
+        JComponent viewComponent = super.createView();
+        JPanel centeringPanel = new JPanel(new GridBagLayout());
+        centeringPanel.add(viewComponent);
+        JScrollPane scrollPane = new JScrollPane(centeringPanel, VERTICAL_SCROLLBAR_ALWAYS, HORIZONTAL_SCROLLBAR_ALWAYS);
+
+        // remove the default MouseWheelListener of the JScrollPane
+        for (MouseWheelListener listener : scrollPane.getMouseWheelListeners()) {
+            scrollPane.removeMouseWheelListener(listener);
+        }
+
+        // add a new MouseWheelListener for zooming if the mouse is outside the viewComponent
+        // but still inside the scrollPane
+        scrollPane.addMouseWheelListener(mouseZoomAction);
+        return scrollPane;
+    }
+
     public int getPosition() {
         return position;
     }
@@ -199,7 +210,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         diagramChangedEvent.fire();
     }
 
-
     public boolean getShowNodeHull() {
         return showNodeHull;
     }
@@ -213,7 +223,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return diagramChangedEvent;
     }
 
-
     public ChangedEvent<DiagramScene> getHiddenNodesChangedEvent() {
         return hiddenNodesChangedEvent;
     }
@@ -222,13 +231,19 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return selectedNodes;
     }
 
+    public void setSelectedNodes(Set<Integer> nodes) {
+        selectedNodes = nodes;
+        selectedNodesChangedEvent.fire();
+    }
+
     public Set<Integer> getHiddenNodes() {
         return hiddenNodes;
     }
 
-    public void setSelectedNodes(Set<Integer> nodes) {
-        selectedNodes = nodes;
-        selectedNodesChangedEvent.fire();
+    public void setHiddenNodes(Set<Integer> nodes) {
+        hiddenNodes = nodes;
+        selectedNodes.removeAll(hiddenNodes);
+        hiddenNodesChangedEvent.fire();
     }
 
     public void showFigures(Collection<Figure> figures) {
@@ -259,12 +274,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         setHiddenNodes(allNodes);
     }
 
-    public void setHiddenNodes(Set<Integer> nodes) {
-        hiddenNodes = nodes;
-        selectedNodes.removeAll(hiddenNodes);
-        hiddenNodesChangedEvent.fire();
-    }
-
     void close() {
         filterChain.getChangedEvent().removeListener(filterChainChangedListener);
     }
@@ -288,7 +297,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private void clearObjects() {
         slotMap.clear();
         figureMap.clear();
-        for (Object o :  new ArrayList<>(super.getObjects())) {
+        for (Object o : new ArrayList<>(super.getObjects())) {
             super.removeObject(o);
         }
     }
@@ -301,6 +310,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             figureWidget.getActions().addAction(selectAction);
             figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
 
+                private static final int MAGNET_SIZE = 5;
                 private int startLayerY;
 
                 @Override
@@ -323,8 +333,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     updateFigureWidgetLocations();
                     validateAll();
                 }
-
-                private static final int MAGNET_SIZE = 5;
 
                 private int magnetToStartLayerY(Widget widget, Point location) {
                     int shiftY = location.y - widget.getLocation().y;
@@ -403,11 +411,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
     }
 
-
-    Map<Figure, FigureWidget> figureMap = new HashMap<>();
-
-    Map<Slot, SlotWidget> slotMap = new HashMap<>();
-
     public SlotWidget findSlotWidget(Slot slot) {
         return slotMap.get(slot);
     }
@@ -434,7 +437,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         FigureWidget w2 = findFigureWidget(figureConnection.getOutputSlot().getFigure());
         return w1.isVisible() && w2.isVisible();
     }
-
 
     private void processOutputSlot(OutputSlot outputSlot, List<FigureConnection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
         Map<Point, List<FigureConnection>> pointMap = new HashMap<>(connections.size());
@@ -504,6 +506,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                     Point startLocation;
                     Point origFrom;
+
                     @Override
                     public void movementStarted(Widget widget) {
                         LineWidget lineWidget = (LineWidget) widget;
@@ -684,8 +687,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
         }
     }
-    Map<Figure, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
-    Map<Figure, Set<LineWidget>> figureToInLineWidget = new HashMap<>();
 
     private void relayout() {
         updateVisibleFigureWidgets();

@@ -354,15 +354,15 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         int tabCount = editorTabs.size();
         out.writeInt(tabCount);
         for (EditorTopComponent etc : editorTabs) {
-            DiagramScene model = etc.getScene();
+            DiagramScene scene = etc.getScene();
             out.writeBoolean(false);
-            InputGraph graph = model.getGraph();
+            InputGraph graph = scene.getGraph();
             out.writeInt(graph.getGroup().getIndex());
             out.writeInt(graph.getIndex());
             out.writeUTF(graph.getGroup().getName() + "#" + graph.getName());
-            int hiddenNodeCount = model.getHiddenNodes().size();
+            int hiddenNodeCount = scene.getHiddenNodes().size();
             out.writeInt(hiddenNodeCount);
-            for (int hiddenNodeID : model.getHiddenNodes()) {
+            for (int hiddenNodeID : scene.getHiddenNodes()) {
                 out.writeInt(hiddenNodeID);
             }
         }

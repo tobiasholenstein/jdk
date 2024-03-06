@@ -54,41 +54,17 @@ import org.openide.nodes.Sheet;
 import org.openide.util.ImageUtilities;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class FigureWidget extends Widget implements Properties.Provider, DoubleClickHandler {
 
     private static final double LABEL_ZOOM_FACTOR = 0.3;
+    private static final Image warningSign = ImageUtilities.loadImage("com/sun/hotspot/igv/view/images/warning.png");
     private final Figure figure;
     private final Widget middleWidget;
     private final ArrayList<LabelWidget> labelWidgets;
     private final DiagramScene diagramScene;
     private boolean boundary;
-    private static final Image warningSign = ImageUtilities.loadImage("com/sun/hotspot/igv/view/images/warning.png");
-
-    public void setBoundary(boolean b) {
-        boundary = b;
-    }
-
-    public boolean isBoundary() {
-        return boundary;
-    }
-
-    @Override
-    public boolean isHitAt(Point localLocation) {
-        return middleWidget.isHitAt(localLocation);
-    }
-
-    private void formatExtraLabel(boolean selected) {
-        // If the figure contains an extra label, use a light italic font to
-        // differentiate it from the regular label.
-        if (getFigure().getProperties().get("extra_label") != null) {
-            LabelWidget extraLabelWidget = labelWidgets.get(labelWidgets.size() - 1);
-            extraLabelWidget.setFont(Diagram.FONT.deriveFont(Font.ITALIC));
-            extraLabelWidget.setForeground(selected ? getTextColor() : Color.DARK_GRAY);
-        }
-    }
 
     public FigureWidget(final Figure f, DiagramScene scene) {
         super(scene);
@@ -129,7 +105,7 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         }
         formatExtraLabel(false);
 
-        for (int i=1; i < labelWidgets.size(); i++) {
+        for (int i = 1; i < labelWidgets.size(); i++) {
             labelWidgets.get(i).setFont(Diagram.FONT.deriveFont(Font.ITALIC));
             labelWidgets.get(i).setForeground(Color.DARK_GRAY);
         }
@@ -163,36 +139,31 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         this.setToolTipText(PropertiesConverter.convertToHTML(f.getProperties()));
     }
 
-    public int getFigureHeight() {
-        return middleWidget.getPreferredBounds().height;
+    public boolean isBoundary() {
+        return boundary;
     }
 
-    public static class RoundedBorder extends LineBorder {
+    public void setBoundary(boolean b) {
+        boundary = b;
+    }
 
-        final float RADIUS = 3f;
+    @Override
+    public boolean isHitAt(Point localLocation) {
+        return middleWidget.isHitAt(localLocation);
+    }
 
-        public RoundedBorder(Color color, int thickness)  {
-            super(color, thickness);
+    private void formatExtraLabel(boolean selected) {
+        // If the figure contains an extra label, use a light italic font to
+        // differentiate it from the regular label.
+        if (getFigure().getProperties().get("extra_label") != null) {
+            LabelWidget extraLabelWidget = labelWidgets.get(labelWidgets.size() - 1);
+            extraLabelWidget.setFont(Diagram.FONT.deriveFont(Font.ITALIC));
+            extraLabelWidget.setForeground(selected ? getTextColor() : Color.DARK_GRAY);
         }
+    }
 
-        @Override
-        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-            if ((this.thickness > 0) && (g instanceof Graphics2D)) {
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                Color oldColor = g2d.getColor();
-                g2d.setColor(this.lineColor);
-                int offs = this.thickness;
-                int size = offs + offs;
-                Shape outer = new RoundRectangle2D.Float(x, y, width, height, RADIUS, RADIUS);
-                Shape inner = new RoundRectangle2D.Float(x + offs, y + offs, width - size, height - size, RADIUS, RADIUS);
-                Path2D path = new Path2D.Float(Path2D.WIND_EVEN_ODD);
-                path.append(outer, false);
-                path.append(inner, false);
-                g2d.fill(path);
-                g2d.setColor(oldColor);
-            }
-        }
+    public int getFigureHeight() {
+        return middleWidget.getPreferredBounds().height;
     }
 
     @Override
@@ -300,6 +271,33 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
             final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodes());
             hiddenNodes.add(this.getFigure().getInputNode().getId());
             diagramScene.setHiddenNodes(hiddenNodes);
+        }
+    }
+
+    public static class RoundedBorder extends LineBorder {
+
+        final float RADIUS = 3f;
+
+        public RoundedBorder(Color color, int thickness) {
+            super(color, thickness);
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            if ((this.thickness > 0) && (g instanceof Graphics2D g2d)) {
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color oldColor = g2d.getColor();
+                g2d.setColor(this.lineColor);
+                int offs = this.thickness;
+                int size = offs + offs;
+                Shape outer = new RoundRectangle2D.Float(x, y, width, height, RADIUS, RADIUS);
+                Shape inner = new RoundRectangle2D.Float(x + offs, y + offs, width - size, height - size, RADIUS, RADIUS);
+                Path2D path = new Path2D.Float(Path2D.WIND_EVEN_ODD);
+                path.append(outer, false);
+                path.append(inner, false);
+                g2d.fill(path);
+                g2d.setColor(oldColor);
+            }
         }
     }
 }

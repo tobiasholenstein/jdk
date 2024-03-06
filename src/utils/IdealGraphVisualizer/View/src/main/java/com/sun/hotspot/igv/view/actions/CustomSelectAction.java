@@ -30,7 +30,6 @@ import org.netbeans.api.visual.action.WidgetAction;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
- *
  * @author Tobias Holenstein
  */
 public class CustomSelectAction extends WidgetAction.LockedAdapter {

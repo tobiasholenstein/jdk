@@ -54,7 +54,7 @@ public class InputSlotWidget extends SlotWidget {
             if (index > 0) {
                 // Compute X coordinates of previous input slot comparing its
                 // calculateClientArea() with that of the current slot.
-                InputSlotWidget prevWidget = (InputSlotWidget)scene.findSlotWidget(prevSlot);
+                InputSlotWidget prevWidget = (InputSlotWidget) scene.findSlotWidget(prevSlot);
 
                 int prevSlotWidth = prevWidget.calculateClientArea().width;
                 int xStartAbs = inputSlot.getRelativePosition().x - (slotWidth / 2);
@@ -67,7 +67,7 @@ public class InputSlotWidget extends SlotWidget {
                 prevXEnd = xStart - (int) (labelRect.getWidth()) - 4;
             }
             int midX = (prevXEnd + xStart) / 2;
-            g.drawString(label, midX - (int)(labelRect.getWidth() / 2), 3);
+            g.drawString(label, midX - (int) (labelRect.getWidth() / 2), 3);
         }
     }
 

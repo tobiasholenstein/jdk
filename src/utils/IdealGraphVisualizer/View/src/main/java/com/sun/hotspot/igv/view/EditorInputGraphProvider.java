@@ -31,10 +31,9 @@ import java.util.Collection;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
-@ServiceProvider(service=InputGraphProvider.class)
+@ServiceProvider(service = InputGraphProvider.class)
 public class EditorInputGraphProvider implements InputGraphProvider {
 
     private final EditorTopComponent editor;

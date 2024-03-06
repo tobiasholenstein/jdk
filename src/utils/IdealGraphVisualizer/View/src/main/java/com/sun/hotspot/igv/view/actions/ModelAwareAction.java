@@ -33,7 +33,7 @@ import org.openide.util.Lookup;
 abstract public class ModelAwareAction extends ContextAction<DiagramScene> {
 
     public ModelAwareAction() {
-        putValue(Action.SMALL_ICON , ImageUtilities.loadImageIcon(iconResource(), true));
+        putValue(Action.SMALL_ICON, ImageUtilities.loadImageIcon(iconResource(), true));
         putValue(Action.SHORT_DESCRIPTION, getDescription());
     }
 
@@ -53,10 +53,12 @@ abstract public class ModelAwareAction extends ContextAction<DiagramScene> {
     }
 
     @Override
-    public void addContextListener(DiagramScene model) {}
+    public void addContextListener(DiagramScene model) {
+    }
 
     @Override
-    public void removeContextListener(DiagramScene model) {}
+    public void removeContextListener(DiagramScene model) {
+    }
 
     @Override
     public Action createContextAwareInstance(Lookup actionContext) {
