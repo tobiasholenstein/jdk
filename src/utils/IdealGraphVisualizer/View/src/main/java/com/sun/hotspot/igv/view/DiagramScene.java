@@ -47,7 +47,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final HierarchicalLayoutManager seaLayoutManager;
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
-    private final ChangedListener<FilterChain> filterChangedListener = filter -> rebuildDiagram();
+    private final ChangedListener<FilterChain> filterChangedListener = filter -> buildDiagram();
     private final Map<Figure, FigureWidget> figureMap = new HashMap<>();
     private final Map<Slot, SlotWidget> slotMap = new HashMap<>();
     private final Map<Figure, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
@@ -186,7 +186,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             } else {
                 inputGraph = group.getGraphs().get(group.getGraphs().size() - 1);
             }
-            rebuildDiagram();
+            buildDiagram();
         }
     }
 
@@ -202,17 +202,28 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return diagram;
     }
 
-    private void rebuildDiagram() {
+    private void buildDiagram() {
         diagram = new Diagram(inputGraph);
         filterChain.applyInOrder(diagram, filtersOrder);
-        updateDiagram();
+        drawDiagram();
     }
 
-    private void updateDiagram() {
+    private void drawDiagram() {
         clearObjects();
         rebuildMainLayer();
         relayout();
         setFigureSelection(getSelectedFigures());
+        validateAll();
+    }
+
+    private void relayout() {
+        updateVisibleFigureWidgets();
+        updateNodeHull();
+        Set<Figure> visibleFigures = getVisibleFigures();
+        Set<Connection> visibleConnections = getVisibleConnections();
+        seaLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
+        rebuildConnectionLayer();
+        updateFigureWidgetLocations();
         validateAll();
     }
 
@@ -222,7 +233,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     public void setShowNodeHull(boolean b) {
         showNodeHull = b;
-        updateDiagram();
+        drawDiagram();
     }
 
     public Set<Integer> getSelectedNodes() {
@@ -659,16 +670,5 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 figureWidget.setPreferredLocation(location);
             }
         }
-    }
-
-    private void relayout() {
-        updateVisibleFigureWidgets();
-        updateNodeHull();
-        Set<Figure> visibleFigures = getVisibleFigures();
-        Set<Connection> visibleConnections = getVisibleConnections();
-        seaLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
-        rebuildConnectionLayer();
-        updateFigureWidgetLocations();
-        validateAll();
     }
 }
