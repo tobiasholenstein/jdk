@@ -54,30 +54,4 @@ public class EditorInputGraphProvider implements InputGraphProvider {
             return null;
         }
     }
-
-    @Override
-    public void addSelectedNodes(Collection<InputNode> nodes, boolean showIfHidden) {
-        if (editor != null && EditorTopComponent.isOpen(editor)) {
-            editor.addSelectedNodes(nodes, showIfHidden);
-            editor.requestActive();
-        }
-    }
-
-    @Override
-    public void clearSelectedNodes() {
-        if (editor != null && EditorTopComponent.isOpen(editor)) {
-            editor.clearSelectedNodes();
-            editor.requestActive();
-        }
-    }
-
-    @Override
-    public Iterable<InputGraph> searchBackward() {
-        return null;
-    }
-
-    @Override
-    public Iterable<InputGraph> searchForward() {
-        return null;
-    }
 }

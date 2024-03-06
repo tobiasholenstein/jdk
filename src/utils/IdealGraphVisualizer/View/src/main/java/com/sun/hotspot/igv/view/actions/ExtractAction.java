@@ -64,7 +64,7 @@ public final class ExtractAction extends ModelAwareAction {
 
     @Override
     public void performAction(DiagramScene model) {
-        model.showOnly(model.getSelectedNodes());
+        model.extractSelectedNodes();
     }
 
     @Override

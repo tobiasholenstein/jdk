@@ -35,7 +35,6 @@ import org.openide.util.ImageUtilities;
  */
 public class PredSuccAction extends AbstractAction {
 
-
     public PredSuccAction(boolean selected) {
         putValue(Action.SELECTED_KEY, selected);
         putValue(AbstractAction.SMALL_ICON, new ImageIcon(ImageUtilities.loadImage(iconResource())));

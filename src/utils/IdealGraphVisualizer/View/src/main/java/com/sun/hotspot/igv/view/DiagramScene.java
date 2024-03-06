@@ -575,21 +575,9 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         relayout();
     }
 
-    public void showFigures(Collection<Figure> figures) {
-        boolean somethingChanged = false;
-        for (Figure f : figures) {
-            if (hiddenNodes.remove(f.getInputNode().getId())) {
-                somethingChanged = true;
-            }
-        }
-        if (somethingChanged) {
-            relayout();
-        }
-    }
-
-    public void showOnly(final Set<Integer> nodes) {
-        final HashSet<Integer> allNodes = new HashSet<>(getGroup().getAllNodes());
-        allNodes.removeAll(nodes);
+    public void extractSelectedNodes() {
+        HashSet<Integer> allNodes = new HashSet<>(getGroup().getAllNodes());
+        allNodes.removeAll(selectedNodes);
         setHiddenNodes(allNodes);
     }
 
@@ -600,28 +588,11 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     public Set<Figure> getSelectedFigures() {
         Set<Figure> result = new HashSet<>();
         for (Figure f : diagram.getFigures()) {
-            if (getSelectedNodes().contains(f.getInputNode().getId())) {
+            if (selectedNodes.contains(f.getInputNode().getId())) {
                 result.add(f);
             }
         }
         return result;
-    }
-
-    public void addSelectedNodes(Collection<InputNode> nodes, boolean showIfHidden) {
-        Set<Integer> nodeIds = new HashSet<>(getSelectedNodes());
-        for (InputNode inputNode : nodes) {
-            nodeIds.add(inputNode.getId());
-        }
-        Set<Figure> selectedFigures = new HashSet<>();
-        for (Figure figure : getDiagram().getFigures()) {
-            if (nodeIds.contains(figure.getInputNode().getId())) {
-                selectedFigures.add(figure);
-            }
-        }
-        setFigureSelection(selectedFigures);
-        if (showIfHidden) {
-            showFigures(getSelectedFigures());
-        }
     }
 
     private void setFigureSelection(Set<Figure> list) {

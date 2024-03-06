@@ -73,14 +73,6 @@ public final class EditorTopComponent extends TopComponent {
         scene.setZoomPercentage(percentage);
     }
 
-    public void addSelectedNodes(Collection<InputNode> nodes, boolean showIfHidden) {
-        scene.addSelectedNodes(nodes, showIfHidden);
-    }
-
-    public void clearSelectedNodes() {
-        scene.clearSelectedNodes();
-    }
-
     @Override
     public int getPersistenceType() {
         return TopComponent.PERSISTENCE_NEVER;
