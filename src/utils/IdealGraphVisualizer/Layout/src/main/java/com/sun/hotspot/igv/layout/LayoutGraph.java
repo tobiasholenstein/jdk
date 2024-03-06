@@ -26,8 +26,8 @@ public class LayoutGraph {
             }
             Port p = l.getFrom();
             Port p2 = l.getTo();
-            Vertex v1 = p.getVertex();
-            Vertex v2 = p2.getVertex();
+            Vertex v1 = l.getFrom().getVertex();
+            Vertex v2 = l.getTo().getVertex();
 
             if (!vertices.contains(v1)) {
 

@@ -300,7 +300,7 @@ public class Properties implements Serializable, Iterable<Property> {
 
     public static class Entity implements Provider {
 
-        private Properties properties;
+        private final Properties properties;
 
         public Entity() {
             properties = new Properties();
@@ -315,9 +315,6 @@ public class Properties implements Serializable, Iterable<Property> {
             return properties;
         }
 
-        public void internProperties() {
-            properties = PropertyCache.intern(properties);
-        }
     }
 
     public static class InvertPropertyMatcher implements PropertyMatcher {

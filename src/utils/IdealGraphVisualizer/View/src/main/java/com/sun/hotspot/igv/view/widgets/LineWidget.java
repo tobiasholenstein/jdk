@@ -1,26 +1,3 @@
-/*
- * Copyright (c) 2008, 2022, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have any
- * questions.
- *
- */
 package com.sun.hotspot.igv.view.widgets;
 
 import com.sun.hotspot.igv.graph.Connection;
@@ -36,25 +13,18 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.swing.JPopupMenu;
-import org.netbeans.api.visual.action.ActionFactory;
-import org.netbeans.api.visual.action.PopupMenuProvider;
 import org.netbeans.api.visual.action.WidgetAction;
 import org.netbeans.api.visual.model.ObjectState;
 import org.netbeans.api.visual.widget.Widget;
 
-/**
- * @author Thomas Wuerthinger
- */
-public class LineWidget extends Widget implements PopupMenuProvider, DoubleClickHandler {
+
+public class LineWidget extends Widget implements DoubleClickHandler {
 
     private final static double ZOOM_FACTOR = 0.1;
     public final int BORDER = 5;
     public final int ARROW_SIZE = 6;
     public final int BOLD_ARROW_SIZE = 7;
-    public final int HOVER_ARROW_SIZE = 8;
     public final int BOLD_STROKE_WIDTH = 2;
-    public final int HOVER_STROKE_WIDTH = 3;
     private final OutputSlot outputSlot;
     private final DiagramScene scene;
     private final List<? extends Connection> connections;
@@ -65,8 +35,6 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
     private Point from;
     private Point to;
     private Rectangle clientArea;
-    private boolean highlighted;
-    private boolean popupVisible;
 
     public LineWidget(DiagramScene scene, OutputSlot s, List<? extends Connection> connections, Point from, Point to, LineWidget predecessor, boolean isBold, boolean isDashed) {
         super(scene);
@@ -93,10 +61,7 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
         setToolTipText("<HTML>" + generateToolTipText(this.connections) + "</HTML>");
 
         setCheckClipping(false);
-
-        getActions().addAction(ActionFactory.createPopupMenuAction(this));
         setBackground(color);
-
         getActions().addAction(new DoubleClickAction(this));
     }
 
@@ -176,10 +141,6 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
             width = BOLD_STROKE_WIDTH;
         }
 
-        if (highlighted || popupVisible) {
-            width = HOVER_STROKE_WIDTH;
-        }
-
         Stroke oldStroke = g.getStroke();
         if (isDashed) {
             float[] dashPattern = {5, 5, 5, 5};
@@ -210,9 +171,7 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
         if (isBold) {
             size = BOLD_ARROW_SIZE;
         }
-        if (highlighted || popupVisible) {
-            size = HOVER_ARROW_SIZE;
-        }
+
         if (!sameFrom) {
             g.fillPolygon(
                     new int[]{from.x - size / 2, from.x + size / 2, from.x},
@@ -229,26 +188,13 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
         super.paintWidget();
     }
 
-    private void setPopupVisible(boolean b) {
-        this.popupVisible = b;
-        this.revalidate(true);
-    }
-
     @Override
     public boolean isHitAt(Point localPoint) {
         return Line2D.ptLineDistSq(from.x, from.y, to.x, to.y, localPoint.x, localPoint.y) <= BORDER * BORDER;
     }
 
     @Override
-    protected void notifyStateChanged(ObjectState previousState, ObjectState state) {
-        if (previousState.isHovered() != state.isHovered()) {
-            boolean enableHighlighting = state.isHovered();
-            highlightPredecessors(enableHighlighting);
-            setHighlighted(enableHighlighting);
-            recursiveHighlightSuccessors(enableHighlighting);
-            highlightVertices(enableHighlighting);
-        }
-    }
+    protected void notifyStateChanged(ObjectState previousState, ObjectState state) {}
 
     public LineWidget getPredecessor() {
         return predecessor;
@@ -258,71 +204,11 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
         return successors;
     }
 
-    private void highlightPredecessors(boolean enable) {
-        LineWidget predecessorLineWidget = predecessor;
-        while (predecessorLineWidget != null) {
-            predecessorLineWidget.setHighlighted(enable);
-            predecessorLineWidget = predecessorLineWidget.predecessor;
-        }
-    }
-
-    private void recursiveHighlightSuccessors(boolean enable) {
-        for (LineWidget successorLineWidget : successors) {
-            successorLineWidget.setHighlighted(enable);
-            successorLineWidget.recursiveHighlightSuccessors(enable);
-        }
-    }
-
-    private void highlightVertices(boolean enable) {
-        Set<Object> highlightedObjects = new HashSet<>(scene.getHighlightedObjects());
-        Set<Object> highlightedObjectsChange = new HashSet<>();
-        for (Connection c : connections) {
-            highlightedObjectsChange.add(c.getTo());
-            highlightedObjectsChange.add(c.getTo().getVertex());
-            highlightedObjectsChange.add(c.getFrom());
-            highlightedObjectsChange.add(c.getFrom().getVertex());
-        }
-        if (enable) {
-            highlightedObjects.addAll(highlightedObjectsChange);
-        } else {
-            highlightedObjects.removeAll(highlightedObjectsChange);
-        }
-        scene.setHighlightedObjects(highlightedObjects);
-    }
-
-    private void setHighlighted(boolean enable) {
-        highlighted = enable;
-        revalidate(true);
-    }
-
-    private void setRecursivePopupVisible(boolean b) {
-        LineWidget cur = predecessor;
-        while (cur != null) {
-            cur.setPopupVisible(b);
-            cur = cur.predecessor;
-        }
-
-        popupVisibleSuccessors(b);
-        setPopupVisible(b);
-    }
-
-    private void popupVisibleSuccessors(boolean b) {
-        for (LineWidget s : successors) {
-            s.setPopupVisible(b);
-            s.popupVisibleSuccessors(b);
-        }
-    }
-
     public Figure getFromFigure() {
         if (outputSlot != null) {
             return outputSlot.getFigure();
         }
         return null;
-    }
-
-    @Override
-    public JPopupMenu getPopupMenu(Widget widget, Point localLocation) {
-        return new JPopupMenu();
     }
 
     @Override

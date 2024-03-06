@@ -143,7 +143,7 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
     }
 
     @Override
-    public Vertex getVertex() {
+    public Figure getVertex() {
         return figure;
     }
 
