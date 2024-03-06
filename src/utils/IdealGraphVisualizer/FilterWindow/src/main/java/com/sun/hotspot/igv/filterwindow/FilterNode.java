@@ -25,7 +25,6 @@ package com.sun.hotspot.igv.filterwindow;
 
 import com.sun.hotspot.igv.data.ChangedListener;
 import com.sun.hotspot.igv.filter.Filter;
-
 import javax.swing.Action;
 import org.openide.actions.OpenAction;
 import org.openide.nodes.Children;

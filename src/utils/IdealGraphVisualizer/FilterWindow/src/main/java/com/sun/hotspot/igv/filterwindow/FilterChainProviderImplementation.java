@@ -23,10 +23,8 @@
  */
 package com.sun.hotspot.igv.filterwindow;
 
-import com.sun.hotspot.igv.data.ChangedListener;
 import com.sun.hotspot.igv.filter.FilterChain;
 import com.sun.hotspot.igv.filter.FilterChainProvider;
-import javax.swing.JComboBox;
 import org.openide.util.lookup.ServiceProvider;
 
 /**

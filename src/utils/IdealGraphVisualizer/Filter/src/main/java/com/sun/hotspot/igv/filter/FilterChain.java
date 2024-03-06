@@ -29,7 +29,6 @@ import com.sun.hotspot.igv.data.ChangedListener;
 import com.sun.hotspot.igv.graph.Diagram;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**

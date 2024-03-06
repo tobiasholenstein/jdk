@@ -23,9 +23,6 @@
  */
 package com.sun.hotspot.igv.filter;
 
-import com.sun.hotspot.igv.data.ChangedListener;
-import javax.swing.JComboBox;
-
 /**
  *
  * @author Thomas Wuerthinger
