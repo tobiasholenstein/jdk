@@ -203,12 +203,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void buildDiagram() {
+        // create diagram
         diagram = new Diagram(inputGraph);
-        filterChain.applyInOrder(diagram, filtersOrder);
-        drawDiagram();
-    }
 
-    private void drawDiagram() {
+        // filter diagram
+        filterChain.applyInOrder(diagram, filtersOrder);
+
+        // draw diagram
         clearObjects();
         rebuildMainLayer();
         relayout();
@@ -216,7 +217,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         validateAll();
     }
 
-    private void relayout() {
+    private void relayout() {  // visible nodes changed
         updateVisibleFigureWidgets();
         updateNodeHull();
         Set<Figure> visibleFigures = getVisibleFigures();
@@ -233,7 +234,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     public void setShowNodeHull(boolean b) {
         showNodeHull = b;
-        drawDiagram();
+        relayout();
     }
 
     public Set<Integer> getSelectedNodes() {
