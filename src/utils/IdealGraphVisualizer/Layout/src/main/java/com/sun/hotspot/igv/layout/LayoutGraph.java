@@ -20,12 +20,4 @@ public class LayoutGraph {
     public Set<? extends Vertex> getVertices() {
         return vertices;
     }
-
-    public Set<Link> getInputLinks(Vertex vertex) {
-        return vertex.getInputLinks();
-    }
-
-    public Set<Link> getOutputLinks(Vertex vertex) {
-        return vertex.getOutputLinks();
-    }
 }

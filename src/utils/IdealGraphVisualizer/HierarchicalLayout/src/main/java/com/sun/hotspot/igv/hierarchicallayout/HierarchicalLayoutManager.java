@@ -267,11 +267,11 @@ public class HierarchicalLayoutManager {
     }
 
     public void removeEdges(LayoutNode movedNode) {
-        for (Link inputLink : graph.getInputLinks(movedNode.getVertex())) {
+        for (Link inputLink : movedNode.getVertex().getInputLinks()) {
             if (inputLink.getFromVertex() == inputLink.getToVertex()) continue;
             applyRemoveLinkAction(inputLink);
         }
-        for (Link outputLink : graph.getOutputLinks(movedNode.getVertex())) {
+        for (Link outputLink : movedNode.getVertex().getOutputLinks()) {
             if (outputLink.getFromVertex() == outputLink.getToVertex()) continue;
             applyRemoveLinkAction(outputLink);
         }
@@ -294,10 +294,9 @@ public class HierarchicalLayoutManager {
     }
 
     public void addEdges(LayoutNode movedNode) {
-
         // BuildDatastructure
-        List<Link> nodeLinks = new ArrayList<>(graph.getInputLinks(movedNode.getVertex()));
-        nodeLinks.addAll(graph.getOutputLinks(movedNode.getVertex()));
+        List<Link> nodeLinks = new ArrayList<>(movedNode.getVertex().getInputLinks());
+        nodeLinks.addAll(movedNode.getVertex().getOutputLinks());
         nodeLinks.sort(LINK_COMPARATOR);
 
         Set<LayoutNode> reversedLayoutNodes = new HashSet<>();
@@ -579,7 +578,7 @@ public class HierarchicalLayoutManager {
                 assert predEdge.getLink() != null;
             }
         }
-        for (Link inputLink : graph.getInputLinks(node.getVertex())) {
+        for (Link inputLink : node.getVertex().getInputLinks()) {
             if (inputLink.getFromVertex() == inputLink.getToVertex()) continue;
             LayoutNode fromNode = vertexToLayoutNode.get(inputLink.getFromVertex());
             if (fromNode.getLayer() == layerNr) {
@@ -587,7 +586,7 @@ public class HierarchicalLayoutManager {
                 return layerNr + 1;
             }
         }
-        for (Link outputLink : graph.getOutputLinks(node.getVertex())) {
+        for (Link outputLink : node.getVertex().getOutputLinks()) {
             if (outputLink.getFromVertex() == outputLink.getToVertex()) continue;
             LayoutNode toNode = vertexToLayoutNode.get(outputLink.getToVertex());
             if (toNode.getLayer() == layerNr) {
@@ -602,7 +601,6 @@ public class HierarchicalLayoutManager {
             }
         }
         return layerNr;
-
     }
 
     private void moveExpandLayerDown(int layerNr) {
