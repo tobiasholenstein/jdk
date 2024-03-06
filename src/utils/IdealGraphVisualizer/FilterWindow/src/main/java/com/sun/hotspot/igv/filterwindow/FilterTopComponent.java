@@ -80,14 +80,9 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     private final JComboBox<FilterChain> comboBox;
     private final FilterChain allFiltersOrdered = new FilterChain();
     private static final FilterChain defaultFilterChain = new FilterChain("DEFAULT");
-    private FilterChain customFilterChain;
+    private final FilterChain customFilterChain;
     private final ChangedEvent<FilterTopComponent> filterSettingsChangedEvent = new ChangedEvent<>(this);
-    private ChangedEvent<JComboBox<FilterChain>> filterChainSelectionChangedEvent;
-    private final ActionListener comboBoxSelectionChangedListener = l -> {
-        comboBoxSelectionChanged();
-        // notify model that user selected a different filter profile
-        filterChainSelectionChangedEvent.fire();
-    };
+    private final ChangedEvent<JComboBox<FilterChain>> filterChainSelectionChangedEvent;
     private static final String CUSTOM_LABEL = "--Local--";
     private static final String GLOBAL_LABEL = "--Global--";
 
@@ -160,17 +155,18 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         this.add(toolBar, BorderLayout.NORTH);
         this.add(view, BorderLayout.CENTER);
 
+        // notify model that user selected a different filter profile
+        ActionListener comboBoxSelectionChangedListener = l -> {
+            comboBoxSelectionChanged();
+            // notify model that user selected a different filter profile
+            filterChainSelectionChangedEvent.fire();
+        };
         comboBox.addActionListener(comboBoxSelectionChangedListener);
         comboBoxSelectionChanged();
     }
 
     public ChangedEvent<FilterTopComponent> getFilterSettingsChangedEvent() {
         return filterSettingsChangedEvent;
-    }
-
-    public void setFilterChainSelectionChangedListener(ChangedListener<JComboBox<FilterChain>> listener) {
-        filterChainSelectionChangedEvent = new ChangedEvent<>(comboBox);
-        filterChainSelectionChangedEvent.addListener(listener);
     }
 
     public FilterChain getAllFiltersOrdered() {
@@ -181,38 +177,10 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         return (FilterChain) comboBox.getSelectedItem();
     }
 
-    public void selectFilterChain(FilterChain filterChain) {
-        comboBox.removeActionListener(comboBoxSelectionChangedListener);
-        comboBox.setSelectedItem(filterChain);
-        if (comboBox.getSelectedIndex() < 0) {
-            comboBox.setSelectedIndex(0);
-        }
-        comboBox.addActionListener(comboBoxSelectionChangedListener);
-        comboBoxSelectionChanged();
-    }
-
-    public void setCustomFilterChain(FilterChain filterChain) {
-        comboBox.removeActionListener(comboBoxSelectionChangedListener);
-        comboBox.removeItem(customFilterChain);
-        customFilterChain = filterChain;
-        comboBox.insertItemAt(customFilterChain, 0);
-        comboBox.addActionListener(comboBoxSelectionChangedListener);
-    }
-
     private void comboBoxSelectionChanged() {
         FilterChain currentChain = getCurrentChain();
         if (currentChain != null) {
             filterSettingsChangedEvent.fire(); // notify all FilterNodes to update checkbox selection
-        }
-    }
-
-    public void removeFilterSetting() {
-        if (getCurrentChain() != customFilterChain) {
-            FilterChain filter = getCurrentChain();
-            NotifyDescriptor.Confirmation l = new NotifyDescriptor.Confirmation("Do you really want to remove filter profile \"" + filter + "\"?", "Filter Profile");
-            if (DialogDisplayer.getDefault().notify(l) == NotifyDescriptor.YES_OPTION) {
-                comboBox.removeItem(filter);
-            }
         }
     }
 
@@ -302,28 +270,12 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         return sb.toString();
     }
 
-    public void newFilter() {
-        CustomFilter customFilter = new CustomFilter("My custom filter", "", engine);
-        if (customFilter.openInEditor()) {
-            addFilter(customFilter);
-        }
-    }
-
     public void addFilter(CustomFilter customFilter) {
         allFiltersOrdered.addFilter(customFilter);
         FileObject fileObject = getFileObject(customFilter);
         FilterChangedListener listener = new FilterChangedListener(fileObject, customFilter);
         listener.changed(customFilter);
         customFilter.getChangedEvent().addListener(listener);
-    }
-
-    public void removeFilter(CustomFilter customFilter) {
-        allFiltersOrdered.removeFilter(customFilter);
-        try {
-            getFileObject(customFilter).delete();
-        } catch (IOException ex) {
-            Exceptions.printStackTrace(ex);
-        }
     }
 
     private FileObject getFileObject(CustomFilter customFilter) {
@@ -526,81 +478,5 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     public void requestActive() {
         super.requestActive();
         view.requestFocus();
-    }
-
-
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeUTF(getCurrentChain().getName());
-        out.writeInt(comboBox.getItemCount());
-        for (int i=0; i<comboBox.getItemCount(); i++) {
-            FilterChain filterChain = comboBox.getItemAt(i);
-            out.writeUTF(filterChain.getName());
-            out.writeInt(filterChain.getFilters().size());
-            for (Filter filter : filterChain.getFilters()) {
-                CustomFilter cf = (CustomFilter) filter;
-                out.writeUTF(cf.getName());
-            }
-        }
-
-        out.writeInt(allFiltersOrdered.getFilters().size());
-        for (Filter filter : allFiltersOrdered.getFilters()) {
-            out.writeUTF(filter.getName());
-        }
-    }
-
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        String selectedChainName = in.readUTF();
-        int filterSettingsCount = in.readInt();
-        for (int i = 0; i < filterSettingsCount; i++) {
-            String name = in.readUTF();
-            int filterCount = in.readInt();
-            FilterChain filterChain = new FilterChain(name);
-            for (int j = 0; j < filterCount; j++) {
-                String filterName = in.readUTF();
-                CustomFilter filter = findFilter(filterName);
-                if (filter != null) {
-                    filterChain.addFilter(filter);
-                }
-            }
-            if (Objects.equals(filterChain.getName(), customFilterChain.getName())) {
-                setCustomFilterChain(filterChain);
-            } else {
-                for (int cnt=0; cnt<comboBox.getItemCount(); cnt++) {
-                    FilterChain s = comboBox.getItemAt(cnt);
-                    if (s.getName().equals(name)) {
-                        comboBox.removeItem(s);
-                    }
-                }
-                comboBox.addItem(filterChain);
-            }
-            if (selectedChainName.equals(filterChain.getName())) {
-                selectFilterChain(filterChain);
-            }
-        }
-
-        ArrayList<String> order = new ArrayList<>();
-        int filterOrderCount = in.readInt();
-        for (int i = 0; i < filterOrderCount; i++) {
-            String name = in.readUTF();
-            order.add(name);
-        }
-        allFiltersOrdered.sortBy(order);
-    }
-
-    public CustomFilter findFilter(String name) {
-        for (Filter f : allFiltersOrdered.getFilters()) {
-            CustomFilter cf = (CustomFilter) f;
-            if (cf.getName().equals(name)) {
-                return cf;
-            }
-        }
-
-        return null;
     }
 }

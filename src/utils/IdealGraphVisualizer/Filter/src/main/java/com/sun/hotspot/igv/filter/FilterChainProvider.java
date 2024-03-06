@@ -36,10 +36,4 @@ public interface FilterChainProvider {
     FilterChain getAllFiltersOrdered();
 
     FilterChain createNewCustomFilterChain();
-
-    void setCustomFilterChain(FilterChain filterChain);
-
-    void selectFilterChain(FilterChain filterChain);
-
-    void setFilterChainSelectionChangedListener(ChangedListener<JComboBox<FilterChain>> listener);
 }

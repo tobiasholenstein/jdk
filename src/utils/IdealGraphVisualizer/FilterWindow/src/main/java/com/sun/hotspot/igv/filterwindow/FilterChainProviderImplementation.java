@@ -50,19 +50,4 @@ public class FilterChainProviderImplementation implements FilterChainProvider {
     public FilterChain createNewCustomFilterChain() {
         return FilterTopComponent.findInstance().createNewCustomFilterChain();
     }
-
-    @Override
-    public void selectFilterChain(FilterChain filterChain) {
-        FilterTopComponent.findInstance().selectFilterChain(filterChain);
-    }
-
-    @Override
-    public void setCustomFilterChain(FilterChain filterChain) {
-        FilterTopComponent.findInstance().setCustomFilterChain(filterChain);
-    }
-
-    @Override
-    public void setFilterChainSelectionChangedListener(ChangedListener<JComboBox<FilterChain>> listener) {
-        FilterTopComponent.findInstance().setFilterChainSelectionChangedListener(listener);
-    }
 }
