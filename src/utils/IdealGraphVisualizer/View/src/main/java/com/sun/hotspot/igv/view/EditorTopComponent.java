@@ -23,13 +23,12 @@ public final class EditorTopComponent extends TopComponent {
     public EditorTopComponent(InputGraph graph) {
         initComponents();
 
-        DiagramViewModel diagramViewModel = new DiagramViewModel(graph);
-        scene = new DiagramScene(diagramViewModel);
-        getModel().showDiagram();
+        scene = new DiagramScene(graph);
+        getScene().showDiagram();
 
         LookupHistory.init(InputGraphProvider.class);
         InstanceContent content = new InstanceContent();
-        content.add(diagramViewModel);
+        content.add(scene);
         associateLookup(new ProxyLookup(scene.getLookup(), new AbstractLookup(content)));
 
         add(scene.getComponent(), BorderLayout.CENTER);
@@ -39,14 +38,14 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.add(ExtractAction.get(ExtractAction.class));
         toolBar.add(HideAction.get(HideAction.class));
         toolBar.add(ShowAllAction.get(ShowAllAction.class));
-        toolBar.add(new JToggleButton(new PredSuccAction(diagramViewModel.getShowNodeHull())));
+        toolBar.add(new JToggleButton(new PredSuccAction(scene.getShowNodeHull())));
         add(toolBar, BorderLayout.NORTH);
 
         setDisplayName(graph.getDisplayName());
     }
 
-    public DiagramViewModel getModel() {
-        return scene.getModel();
+    public DiagramScene getScene() {
+        return scene;
     }
 
     public void zoomOut() {
@@ -90,7 +89,7 @@ public final class EditorTopComponent extends TopComponent {
     @Override
     public void componentClosed() {
         super.componentClosed();
-        getModel().close();
+        getScene().close();
         LookupHistory.terminate(InputGraphProvider.class);
     }
 

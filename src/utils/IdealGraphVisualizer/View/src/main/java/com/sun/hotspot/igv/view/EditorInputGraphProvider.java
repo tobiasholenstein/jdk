@@ -50,7 +50,7 @@ public class EditorInputGraphProvider implements InputGraphProvider {
     @Override
     public InputGraph getGraph() {
         if (editor != null && EditorTopComponent.isOpen(editor)) {
-            return editor.getModel().getGraph();
+            return editor.getScene().getGraph();
         } else {
             return null;
         }

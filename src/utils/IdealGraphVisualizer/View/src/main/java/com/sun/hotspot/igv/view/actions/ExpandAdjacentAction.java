@@ -38,12 +38,12 @@ abstract public class ExpandAdjacentAction extends CallableSystemAction {
     protected void expandFigures(Function<Figure, List<Figure>> getAdjacentFigures) {
         EditorTopComponent editor = EditorTopComponent.getActive();
         if (editor != null) {
-            Set<Figure> selectedFigured = editor.getModel().getSelectedFigures();
+            Set<Figure> selectedFigured = editor.getScene().getSelectedFigures();
             Set<Figure> expandedFigures = new HashSet<>(selectedFigured);
             for (Figure selectedFigure : selectedFigured) {
                 expandedFigures.addAll(getAdjacentFigures.apply(selectedFigure));
             }
-            editor.getModel().showFigures(expandedFigures);
+            editor.getScene().showFigures(expandedFigures);
         }
     }
 

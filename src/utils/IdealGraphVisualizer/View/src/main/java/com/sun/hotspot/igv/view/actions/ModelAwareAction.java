@@ -24,13 +24,13 @@
 package com.sun.hotspot.igv.view.actions;
 
 import com.sun.hotspot.igv.util.ContextAction;
-import com.sun.hotspot.igv.view.DiagramViewModel;
+import com.sun.hotspot.igv.view.DiagramScene;
 import javax.swing.Action;
 import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
 
 
-abstract public class ModelAwareAction extends ContextAction<DiagramViewModel> {
+abstract public class ModelAwareAction extends ContextAction<DiagramScene> {
 
     public ModelAwareAction() {
         putValue(Action.SMALL_ICON , ImageUtilities.loadImageIcon(iconResource(), true));
@@ -43,20 +43,20 @@ abstract public class ModelAwareAction extends ContextAction<DiagramViewModel> {
 
     public abstract String getName();
 
-    public abstract void performAction(DiagramViewModel model);
+    public abstract void performAction(DiagramScene model);
 
-    public abstract boolean isEnabled(DiagramViewModel model);
+    public abstract boolean isEnabled(DiagramScene model);
 
     @Override
-    public Class<DiagramViewModel> contextClass() {
-        return DiagramViewModel.class;
+    public Class<DiagramScene> contextClass() {
+        return DiagramScene.class;
     }
 
     @Override
-    public void addContextListener(DiagramViewModel model) {}
+    public void addContextListener(DiagramScene model) {}
 
     @Override
-    public void removeContextListener(DiagramViewModel model) {}
+    public void removeContextListener(DiagramScene model) {}
 
     @Override
     public Action createContextAwareInstance(Lookup actionContext) {

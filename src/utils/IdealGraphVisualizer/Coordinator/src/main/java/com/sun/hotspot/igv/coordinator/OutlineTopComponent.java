@@ -31,21 +31,17 @@ import com.sun.hotspot.igv.data.serialization.Parser;
 import com.sun.hotspot.igv.data.services.GroupCallback;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
 import com.sun.hotspot.igv.util.LookupHistory;
-import com.sun.hotspot.igv.view.DiagramViewModel;
+import com.sun.hotspot.igv.view.DiagramScene;
 import com.sun.hotspot.igv.view.EditorTopComponent;
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.border.Border;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
 import org.openide.ErrorManager;
-import org.openide.actions.GarbageCollectAction;
 import org.openide.awt.Toolbar;
 import org.openide.awt.ToolbarPool;
 import org.openide.explorer.ExplorerManager;
@@ -54,7 +50,6 @@ import org.openide.explorer.view.BeanTreeView;
 import org.openide.modules.Places;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
-import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.util.RequestProcessor;
 import org.openide.windows.Mode;
@@ -224,7 +219,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                 if (graph.isDiffGraph()) {
                     EditorTopComponent editor = EditorTopComponent.getActive();
                     if (editor != null) {
-                        InputGraph firstGraph = editor.getModel().getGraph();
+                        InputGraph firstGraph = editor.getScene().getGraph();
                         GraphNode firstNode = FolderNode.getGraphNode(firstGraph);
                     }
                 } else {
@@ -359,7 +354,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         int tabCount = editorTabs.size();
         out.writeInt(tabCount);
         for (EditorTopComponent etc : editorTabs) {
-            DiagramViewModel model = etc.getModel();
+            DiagramScene model = etc.getScene();
             out.writeBoolean(false);
             InputGraph graph = model.getGraph();
             out.writeInt(graph.getGroup().getIndex());

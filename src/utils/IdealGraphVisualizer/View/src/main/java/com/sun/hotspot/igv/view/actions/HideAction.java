@@ -23,7 +23,7 @@
  */
 package com.sun.hotspot.igv.view.actions;
 
-import com.sun.hotspot.igv.view.DiagramViewModel;
+import com.sun.hotspot.igv.view.DiagramScene;
 import java.util.HashSet;
 import java.util.Set;
 import org.openide.awt.ActionID;
@@ -65,7 +65,7 @@ public final class HideAction extends ModelAwareAction {
     }
 
     @Override
-    public void performAction(DiagramViewModel model) {
+    public void performAction(DiagramScene model) {
         Set<Integer> selectedNodes = model.getSelectedNodes();
         HashSet<Integer> nodes = new HashSet<>(model.getHiddenNodes());
         nodes.addAll(selectedNodes);
@@ -73,7 +73,7 @@ public final class HideAction extends ModelAwareAction {
     }
 
     @Override
-    public boolean isEnabled(DiagramViewModel model) {
+    public boolean isEnabled(DiagramScene model) {
         return true;
     }
 }

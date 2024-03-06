@@ -152,13 +152,13 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
-        Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getModel().getHiddenNodes());
-        if (diagramScene.getModel().getHiddenNodes().isEmpty()) {
-            hiddenNodes = new HashSet<>(diagramScene.getModel().getGroup().getAllNodes());
+        Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodes());
+        if (diagramScene.getHiddenNodes().isEmpty()) {
+            hiddenNodes = new HashSet<>(diagramScene.getGroup().getAllNodes());
         }
 
         boolean progress = false;
-        for (Figure f : diagramScene.getModel().getDiagram().getFigures()) {
+        for (Figure f : diagramScene.getDiagram().getFigures()) {
             for (Slot s : f.getSlots()) {
                 if (!Collections.disjoint(s.getSource().getSourceNodesAsSet(), slot.getSource().getSourceNodesAsSet())) {
                     progress = true;
@@ -168,7 +168,7 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
         }
 
         if (progress) {
-            this.diagramScene.getModel().setHiddenNodes(hiddenNodes);
+            this.diagramScene.setHiddenNodes(hiddenNodes);
         }
     }
 }

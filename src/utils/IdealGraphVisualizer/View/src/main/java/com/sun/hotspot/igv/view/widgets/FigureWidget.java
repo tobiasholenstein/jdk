@@ -288,18 +288,18 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
-        if (diagramScene. getModel().getHiddenNodes().isEmpty()) {
-            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getModel().getGroup().getAllNodes());
+        if (diagramScene.getHiddenNodes().isEmpty()) {
+            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getGroup().getAllNodes());
             hiddenNodes.remove(this.getFigure().getInputNode().getId());
-            this.diagramScene.getModel().setHiddenNodes(hiddenNodes);
+            diagramScene.setHiddenNodes(hiddenNodes);
         } else if (isBoundary()) {
-            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getModel().getHiddenNodes());
+            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodes());
             hiddenNodes.remove(this.getFigure().getInputNode().getId());
-            this.diagramScene.getModel().setHiddenNodes(hiddenNodes);
+            diagramScene.setHiddenNodes(hiddenNodes);
         } else {
-            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getModel().getHiddenNodes());
+            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodes());
             hiddenNodes.add(this.getFigure().getInputNode().getId());
-            this.diagramScene.getModel().setHiddenNodes(hiddenNodes);
+            diagramScene.setHiddenNodes(hiddenNodes);
         }
     }
 }

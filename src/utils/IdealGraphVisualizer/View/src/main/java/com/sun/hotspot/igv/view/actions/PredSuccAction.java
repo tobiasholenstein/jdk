@@ -48,7 +48,7 @@ public class PredSuccAction extends AbstractAction {
         EditorTopComponent editor = EditorTopComponent.getActive();
         if (editor != null) {
             boolean selected = (boolean)getValue(SELECTED_KEY);
-            editor.getModel().setShowNodeHull(selected);
+            editor.getScene().setShowNodeHull(selected);
         }
     }
 

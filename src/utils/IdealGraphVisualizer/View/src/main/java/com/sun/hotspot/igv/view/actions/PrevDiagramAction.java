@@ -23,7 +23,7 @@
  */
 package com.sun.hotspot.igv.view.actions;
 
-import com.sun.hotspot.igv.view.DiagramViewModel;
+import com.sun.hotspot.igv.view.DiagramScene;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionReferences;
@@ -63,14 +63,14 @@ public final class PrevDiagramAction extends ModelAwareAction {
     }
 
     @Override
-    public void performAction(DiagramViewModel model) {
+    public void performAction(DiagramScene model) {
         if (model.getPosition() != 0) {
             model.setPosition(model.getPosition() - 1);
         }
     }
 
     @Override
-    public boolean isEnabled(DiagramViewModel model) {
+    public boolean isEnabled(DiagramScene model) {
         return true;
     }
 }

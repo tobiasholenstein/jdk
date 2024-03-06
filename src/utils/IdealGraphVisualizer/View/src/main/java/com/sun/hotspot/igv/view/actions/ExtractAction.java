@@ -23,7 +23,7 @@
  */
 package com.sun.hotspot.igv.view.actions;
 
-import com.sun.hotspot.igv.view.DiagramViewModel;
+import com.sun.hotspot.igv.view.DiagramScene;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionReferences;
@@ -63,12 +63,12 @@ public final class ExtractAction extends ModelAwareAction {
     }
 
     @Override
-    public void performAction(DiagramViewModel model) {
+    public void performAction(DiagramScene model) {
         model.showOnly(model.getSelectedNodes());
     }
 
     @Override
-    public boolean isEnabled(DiagramViewModel model) {
+    public boolean isEnabled(DiagramScene model) {
         return true;
     }
 }
