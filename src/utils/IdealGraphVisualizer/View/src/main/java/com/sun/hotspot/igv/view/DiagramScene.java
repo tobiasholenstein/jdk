@@ -49,7 +49,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final ArrayList<InputGraph> graphs;
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
-    private final ChangedEvent<DiagramScene> diagramChangedEvent = new ChangedEvent<>(this);
     private final ChangedEvent<DiagramScene> selectedNodesChangedEvent = new ChangedEvent<>(this);
     private final ChangedEvent<DiagramScene> hiddenNodesChangedEvent = new ChangedEvent<>(this);
     private final ChangedListener<FilterChain> filterChainChangedListener = filter -> rebuildDiagram();
@@ -79,8 +78,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         showNodeHull = true;
         hiddenNodes = new HashSet<>();
         selectedNodes = new HashSet<>();
-        setPosition(graphs.indexOf(inputGraph));
-
 
         MouseZoomAction mouseZoomAction = new MouseZoomAction(this);
         scrollPane = createScrollPane(mouseZoomAction);
@@ -122,10 +119,11 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         super.getActions().addAction(new DoubleClickAction(this));
         super.getActions().addAction(mouseZoomAction);
 
-        getDiagramChangedEvent().addListener(m -> update());
         getHiddenNodesChangedEvent().addListener(m -> relayout());
 
         seaLayoutManager = new NewHierarchicalLayoutManager();
+
+        setPosition(graphs.indexOf(inputGraph));
     }
 
     public void zoomIn(Point zoomCenter, double factor) {
@@ -208,7 +206,15 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     public void showDiagram() {
-        diagramChangedEvent.fire();
+        updateDiagram();
+    }
+
+    private void updateDiagram() {
+        clearObjects();
+        rebuildMainLayer();
+        relayout();
+        setFigureSelection(getSelectedFigures());
+        validateAll();
     }
 
     public boolean getShowNodeHull() {
@@ -217,11 +223,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     public void setShowNodeHull(boolean b) {
         showNodeHull = b;
-        diagramChangedEvent.fire();
-    }
-
-    public ChangedEvent<DiagramScene> getDiagramChangedEvent() {
-        return diagramChangedEvent;
+        updateDiagram();
     }
 
     public ChangedEvent<DiagramScene> getHiddenNodesChangedEvent() {
@@ -277,7 +279,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private void rebuildDiagram() {
         diagram = new Diagram(inputGraph);
         filterChain.applyInOrder(diagram, filtersOrder);
-        diagramChangedEvent.fire();
+        updateDiagram();
     }
 
     public Diagram getDiagram() {
@@ -411,14 +413,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     public FigureWidget findFigureWidget(Figure figure) {
         return figureMap.get(figure);
-    }
-
-    private void update() {
-        clearObjects();
-        rebuildMainLayer();
-        relayout();
-        setFigureSelection(getSelectedFigures());
-        validateAll();
     }
 
     public void validateAll() {
