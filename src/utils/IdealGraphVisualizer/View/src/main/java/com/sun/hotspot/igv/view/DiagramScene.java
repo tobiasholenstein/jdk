@@ -106,13 +106,14 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     editor.requestActive();
                 }
                 Set<Integer> nodeSelection = new HashSet<>();
-                Object o = DiagramScene.super.findObject(widget);
-                if (o instanceof Figure) {
-                    nodeSelection.add(((Figure) o).getInputNode().getId());
-                } else if (o instanceof Slot) {
-                    nodeSelection.addAll(((Slot) o).getSource().getSourceNodesAsSet());
+                Object object = DiagramScene.super.findObject(widget);
+                if (object instanceof Figure) {
+                    nodeSelection.add(((Figure) object).getInputNode().getId());
+                } else if (object instanceof Slot) {
+                    nodeSelection.addAll(((Slot) object).getSource().getSourceNodesAsSet());
                 }
-                setSelectedNodes(nodeSelection);
+                selectedNodes = nodeSelection;
+                selectedNodesChangedEvent.fire();
             }
         });
 
@@ -231,11 +232,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return selectedNodes;
     }
 
-    public void setSelectedNodes(Set<Integer> nodes) {
-        selectedNodes = nodes;
-        selectedNodesChangedEvent.fire();
-    }
-
     public Set<Integer> getHiddenNodes() {
         return hiddenNodes;
     }
@@ -279,9 +275,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void rebuildDiagram() {
-        // clear diagram
-        InputGraph graph = getGraph();
-        diagram = new Diagram(graph);
+        diagram = new Diagram(inputGraph);
         filterChain.applyInOrder(diagram, filtersOrder);
         diagramChangedEvent.fire();
     }
