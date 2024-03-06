@@ -177,8 +177,8 @@ public class HierarchicalLayoutManager {
     }
 
     private void applyRemoveLinkAction(Link link) {
-        Vertex from = link.getFrom().getVertex();
-        Vertex to = link.getTo().getVertex();
+        Vertex from = link.getFromVertex();
+        Vertex to = link.getToVertex();
         LayoutNode toNode = vertexToLayoutNode.get(to);
         LayoutNode fromNode = vertexToLayoutNode.get(from);
 
@@ -268,20 +268,20 @@ public class HierarchicalLayoutManager {
 
     public void removeEdges(LayoutNode movedNode) {
         for (Link inputLink : graph.getInputLinks(movedNode.getVertex())) {
-            if (inputLink.getFrom().getVertex() == inputLink.getTo().getVertex()) continue;
+            if (inputLink.getFromVertex() == inputLink.getToVertex()) continue;
             applyRemoveLinkAction(inputLink);
         }
         for (Link outputLink : graph.getOutputLinks(movedNode.getVertex())) {
-            if (outputLink.getFrom().getVertex() == outputLink.getTo().getVertex()) continue;
+            if (outputLink.getFromVertex() == outputLink.getToVertex()) continue;
             applyRemoveLinkAction(outputLink);
         }
 
         // remove link connected to movedNode
         for (Link link : graph.getLinks()) {
-            if (link.getTo().getVertex() == movedNode.getVertex()) {
+            if (link.getToVertex() == movedNode.getVertex()) {
                 link.setControlPoints(new ArrayList<>());
                 movedNode.getReversedLinkStartPoints().remove(link);
-            } else if (link.getFrom().getVertex() == movedNode.getVertex()) {
+            } else if (link.getFromVertex() == movedNode.getVertex()) {
                 link.setControlPoints(new ArrayList<>());
                 movedNode.getReversedLinkEndPoints().remove(link);
             }
@@ -303,7 +303,7 @@ public class HierarchicalLayoutManager {
         Set<LayoutNode> reversedLayoutNodes = new HashSet<>();
         assertOrder();
         for (Link link : nodeLinks) {
-            if (link.getFrom().getVertex() == link.getTo().getVertex()) continue;
+            if (link.getFromVertex() == link.getToVertex()) continue;
 
             assertOrder();
             LayoutEdge layoutEdge = createLayoutEdge(link);
@@ -580,16 +580,16 @@ public class HierarchicalLayoutManager {
             }
         }
         for (Link inputLink : graph.getInputLinks(node.getVertex())) {
-            if (inputLink.getFrom().getVertex() == inputLink.getTo().getVertex()) continue;
-            LayoutNode fromNode = vertexToLayoutNode.get(inputLink.getFrom().getVertex());
+            if (inputLink.getFromVertex() == inputLink.getToVertex()) continue;
+            LayoutNode fromNode = vertexToLayoutNode.get(inputLink.getFromVertex());
             if (fromNode.getLayer() == layerNr) {
                 moveExpandLayerDown(layerNr + 1);
                 return layerNr + 1;
             }
         }
         for (Link outputLink : graph.getOutputLinks(node.getVertex())) {
-            if (outputLink.getFrom().getVertex() == outputLink.getTo().getVertex()) continue;
-            LayoutNode toNode = vertexToLayoutNode.get(outputLink.getTo().getVertex());
+            if (outputLink.getFromVertex() == outputLink.getToVertex()) continue;
+            LayoutNode toNode = vertexToLayoutNode.get(outputLink.getToVertex());
             if (toNode.getLayer() == layerNr) {
                 moveExpandLayerDown(layerNr);
                 return layerNr;
@@ -817,10 +817,10 @@ public class HierarchicalLayoutManager {
 
     public LayoutEdge createLayoutEdge(Link link ) {
         LayoutEdge edge = new LayoutEdge(
-                vertexToLayoutNode.get(link.getFrom().getVertex()),
-                vertexToLayoutNode.get(link.getTo().getVertex()),
-                link.getFrom().getRelativePosition().x,
-                link.getTo().getRelativePosition().x,
+                vertexToLayoutNode.get(link.getFromVertex()),
+                vertexToLayoutNode.get(link.getToVertex()),
+                link.getFromPort().getRelativePosition().x,
+                link.getToPort().getRelativePosition().x,
                 link);
         edge.getFrom().getSuccs().add(edge);
         edge.getTo().getPreds().add(edge);
@@ -828,10 +828,10 @@ public class HierarchicalLayoutManager {
     }
 
     public static final Comparator<Link> LINK_COMPARATOR =
-            Comparator.comparing((Link l) -> l.getFrom().getVertex())
-                    .thenComparing(l -> l.getTo().getVertex())
-                    .thenComparingInt(l -> l.getFrom().getRelativePosition().x)
-                    .thenComparingInt(l -> l.getTo().getRelativePosition().x);
+            Comparator.comparing(Link::getFromVertex)
+                    .thenComparing(Link::getToVertex)
+                    .thenComparingInt(l -> l.getFromPort().getRelativePosition().x)
+                    .thenComparingInt(l -> l.getToPort().getRelativePosition().x);
 
     private class BuildDatastructure {
 
@@ -880,7 +880,7 @@ public class HierarchicalLayoutManager {
         TreeMap<Integer, ArrayList<LayoutEdge>> sortedDownMap = left ? new TreeMap<>() : new TreeMap<>(Collections.reverseOrder());
         for (LayoutEdge succEdge : node.getSuccs()) {
             if (succEdge.isReversed()) {
-                succEdge.setRelativeFromX(succEdge.getLink().getTo().getRelativePosition().x);
+                succEdge.setRelativeFromX(succEdge.getLink().getToPort().getRelativePosition().x);
                 sortedDownMap.putIfAbsent(succEdge.getRelativeFromX(), new ArrayList<>());
                 sortedDownMap.get(succEdge.getRelativeFromX()).add(succEdge);
             }
@@ -918,7 +918,7 @@ public class HierarchicalLayoutManager {
         TreeMap<Integer, ArrayList<LayoutEdge>> sortedUpMap = left ? new TreeMap<>() : new TreeMap<>(Collections.reverseOrder());
         for (LayoutEdge predEdge : node.getPreds()) {
             if (predEdge.isReversed()) {
-                predEdge.setRelativeToX(predEdge.getLink().getFrom().getRelativePosition().x);
+                predEdge.setRelativeToX(predEdge.getLink().getFromPort().getRelativePosition().x);
                 sortedUpMap.putIfAbsent(predEdge.getRelativeToX(), new ArrayList<>());
                 sortedUpMap.get(predEdge.getRelativeToX()).add(predEdge);
             }

@@ -438,7 +438,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     }
                 } else if (controlPointIndex == controlPoints.size()) {
                     if (predecessor != null) {
-                        Figure figure = ((Slot) connection.getTo()).getFigure();
+                        Figure figure = ((Slot) connection.getToPort()).getFigure();
                         if (figureToInLineWidget.containsKey(figure)) {
                             figureToInLineWidget.get(figure).add(predecessor);
                         } else {

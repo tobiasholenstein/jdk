@@ -25,6 +25,7 @@ package com.sun.hotspot.igv.graph;
 
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Port;
+import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Color;
 import java.awt.Point;
 import java.util.ArrayList;
@@ -109,17 +110,27 @@ public class Connection implements Link {
 
     @Override
     public String toString() {
-        return "FigureConnection('" + label + "', " + getFrom().getVertex() + " to " + getTo().getVertex() + ")";
+        return "FigureConnection('" + label + "', " + getFromVertex() + " to " + getToVertex() + ")";
     }
 
     @Override
-    public Port getFrom() {
+    public Port getFromPort() {
         return outputSlot;
     }
 
     @Override
-    public Port getTo() {
+    public Port getToPort() {
         return inputSlot;
+    }
+
+    @Override
+    public Vertex getFromVertex() {
+        return outputSlot.getVertex();
+    }
+
+    @Override
+    public Vertex getToVertex() {
+        return inputSlot.getVertex();
     }
 
     @Override

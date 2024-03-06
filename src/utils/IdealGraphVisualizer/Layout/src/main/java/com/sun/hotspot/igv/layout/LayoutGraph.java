@@ -21,13 +21,13 @@ public class LayoutGraph {
         outputPorts = new HashMap<>(links.size());
 
         for (Link l : links) {
-            if (l.getFrom() == null || l.getTo() == null) {
+            if (l.getFromPort() == null || l.getToPort() == null) {
                 continue;
             }
-            Port p = l.getFrom();
-            Port p2 = l.getTo();
-            Vertex v1 = l.getFrom().getVertex();
-            Vertex v2 = l.getTo().getVertex();
+            Port p = l.getFromPort();
+            Port p2 = l.getToPort();
+            Vertex v1 = l.getFromVertex();
+            Vertex v2 = l.getToVertex();
 
             if (!vertices.contains(v1)) {
 
