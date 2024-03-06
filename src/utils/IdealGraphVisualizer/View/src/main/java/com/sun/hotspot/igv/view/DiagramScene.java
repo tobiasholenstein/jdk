@@ -4,7 +4,7 @@ import com.sun.hotspot.igv.data.*;
 import com.sun.hotspot.igv.filter.FilterChain;
 import com.sun.hotspot.igv.filter.FilterChainProvider;
 import com.sun.hotspot.igv.graph.*;
-import com.sun.hotspot.igv.hierarchicallayout.NewHierarchicalLayoutManager;
+import com.sun.hotspot.igv.hierarchicallayout.HierarchicalLayoutManager;
 import com.sun.hotspot.igv.layout.LayoutGraph;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
@@ -44,7 +44,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final JScrollPane scrollPane;
     private final LayerWidget mainLayer;
     private final LayerWidget connectionLayer;
-    private final NewHierarchicalLayoutManager seaLayoutManager;
+    private final HierarchicalLayoutManager seaLayoutManager;
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
     private final ChangedListener<FilterChain> filterChangedListener = filter -> rebuildDiagram();
@@ -114,7 +114,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         super.getActions().addAction(new DoubleClickAction(this));
         super.getActions().addAction(mouseZoomAction);
 
-        seaLayoutManager = new NewHierarchicalLayoutManager();
+        seaLayoutManager = new HierarchicalLayoutManager();
 
         setPosition(group.getGraphs().indexOf(inputGraph));
     }

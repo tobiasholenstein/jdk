@@ -8,7 +8,7 @@ import java.awt.Point;
 import java.util.*;
 
 
-public class NewHierarchicalLayoutManager {
+public class HierarchicalLayoutManager {
 
     public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;
@@ -724,11 +724,11 @@ public class NewHierarchicalLayoutManager {
         writeBack();
     }
 
-    public NewHierarchicalLayoutManager() {
+    public HierarchicalLayoutManager() {
         this(true);
     }
 
-    public NewHierarchicalLayoutManager(boolean combineEdges) {
+    public HierarchicalLayoutManager(boolean combineEdges) {
         combine = combineEdges;
         vertexToLayoutNode = new LinkedHashMap<>();
         dummyNodes = new ArrayList<>();
