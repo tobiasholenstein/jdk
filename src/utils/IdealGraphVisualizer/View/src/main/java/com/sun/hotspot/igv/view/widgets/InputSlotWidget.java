@@ -1,8 +1,8 @@
 package com.sun.hotspot.igv.view.widgets;
 
+import com.sun.hotspot.igv.graph.Connection;
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
-import com.sun.hotspot.igv.graph.Connection;
 import com.sun.hotspot.igv.graph.InputSlot;
 import com.sun.hotspot.igv.view.DiagramScene;
 import java.awt.Canvas;

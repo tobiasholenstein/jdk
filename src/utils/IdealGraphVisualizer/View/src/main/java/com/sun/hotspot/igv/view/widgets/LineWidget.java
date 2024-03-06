@@ -194,7 +194,8 @@ public class LineWidget extends Widget implements DoubleClickHandler {
     }
 
     @Override
-    protected void notifyStateChanged(ObjectState previousState, ObjectState state) {}
+    protected void notifyStateChanged(ObjectState previousState, ObjectState state) {
+    }
 
     public LineWidget getPredecessor() {
         return predecessor;

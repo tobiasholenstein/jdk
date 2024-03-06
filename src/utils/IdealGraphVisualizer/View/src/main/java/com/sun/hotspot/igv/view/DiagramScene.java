@@ -1,6 +1,8 @@
 package com.sun.hotspot.igv.view;
 
-import com.sun.hotspot.igv.data.*;
+import com.sun.hotspot.igv.data.ChangedListener;
+import com.sun.hotspot.igv.data.Group;
+import com.sun.hotspot.igv.data.InputGraph;
 import com.sun.hotspot.igv.filter.FilterChain;
 import com.sun.hotspot.igv.filter.FilterChainProvider;
 import com.sun.hotspot.igv.graph.*;
@@ -47,20 +49,18 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final HierarchicalLayoutManager seaLayoutManager;
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
-    private final ChangedListener<FilterChain> filterChangedListener = filter -> buildDiagram();
     private final Map<Figure, FigureWidget> figureMap = new HashMap<>();
     private final Map<Slot, SlotWidget> slotMap = new HashMap<>();
     private final Map<Figure, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
     private final Map<Figure, Set<LineWidget>> figureToInLineWidget = new HashMap<>();
-
+    private final Group group;
     private Set<Integer> hiddenNodes;
     private Set<Integer> selectedNodes;
-    private final Group group;
-
     private int position = -1;
     private InputGraph inputGraph;
     private Diagram diagram;
     private boolean showNodeHull;
+    private final ChangedListener<FilterChain> filterChangedListener = filter -> buildDiagram();
 
     public DiagramScene(InputGraph inputGraph) {
         group = inputGraph.getGroup();

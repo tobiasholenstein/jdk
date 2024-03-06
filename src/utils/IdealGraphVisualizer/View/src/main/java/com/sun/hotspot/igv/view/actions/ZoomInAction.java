@@ -23,6 +23,7 @@
  */
 package com.sun.hotspot.igv.view.actions;
 
+import com.sun.hotspot.igv.view.DiagramScene;
 import com.sun.hotspot.igv.view.EditorTopComponent;
 import javax.swing.Action;
 import org.openide.awt.ActionID;
@@ -60,7 +61,7 @@ public final class ZoomInAction extends CallableSystemAction {
     public void performAction() {
         EditorTopComponent editor = EditorTopComponent.getActive();
         if (editor != null) {
-            editor.zoomIn();
+            editor.getScene().zoomIn(null, DiagramScene.ZOOM_INCREMENT);
         }
     }
 

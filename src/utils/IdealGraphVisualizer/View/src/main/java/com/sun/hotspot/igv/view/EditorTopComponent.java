@@ -1,12 +1,10 @@
 package com.sun.hotspot.igv.view;
 
 import com.sun.hotspot.igv.data.InputGraph;
-import com.sun.hotspot.igv.data.InputNode;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
 import com.sun.hotspot.igv.util.LookupHistory;
 import com.sun.hotspot.igv.view.actions.*;
 import java.awt.BorderLayout;
-import java.util.Collection;
 import javax.swing.JToggleButton;
 import org.openide.awt.Toolbar;
 import org.openide.util.lookup.AbstractLookup;
@@ -19,8 +17,6 @@ import org.openide.windows.WindowManager;
 public final class EditorTopComponent extends TopComponent {
 
     private final DiagramScene scene;
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JCheckBox jCheckBox1;
 
     public EditorTopComponent(InputGraph graph) {
         initComponents();
@@ -45,10 +41,6 @@ public final class EditorTopComponent extends TopComponent {
         setDisplayName(graph.getDisplayName());
     }
 
-    public static boolean isOpen(EditorTopComponent editor) {
-        return WindowManager.getDefault().isOpenedEditorTopComponent(editor);
-    }
-
     public static EditorTopComponent getActive() {
         TopComponent topComponent = getRegistry().getActivated();
         if (topComponent instanceof EditorTopComponent) {
@@ -57,20 +49,12 @@ public final class EditorTopComponent extends TopComponent {
         return null;
     }
 
+    public static boolean isOpen(EditorTopComponent editor) {
+        return WindowManager.getDefault().isOpenedEditorTopComponent(editor);
+    }
+
     public DiagramScene getScene() {
         return scene;
-    }
-
-    public void zoomOut() {
-        scene.zoomOut(null, DiagramScene.ZOOM_INCREMENT);
-    }
-
-    public void zoomIn() {
-        scene.zoomIn(null, DiagramScene.ZOOM_INCREMENT);
-    }
-
-    public void setZoomLevel(int percentage) {
-        scene.setZoomPercentage(percentage);
     }
 
     @Override
@@ -109,7 +93,7 @@ public final class EditorTopComponent extends TopComponent {
      */
     // <editor-fold defaultstate="collapsed" desc=" Generated Code ">//GEN-BEGIN:initComponents
     private void initComponents() {
-        jCheckBox1 = new javax.swing.JCheckBox();
+        javax.swing.JCheckBox jCheckBox1 = new javax.swing.JCheckBox();
 
         org.openide.awt.Mnemonics.setLocalizedText(jCheckBox1, "jCheckBox1");
         jCheckBox1.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));

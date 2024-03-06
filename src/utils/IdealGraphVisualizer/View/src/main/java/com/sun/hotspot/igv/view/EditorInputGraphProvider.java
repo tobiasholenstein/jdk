@@ -25,9 +25,7 @@
 package com.sun.hotspot.igv.view;
 
 import com.sun.hotspot.igv.data.InputGraph;
-import com.sun.hotspot.igv.data.InputNode;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
-import java.util.Collection;
 import org.openide.util.lookup.ServiceProvider;
 
 /**

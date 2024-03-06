@@ -3,20 +3,35 @@
 <filesystem>
     <folder name="Shortcuts">
         <file name="D-F.shadow">
-            <attr name="originalFile" stringvalue="Actions/Search/org-netbeans-modules-quicksearch-QuickSearchAction.instance"/>
+            <attr name="originalFile"
+                  stringvalue="Actions/Search/org-netbeans-modules-quicksearch-QuickSearchAction.instance"/>
         </file>
     </folder>
     <folder name="Actions">
         <folder name="Search">
-            <file name="org-netbeans-modules-quicksearch-QuickSearchAction.instance"><attr name="position" intvalue="2001"/></file>
+            <file name="org-netbeans-modules-quicksearch-QuickSearchAction.instance">
+                <attr name="position" intvalue="2001"/>
+            </file>
         </folder>
         <folder name="View">
-            <file name="com-sun-hotspot-igv-view-actions-OverviewAction.instance"><attr name="position" intvalue="2001"/></file>
-            <file name="com-sun-hotspot-igv-view-actions-PredSuccAction.instance"><attr name="position" intvalue="2001"/></file>
-            <file name="com-sun-hotspot-igv-view-actions-ShowEmptyBlocksAction.instance"><attr name="position" intvalue="2001"/></file>
-            <file name="com-sun-hotspot-igv-view-actions-EnableSeaLayoutAction.instance"><attr name="position" intvalue="2001"/></file>
-            <file name="com-sun-hotspot-igv-view-actions-EnableBlockLayoutAction.instance"><attr name="position" intvalue="2001"/></file>
-            <file name="com-sun-hotspot-igv-view-actions-EnableCFGLayoutAction.instance"><attr name="position" intvalue="2001"/></file>
+            <file name="com-sun-hotspot-igv-view-actions-OverviewAction.instance">
+                <attr name="position" intvalue="2001"/>
+            </file>
+            <file name="com-sun-hotspot-igv-view-actions-PredSuccAction.instance">
+                <attr name="position" intvalue="2001"/>
+            </file>
+            <file name="com-sun-hotspot-igv-view-actions-ShowEmptyBlocksAction.instance">
+                <attr name="position" intvalue="2001"/>
+            </file>
+            <file name="com-sun-hotspot-igv-view-actions-EnableSeaLayoutAction.instance">
+                <attr name="position" intvalue="2001"/>
+            </file>
+            <file name="com-sun-hotspot-igv-view-actions-EnableBlockLayoutAction.instance">
+                <attr name="position" intvalue="2001"/>
+            </file>
+            <file name="com-sun-hotspot-igv-view-actions-EnableCFGLayoutAction.instance">
+                <attr name="position" intvalue="2001"/>
+            </file>
         </folder>
     </folder>
     <folder name="Menu">
