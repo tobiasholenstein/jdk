@@ -87,45 +87,11 @@ public class FilterChain implements ChangedEventProvider<FilterChain> {
         return filters.contains(filter);
     }
 
-    public void clearFilters() {
-        for (Filter filter : filters) {
-            filter.getChangedEvent().removeListener(changedListener);
-        }
-        filters.clear();
-        changedEvent.fire();
-    }
-
     public void removeFilter(Filter filter) {
         assert filters.contains(filter);
         filters.remove(filter);
         filter.getChangedEvent().removeListener(changedListener);
         changedEvent.fire();
-    }
-
-    public void moveFilterUp(Filter filter) {
-        assert filters.contains(filter);
-        int index = filters.indexOf(filter);
-        if (index != 0) {
-            filters.remove(index);
-            filters.add(index - 1, filter);
-        }
-        changedEvent.fire();
-    }
-
-    public void moveFilterDown(Filter filter) {
-        assert filters.contains(filter);
-        int index = filters.indexOf(filter);
-        if (index != filters.size() - 1) {
-            filters.remove(index);
-            filters.add(index + 1, filter);
-        }
-        changedEvent.fire();
-    }
-
-    public void addFilters(List<Filter> filtersToAdd) {
-        for (Filter filter : filtersToAdd) {
-            addFilter(filter);
-        }
     }
 
     public List<Filter> getFilters() {
