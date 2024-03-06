@@ -64,7 +64,7 @@ public class EdgeColorIndexFilter extends AbstractFilter {
             for (Slot slot : slots) {
                 if (index < colors.length && colors[index] != null) {
                     slot.setColor(colors[index]);
-                    for (FigureConnection c : slot.getConnections()) {
+                    for (Connection c : slot.getConnections()) {
 
                         c.setColor(colors[index]);
                     }

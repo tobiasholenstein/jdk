@@ -54,7 +54,7 @@ public class SplitFilter extends AbstractFilter {
         for (Figure f : list) {
             String s = AbstractFilter.getFirstMatchingProperty(f, propertyNames);
             for (OutputSlot os : f.getOutputSlots()) {
-                for (FigureConnection c : os.getConnections()) {
+                for (Connection c : os.getConnections()) {
                     InputSlot is = c.getInputSlot();
                     if (f.getInputNode() != null) {
                         is.getSource().addSourceNode(f.getInputNode());

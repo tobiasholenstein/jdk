@@ -405,14 +405,14 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         scrollPane.validate();
     }
 
-    private boolean isVisibleFigureConnection(FigureConnection figureConnection) {
-        FigureWidget w1 = findFigureWidget(figureConnection.getInputSlot().getFigure());
-        FigureWidget w2 = findFigureWidget(figureConnection.getOutputSlot().getFigure());
+    private boolean isVisibleFigureConnection(Connection connection) {
+        FigureWidget w1 = findFigureWidget(connection.getInputSlot().getFigure());
+        FigureWidget w2 = findFigureWidget(connection.getOutputSlot().getFigure());
         return w1.isVisible() && w2.isVisible();
     }
 
-    private void processOutputSlot(OutputSlot outputSlot, List<FigureConnection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
-        Map<Point, List<FigureConnection>> pointMap = new HashMap<>(connections.size());
+    private void processOutputSlot(OutputSlot outputSlot, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
+        Map<Point, List<Connection>> pointMap = new HashMap<>(connections.size());
 
         if (predecessor != null) {
             if (controlPointIndex == 2) {
@@ -425,7 +425,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
         }
 
-        for (FigureConnection connection : connections) {
+        for (Connection connection : connections) {
             if (isVisibleFigureConnection(connection)) {
                 List<Point> controlPoints = connection.getControlPoints();
                 if (controlPointIndex < controlPoints.size()) {
@@ -450,7 +450,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
 
         for (Point currentPoint : pointMap.keySet()) {
-            List<FigureConnection> connectionList = pointMap.get(currentPoint);
+            List<Connection> connectionList = pointMap.get(currentPoint);
 
             boolean isBold = false;
             boolean isDashed = true;
@@ -586,7 +586,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         connectionLayer.removeChildren();
         for (Figure figure : getDiagram().getFigures()) {
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
-                List<FigureConnection> connectionList = new ArrayList<>(outputSlot.getConnections());
+                List<Connection> connectionList = new ArrayList<>(outputSlot.getConnections());
                 processOutputSlot(outputSlot, connectionList, 0, null, null);
             }
         }
@@ -643,7 +643,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     private HashSet<Connection> getVisibleConnections() {
         HashSet<Connection> visibleConnections = new HashSet<>();
-        for (FigureConnection connection : getDiagram().getConnections()) {
+        for (Connection connection : getDiagram().getConnections()) {
             if (isVisibleFigureConnection(connection)) {
                 visibleConnections.add(connection);
             }

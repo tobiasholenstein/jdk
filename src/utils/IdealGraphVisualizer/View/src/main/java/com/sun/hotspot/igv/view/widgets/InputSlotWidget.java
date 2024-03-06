@@ -2,7 +2,7 @@ package com.sun.hotspot.igv.view.widgets;
 
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
-import com.sun.hotspot.igv.graph.FigureConnection;
+import com.sun.hotspot.igv.graph.Connection;
 import com.sun.hotspot.igv.graph.InputSlot;
 import com.sun.hotspot.igv.view.DiagramScene;
 import java.awt.Canvas;
@@ -80,7 +80,7 @@ public class InputSlotWidget extends SlotWidget {
         if (slot.hasSourceNodes()) {
             return true;
         }
-        for (FigureConnection c : slot.getConnections()) {
+        for (Connection c : slot.getConnections()) {
             Figure f = c.getOutputSlot().getFigure();
             FigureWidget fw = scene.findFigureWidget(f);
             if (fw.isVisible()) {

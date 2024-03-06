@@ -62,7 +62,7 @@ public class CombineFilter extends AbstractFilter {
                         InputSlot slot = null;
 
                         for (InputSlot s : succ.getInputSlots()) {
-                            for (FigureConnection c : s.getConnections()) {
+                            for (Connection c : s.getConnections()) {
                                 if (c.getOutputSlot().getFigure() == f) {
                                     slot = s;
                                 }
@@ -92,8 +92,8 @@ public class CombineFilter extends AbstractFilter {
                         }
 
                         for (InputSlot s : f.getInputSlots()) {
-                            for (FigureConnection c : s.getConnections()) {
-                                FigureConnection newConn = diagram.createConnection(slot, c.getOutputSlot(), c.getLabel());
+                            for (Connection c : s.getConnections()) {
+                                Connection newConn = diagram.createConnection(slot, c.getOutputSlot(), c.getLabel());
                                 newConn.setColor(c.getColor());
                                 newConn.setStyle(c.getStyle());
                             }
@@ -107,7 +107,7 @@ public class CombineFilter extends AbstractFilter {
 
                                 OutputSlot oldSlot = null;
                                 for (OutputSlot s : f.getOutputSlots()) {
-                                    for (FigureConnection c : s.getConnections()) {
+                                    for (Connection c : s.getConnections()) {
                                         if (c.getInputSlot().getFigure() == succ) {
                                             oldSlot = s;
                                         }
@@ -152,8 +152,8 @@ public class CombineFilter extends AbstractFilter {
                                     }
                                 }
                                 if (nextSlot != null) {
-                                    for (FigureConnection c : nextSlot.getConnections()) {
-                                        FigureConnection newConn = diagram.createConnection(c.getInputSlot(), slot, c.getLabel());
+                                    for (Connection c : nextSlot.getConnections()) {
+                                        Connection newConn = diagram.createConnection(c.getInputSlot(), slot, c.getLabel());
                                         newConn.setColor(c.getColor());
                                         newConn.setStyle(c.getStyle());
                                     }

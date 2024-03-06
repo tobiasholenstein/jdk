@@ -219,8 +219,8 @@ public class Figure extends Properties.Entity implements Vertex {
 
         assert inputSlots.contains(s) || outputSlots.contains(s);
 
-        List<FigureConnection> connections = new ArrayList<>(s.getConnections());
-        for (FigureConnection c : connections) {
+        List<Connection> connections = new ArrayList<>(s.getConnections());
+        for (Connection c : connections) {
             c.remove();
         }
 

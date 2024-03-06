@@ -62,7 +62,7 @@ public class ConnectionFilter extends AbstractFilter {
 
             for (Figure f : figures) {
                 for (OutputSlot os : f.getOutputSlots()) {
-                    for (FigureConnection c : os.getConnections()) {
+                    for (Connection c : os.getConnections()) {
                         c.setStyle(rule.getLineStyle());
                         c.setColor(rule.getLineColor());
                     }

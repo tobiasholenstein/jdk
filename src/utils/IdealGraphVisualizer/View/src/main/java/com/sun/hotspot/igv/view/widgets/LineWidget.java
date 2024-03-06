@@ -277,12 +277,10 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
         Set<Object> highlightedObjects = new HashSet<>(scene.getHighlightedObjects());
         Set<Object> highlightedObjectsChange = new HashSet<>();
         for (Connection c : connections) {
-            if (c.hasSlots()) {
-                highlightedObjectsChange.add(c.getTo());
-                highlightedObjectsChange.add(c.getTo().getVertex());
-                highlightedObjectsChange.add(c.getFrom());
-                highlightedObjectsChange.add(c.getFrom().getVertex());
-            }
+            highlightedObjectsChange.add(c.getTo());
+            highlightedObjectsChange.add(c.getTo().getVertex());
+            highlightedObjectsChange.add(c.getFrom());
+            highlightedObjectsChange.add(c.getFrom().getVertex());
         }
         if (enable) {
             highlightedObjects.addAll(highlightedObjectsChange);
@@ -337,10 +335,8 @@ public class LineWidget extends Widget implements PopupMenuProvider, DoubleClick
         }
 
         for (Connection connection : connections) {
-            if (connection.hasSlots()) {
-                selectedObjects.add(connection.getTo().getVertex());
-                selectedObjects.add(connection.getFrom().getVertex());
-            }
+            selectedObjects.add(connection.getTo().getVertex());
+            selectedObjects.add(connection.getFrom().getVertex());
         }
         scene.setSelectedObjects(selectedObjects);
     }

@@ -52,7 +52,7 @@ public class Diagram {
             }
             InputSlot inputSlot = toFigure.getInputSlots().get(toIndex);
 
-            FigureConnection c = createConnection(inputSlot, outputSlot, e.getLabel());
+            Connection c = createConnection(inputSlot, outputSlot, e.getLabel());
 
             if (e.getState() == InputEdge.State.NEW) {
                 c.setStyle(Connection.ConnectionStyle.BOLD);
@@ -83,10 +83,10 @@ public class Diagram {
         return Collections.unmodifiableList(figures);
     }
 
-    public FigureConnection createConnection(InputSlot inputSlot, OutputSlot outputSlot, String label) {
+    public Connection createConnection(InputSlot inputSlot, OutputSlot outputSlot, String label) {
         assert inputSlot.getFigure().getDiagram() == this;
         assert outputSlot.getFigure().getDiagram() == this;
-        return new FigureConnection(inputSlot, outputSlot, label);
+        return new Connection(inputSlot, outputSlot, label);
     }
 
     public void removeAllFigures(Set<Figure> figuresToRemove) {
@@ -121,8 +121,8 @@ public class Diagram {
         this.figures.remove(succ);
     }
 
-    public Set<FigureConnection> getConnections() {
-        Set<FigureConnection> connections = new HashSet<>();
+    public Set<Connection> getConnections() {
+        Set<Connection> connections = new HashSet<>();
         for (Figure f : figures) {
             for (InputSlot s : f.getInputSlots()) {
                 connections.addAll(s.getConnections());

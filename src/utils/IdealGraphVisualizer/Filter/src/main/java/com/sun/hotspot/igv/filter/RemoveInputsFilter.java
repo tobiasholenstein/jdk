@@ -53,7 +53,7 @@ public class RemoveInputsFilter extends AbstractFilter {
             List<Figure> slotList = r.getSlotSelector().selected(diagram);
             for (Figure f : list) {
                 for (InputSlot is : f.getInputSlots()) {
-                    List<FigureConnection> conns = is.getConnections();
+                    List<Connection> conns = is.getConnections();
                     if (conns.size() == 1) {
                         Figure i = conns.get(0).getOutputSlot().getFigure();
                         if (slotList.contains(i)) {
