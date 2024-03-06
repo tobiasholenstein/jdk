@@ -79,9 +79,8 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     private final ScriptEngine engine;
     private final JComboBox<FilterChain> comboBox;
     private final FilterChain allFiltersOrdered = new FilterChain();
-    private static final FilterChain defaultFilterChain = new FilterChain("DEFAULT");
+    private static final FilterChain defaultFilterChain = new FilterChain("Global");
     private final ChangedEvent<FilterTopComponent> filterSettingsChangedEvent = new ChangedEvent<>(this);
-    private static final String GLOBAL_LABEL = "--Global--";
 
 
     private FilterTopComponent() {
@@ -100,10 +99,8 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
 
         initFilters();
         comboBox = new JComboBox<>();
-        FilterChain globalFilterChain = new FilterChain(GLOBAL_LABEL);
-        globalFilterChain.addFilters(defaultFilterChain.getFilters());
-        comboBox.addItem(globalFilterChain);
-        comboBox.setSelectedItem(globalFilterChain);
+        comboBox.addItem(defaultFilterChain);
+        comboBox.setSelectedItem(defaultFilterChain);
 
         manager = new ExplorerManager();
         manager.setRootContext(new AbstractNode(new FilterChildren()));
