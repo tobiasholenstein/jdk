@@ -86,7 +86,18 @@ public class Diagram {
     public Connection createConnection(InputSlot inputSlot, OutputSlot outputSlot, String label) {
         assert inputSlot.getFigure().getDiagram() == this;
         assert outputSlot.getFigure().getDiagram() == this;
-        return new Connection(inputSlot, outputSlot, label);
+        Connection connection = new Connection(inputSlot, outputSlot, label);
+
+        // Connect the slots
+        inputSlot.connections.add(connection);
+        outputSlot.connections.add(connection);
+
+        // Connect the figures
+        Figure sourceFigure = outputSlot.getFigure();
+        Figure destFigure = inputSlot.getFigure();
+        sourceFigure.addSuccessor(destFigure);
+        destFigure.addPredecessor(sourceFigure);
+        return connection;
     }
 
     public void removeAllFigures(Set<Figure> figuresToRemove) {
