@@ -38,13 +38,13 @@ import org.openide.util.Lookup;
 public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     public static final float ALPHA = 0.4f;
-    public static final float ZOOM_MAX_FACTOR = 4.0f;
-    public static final float ZOOM_MIN_FACTOR = 0.25f;
     public static final float ZOOM_INCREMENT = 1.5f;
+    private static final float ZOOM_MAX_FACTOR = 4.0f;
+    private static final float ZOOM_MIN_FACTOR = 0.25f;
 
     private final WidgetAction selectAction;
     private final JScrollPane scrollPane;
-    private final LayerWidget mainLayer;
+    private final LayerWidget figureLayer;
     private final LayerWidget connectionLayer;
     private final HierarchicalLayoutManager seaLayoutManager;
     private final FilterChain filtersOrder;
@@ -81,8 +81,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         connectionLayer = new LayerWidget(this);
         super.addChild(connectionLayer);
 
-        mainLayer = new LayerWidget(this);
-        super.addChild(mainLayer);
+        figureLayer = new LayerWidget(this);
+        super.addChild(figureLayer);
 
         selectAction = new CustomSelectAction(new SelectProvider() {
             public boolean isAimingAllowed(Widget widget, Point localLocation, boolean invertSelection) {
@@ -457,7 +457,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void rebuildMainLayer() {
-        mainLayer.removeChildren();
+        figureLayer.removeChildren();
         for (Figure figure : getDiagram().getFigures()) {
             FigureWidget figureWidget = new FigureWidget(figure, this);
             figureWidget.getActions().addAction(selectAction);
@@ -542,7 +542,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }));
             super.addObject(figure, figureWidget);
             figureMap.put(figure, figureWidget);
-            mainLayer.addChild(figureWidget);
+            figureLayer.addChild(figureWidget);
 
             for (InputSlot inputSlot : figure.getInputSlots()) {
                 SlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget);
