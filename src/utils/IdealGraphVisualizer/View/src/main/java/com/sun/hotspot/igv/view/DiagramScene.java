@@ -27,7 +27,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final LayerWidget mainLayer;
     private final LayerWidget connectionLayer;
     private final DiagramViewModel model;
-    private final HierarchicalLayoutManager seaLayoutManager;
+    private final NewHierarchicalLayoutManager seaLayoutManager;
     public static final float ALPHA = 0.4f;
     public static final float ZOOM_MAX_FACTOR = 4.0f;
     public static final float ZOOM_MIN_FACTOR = 0.25f;
@@ -131,7 +131,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         model.getDiagramChangedEvent().addListener(m -> update());
         model.getHiddenNodesChangedEvent().addListener(m -> relayout());
 
-        seaLayoutManager = new HierarchicalLayoutManager();
+        seaLayoutManager = new NewHierarchicalLayoutManager();
 
         this.model = model;
     }
