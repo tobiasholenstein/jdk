@@ -140,7 +140,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         comboBox.setRenderer(new CustomCellRenderer());
         customFilterChain = new FilterChain(CUSTOM_LABEL);
         customFilterChain.addFilters(defaultFilterChain.getFilters());
-        comboBox.addItem(customFilterChain);
         FilterChain globalFilterChain = new FilterChain(GLOBAL_LABEL);
         globalFilterChain.addFilters(defaultFilterChain.getFilters());
         comboBox.addItem(globalFilterChain);
@@ -159,13 +158,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
 
         toolBar.add(comboBox);
         this.add(toolBar, BorderLayout.NORTH);
-        toolBar.add(SaveFilterSettingsAction.get(SaveFilterSettingsAction.class));
-        toolBar.add(RemoveFilterSettingsAction.get(RemoveFilterSettingsAction.class));
-        toolBar.addSeparator();
-        toolBar.add(NewFilterAction.get(NewFilterAction.class));
-        toolBar.add(RemoveFilterAction.get(RemoveFilterAction.class).createContextAwareInstance(this.getLookup()));
-        toolBar.add(MoveFilterUpAction.get(MoveFilterUpAction.class).createContextAwareInstance(this.getLookup()));
-        toolBar.add(MoveFilterDownAction.get(MoveFilterDownAction.class).createContextAwareInstance(this.getLookup()));
         this.add(view, BorderLayout.CENTER);
 
         comboBox.addActionListener(comboBoxSelectionChangedListener);
@@ -211,36 +203,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         FilterChain currentChain = getCurrentChain();
         if (currentChain != null) {
             filterSettingsChangedEvent.fire(); // notify all FilterNodes to update checkbox selection
-            SystemAction.get(RemoveFilterSettingsAction.class).setEnabled(currentChain != customFilterChain);
-            SystemAction.get(SaveFilterSettingsAction.class).setEnabled(true);
-        }
-    }
-
-    public void addFilterSetting() {
-        NotifyDescriptor.InputLine l = new NotifyDescriptor.InputLine("Name of the new profile:", "Filter Profile");
-        if (DialogDisplayer.getDefault().notify(l) == NotifyDescriptor.OK_OPTION) {
-            String name = l.getInputText();
-            for (int i=0; i<comboBox.getItemCount(); i++) {
-                FilterChain s = comboBox.getItemAt(i);
-                if (s.getName().equals(name)) {
-                    NotifyDescriptor.Confirmation conf = new NotifyDescriptor.Confirmation("Filter profile \"" + name + "\" already exists, do you want to replace it?", "Filter");
-                    if (DialogDisplayer.getDefault().notify(conf) == NotifyDescriptor.YES_OPTION) {
-                        comboBox.removeItem(s);
-                        break;
-                    } else {
-                        return;
-                    }
-                }
-            }
-
-            FilterChain setting = new FilterChain(name);
-            FilterChain chain = getCurrentChain();
-            for (Filter f : chain.getFilters()) {
-                setting.addFilter(f);
-            }
-
-            comboBox.addItem(setting);
-            comboBox.setSelectedItem(setting);
         }
     }
 
