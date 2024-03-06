@@ -82,7 +82,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     private static final FilterChain defaultFilterChain = new FilterChain("DEFAULT");
     private final FilterChain customFilterChain;
     private final ChangedEvent<FilterTopComponent> filterSettingsChangedEvent = new ChangedEvent<>(this);
-    private final ChangedEvent<JComboBox<FilterChain>> filterChainSelectionChangedEvent;
     private static final String CUSTOM_LABEL = "--Local--";
     private static final String GLOBAL_LABEL = "--Global--";
 
@@ -139,29 +138,13 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         globalFilterChain.addFilters(defaultFilterChain.getFilters());
         comboBox.addItem(globalFilterChain);
         comboBox.setSelectedItem(globalFilterChain);
-        filterChainSelectionChangedEvent = new ChangedEvent<>(comboBox);
 
         manager = new ExplorerManager();
         manager.setRootContext(new AbstractNode(new FilterChildren()));
         associateLookup(ExplorerUtils.createLookup(manager, getActionMap()));
         view = new CheckListView();
-
-        ToolbarPool.getDefault().setPreferredIconSize(16);
-        Toolbar toolBar = new Toolbar();
-        toolBar.setBorder((Border) UIManager.get("Nb.Editor.Toolbar.border")); //NOI18N
-        toolBar.setMinimumSize(new Dimension(0,0)); // MacOS BUG with ToolbarWithOverflow
-
-        toolBar.add(comboBox);
-        this.add(toolBar, BorderLayout.NORTH);
         this.add(view, BorderLayout.CENTER);
 
-        // notify model that user selected a different filter profile
-        ActionListener comboBoxSelectionChangedListener = l -> {
-            comboBoxSelectionChanged();
-            // notify model that user selected a different filter profile
-            filterChainSelectionChangedEvent.fire();
-        };
-        comboBox.addActionListener(comboBoxSelectionChangedListener);
         comboBoxSelectionChanged();
     }
 
