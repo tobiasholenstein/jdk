@@ -45,8 +45,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final LayerWidget mainLayer;
     private final LayerWidget connectionLayer;
     private final NewHierarchicalLayoutManager seaLayoutManager;
-    private final Group group;
-    private final ArrayList<InputGraph> graphs;
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
     private final ChangedListener<FilterChain> filterChangedListener = filter -> rebuildDiagram();
@@ -57,14 +55,15 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     private Set<Integer> hiddenNodes;
     private Set<Integer> selectedNodes;
-    private Diagram diagram;
+    private final Group group;
+
     private int position = -1;
     private InputGraph inputGraph;
+    private Diagram diagram;
     private boolean showNodeHull;
 
     public DiagramScene(InputGraph inputGraph) {
         group = inputGraph.getGroup();
-        graphs = new ArrayList<>(group.getGraphs());
 
         FilterChainProvider provider = Lookup.getDefault().lookup(FilterChainProvider.class);
         assert provider != null;
@@ -117,7 +116,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
         seaLayoutManager = new NewHierarchicalLayoutManager();
 
-        setPosition(graphs.indexOf(inputGraph));
+        setPosition(group.getGraphs().indexOf(inputGraph));
     }
 
     public void zoomIn(Point zoomCenter, double factor) {
@@ -182,10 +181,10 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     public void setPosition(int fp) {
         if (position != fp) {
             position = fp;
-            if (position < graphs.size()) {
-                inputGraph = graphs.get(position);
+            if (position < group.getGraphs().size()) {
+                inputGraph = group.getGraphs().get(position);
             } else {
-                inputGraph = graphs.get(graphs.size() - 1);
+                inputGraph = group.getGraphs().get(group.getGraphs().size() - 1);
             }
             rebuildDiagram();
         }
