@@ -205,7 +205,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return group;
     }
 
-    public void showDiagram() {
+    public Diagram getDiagram() {
+        return diagram;
+    }
+
+    private void rebuildDiagram() {
+        diagram = new Diagram(inputGraph);
+        filterChain.applyInOrder(diagram, filtersOrder);
         updateDiagram();
     }
 
@@ -274,16 +280,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     void close() {
         filterChain.getChangedEvent().removeListener(filterChainChangedListener);
-    }
-
-    private void rebuildDiagram() {
-        diagram = new Diagram(inputGraph);
-        filterChain.applyInOrder(diagram, filtersOrder);
-        updateDiagram();
-    }
-
-    public Diagram getDiagram() {
-        return diagram;
     }
 
     public Component getComponent() {

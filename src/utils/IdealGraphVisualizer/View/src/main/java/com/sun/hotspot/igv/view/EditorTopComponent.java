@@ -26,7 +26,6 @@ public final class EditorTopComponent extends TopComponent {
         initComponents();
 
         scene = new DiagramScene(graph);
-        getScene().showDiagram();
 
         LookupHistory.init(InputGraphProvider.class);
         InstanceContent content = new InstanceContent();
