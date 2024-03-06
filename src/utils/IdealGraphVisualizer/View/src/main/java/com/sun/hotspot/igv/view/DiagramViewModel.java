@@ -16,7 +16,6 @@ public class DiagramViewModel {
     private Set<Integer> hiddenNodes;
     private Set<Integer> selectedNodes;
     private FilterChain filterChain;
-    private final FilterChain customFilterChain;
     private final FilterChain filtersOrder;
     private Diagram diagram;
     private int position = -1;
@@ -37,7 +36,6 @@ public class DiagramViewModel {
 
         FilterChainProvider provider = Lookup.getDefault().lookup(FilterChainProvider.class);
         assert provider != null;
-        customFilterChain = provider.createNewCustomFilterChain();
         setFilterChain(provider.getFilterChain());
         filtersOrder = provider.getAllFiltersOrdered();
         showNodeHull = true;
@@ -141,15 +139,11 @@ public class DiagramViewModel {
     }
 
     private void setFilterChain(FilterChain newFC) {
-        assert newFC != null && customFilterChain != null;
+        assert newFC != null;
         if (filterChain != null) {
             filterChain.getChangedEvent().removeListener(filterChainChangedListener);
         }
-        if (newFC.getName().equals(customFilterChain.getName())) {
-            filterChain = customFilterChain;
-        } else {
-            filterChain = newFC;
-        }
+        filterChain = newFC;
         filterChain.getChangedEvent().addListener(filterChainChangedListener);
     }
 

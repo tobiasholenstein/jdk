@@ -80,40 +80,9 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     private final JComboBox<FilterChain> comboBox;
     private final FilterChain allFiltersOrdered = new FilterChain();
     private static final FilterChain defaultFilterChain = new FilterChain("DEFAULT");
-    private final FilterChain customFilterChain;
     private final ChangedEvent<FilterTopComponent> filterSettingsChangedEvent = new ChangedEvent<>(this);
-    private static final String CUSTOM_LABEL = "--Local--";
     private static final String GLOBAL_LABEL = "--Global--";
 
-
-    public FilterChain createNewCustomFilterChain() {
-        FilterChain newCustomFilterChain = new FilterChain(CUSTOM_LABEL);
-        newCustomFilterChain.addFilters(customFilterChain.getFilters());
-        return newCustomFilterChain;
-    }
-
-    static class CustomCellRenderer extends DefaultListCellRenderer {
-
-        public CustomCellRenderer() {
-            setOpaque(true);
-        }
-
-        public Component getListCellRendererComponent(JList jc, Object val, int idx,
-                                                      boolean isSelected, boolean cellHasFocus) {
-            setText(" " + val.toString());
-            if (idx == 0) {
-                setForeground(Color.GRAY);
-            } else {
-                setForeground(Color.BLACK);
-            }
-            if (isSelected) {
-                setBackground(Color.LIGHT_GRAY);
-            } else {
-                setBackground(Color.WHITE);
-            }
-            return this;
-        }
-    }
 
     private FilterTopComponent() {
         initComponents();
@@ -131,9 +100,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
 
         initFilters();
         comboBox = new JComboBox<>();
-        comboBox.setRenderer(new CustomCellRenderer());
-        customFilterChain = new FilterChain(CUSTOM_LABEL);
-        customFilterChain.addFilters(defaultFilterChain.getFilters());
         FilterChain globalFilterChain = new FilterChain(GLOBAL_LABEL);
         globalFilterChain.addFilters(defaultFilterChain.getFilters());
         comboBox.addItem(globalFilterChain);

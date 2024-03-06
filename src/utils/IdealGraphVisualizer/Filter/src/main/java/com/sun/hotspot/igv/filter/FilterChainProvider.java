@@ -34,6 +34,4 @@ public interface FilterChainProvider {
 
     FilterChain getFilterChain();
     FilterChain getAllFiltersOrdered();
-
-    FilterChain createNewCustomFilterChain();
 }
