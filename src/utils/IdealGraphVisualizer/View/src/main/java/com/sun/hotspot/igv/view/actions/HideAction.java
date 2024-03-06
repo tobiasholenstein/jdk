@@ -66,10 +66,7 @@ public final class HideAction extends ModelAwareAction {
 
     @Override
     public void performAction(DiagramScene model) {
-        Set<Integer> selectedNodes = model.getSelectedNodes();
-        HashSet<Integer> nodes = new HashSet<>(model.getHiddenNodes());
-        nodes.addAll(selectedNodes);
-        model.setHiddenNodes(nodes);
+        model.hideSelectedNodes();
     }
 
     @Override

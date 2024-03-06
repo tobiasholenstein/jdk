@@ -233,7 +233,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         for (Figure figure : getDiagram().getFigures()) {
             FigureWidget figureWidget = findFigureWidget(figure);
             figureWidget.setBoundary(false);
-            figureWidget.setVisible(!getHiddenNodes().contains(figure.getInputNode().getId()));
+            figureWidget.setVisible(!hiddenNodes.contains(figure.getInputNode().getId()));
         }
 
         if (showNodeHull) { // update node hull
@@ -261,7 +261,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 figureWidget.setVisible(true);
             }
         } else {
-            getSelectedNodes().removeAll(getHiddenNodes());
+            getSelectedNodes().removeAll(hiddenNodes);
         }
     }
 
@@ -583,6 +583,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         HashSet<Integer> allNodes = new HashSet<>(getGroup().getAllNodes());
         allNodes.removeAll(selectedNodes);
         setHiddenNodes(allNodes);
+    }
+
+    public void hideSelectedNodes() {
+        Set<Integer> selectedNodes = getSelectedNodes();
+        HashSet<Integer> nodes = new HashSet<>(hiddenNodes);
+        nodes.addAll(selectedNodes);
+        setHiddenNodes(nodes);
     }
 
     public Set<Integer> getSelectedNodes() {
