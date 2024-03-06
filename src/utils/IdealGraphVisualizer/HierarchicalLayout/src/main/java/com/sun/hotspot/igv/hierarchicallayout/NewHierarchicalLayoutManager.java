@@ -8,7 +8,7 @@ import java.awt.Point;
 import java.util.*;
 
 
-public class NewHierarchicalLayoutManager  {
+public class NewHierarchicalLayoutManager {
 
     public static final int SWEEP_ITERATIONS = 1;
     public static final int CROSSING_ITERATIONS = 2;
