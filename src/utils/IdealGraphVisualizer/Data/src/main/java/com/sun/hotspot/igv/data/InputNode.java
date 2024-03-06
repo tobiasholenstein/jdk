@@ -24,7 +24,6 @@
 package com.sun.hotspot.igv.data;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class InputNode extends Properties.Entity {
@@ -40,20 +39,19 @@ public class InputNode extends Properties.Entity {
         setId(id);
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
     public int getId() {
         return id;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof InputNode)) {
+        if (!(o instanceof InputNode n)) {
             return false;
         }
-        InputNode n = (InputNode) o;
         return n.id == id;
     }
 

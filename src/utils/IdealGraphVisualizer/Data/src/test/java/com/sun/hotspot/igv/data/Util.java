@@ -99,8 +99,5 @@ public class Util {
             fail();
         }
 
-        for (InputNode n : a.getNodes()) {
-            assertEquals(a.getBlock(n), b.getBlock(n));
-        }
     }
 }

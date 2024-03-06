@@ -26,7 +26,6 @@ package com.sun.hotspot.igv.data;
 import java.util.*;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class Source {

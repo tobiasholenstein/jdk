@@ -26,7 +26,6 @@ package com.sun.hotspot.igv.data;
 import java.io.Serializable;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class Property implements Serializable {
@@ -63,10 +62,9 @@ public class Property implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Property)) {
+        if (!(o instanceof Property p2)) {
             return false;
         }
-        Property p2 = (Property) o;
         return name.equals(p2.name) && value.equals(p2.value);
     }
 

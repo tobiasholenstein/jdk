@@ -29,7 +29,6 @@ import com.sun.hotspot.igv.data.InputNode;
 import java.util.Collection;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public interface InputGraphProvider {

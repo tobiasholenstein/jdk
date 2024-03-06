@@ -23,35 +23,12 @@
  */
 package com.sun.hotspot.igv.data;
 
-import java.util.Comparator;
 import java.util.Objects;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class InputEdge {
-
-    public enum State {
-        IMMUTABLE,
-        SAME,
-        NEW,
-        DELETED
-    }
-
-    public static final Comparator<InputEdge> OUTGOING_COMPARATOR = (o1, o2) -> {
-            if (o1.getFromIndex() == o2.getFromIndex()) {
-                return o1.getTo() - o2.getTo();
-            }
-            return o1.getFromIndex() - o2.getFromIndex();
-        };
-
-    public static final Comparator<InputEdge> INGOING_COMPARATOR = (o1, o2) -> {
-            if (o1.getToIndex() == o2.getToIndex()) {
-                return o1.getFrom() - o2.getFrom();
-            }
-            return o1.getToIndex() - o2.getToIndex();
-        };
 
     private final char toIndex;
     private final char fromIndex;
@@ -112,10 +89,9 @@ public class InputEdge {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof InputEdge)) {
+        if (!(o instanceof InputEdge conn2)) {
             return false;
         }
-        InputEdge conn2 = (InputEdge) o;
         boolean result = conn2.fromIndex == fromIndex && conn2.toIndex == toIndex && conn2.from == from && conn2.to == to;
         if (result && (state == State.IMMUTABLE || conn2.state == State.IMMUTABLE)) {
             // Immutable instances must be exactly the same
@@ -132,5 +108,12 @@ public class InputEdge {
     @Override
     public int hashCode() {
         return (from << 20 | to << 8 | toIndex << 4 | fromIndex);
+    }
+
+    public enum State {
+        IMMUTABLE,
+        SAME,
+        NEW,
+        DELETED
     }
 }

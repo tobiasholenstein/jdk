@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class Printer {
@@ -52,7 +51,8 @@ public class Printer {
 
         try {
             export(xmlWriter, document);
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+        }
     }
 
     private void export(XMLWriter xmlWriter, GraphDocument document) throws IOException {
@@ -62,7 +62,7 @@ public class Printer {
             if (e instanceof Group) {
                 export(xmlWriter, (Group) e);
             } else if (e instanceof InputGraph) {
-                export(xmlWriter, (InputGraph)e, null, false);
+                export(xmlWriter, (InputGraph) e, null, false);
             }
         }
 
@@ -91,8 +91,7 @@ public class Printer {
 
             InputGraph previous = null;
             for (FolderElement e : g.getElements()) {
-                if (e instanceof InputGraph) {
-                    InputGraph graph = (InputGraph) e;
+                if (e instanceof InputGraph graph) {
                     export(writer, graph, previous, true);
                     previous = graph;
                 } else if (e instanceof Group) {
@@ -174,17 +173,8 @@ public class Printer {
         writer.startTag(Parser.CONTROL_FLOW_ELEMENT);
         for (InputBlock b : graph.getBlocks()) {
             writer.startTag(Parser.BLOCK_ELEMENT, new Properties(Parser.BLOCK_NAME_PROPERTY, b.getName()));
-
-            if (b.getSuccessors().size() > 0) {
-                writer.startTag(Parser.SUCCESSORS_ELEMENT);
-                for (InputBlock s : b.getSuccessors()) {
-                    writer.simpleTag(Parser.SUCCESSOR_ELEMENT, new Properties(Parser.BLOCK_NAME_PROPERTY, s.getName()));
-                }
-                writer.endTag();
-            }
-
-            if (b.getNodes().size() > 0) {
-            writer.startTag(Parser.NODES_ELEMENT);
+            if (!b.getNodes().isEmpty()) {
+                writer.startTag(Parser.NODES_ELEMENT);
                 for (InputNode n : b.getNodes()) {
                     writer.simpleTag(Parser.NODE_ELEMENT, new Properties(Parser.NODE_ID_PROPERTY, n.getId() + ""));
                 }
@@ -204,7 +194,7 @@ public class Printer {
 
         w.writeProperties(method.getProperties());
 
-        if (method.getInlined().size() > 0) {
+        if (!method.getInlined().isEmpty()) {
             w.startTag(Parser.INLINE_ELEMENT);
             for (InputMethod m : method.getInlined()) {
                 export(w, m);

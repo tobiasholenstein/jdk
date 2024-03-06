@@ -26,8 +26,9 @@ package com.sun.hotspot.igv.data;
 
 /**
  * Provides a changed event object.
- * @author Thomas Wuerthinger
+ *
  * @param <T> Class for which the changed event fires.
+ * @author Thomas Wuerthinger
  */
 public interface ChangedEventProvider<T> {
 

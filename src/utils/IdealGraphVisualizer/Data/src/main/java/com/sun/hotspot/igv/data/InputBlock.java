@@ -23,18 +23,24 @@
  */
 package com.sun.hotspot.igv.data;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class InputBlock {
 
-    private List<InputNode> nodes;
     private final String name;
     private final InputGraph graph;
-    private final Set<InputBlock> successors;
+    private List<InputNode> nodes;
+
+    InputBlock(InputGraph graph, String name) {
+        this.graph = graph;
+        this.name = name;
+        this.nodes = new ArrayList<>();
+    }
 
     @Override
     public int hashCode() {
@@ -43,40 +49,15 @@ public class InputBlock {
 
     @Override
     public boolean equals(Object o) {
-
         if (o == this) {
             return true;
         }
 
-        if ((!(o instanceof InputBlock))) {
+        if ((!(o instanceof InputBlock b))) {
             return false;
         }
 
-        final InputBlock b = (InputBlock)o;
-        final boolean result = b.nodes.equals(nodes) && b.name.equals(name) && b.successors.size() == successors.size();
-        if (!result) {
-            return false;
-        }
-
-        final HashSet<String> s = new HashSet<>();
-        for (InputBlock succ : successors) {
-            s.add(succ.name);
-        }
-
-        for (InputBlock succ : b.successors) {
-            if (!s.contains(succ.name)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    InputBlock(InputGraph graph, String name, int id) {
-        this.graph = graph;
-        this.name = name;
-        nodes = new ArrayList<>();
-        successors = new LinkedHashSet<>(2);
+        return b.nodes.equals(nodes) && b.name.equals(name);
     }
 
     public String getName() {
@@ -87,22 +68,13 @@ public class InputBlock {
         return Collections.unmodifiableList(nodes);
     }
 
-    public void addNode(int id) {
-        InputNode node = graph.getNode(id);
-        assert node != null;
-        // nodes.contains(node) is too expensive for large graphs so
-        // just make sure the Graph doesn't know it yet.
-        assert graph.getBlock(id) == null : "duplicate : " + node;
-        graph.setBlock(node, this);
-        nodes.add(node);
-    }
-
-    public Set<InputBlock> getSuccessors() {
-        return Collections.unmodifiableSet(successors);
-    }
-
     public void setNodes(List<InputNode> nodes) {
         this.nodes = nodes;
+    }
+
+    public void addNode(int id) {
+        InputNode node = graph.getNode(id);
+        nodes.add(node);
     }
 
     @Override

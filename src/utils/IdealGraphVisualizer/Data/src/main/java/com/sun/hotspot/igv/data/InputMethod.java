@@ -30,7 +30,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class InputMethod extends Properties.Entity {
@@ -39,9 +38,21 @@ public class InputMethod extends Properties.Entity {
     private final int bci;
     private final String shortName;
     private final List<InputMethod> inlined;
-    private InputMethod parentMethod;
     private final Group group;
     private final List<InputBytecode> bytecodes;
+    private InputMethod parentMethod;
+
+    /**
+     * Creates a new instance of InputMethod
+     */
+    public InputMethod(Group parent, String name, String shortName, int bci) {
+        this.group = parent;
+        this.name = name;
+        this.bci = bci;
+        this.shortName = shortName;
+        inlined = new ArrayList<>();
+        bytecodes = new ArrayList<>();
+    }
 
     @Override
     public int hashCode() {
@@ -55,58 +66,15 @@ public class InputMethod extends Properties.Entity {
 
     @Override
     public boolean equals(Object o) {
-        if ((!(o instanceof InputMethod))) {
+        if ((!(o instanceof InputMethod im))) {
             return false;
         }
-        final InputMethod im = (InputMethod) o;
         return name.equals(im.name) && bci == im.bci && shortName.equals(im.shortName) &&
-               inlined.equals(im.inlined) && bytecodes.equals(im.bytecodes);
-    }
-
-
-
-    /** Creates a new instance of InputMethod */
-    public InputMethod(Group parent, String name, String shortName, int bci) {
-        this.group = parent;
-        this.name = name;
-        this.bci = bci;
-        this.shortName = shortName;
-        inlined = new ArrayList<>();
-        bytecodes = new ArrayList<>();
+                inlined.equals(im.inlined) && bytecodes.equals(im.bytecodes);
     }
 
     public List<InputBytecode> getBytecodes() {
         return Collections.unmodifiableList(bytecodes);
-    }
-
-    public List<InputMethod> getInlined() {
-        return Collections.unmodifiableList(inlined);
-    }
-
-    public void addInlined(InputMethod m) {
-
-        // assert bci unique
-        for (InputMethod m2 : inlined) {
-            assert m2.getBci() != m.getBci();
-        }
-
-        inlined.add(m);
-        assert m.parentMethod == null;
-        m.parentMethod = this;
-
-        for (InputBytecode bc : bytecodes) {
-            if (bc.getBci() == m.getBci()) {
-                bc.setInlined(m);
-            }
-        }
-    }
-
-    public Group getGroup() {
-        return group;
-    }
-
-    public String getShortName() {
-        return shortName;
     }
 
     public void setBytecodes(String text) {
@@ -150,6 +118,36 @@ public class InputMethod extends Properties.Entity {
                 }
             }
         }
+    }
+
+    public List<InputMethod> getInlined() {
+        return Collections.unmodifiableList(inlined);
+    }
+
+    public void addInlined(InputMethod m) {
+
+        // assert bci unique
+        for (InputMethod m2 : inlined) {
+            assert m2.getBci() != m.getBci();
+        }
+
+        inlined.add(m);
+        assert m.parentMethod == null;
+        m.parentMethod = this;
+
+        for (InputBytecode bc : bytecodes) {
+            if (bc.getBci() == m.getBci()) {
+                bc.setInlined(m);
+            }
+        }
+    }
+
+    public Group getGroup() {
+        return group;
+    }
+
+    public String getShortName() {
+        return shortName;
     }
 
     public String getName() {

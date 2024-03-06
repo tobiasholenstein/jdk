@@ -26,169 +26,32 @@ package com.sun.hotspot.igv.data;
 import java.util.*;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class InputGraph extends Properties.Entity implements FolderElement {
 
     private final Map<Integer, InputNode> nodes;
     private final List<InputEdge> edges;
+    private final Map<String, InputBlock> blocks;
+    private final ChangedEvent<InputGraph> displayNameChangedEvent = new ChangedEvent<>(this);
     private Folder parent;
     private Group parentGroup;
-    private String path;
-    private final Map<String, InputBlock> blocks;
-    private final List<InputBlockEdge> blockEdges;
-    private final Map<Integer, InputBlock> nodeToBlock;
-    private final boolean isDiffGraph;
-    private final InputGraph firstGraph;
-    private final InputGraph secondGraph;
-    private final ChangedEvent<InputGraph> displayNameChangedEvent = new ChangedEvent<>(this);
-
-    public InputGraph(InputGraph firstGraph, InputGraph secondGraph) {
-        this(firstGraph.getName() + " Δ " + secondGraph.getName(), firstGraph, secondGraph);
-        assert !firstGraph.isDiffGraph() && !secondGraph.isDiffGraph();
-
-    }
 
     public InputGraph(String name) {
-        this(name, null, null);
-    }
-
-    private InputGraph(String name, InputGraph firstGraph, InputGraph secondGraph) {
         setName(name);
         nodes = new LinkedHashMap<>();
         edges = new ArrayList<>();
         blocks = new LinkedHashMap<>();
-        blockEdges = new ArrayList<>();
-        nodeToBlock = new LinkedHashMap<>();
-        isDiffGraph = firstGraph != null && secondGraph != null;
-        this.firstGraph = firstGraph;
-        this.secondGraph = secondGraph;
-        if (isDiffGraph) {
-            this.firstGraph.getDisplayNameChangedEvent().addListener(l -> displayNameChangedEvent.fire());
-            this.secondGraph.getDisplayNameChangedEvent().addListener(l -> displayNameChangedEvent.fire());
-        }
-    }
-
-    public boolean isDiffGraph() {
-        return isDiffGraph;
-    }
-
-    public InputGraph getFirstGraph() {
-        return firstGraph;
-    }
-
-    @Override
-    public void setParent(Folder parent) {
-        this.parent = parent;
-        if (parent instanceof Group) {
-            assert this.parentGroup == null;
-            this.parentGroup = (Group) parent;
-            assert displayNameChangedEvent != null;
-            assert this.parentGroup.getDisplayNameChangedEvent() != null;
-            this.parentGroup.getDisplayNameChangedEvent().addListener(l -> displayNameChangedEvent.fire());
-        }
-    }
-
-    public List<InputNode> findRootNodes() {
-        List<InputNode> result = new ArrayList<>();
-        Set<Integer> nonRoot = new HashSet<>();
-        for(InputEdge curEdges : getEdges()) {
-            nonRoot.add(curEdges.getTo());
-        }
-
-        for(InputNode node : getNodes()) {
-            if(!nonRoot.contains(node.getId())) {
-                result.add(node);
-            }
-        }
-
-        return result;
-    }
-
-    public Map<InputNode, List<InputEdge>> findAllOutgoingEdges() {
-        Map<InputNode, List<InputEdge>> result = new HashMap<>(getNodes().size());
-        for(InputNode n : this.getNodes()) {
-            result.put(n, new ArrayList<>());
-        }
-
-        for(InputEdge e : this.edges) {
-            int from = e.getFrom();
-            InputNode fromNode = this.getNode(from);
-            List<InputEdge> fromList = result.get(fromNode);
-            assert fromList != null;
-            fromList.add(e);
-        }
-
-        for(InputNode n : this.getNodes()) {
-            List<InputEdge> list = result.get(n);
-            list.sort(InputEdge.OUTGOING_COMPARATOR);
-        }
-
-        return result;
-    }
-
-    public Map<InputNode, List<InputEdge>> findAllIngoingEdges() {
-        Map<InputNode, List<InputEdge>> result = new HashMap<>(getNodes().size());
-        for(InputNode n : this.getNodes()) {
-            result.put(n, new ArrayList<InputEdge>());
-        }
-
-        for(InputEdge e : this.edges) {
-            int to = e.getTo();
-            InputNode toNode = this.getNode(to);
-            List<InputEdge> toList = result.get(toNode);
-            assert toList != null;
-            toList.add(e);
-        }
-
-        for(InputNode n : this.getNodes()) {
-            List<InputEdge> list = result.get(n);
-            list.sort(InputEdge.INGOING_COMPARATOR);
-        }
-
-        return result;
-    }
-
-    public List<InputEdge> findOutgoingEdges(InputNode n) {
-        List<InputEdge> result = new ArrayList<>();
-
-        for(InputEdge e : this.edges) {
-            if(e.getFrom() == n.getId()) {
-                result.add(e);
-            }
-        }
-
-        result.sort(InputEdge.OUTGOING_COMPARATOR);
-
-        return result;
-    }
-
-    public void setBlock(InputNode node, InputBlock block) {
-        nodeToBlock.put(node.getId(), block);
-    }
-
-    public InputBlock getBlock(int nodeId) {
-        return nodeToBlock.get(nodeId);
-    }
-
-    public InputBlock getBlock(InputNode node) {
-        assert nodes.containsKey(node.getId());
-        assert nodes.get(node.getId()).equals(node);
-        return getBlock(node.getId());
-    }
-
-    public InputGraph getNext() {
-        return parentGroup.getNext(this);
-    }
-
-    public InputGraph getPrev() {
-        return parentGroup.getPrev(this);
     }
 
     @Override
     public ChangedEvent<InputGraph> getDisplayNameChangedEvent() {
         return displayNameChangedEvent;
+    }
+
+    @Override
+    public String getName() {
+        return getProperties().get("name");
     }
 
     @Override
@@ -198,17 +61,8 @@ public class InputGraph extends Properties.Entity implements FolderElement {
     }
 
     @Override
-    public String getName() {
-        return getProperties().get("name");
-    }
-
-    @Override
     public String getDisplayName() {
-        if (isDiffGraph) {
-            return firstGraph.getDisplayName() + " Δ " + secondGraph.getDisplayName();
-        } else {
-            return getIndex()+1 + ". " + getName();
-        }
+        return getIndex() + 1 + ". " + getName();
     }
 
     public int getIndex() {
@@ -249,8 +103,7 @@ public class InputGraph extends Properties.Entity implements FolderElement {
     }
 
     public void removeEdge(InputEdge c) {
-        boolean removed = edges.remove(c);
-        assert removed;
+        edges.remove(c);
     }
 
     public void addEdge(InputEdge c) {
@@ -284,7 +137,7 @@ public class InputGraph extends Properties.Entity implements FolderElement {
     }
 
     public InputBlock addBlock(String name) {
-        final InputBlock b = new InputBlock(this, name, blocks.size());
+        final InputBlock b = new InputBlock(this, name);
         blocks.put(b.getName(), b);
         return b;
     }
@@ -295,20 +148,14 @@ public class InputGraph extends Properties.Entity implements FolderElement {
     }
 
     @Override
-    public void setPath(String path) {
-        this.path = path;
-    }
-
-    @Override
-    public String getPath() {
-        return this.path;
-    }
-
-    @Override
-    public FolderElement findByPath(String path) {
-        if (path.equals(getPath())) {
-            return this;
+    public void setParent(Folder parent) {
+        this.parent = parent;
+        if (parent instanceof Group) {
+            assert this.parentGroup == null;
+            this.parentGroup = (Group) parent;
+            assert displayNameChangedEvent != null;
+            assert this.parentGroup.getDisplayNameChangedEvent() != null;
+            this.parentGroup.getDisplayNameChangedEvent().addListener(l -> displayNameChangedEvent.fire());
         }
-        return null;
     }
 }

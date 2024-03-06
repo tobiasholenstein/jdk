@@ -216,17 +216,9 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             // Try to fetch and select the latest active graph.
             InputGraph graph = lastProvider.getGraph();
             if (graph != null) {
-                if (graph.isDiffGraph()) {
-                    EditorTopComponent editor = EditorTopComponent.getActive();
-                    if (editor != null) {
-                        InputGraph firstGraph = editor.getScene().getGraph();
-                        GraphNode firstNode = FolderNode.getGraphNode(firstGraph);
-                    }
-                } else {
-                    GraphNode graphNode = FolderNode.getGraphNode(graph);
-                    if (graphNode != null) {
-                        selectedGraphs = new GraphNode[]{graphNode};
-                    }
+                GraphNode graphNode = FolderNode.getGraphNode(graph);
+                if (graphNode != null) {
+                    selectedGraphs = new GraphNode[]{graphNode};
                 }
             }
         }
@@ -408,9 +400,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                     final Parser parser = new Parser(channel, monitor, null);
                     parser.setInvokeLater(false);
                     final GraphDocument parsedDoc = parser.parse();
-                    for (FolderElement e : parsedDoc.getElements()) {
-                        e.setPath(absolutePath);
-                    }
                     getDocument().addGraphDocument(parsedDoc);
                     SwingUtilities.invokeLater(this::requestActive);
                 }

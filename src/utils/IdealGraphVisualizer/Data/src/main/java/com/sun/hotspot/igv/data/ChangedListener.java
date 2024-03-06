@@ -25,13 +25,15 @@ package com.sun.hotspot.igv.data;
 
 /**
  * Listens to changed events.
- * @author Thomas Wuerthinger
+ *
  * @param <T> Class for which the changed event fires.
+ * @author Thomas Wuerthinger
  */
 public interface ChangedListener<T> {
 
     /**
      * This method is called everytime a changed event is fired.
+     *
      * @param source Object that has changed.
      */
     void changed(T source);

@@ -25,10 +25,9 @@
 package com.sun.hotspot.igv.data;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
-public abstract class ControllableChangedListener<T> implements ChangedListener<T>{
+public abstract class ControllableChangedListener<T> implements ChangedListener<T> {
 
     private boolean enabled;
 
@@ -47,7 +46,7 @@ public abstract class ControllableChangedListener<T> implements ChangedListener<
 
     @Override
     public void changed(T source) {
-        if(enabled) {
+        if (enabled) {
             filteredChanged(source);
         }
     }

@@ -24,7 +24,6 @@
 package com.sun.hotspot.igv.data;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class InputBytecode {

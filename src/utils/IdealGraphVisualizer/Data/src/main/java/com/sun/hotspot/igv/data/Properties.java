@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class Properties implements Serializable, Iterable<Property> {
@@ -42,13 +41,35 @@ public class Properties implements Serializable, Iterable<Property> {
     public Properties() {
     }
 
+    public Properties(String name, String value) {
+        this();
+        this.setProperty(name, value);
+    }
+
+    public Properties(String name, String value, String name1, String value1) {
+        this(name, value);
+        this.setProperty(name1, value1);
+    }
+
+    public Properties(String name, String value, String name1, String value1, String name2, String value2) {
+        this(name, value, name1, value1);
+        this.setProperty(name2, value2);
+    }
+
+    public Properties(Properties p) {
+        map = new String[p.map.length];
+        System.arraycopy(p.map, 0, map, 0, p.map.length);
+    }
+
+    protected Properties(String[] map) {
+        this.map = map;
+    }
+
     @Override
     public boolean equals(java.lang.Object o) {
-        if (!(o instanceof Properties)) {
+        if (!(o instanceof Properties p)) {
             return false;
         }
-
-        Properties p = (Properties) o;
 
         for (Property prop : this) {
             String value = p.get(prop.getName());
@@ -83,28 +104,150 @@ public class Properties implements Serializable, Iterable<Property> {
         return hash;
     }
 
-    public Properties(String name, String value) {
-        this();
-        this.setProperty(name, value);
+    public Property selectSingle(PropertyMatcher matcher) {
+
+        final String name = matcher.getName();
+        String value = null;
+        for (int i = 0; i < map.length; i += 2) {
+            if (map[i] != null && name.equals(map[i])) {
+                value = map[i + 1];
+                break;
+            }
+        }
+        if (value != null && matcher.match(value)) {
+            return new Property(name, value);
+        } else {
+            return null;
+        }
     }
 
-    public Properties(String name, String value, String name1, String value1) {
-        this(name, value);
-        this.setProperty(name1, value1);
+    @Override
+    public String toString() {
+        List<String[]> pairs = new ArrayList<>();
+        for (int i = 0; i < map.length; i += 2) {
+            if (map[i + 1] != null) {
+                pairs.add(new String[]{map[i], map[i + 1]});
+            }
+        }
+
+        pairs.sort((o1, o2) -> {
+            assert o1.length == 2;
+            assert o2.length == 2;
+            return o1[0].compareTo(o2[0]);
+        });
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        boolean first = true;
+        for (String[] p : pairs) {
+            if (first) {
+                first = false;
+            } else {
+                sb.append(", ");
+            }
+            sb.append(p[0]).append("=").append(p[1]);
+        }
+        return sb.append("]").toString();
     }
 
-    public Properties(String name, String value, String name1, String value1, String name2, String value2) {
-        this(name, value, name1, value1);
-        this.setProperty(name2, value2);
+    public String get(String key) {
+        for (int i = 0; i < map.length; i += 2) {
+            if (map[i] != null && map[i].equals(key)) {
+                return map[i + 1];
+            }
+        }
+        return null;
     }
 
-    public Properties(Properties p) {
-        map = new String[p.map.length];
-        System.arraycopy(p.map, 0, map, 0, p.map.length);
+    public void setProperty(String name, String value) {
+        setPropertyInternal(name.intern(), value != null ? value.intern() : null);
     }
 
-    protected Properties(String[] map) {
-        this.map = map;
+    protected void setPropertyInternal(String name, String value) {
+        for (int i = 0; i < map.length; i += 2) {
+            if (map[i] != null && map[i].equals(name)) {
+                String p = map[i + 1];
+                if (value == null) {
+                    // remove this property
+                    map[i] = null;
+                    map[i + 1] = null;
+                } else {
+                    map[i + 1] = value;
+                }
+                return;
+            }
+        }
+        if (value == null) {
+            return;
+        }
+        for (int i = 0; i < map.length; i += 2) {
+            if (map[i] == null) {
+                map[i] = name;
+                map[i + 1] = value;
+                return;
+            }
+        }
+        String[] newMap = new String[map.length + 4];
+        System.arraycopy(map, 0, newMap, 0, map.length);
+        newMap[map.length] = name;
+        newMap[map.length + 1] = value;
+        map = newMap;
+    }
+
+    public void add(Properties properties) {
+        for (Property p : properties) {
+            // Already interned
+            setPropertyInternal(p.getName(), p.getValue());
+        }
+    }
+
+    @Override
+    public Iterator<Property> iterator() {
+        return new PropertiesIterator();
+    }
+
+    public final String resolveString(String string) {
+
+        StringBuilder sb = new StringBuilder();
+        boolean inBrackets = false;
+        StringBuilder curIdent = new StringBuilder();
+
+        for (int i = 0; i < string.length(); i++) {
+            char c = string.charAt(i);
+            if (inBrackets) {
+                if (c == ']') {
+                    String value = get(curIdent.toString());
+                    if (value == null) {
+                        value = "";
+                    }
+                    sb.append(value);
+                    inBrackets = false;
+                } else {
+                    curIdent.append(c);
+                }
+            } else {
+                if (c == '[') {
+                    inBrackets = true;
+                    curIdent = new StringBuilder();
+                } else {
+                    sb.append(c);
+                }
+            }
+        }
+
+        return sb.toString();
+    }
+
+    public interface PropertyMatcher {
+
+        String getName();
+
+        boolean match(String value);
+    }
+
+    public interface Provider {
+
+        Properties getProperties();
     }
 
     static class SharedProperties extends Properties {
@@ -125,10 +268,9 @@ public class Properties implements Serializable, Iterable<Property> {
             if (this == other) {
                 return true;
             }
-            if (!(other instanceof SharedProperties)) {
+            if (!(other instanceof SharedProperties props2)) {
                 return super.equals(other);
             }
-            SharedProperties props2 = (SharedProperties) other;
             return Arrays.equals(map, props2.map);
         }
 
@@ -176,13 +318,6 @@ public class Properties implements Serializable, Iterable<Property> {
         public void internProperties() {
             properties = PropertyCache.intern(properties);
         }
-    }
-
-    public interface PropertyMatcher {
-
-        String getName();
-
-        boolean match(String value);
     }
 
     public static class InvertPropertyMatcher implements PropertyMatcher {
@@ -280,57 +415,6 @@ public class Properties implements Serializable, Iterable<Property> {
         }
     }
 
-    public Property selectSingle(PropertyMatcher matcher) {
-
-        final String name = matcher.getName();
-        String value = null;
-        for (int i = 0; i < map.length; i += 2) {
-            if (map[i] != null && name.equals(map[i])) {
-                value = map[i + 1];
-                break;
-            }
-        }
-        if (value != null && matcher.match(value)) {
-            return new Property(name, value);
-        } else {
-            return null;
-        }
-    }
-
-    public interface Provider {
-
-        public Properties getProperties();
-    }
-
-    @Override
-    public String toString() {
-        List<String[]> pairs = new ArrayList<>();
-        for (int i = 0; i < map.length; i += 2) {
-            if (map[i + 1] != null) {
-                pairs.add(new String[]{map[i], map[i + 1]});
-            }
-        }
-
-        pairs.sort((o1, o2) -> {
-            assert o1.length == 2;
-            assert o2.length == 2;
-            return o1[0].compareTo(o2[0]);
-        });
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("[");
-        boolean first = true;
-        for (String[] p : pairs) {
-            if (first) {
-                first = false;
-            } else {
-                sb.append(", ");
-            }
-            sb.append(p[0]).append("=").append(p[1]);
-        }
-        return sb.append("]").toString();
-    }
-
     public static class PropertySelector<T extends Properties.Provider> {
 
         private final Collection<T> objects;
@@ -365,57 +449,6 @@ public class Properties implements Serializable, Iterable<Property> {
         }
     }
 
-    public String get(String key) {
-        for (int i = 0; i < map.length; i += 2) {
-            if (map[i] != null && map[i].equals(key)) {
-                return map[i + 1];
-            }
-        }
-        return null;
-    }
-
-    public void setProperty(String name, String value) {
-        setPropertyInternal(name.intern(), value != null ? value.intern() : null);
-    }
-
-    protected void setPropertyInternal(String name, String value) {
-        for (int i = 0; i < map.length; i += 2) {
-            if (map[i] != null && map[i].equals(name)) {
-                String p = map[i + 1];
-                if (value == null) {
-                    // remove this property
-                    map[i] = null;
-                    map[i + 1] = null;
-                } else {
-                    map[i + 1] = value;
-                }
-                return;
-            }
-        }
-        if (value == null) {
-            return;
-        }
-        for (int i = 0; i < map.length; i += 2) {
-            if (map[i] == null) {
-                map[i] = name;
-                map[i + 1] = value;
-                return;
-            }
-        }
-        String[] newMap = new String[map.length + 4];
-        System.arraycopy(map, 0, newMap, 0, map.length);
-        newMap[map.length] = name;
-        newMap[map.length + 1] = value;
-        map = newMap;
-    }
-
-    public void add(Properties properties) {
-        for (Property p : properties) {
-            // Already interned
-            setPropertyInternal(p.getName(), p.getValue());
-        }
-    }
-
     private class PropertiesIterator implements Iterator<Property> {
 
         int index;
@@ -441,42 +474,5 @@ public class Properties implements Serializable, Iterable<Property> {
         public void remove() {
             throw new UnsupportedOperationException("Not supported yet.");
         }
-    }
-
-    @Override
-    public Iterator<Property> iterator() {
-        return new PropertiesIterator();
-    }
-
-    public final String resolveString(String string) {
-
-        StringBuilder sb = new StringBuilder();
-        boolean inBrackets = false;
-        StringBuilder curIdent = new StringBuilder();
-
-        for (int i = 0; i < string.length(); i++) {
-            char c = string.charAt(i);
-            if (inBrackets) {
-                if (c == ']') {
-                    String value = get(curIdent.toString());
-                    if (value == null) {
-                        value = "";
-                    }
-                    sb.append(value);
-                    inBrackets = false;
-                } else {
-                    curIdent.append(c);
-                }
-            } else {
-                if (c == '[') {
-                    inBrackets = true;
-                    curIdent = new StringBuilder();
-                } else {
-                    sb.append(c);
-                }
-            }
-        }
-
-        return sb.toString();
     }
 }

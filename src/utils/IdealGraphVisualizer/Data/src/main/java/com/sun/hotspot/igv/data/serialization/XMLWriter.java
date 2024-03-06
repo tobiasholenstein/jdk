@@ -31,7 +31,6 @@ import java.io.Writer;
 import java.util.Stack;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class XMLWriter extends Writer {

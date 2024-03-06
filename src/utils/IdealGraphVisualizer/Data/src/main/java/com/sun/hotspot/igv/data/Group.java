@@ -5,11 +5,9 @@ import java.util.*;
 public class Group extends Properties.Entity implements ChangedEventProvider<Group>, Folder, FolderElement {
 
     private final List<InputGraph> graphs;
-    private InputMethod method;
-    private String path;
     private final transient ChangedEvent<Group> changedEvent;
     private final ChangedEvent<Group> displayNameChangedEvent = new ChangedEvent<>(this);
-
+    private InputMethod method;
     private Folder parent;
 
     public Group(Folder parent) {
@@ -21,12 +19,12 @@ public class Group extends Properties.Entity implements ChangedEventProvider<Gro
         getProperties().setProperty("name", "");
     }
 
-    public void setMethod(InputMethod method) {
-        this.method = method;
-    }
-
     public InputMethod getMethod() {
         return method;
+    }
+
+    public void setMethod(InputMethod method) {
+        this.method = method;
     }
 
     @Override
@@ -40,18 +38,6 @@ public class Group extends Properties.Entity implements ChangedEventProvider<Gro
         graphs.add((InputGraph) element);
         element.setParent(this);
         getChangedEvent().fire();
-    }
-
-    @Override
-    public void removeElement(FolderElement element) {
-        assert element instanceof InputGraph;
-        if (graphs.remove((InputGraph) element)) {
-            getChangedEvent().fire();
-        }
-        for (InputGraph inputGraph : graphs) {
-            assert inputGraph.getDisplayNameChangedEvent() != null;
-            inputGraph.getDisplayNameChangedEvent().fire();
-        }
     }
 
     @Override
@@ -88,14 +74,14 @@ public class Group extends Properties.Entity implements ChangedEventProvider<Gro
     }
 
     @Override
-    public void setName(String name) {
-        getProperties().setProperty("name", name);
-        displayNameChangedEvent.fire();
+    public String getName() {
+        return getProperties().get("name");
     }
 
     @Override
-    public String getName() {
-        return getProperties().get("name");
+    public void setName(String name) {
+        getProperties().setProperty("name", name);
+        displayNameChangedEvent.fire();
     }
 
     @Override
@@ -120,69 +106,13 @@ public class Group extends Properties.Entity implements ChangedEventProvider<Gro
         return getProperties().get("type");
     }
 
-    InputGraph getPrev(InputGraph graph) {
-        InputGraph lastGraph = null;
-        for (FolderElement e : getElements()) {
-            if (e == graph) {
-                return lastGraph;
-            }
-            if (e instanceof InputGraph) {
-                lastGraph = (InputGraph) e;
-            }
-        }
-        return null;
-    }
-
-    InputGraph getNext(InputGraph graph) {
-        boolean found = false;
-        for (FolderElement e : getElements()) {
-            if (e == graph) {
-                found = true;
-            } else if (found && e instanceof InputGraph) {
-                return (InputGraph) e;
-            }
-        }
-        return null;
-    }
-
     @Override
     public Folder getParent() {
-         return parent;
+        return parent;
     }
+
     @Override
     public void setParent(Folder parent) {
         this.parent = parent;
-    }
-
-    @Override
-    public void setPath(String path) {
-        this.path = path;
-        for (int index = 0; index < graphs.size(); index++) {
-            InputGraph graph = graphs.get(index);
-            graph.setPath(path + "#" + index);
-        }
-    }
-
-    @Override
-    public String getPath() {
-        return this.path;
-    }
-
-    @Override
-    public FolderElement findByPath(String path) {
-        System.out.println("    - Group findByPath " + path);
-        if (path.equals(getPath())) {
-            System.out.println("    - Group findByPath FOUND this");
-            return this;
-        }
-        for (InputGraph graph : graphs) {
-            System.out.println("    - Group search in graph " + graph.getPath());
-            if (path.equals(graph.getPath())) {
-                System.out.println("    - Group findByPath FOUND graph");
-                return graph;
-            }
-        }
-        System.out.println("    - Group findByPath NOT FOUND");
-        return null;
     }
 }
