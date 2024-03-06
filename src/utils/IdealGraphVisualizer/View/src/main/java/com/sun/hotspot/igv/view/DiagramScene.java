@@ -261,194 +261,51 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
     }
 
-    public boolean getShowNodeHull() {
-        return showNodeHull;
-    }
-
-    public void setShowNodeHull(boolean b) {
-        showNodeHull = b;
-        relayout();
-    }
-
-    public Set<Integer> getSelectedNodes() {
-        return selectedNodes;
-    }
-
-    public Set<Integer> getHiddenNodes() {
-        return hiddenNodes;
-    }
-
-    public void setHiddenNodes(Set<Integer> nodes) {
-        hiddenNodes = nodes;
-        selectedNodes.removeAll(hiddenNodes);
-        relayout();
-    }
-
-    public void showFigures(Collection<Figure> figures) {
-        boolean somethingChanged = false;
-        for (Figure f : figures) {
-            if (hiddenNodes.remove(f.getInputNode().getId())) {
-                somethingChanged = true;
-            }
-        }
-        if (somethingChanged) {
-            relayout();
-        }
-    }
-
-    public Set<Figure> getSelectedFigures() {
-        Set<Figure> result = new HashSet<>();
-        for (Figure f : diagram.getFigures()) {
-            if (getSelectedNodes().contains(f.getInputNode().getId())) {
-                result.add(f);
-            }
-        }
-        return result;
-    }
-
-    public void showOnly(final Set<Integer> nodes) {
-        final HashSet<Integer> allNodes = new HashSet<>(getGroup().getAllNodes());
-        allNodes.removeAll(nodes);
-        setHiddenNodes(allNodes);
-    }
-
-    void close() {
-        filterChain.getChangedEvent().removeListener(filterChangedListener);
-    }
-
-    public Component getComponent() {
-        return scrollPane;
-    }
-
-    private void clearObjects() {
-        slotMap.clear();
-        figureMap.clear();
-        for (Object o : new ArrayList<>(super.getObjects())) {
-            super.removeObject(o);
-        }
-    }
-
-    private void rebuildMainLayer() {
-        mainLayer.removeChildren();
+    private Set<Figure> getVisibleFigures() {
+        HashSet<Figure> visibleFigures = new HashSet<>();
         for (Figure figure : getDiagram().getFigures()) {
-            FigureWidget figureWidget = new FigureWidget(figure, this);
-            figureWidget.getActions().addAction(selectAction);
-            figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
-
-                private static final int MAGNET_SIZE = 5;
-                private int startLayerY;
-
-                @Override
-                public void movementStarted(Widget widget) {
-                    widget.bringToFront();
-                    startLayerY = widget.getLocation().y;
-                }
-
-                @Override
-                public void movementFinished(Widget widget) {
-                    Set<Figure> selectedFigures = getSelectedFigures();
-                    for (Figure figure : selectedFigures) {
-                        FigureWidget fw = findFigureWidget(figure);
-                        Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
-                        seaLayoutManager.moveVertex(figure, newLocation);
-                    }
-                    rebuildConnectionLayer();
-                }
-
-                private int magnetToStartLayerY(Widget widget, Point location) {
-                    int shiftY = location.y - widget.getLocation().y;
-                    if (Math.abs(location.y - startLayerY) <= MAGNET_SIZE) {
-                        if (Math.abs(widget.getLocation().y - startLayerY) > MAGNET_SIZE) {
-                            shiftY = startLayerY - widget.getLocation().y;
-                        } else {
-                            shiftY = 0;
-                        }
-                    }
-                    return shiftY;
-                }
-
-                @Override
-                public Point getOriginalLocation(Widget widget) {
-                    return ActionFactory.createDefaultMoveProvider().getOriginalLocation(widget);
-                }
-
-                @Override
-                public void setNewLocation(Widget widget, Point location) {
-                    int shiftX = location.x - widget.getLocation().x;
-                    int shiftY = magnetToStartLayerY(widget, location);
-
-                    List<Figure> selectedFigures = new ArrayList<>(getSelectedFigures());
-                    selectedFigures.sort(Comparator.comparingInt(f -> f.getPosition().x));
-                    for (Figure figure : selectedFigures) {
-                        FigureWidget fw = findFigureWidget(figure);
-                        if (figureToInLineWidget.containsKey(fw.getFigure())) {
-                            for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
-                                Point toPt = lw.getTo();
-                                lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
-                                Point fromPt = lw.getFrom();
-                                lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
-                                lw.revalidate();
-                                LineWidget pred = lw.getPredecessor();
-                                pred.setTo(new Point(pred.getTo().x + shiftX, pred.getTo().y));
-                                pred.revalidate();
-
-                            }
-                        }
-                        if (figureToOutLineWidget.containsKey(fw.getFigure())) {
-                            for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
-                                Point toPt = lw.getTo();
-                                lw.setTo(new Point(toPt.x + shiftX, toPt.y));
-                                Point fromPt = lw.getFrom();
-                                lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
-                                lw.revalidate();
-                                for (LineWidget succ : lw.getSuccessors()) {
-                                    succ.setFrom(new Point(succ.getFrom().x + shiftX, succ.getFrom().y));
-                                    succ.revalidate();
-                                }
-                            }
-                        }
-                        Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
-                        ActionFactory.createDefaultMoveProvider().setNewLocation(fw, newLocation);
-                    }
-                }
-            }));
-            super.addObject(figure, figureWidget);
-            figureMap.put(figure, figureWidget);
-            mainLayer.addChild(figureWidget);
-
-            for (InputSlot inputSlot : figure.getInputSlots()) {
-                SlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget);
-                slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
-                slotWidget.getActions().addAction(selectAction);
-                slotMap.put(inputSlot, slotWidget);
-            }
-
-            for (OutputSlot outputSlot : figure.getOutputSlots()) {
-                SlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget);
-                slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
-                slotWidget.getActions().addAction(selectAction);
-                slotMap.put(outputSlot, slotWidget);
+            FigureWidget figureWidget = findFigureWidget(figure);
+            if (figureWidget.isVisible()) {
+                visibleFigures.add(figure);
             }
         }
+        return visibleFigures;
     }
 
-    public SlotWidget findSlotWidget(Slot slot) {
-        return slotMap.get(slot);
-    }
-
-    public FigureWidget findFigureWidget(Figure figure) {
-        return figureMap.get(figure);
-    }
-
-    public void validateAll() {
-        super.validate();
-        scrollPane.validate();
+    private HashSet<Connection> getVisibleConnections() {
+        HashSet<Connection> visibleConnections = new HashSet<>();
+        for (Connection connection : getDiagram().getConnections()) {
+            if (isVisibleFigureConnection(connection)) {
+                visibleConnections.add(connection);
+            }
+        }
+        return visibleConnections;
     }
 
     private boolean isVisibleFigureConnection(Connection connection) {
         FigureWidget w1 = findFigureWidget(connection.getInputSlot().getFigure());
         FigureWidget w2 = findFigureWidget(connection.getOutputSlot().getFigure());
         return w1.isVisible() && w2.isVisible();
+    }
+
+    private void rebuildConnectionLayer() {
+        figureToOutLineWidget.clear();
+        figureToInLineWidget.clear();
+        connectionLayer.removeChildren();
+        for (Figure figure : getDiagram().getFigures()) {
+            for (OutputSlot outputSlot : figure.getOutputSlots()) {
+                List<Connection> connectionList = new ArrayList<>(outputSlot.getConnections());
+                processOutputSlot(outputSlot, connectionList, 0, null, null);
+            }
+
+            // update figure widget location
+            FigureWidget figureWidget = findFigureWidget(figure);
+            if (figureWidget.isVisible()) {
+                Point location = new Point(figure.getPosition());
+                figureWidget.setPreferredLocation(location);
+            }
+        }
+        validateAll();
     }
 
     private void processOutputSlot(OutputSlot outputSlot, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
@@ -587,9 +444,167 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
     }
 
-    @Override
-    public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
-        clearSelectedNodes();
+    private void clearObjects() {
+        slotMap.clear();
+        figureMap.clear();
+        for (Object o : new ArrayList<>(super.getObjects())) {
+            super.removeObject(o);
+        }
+    }
+
+    private void rebuildMainLayer() {
+        mainLayer.removeChildren();
+        for (Figure figure : getDiagram().getFigures()) {
+            FigureWidget figureWidget = new FigureWidget(figure, this);
+            figureWidget.getActions().addAction(selectAction);
+            figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
+
+                private static final int MAGNET_SIZE = 5;
+                private int startLayerY;
+
+                @Override
+                public void movementStarted(Widget widget) {
+                    widget.bringToFront();
+                    startLayerY = widget.getLocation().y;
+                }
+
+                @Override
+                public void movementFinished(Widget widget) {
+                    Set<Figure> selectedFigures = getSelectedFigures();
+                    for (Figure figure : selectedFigures) {
+                        FigureWidget fw = findFigureWidget(figure);
+                        Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
+                        seaLayoutManager.moveVertex(figure, newLocation);
+                    }
+                    rebuildConnectionLayer();
+                }
+
+                private int magnetToStartLayerY(Widget widget, Point location) {
+                    int shiftY = location.y - widget.getLocation().y;
+                    if (Math.abs(location.y - startLayerY) <= MAGNET_SIZE) {
+                        if (Math.abs(widget.getLocation().y - startLayerY) > MAGNET_SIZE) {
+                            shiftY = startLayerY - widget.getLocation().y;
+                        } else {
+                            shiftY = 0;
+                        }
+                    }
+                    return shiftY;
+                }
+
+                @Override
+                public Point getOriginalLocation(Widget widget) {
+                    return ActionFactory.createDefaultMoveProvider().getOriginalLocation(widget);
+                }
+
+                @Override
+                public void setNewLocation(Widget widget, Point location) {
+                    int shiftX = location.x - widget.getLocation().x;
+                    int shiftY = magnetToStartLayerY(widget, location);
+
+                    List<Figure> selectedFigures = new ArrayList<>(getSelectedFigures());
+                    selectedFigures.sort(Comparator.comparingInt(f -> f.getPosition().x));
+                    for (Figure figure : selectedFigures) {
+                        FigureWidget fw = findFigureWidget(figure);
+                        if (figureToInLineWidget.containsKey(fw.getFigure())) {
+                            for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
+                                Point toPt = lw.getTo();
+                                lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
+                                Point fromPt = lw.getFrom();
+                                lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
+                                lw.revalidate();
+                                LineWidget pred = lw.getPredecessor();
+                                pred.setTo(new Point(pred.getTo().x + shiftX, pred.getTo().y));
+                                pred.revalidate();
+
+                            }
+                        }
+                        if (figureToOutLineWidget.containsKey(fw.getFigure())) {
+                            for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
+                                Point toPt = lw.getTo();
+                                lw.setTo(new Point(toPt.x + shiftX, toPt.y));
+                                Point fromPt = lw.getFrom();
+                                lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
+                                lw.revalidate();
+                                for (LineWidget succ : lw.getSuccessors()) {
+                                    succ.setFrom(new Point(succ.getFrom().x + shiftX, succ.getFrom().y));
+                                    succ.revalidate();
+                                }
+                            }
+                        }
+                        Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
+                        ActionFactory.createDefaultMoveProvider().setNewLocation(fw, newLocation);
+                    }
+                }
+            }));
+            super.addObject(figure, figureWidget);
+            figureMap.put(figure, figureWidget);
+            mainLayer.addChild(figureWidget);
+
+            for (InputSlot inputSlot : figure.getInputSlots()) {
+                SlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget);
+                slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
+                slotWidget.getActions().addAction(selectAction);
+                slotMap.put(inputSlot, slotWidget);
+            }
+
+            for (OutputSlot outputSlot : figure.getOutputSlots()) {
+                SlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget);
+                slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
+                slotWidget.getActions().addAction(selectAction);
+                slotMap.put(outputSlot, slotWidget);
+            }
+        }
+    }
+
+    public boolean getShowNodeHull() {
+        return showNodeHull;
+    }
+
+    public void setShowNodeHull(boolean b) {
+        showNodeHull = b;
+        relayout();
+    }
+
+    public Set<Integer> getHiddenNodes() {
+        return hiddenNodes;
+    }
+
+    public void setHiddenNodes(Set<Integer> nodes) {
+        hiddenNodes = nodes;
+        selectedNodes.removeAll(hiddenNodes);
+        relayout();
+    }
+
+    public void showFigures(Collection<Figure> figures) {
+        boolean somethingChanged = false;
+        for (Figure f : figures) {
+            if (hiddenNodes.remove(f.getInputNode().getId())) {
+                somethingChanged = true;
+            }
+        }
+        if (somethingChanged) {
+            relayout();
+        }
+    }
+
+    public void showOnly(final Set<Integer> nodes) {
+        final HashSet<Integer> allNodes = new HashSet<>(getGroup().getAllNodes());
+        allNodes.removeAll(nodes);
+        setHiddenNodes(allNodes);
+    }
+
+    public Set<Integer> getSelectedNodes() {
+        return selectedNodes;
+    }
+
+    public Set<Figure> getSelectedFigures() {
+        Set<Figure> result = new HashSet<>();
+        for (Figure f : diagram.getFigures()) {
+            if (getSelectedNodes().contains(f.getInputNode().getId())) {
+                result.add(f);
+            }
+        }
+        return result;
     }
 
     public void addSelectedNodes(Collection<InputNode> nodes, boolean showIfHidden) {
@@ -609,57 +624,37 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
     }
 
-    public void clearSelectedNodes() {
-        super.setSelectedObjects(Collections.emptySet());
-    }
-
     private void setFigureSelection(Set<Figure> list) {
         super.setSelectedObjects(new HashSet<>(list));
     }
 
-    private void rebuildConnectionLayer() {
-        figureToOutLineWidget.clear();
-        figureToInLineWidget.clear();
-        connectionLayer.removeChildren();
-        for (Figure figure : getDiagram().getFigures()) {
-            for (OutputSlot outputSlot : figure.getOutputSlots()) {
-                List<Connection> connectionList = new ArrayList<>(outputSlot.getConnections());
-                processOutputSlot(outputSlot, connectionList, 0, null, null);
-            }
-        }
-
-        updateFigureWidgetLocations();
-        validateAll();
+    public void clearSelectedNodes() {
+        super.setSelectedObjects(Collections.emptySet());
     }
 
-    private void updateFigureWidgetLocations() {
-        for (Figure figure : getDiagram().getFigures()) {
-            FigureWidget figureWidget = findFigureWidget(figure);
-            if (figureWidget.isVisible()) {
-                Point location = new Point(figure.getPosition());
-                figureWidget.setPreferredLocation(location);
-            }
-        }
+    @Override
+    public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
+        clearSelectedNodes();
     }
 
-    private Set<Figure> getVisibleFigures() {
-        HashSet<Figure> visibleFigures = new HashSet<>();
-        for (Figure figure : getDiagram().getFigures()) {
-            FigureWidget figureWidget = findFigureWidget(figure);
-            if (figureWidget.isVisible()) {
-                visibleFigures.add(figure);
-            }
-        }
-        return visibleFigures;
+    public SlotWidget findSlotWidget(Slot slot) {
+        return slotMap.get(slot);
     }
 
-    private HashSet<Connection> getVisibleConnections() {
-        HashSet<Connection> visibleConnections = new HashSet<>();
-        for (Connection connection : getDiagram().getConnections()) {
-            if (isVisibleFigureConnection(connection)) {
-                visibleConnections.add(connection);
-            }
-        }
-        return visibleConnections;
+    public FigureWidget findFigureWidget(Figure figure) {
+        return figureMap.get(figure);
+    }
+
+    public void validateAll() {
+        super.validate();
+        scrollPane.validate();
+    }
+
+    public Component getComponent() {
+        return scrollPane;
+    }
+
+    void close() {
+        filterChain.getChangedEvent().removeListener(filterChangedListener);
     }
 }
