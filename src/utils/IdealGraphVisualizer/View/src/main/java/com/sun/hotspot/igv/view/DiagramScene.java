@@ -174,19 +174,23 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return scrollPane;
     }
 
-    public int getPosition() {
-        return position;
+    private void setPosition(int pos) {
+        if (position != pos && pos >= 0 && position < getGroup().getGraphs().size()) {
+            position = pos;
+            inputGraph = group.getGraphs().get(position);
+            buildDiagram();
+        }
     }
 
-    public void setPosition(int fp) {
-        if (position != fp) {
-            position = fp;
-            if (position < group.getGraphs().size()) {
-                inputGraph = group.getGraphs().get(position);
-            } else {
-                inputGraph = group.getGraphs().get(group.getGraphs().size() - 1);
-            }
-            buildDiagram();
+    public void nextGraph() {
+        if (position < getGroup().getGraphs().size() - 1) {
+            setPosition(position + 1);
+        }
+    }
+
+    public void previousGraph() {
+        if (position > 0) {
+            setPosition(position - 1);
         }
     }
 

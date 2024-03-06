@@ -70,16 +70,6 @@ public final class EditorTopComponent extends TopComponent {
     }
 
     @Override
-    protected void componentHidden() {
-        super.componentHidden();
-    }
-
-    @Override
-    protected void componentShowing() {
-        super.componentShowing();
-    }
-
-    @Override
     public void requestActive() {
         super.requestActive();
         scene.getComponent().requestFocus();

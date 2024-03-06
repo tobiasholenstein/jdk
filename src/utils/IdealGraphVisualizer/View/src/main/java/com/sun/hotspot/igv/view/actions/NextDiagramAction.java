@@ -63,9 +63,7 @@ public final class NextDiagramAction extends ModelAwareAction {
 
     @Override
     public void performAction(DiagramScene model) {
-        if (model.getPosition() != model.getGroup().getGraphs().size() - 1) {
-            model.setPosition(model.getPosition() + 1);
-        }
+        model.nextGraph();
     }
 
     @Override

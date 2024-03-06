@@ -64,9 +64,7 @@ public final class PrevDiagramAction extends ModelAwareAction {
 
     @Override
     public void performAction(DiagramScene model) {
-        if (model.getPosition() != 0) {
-            model.setPosition(model.getPosition() - 1);
-        }
+        model.previousGraph();
     }
 
     @Override
