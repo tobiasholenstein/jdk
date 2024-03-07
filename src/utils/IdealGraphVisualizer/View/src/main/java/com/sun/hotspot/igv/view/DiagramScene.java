@@ -50,7 +50,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
     private final Map<Figure, FigureWidget> figureMap = new HashMap<>();
-    private final Map<Slot, SlotWidget> slotMap = new HashMap<>();
+    private final Map<Slot, InputSlotWidget> inputSlotMap = new HashMap<>();
     private final Map<Figure, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
     private final Map<Figure, Set<LineWidget>> figureToInLineWidget = new HashMap<>();
     private final Group group;
@@ -457,7 +457,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     private void rebuildFigureLayer() {
         // clear Objects
-        slotMap.clear();
+        inputSlotMap.clear();
         figureMap.clear();
         for (Object o : new ArrayList<>(super.getObjects())) {
             super.removeObject(o);
@@ -547,17 +547,16 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             figureLayer.addChild(figureWidget);
 
             for (InputSlot inputSlot : figure.getInputSlots()) {
-                SlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget);
+                InputSlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget);
                 slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
                 slotWidget.getActions().addAction(selectAction);
-                slotMap.put(inputSlot, slotWidget);
+                inputSlotMap.put(inputSlot, slotWidget);
             }
 
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
-                SlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget);
+                OutputSlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget);
                 slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
                 slotWidget.getActions().addAction(selectAction);
-                slotMap.put(outputSlot, slotWidget);
             }
         }
     }
@@ -621,8 +620,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         super.setSelectedObjects(Collections.emptySet());
     }
 
-    public SlotWidget findSlotWidget(Slot slot) {
-        return slotMap.get(slot);
+    public InputSlotWidget findInputSlotWidget(Slot slot) {
+        return inputSlotMap.get(slot);
     }
 
 
