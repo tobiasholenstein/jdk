@@ -43,7 +43,6 @@ import javax.swing.border.LineBorder;
 import org.netbeans.api.visual.action.WidgetAction;
 import org.netbeans.api.visual.layout.LayoutFactory;
 import org.netbeans.api.visual.layout.LayoutFactory.SerialAlignment;
-import org.netbeans.api.visual.model.ObjectState;
 import org.netbeans.api.visual.widget.ImageWidget;
 import org.netbeans.api.visual.widget.LabelWidget;
 import org.netbeans.api.visual.widget.Widget;
@@ -136,6 +135,8 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         node.setDisplayName(getName());
 
         this.setToolTipText(PropertiesConverter.convertToHTML(f.getProperties()));
+
+        addBorder();
     }
 
     public void updatePosition() {
@@ -163,21 +164,10 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         return middleWidget.getPreferredBounds().height;
     }
 
-    @Override
-    protected void notifyStateChanged(ObjectState previousState, ObjectState state) {
-        super.notifyStateChanged(previousState, state);
-
+    private void addBorder() {
         Font font = Diagram.FONT;
         Color borderColor = Color.BLACK;
         Color innerBorderColor = getFigure().getColor();
-        if (state.isSelected()) {
-            font = Diagram.BOLD_FONT;
-            innerBorderColor = Color.BLACK;
-        }
-
-        if (state.isHighlighted()) {
-            innerBorderColor = borderColor = Color.BLUE;
-        }
 
         Border innerBorder = new RoundedBorder(borderColor, Figure.BORDER);
         Border outerBorder = new RoundedBorder(innerBorderColor, Figure.BORDER);
@@ -187,9 +177,6 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         for (LabelWidget labelWidget : labelWidgets) {
             labelWidget.setFont(font);
         }
-
-        formatExtraLabel(state.isSelected());
-
         repaint();
     }
 
