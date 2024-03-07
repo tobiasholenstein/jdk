@@ -191,7 +191,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         // draw diagram
         rebuildFigureLayer();
         relayout();
-        setFigureSelection();
         validateAll();
     }
 
@@ -531,15 +530,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
         }
         return result;
-    }
-
-    private void setFigureSelection() {
-        Set<Figure> result = new HashSet<>();
-        for (Figure f : diagram.getFigures()) {
-            if (selectedNodesByID.contains(f.getInputNode().getId())) {
-                result.add(f);
-            }
-        }
     }
 
     @Override
