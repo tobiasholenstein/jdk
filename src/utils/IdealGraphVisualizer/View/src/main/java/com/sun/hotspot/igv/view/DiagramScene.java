@@ -260,7 +260,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 figureWidget.setVisible(true);
             }
         } else {
-            getSelectedNodes().removeAll(hiddenNodes);
+            selectedNodes.removeAll(hiddenNodes);
         }
     }
 
@@ -472,11 +472,10 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                 @Override
                 public void movementFinished(Widget widget) {
-                    Set<Figure> selectedFigures = getSelectedFigures();
-                    for (Figure figure : selectedFigures) {
-                        FigureWidget fw = findFigureWidget(figure);
+                    Set<FigureWidget> selectedFigures = getSelectedFigureWidgets();
+                    for (FigureWidget fw : selectedFigures) {
                         Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
-                        seaLayoutManager.moveVertex(figure, newLocation);
+                        seaLayoutManager.moveVertex(fw.getFigure(), newLocation);
                     }
                     rebuildConnectionLayer();
                 }
@@ -503,10 +502,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     int shiftX = location.x - widget.getLocation().x;
                     int shiftY = magnetToStartLayerY(widget, location);
 
-                    List<Figure> selectedFigures = new ArrayList<>(getSelectedFigures());
-                    selectedFigures.sort(Comparator.comparingInt(f -> f.getPosition().x));
-                    for (Figure figure : selectedFigures) {
-                        FigureWidget fw = findFigureWidget(figure);
+                    for (FigureWidget fw : getSelectedFigureWidgets()) {
                         if (figureToInLineWidget.containsKey(fw.getFigure())) {
                             for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
                                 Point toPt = lw.getTo();
@@ -584,29 +580,29 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     public void hideSelectedNodes() {
-        Set<Integer> selectedNodes = getSelectedNodes();
         HashSet<Integer> nodes = new HashSet<>(hiddenNodes);
         nodes.addAll(selectedNodes);
         setHiddenNodes(nodes);
     }
 
-    public Set<Integer> getSelectedNodes() {
-        return selectedNodes;
-    }
-
-    public Set<Figure> getSelectedFigures() {
-        Set<Figure> result = new HashSet<>();
+    private Set<FigureWidget> getSelectedFigureWidgets() {
+        Set<FigureWidget> result = new HashSet<>();
         for (Figure f : diagram.getFigures()) {
             if (selectedNodes.contains(f.getInputNode().getId())) {
-                result.add(f);
+                result.add(findFigureWidget(f));
             }
         }
         return result;
     }
 
     private void setFigureSelection() {
-        Set<Figure> list = getSelectedFigures();
-        super.setSelectedObjects(new HashSet<>(list));
+        Set<Figure> result = new HashSet<>();
+        for (Figure f : diagram.getFigures()) {
+            if (selectedNodes.contains(f.getInputNode().getId())) {
+                result.add(f);
+            }
+        }
+        super.setSelectedObjects(result);
     }
 
     @Override
