@@ -37,7 +37,6 @@ public class OutputSlotWidget extends SlotWidget {
 
     @Override
     protected int yOffset() {
-        int overlap = 0;
-        return getFigureWidget().getFigureHeight() - overlap;
+        return getFigureWidget().getFigureHeight();
     }
 }

@@ -233,7 +233,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             Figure figure = entry.getKey();
             FigureWidget figureWidget = entry.getValue();
 
-            figureWidget.setBoundary(false);
+            figure.setBoundary(false);
             figureWidget.setVisible(!hiddenNodes.contains(figure.getInputNode().getId()));
         }
 
@@ -255,7 +255,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                         }
                     }
                     if (hasVisibleNeighbor) {
-                        fw.setBoundary(true);
+                        figure.setBoundary(true);
                         boundaries.add(fw);
                     }
                 }

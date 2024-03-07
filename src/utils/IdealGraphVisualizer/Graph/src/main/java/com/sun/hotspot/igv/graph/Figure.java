@@ -38,20 +38,56 @@ public class Figure extends Properties.Entity implements Vertex {
     public static final int WARNING_WIDTH = 16;
     public static final int BORDER = 1;
     public static final double BOLD_LINE_FACTOR = 1.06;
-    protected List<InputSlot> inputSlots;
-    protected List<OutputSlot> outputSlots;
     private final InputNode inputNode;
     private final Diagram diagram;
-    private Point position;
     private final List<Figure> predecessors;
     private final List<Figure> successors;
+    private final int id;
+    private final FontMetrics metrics;
+    protected List<InputSlot> inputSlots;
+    protected List<OutputSlot> outputSlots;
+    private Point position;
     private Color color;
     private String warning;
-    private final int id;
     private String[] lines;
     private int height = -1;
     private int width = -1;
-    private final FontMetrics metrics;
+    private boolean boundary;
+
+
+    protected Figure(Diagram diagram, int id, InputNode node) {
+        this.diagram = diagram;
+        this.inputNode = node;
+        this.inputSlots = new ArrayList<>(5);
+        this.outputSlots = new ArrayList<>(1);
+        this.predecessors = new ArrayList<>(6);
+        this.successors = new ArrayList<>(6);
+        this.id = id;
+        this.position = new Point(0, 0);
+        this.color = Color.WHITE;
+        Canvas canvas = new Canvas();
+        this.metrics = canvas.getFontMetrics(Diagram.FONT.deriveFont(Font.BOLD));
+        this.boundary = false;
+    }
+
+    public static <T> List<T> getAllBefore(List<T> inputList, T tIn) {
+        List<T> result = new ArrayList<>();
+        for (T t : inputList) {
+            if (t.equals(tIn)) {
+                break;
+            }
+            result.add(t);
+        }
+        return result;
+    }
+
+    public static int getSlotsWidth(Collection<? extends Slot> slots) {
+        int result = Figure.SLOT_OFFSET;
+        for (Slot s : slots) {
+            result += s.getWidth() + Figure.SLOT_OFFSET;
+        }
+        return result;
+    }
 
     public int getHeight() {
         if (height == -1) {
@@ -71,25 +107,6 @@ public class Figure extends Properties.Entity implements Vertex {
     private void updateHeight() {
         height = getLines().length * metrics.getHeight() + 2 * PADDING;
         height += getSlotsHeight();
-    }
-
-    public static <T> List<T> getAllBefore(List<T> inputList, T tIn) {
-        List<T> result = new ArrayList<>();
-        for(T t : inputList) {
-            if(t.equals(tIn)) {
-                break;
-            }
-            result.add(t);
-        }
-        return result;
-    }
-
-    public static int getSlotsWidth(Collection<? extends Slot> slots) {
-        int result = Figure.SLOT_OFFSET;
-        for(Slot s : slots) {
-            result += s.getWidth() + Figure.SLOT_OFFSET;
-        }
-        return result;
     }
 
     public int getWidth() {
@@ -117,25 +134,15 @@ public class Figure extends Properties.Entity implements Vertex {
         }
         width = Math.max(width, Figure.getSlotsWidth(inputSlots));
         width = Math.max(width, Figure.getSlotsWidth(outputSlots));
-        width = (int)(width * BOLD_LINE_FACTOR);
-    }
-
-    protected Figure(Diagram diagram, int id, InputNode node) {
-        this.diagram = diagram;
-        this.inputNode = node;
-        this.inputSlots = new ArrayList<>(5);
-        this.outputSlots = new ArrayList<>(1);
-        this.predecessors = new ArrayList<>(6);
-        this.successors = new ArrayList<>(6);
-        this.id = id;
-        this.position = new Point(0, 0);
-        this.color = Color.WHITE;
-        Canvas canvas = new Canvas();
-        this.metrics = canvas.getFontMetrics(Diagram.FONT.deriveFont(Font.BOLD));
+        width = (int) (width * BOLD_LINE_FACTOR);
     }
 
     public int getId() {
         return id;
+    }
+
+    public Color getColor() {
+        return color;
     }
 
     public void setColor(Color newColor) {
@@ -146,16 +153,12 @@ public class Figure extends Properties.Entity implements Vertex {
         }
     }
 
-    public Color getColor() {
-        return color;
+    public String getWarning() {
+        return warning;
     }
 
     public void setWarning(String warning) {
         this.warning = getProperties().resolveString(warning);
-    }
-
-    public String getWarning() {
-        return warning;
     }
 
     public List<Figure> getPredecessors() {
@@ -193,13 +196,13 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     @Override
-    public void setPosition(Point p) {
-        this.position = p;
+    public Point getPosition() {
+        return position;
     }
 
     @Override
-    public Point getPosition() {
-        return position;
+    public void setPosition(Point p) {
+        this.position = p;
     }
 
     public Diagram getDiagram() {
@@ -386,5 +389,13 @@ public class Figure extends Properties.Entity implements Vertex {
     @Override
     public int compareTo(Vertex f) {
         return toString().compareTo(f.toString());
+    }
+
+    public boolean isBoundary() {
+        return boundary;
+    }
+
+    public void setBoundary(boolean b) {
+        boundary = b;
     }
 }

@@ -64,7 +64,6 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
     private final Widget middleWidget;
     private final ArrayList<LabelWidget> labelWidgets;
     private final DiagramScene diagramScene;
-    private boolean boundary;
 
     public FigureWidget(final Figure f, DiagramScene scene) {
         super(scene);
@@ -137,14 +136,6 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         node.setDisplayName(getName());
 
         this.setToolTipText(PropertiesConverter.convertToHTML(f.getProperties()));
-    }
-
-    public boolean isBoundary() {
-        return boundary;
-    }
-
-    public void setBoundary(boolean b) {
-        boundary = b;
     }
 
     @Override
@@ -222,7 +213,7 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
     @Override
     protected void paintChildren() {
         Composite oldComposite = null;
-        if (boundary) {
+        if (figure.isBoundary()) {
             oldComposite = getScene().getGraphics().getComposite();
             float alpha = DiagramScene.ALPHA;
             this.getScene().getGraphics().setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
@@ -238,21 +229,21 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
             }
         } else {
             Color oldColor = null;
-            if (boundary) {
+            if (figure.isBoundary()) {
                 for (LabelWidget labelWidget : labelWidgets) {
                     oldColor = labelWidget.getForeground();
                     labelWidget.setForeground(Color.BLACK);
                 }
             }
             super.paintChildren();
-            if (boundary) {
+            if (figure.isBoundary()) {
                 for (LabelWidget labelWidget : labelWidgets) {
                     labelWidget.setForeground(oldColor);
                 }
             }
         }
 
-        if (boundary) {
+        if (figure.isBoundary()) {
             getScene().getGraphics().setComposite(oldComposite);
         }
     }
@@ -263,7 +254,7 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
             final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getGroup().getAllNodes());
             hiddenNodes.remove(this.getFigure().getInputNode().getId());
             diagramScene.setHiddenNodes(hiddenNodes);
-        } else if (isBoundary()) {
+        } else if (figure.isBoundary()) {
             final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodes());
             hiddenNodes.remove(this.getFigure().getInputNode().getId());
             diagramScene.setHiddenNodes(hiddenNodes);
