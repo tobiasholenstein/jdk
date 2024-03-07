@@ -200,6 +200,12 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         return figure;
     }
 
+    public void changeVisibility(boolean visible) {
+        this.setVisible(visible);
+        figure.setVisible(visible);
+
+    }
+
     private Color getTextColor() {
         Color bg = figure.getColor();
         double brightness = bg.getRed() * 0.21 + bg.getGreen() * 0.72 + bg.getBlue() * 0.07;

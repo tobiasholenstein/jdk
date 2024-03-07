@@ -53,6 +53,7 @@ public class Figure extends Properties.Entity implements Vertex {
     private int height = -1;
     private int width = -1;
     private boolean boundary;
+    private boolean visible;
 
 
     protected Figure(Diagram diagram, int id, InputNode node) {
@@ -68,6 +69,7 @@ public class Figure extends Properties.Entity implements Vertex {
         Canvas canvas = new Canvas();
         this.metrics = canvas.getFontMetrics(Diagram.FONT.deriveFont(Font.BOLD));
         this.boundary = false;
+        this.visible = true;
     }
 
     public static <T> List<T> getAllBefore(List<T> inputList, T tIn) {
@@ -397,5 +399,13 @@ public class Figure extends Properties.Entity implements Vertex {
 
     public void setBoundary(boolean b) {
         boundary = b;
+    }
+
+    public boolean isVisible() {
+        return this.visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 }

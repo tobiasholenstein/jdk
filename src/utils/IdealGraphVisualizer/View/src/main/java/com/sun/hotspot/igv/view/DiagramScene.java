@@ -234,7 +234,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             FigureWidget figureWidget = entry.getValue();
 
             figure.setBoundary(false);
-            figureWidget.setVisible(!hiddenNodes.contains(figure.getInputNode().getId()));
+            figureWidget.changeVisibility(!hiddenNodes.contains(figure.getInputNode().getId()));
         }
 
         if (showNodeHull) { // update node hull
@@ -262,7 +262,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
 
             for (FigureWidget figureWidget : boundaries) {
-                figureWidget.setVisible(true);
+                figureWidget.changeVisibility(true);
             }
         } else {
             selectedNodes.removeAll(hiddenNodes);
