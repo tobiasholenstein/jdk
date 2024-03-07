@@ -85,25 +85,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         figureLayer = new LayerWidget(this);
         super.addChild(figureLayer);
 
-        CustomSelectAction selectAction = new CustomSelectAction(new SelectProvider() {
-            public boolean isAimingAllowed(Widget widget, Point localLocation, boolean invertSelection) {
-                return false;
-            }
-
-            public boolean isSelectionAllowed(Widget widget, Point localLocation, boolean invertSelection) {
-                return true;
-            }
-
-            public void select(Widget widget, Point localLocation, boolean invertSelection) {
-                EditorTopComponent editor = EditorTopComponent.getActive();
-                if (editor != null) {
-                    editor.requestActive();
-                }
-                selectedNodesByID = new HashSet<>();
-            }
-        });
-
-        super.getActions().addAction(selectAction);
         super.getActions().addAction(new CustomizablePanAction(MouseEvent.BUTTON1_DOWN_MASK));
         super.getActions().addAction(new DoubleClickAction(this));
         super.getActions().addAction(mouseZoomAction);
