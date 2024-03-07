@@ -226,7 +226,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         Set<Figure> visibleFigures = getVisibleFigures();
         Set<Connection> visibleConnections = getVisibleConnections();
         seaLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
-        updatePositions();
+        updateWidgetPositions();
     }
 
     private void updateVisibleFigureWidgets() {
@@ -281,21 +281,17 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return diagram.getConnections().stream().filter(Connection::isVisible).collect(Collectors.toSet());
     }
 
-    private void updatePositions() {
+    private void updateWidgetPositions() {
         figureToOutLineWidget.clear();
         figureToInLineWidget.clear();
         connectionLayer.removeChildren();
-        for (Figure figure : diagram.getFigures()) {
-            for (OutputSlot outputSlot : figure.getOutputSlots()) {
+        for (FigureWidget figureWidget : figureMap.values()) {
+            figureWidget.updatePosition();
+            for (OutputSlot outputSlot : figureWidget.getFigure().getOutputSlots()) {
                 List<Connection> connectionList = new ArrayList<>(outputSlot.getConnections());
                 processOutputSlot(outputSlot, connectionList, 0, null, null);
             }
         }
-
-        for (FigureWidget figureWidget : figureMap.values()) {
-            figureWidget.updatePosition();
-        }
-
         validateAll();
     }
 
@@ -369,7 +365,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
                 seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
                 seaLayoutManager.writeBack();
-                updatePositions();
+                updateWidgetPositions();
             }
 
             @Override
@@ -462,7 +458,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
                     seaLayoutManager.moveVertex(fw.getFigure(), newLocation);
                 }
-                updatePositions();
+                updateWidgetPositions();
             }
 
             private int magnetToStartLayerY(Widget widget, Point location) {
