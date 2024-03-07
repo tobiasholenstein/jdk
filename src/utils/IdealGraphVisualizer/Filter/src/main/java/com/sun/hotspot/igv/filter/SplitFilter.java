@@ -27,7 +27,6 @@ import com.sun.hotspot.igv.graph.*;
 import java.util.List;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class SplitFilter extends AbstractFilter {

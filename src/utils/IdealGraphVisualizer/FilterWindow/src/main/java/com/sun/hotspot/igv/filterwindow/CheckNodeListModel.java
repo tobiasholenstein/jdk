@@ -27,7 +27,6 @@ import org.openide.explorer.view.NodeListModel;
 import org.openide.explorer.view.Visualizer;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class CheckNodeListModel extends NodeListModel {

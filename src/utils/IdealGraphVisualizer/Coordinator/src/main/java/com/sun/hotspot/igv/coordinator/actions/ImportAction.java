@@ -31,15 +31,23 @@ import java.io.IOException;
 import javax.swing.Action;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
-import org.openide.util.*;
+import org.openide.util.Exceptions;
+import org.openide.util.HelpCtx;
+import org.openide.util.NbBundle;
+import org.openide.util.Utilities;
 import org.openide.util.actions.CallableSystemAction;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 
 public final class ImportAction extends CallableSystemAction {
+
+    public ImportAction() {
+        putValue(Action.SHORT_DESCRIPTION, "Open");
+        // D is the Control key on most platforms, the Command (meta) key on Macintosh
+        putValue(Action.ACCELERATOR_KEY, Utilities.stringToKey("D-O"));
+    }
 
     public static FileFilter getFileFilter() {
         return new FileFilter() {
@@ -84,12 +92,6 @@ public final class ImportAction extends CallableSystemAction {
     @Override
     public String getName() {
         return NbBundle.getMessage(ImportAction.class, "CTL_ImportAction");
-    }
-
-    public ImportAction() {
-        putValue(Action.SHORT_DESCRIPTION, "Open");
-        // D is the Control key on most platforms, the Command (meta) key on Macintosh
-        putValue(Action.ACCELERATOR_KEY, Utilities.stringToKey("D-O"));
     }
 
     @Override

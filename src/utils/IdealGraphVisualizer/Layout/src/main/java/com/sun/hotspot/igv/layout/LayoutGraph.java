@@ -1,6 +1,6 @@
 package com.sun.hotspot.igv.layout;
 
-import java.util.*;
+import java.util.Set;
 
 
 public class LayoutGraph {

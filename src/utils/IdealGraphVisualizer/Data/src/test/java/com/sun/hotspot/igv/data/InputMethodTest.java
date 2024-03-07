@@ -30,7 +30,6 @@ import org.junit.*;
 import static org.junit.Assert.assertThat;
 
 /**
- *
  * @author Thomas
  */
 public class InputMethodTest {
@@ -62,12 +61,12 @@ public class InputMethodTest {
     public void testGetSetBytecodes() {
 
         final String input = "0 iload_0\n" +
-                             "1 iconst_1\n" +
-                             "2 if_icmpne 7\n" +
-                             "5 iconst_1\n" +
-                             "6 ireturn\n" +
-                             "7 iconst_0\n" +
-                             "8 ireturn";
+                "1 iconst_1\n" +
+                "2 if_icmpne 7\n" +
+                "5 iconst_1\n" +
+                "6 ireturn\n" +
+                "7 iconst_0\n" +
+                "8 ireturn";
 
         final Group g = new Group(null);
         InputMethod m = new InputMethod(g, "name", "shortName", -1);

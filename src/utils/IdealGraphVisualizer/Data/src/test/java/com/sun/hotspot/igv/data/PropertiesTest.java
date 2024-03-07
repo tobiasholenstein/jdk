@@ -32,11 +32,9 @@ import java.util.Iterator;
 import junit.framework.TestCase;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class PropertiesTest extends TestCase {
-
 
 
     public PropertiesTest(String testName) {
@@ -173,7 +171,8 @@ public class PropertiesTest extends TestCase {
         try {
             result.remove();
             fail();
-        } catch(UnsupportedOperationException e) {}
+        } catch (UnsupportedOperationException e) {
+        }
     }
 
     /**
@@ -321,17 +320,20 @@ public class PropertiesTest extends TestCase {
         try {
             matcher.match(null);
             fail();
-        } catch(IllegalArgumentException e) {}
+        } catch (IllegalArgumentException e) {
+        }
 
         try {
             new StringPropertyMatcher(null, "**");
             fail();
-        } catch(IllegalArgumentException e) {}
+        } catch (IllegalArgumentException e) {
+        }
 
         try {
             new StringPropertyMatcher("p1", null);
             fail();
-        } catch(IllegalArgumentException e) {}
+        } catch (IllegalArgumentException e) {
+        }
 
         final RegexpPropertyMatcher matcher2 = new RegexpPropertyMatcher("p1", "C.*");
         assertTrue(matcher2.getName().equals("p1"));
@@ -344,22 +346,26 @@ public class PropertiesTest extends TestCase {
         try {
             matcher2.match(null);
             fail();
-        } catch(IllegalArgumentException e) {}
+        } catch (IllegalArgumentException e) {
+        }
 
         try {
             new RegexpPropertyMatcher("p1", "**");
             fail();
-        } catch(IllegalArgumentException e) {}
+        } catch (IllegalArgumentException e) {
+        }
 
         try {
             new RegexpPropertyMatcher(null, "1");
             fail();
-        } catch(IllegalArgumentException e) {}
+        } catch (IllegalArgumentException e) {
+        }
 
         try {
             new RegexpPropertyMatcher("p1", null);
             fail();
-        } catch(IllegalArgumentException e) {}
+        } catch (IllegalArgumentException e) {
+        }
 
         final InvertPropertyMatcher matcher3 = new InvertPropertyMatcher(matcher);
         assertTrue(matcher3.getName().equals("p1"));

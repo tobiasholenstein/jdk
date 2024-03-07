@@ -27,7 +27,8 @@
     <folder name="Menu">
         <folder name="Window">
             <file name="FilterAction.shadow">
-                <attr name="originalFile" stringvalue="Actions/Window/com-sun-hotspot-igv-filterwindow-actions-FilterAction.instance"/>
+                <attr name="originalFile"
+                      stringvalue="Actions/Window/com-sun-hotspot-igv-filterwindow-actions-FilterAction.instance"/>
                 <attr name="position" intvalue="3"/>
             </file>
         </folder>

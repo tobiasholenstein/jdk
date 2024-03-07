@@ -28,7 +28,6 @@ import com.sun.hotspot.igv.data.Properties.PropertyMatcher;
 import java.util.List;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class MatcherSelector implements Selector {

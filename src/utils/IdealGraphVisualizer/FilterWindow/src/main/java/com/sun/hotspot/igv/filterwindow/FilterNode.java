@@ -33,7 +33,6 @@ import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class FilterNode extends CheckNode implements ChangedListener<FilterTopComponent> {

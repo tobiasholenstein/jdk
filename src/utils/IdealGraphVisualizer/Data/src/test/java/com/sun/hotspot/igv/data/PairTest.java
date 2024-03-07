@@ -29,7 +29,6 @@ import org.junit.*;
 import static org.junit.Assert.*;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class PairTest {

@@ -1,18 +1,20 @@
 package com.sun.hotspot.igv.graph;
 
-import com.sun.hotspot.igv.data.*;
+import com.sun.hotspot.igv.data.InputEdge;
+import com.sun.hotspot.igv.data.InputGraph;
+import com.sun.hotspot.igv.data.InputNode;
 import java.awt.Font;
 import java.util.*;
 
 
 public class Diagram {
 
-    private List<Figure> figures;
-    private final String nodeText;
-    private final String shortNodeText;
     public static final Font FONT = new Font("Arial", Font.PLAIN, 12);
     public static final Font SLOT_FONT = new Font("Arial", Font.PLAIN, 10);
     public static final Font BOLD_FONT = FONT.deriveFont(Font.BOLD);
+    private final String nodeText;
+    private final String shortNodeText;
+    private List<Figure> figures;
 
 
     public Diagram(InputGraph graph) {
@@ -38,7 +40,7 @@ public class Diagram {
             Figure fromFigure = figureHash.get(from);
             Figure toFigure = figureHash.get(to);
 
-            if(fromFigure == null || toFigure == null) continue;
+            if (fromFigure == null || toFigure == null) continue;
 
             int fromIndex = e.getFromIndex();
             while (fromFigure.getOutputSlots().size() <= fromIndex) {

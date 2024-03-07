@@ -36,12 +36,11 @@ import org.openide.NotifyDescriptor;
 import org.openide.util.RequestProcessor;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class Server implements PreferenceChangeListener {
-    private ServerSocketChannel serverSocket;
     private final GroupCallback callback;
+    private ServerSocketChannel serverSocket;
     private int port;
     private Runnable serverRunnable;
 

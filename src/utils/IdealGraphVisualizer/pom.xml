@@ -30,8 +30,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.sun.hotspot.igv</groupId>
@@ -78,8 +78,8 @@
                             <configuration>
                                 <rules>
                                     <requireJavaVersion>
-                                      <version>[17,22)</version>
-                                      <message>IGV requires a JDK version between 17 and 21</message>
+                                        <version>[17,22)</version>
+                                        <message>IGV requires a JDK version between 17 and 21</message>
                                     </requireJavaVersion>
                                 </rules>
                             </configuration>

@@ -28,14 +28,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class RemoveSelfLoopsFilter extends AbstractFilter {
 
     private String name;
 
-    /** Creates a new instance of RemoveSelfLoops */
+    /**
+     * Creates a new instance of RemoveSelfLoops
+     */
     public RemoveSelfLoopsFilter(String name) {
         this.name = name;
     }

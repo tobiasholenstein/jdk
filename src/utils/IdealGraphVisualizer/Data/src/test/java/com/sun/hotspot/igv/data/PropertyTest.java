@@ -29,7 +29,6 @@ import org.junit.*;
 import static org.junit.Assert.*;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class PropertyTest {
@@ -65,14 +64,14 @@ public class PropertyTest {
         try {
             new Property(null, "value");
             fail();
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
         }
 
 
         try {
             new Property("name", null);
             fail();
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
         }
     }
 

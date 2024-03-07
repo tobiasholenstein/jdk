@@ -27,7 +27,6 @@ import java.awt.Point;
 import java.util.List;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class InputSlot extends Slot {
@@ -70,9 +69,9 @@ public class InputSlot extends Slot {
     @Override
     public Point getRelativePosition() {
         int gap = getFigure().getWidth() - Figure.getSlotsWidth(getFigure().getInputSlots());
-        double gapRatio = (double)gap / (double)(getFigure().getInputSlots().size() + 1);
-        int gapAmount = (int)((getPosition() + 1)*gapRatio);
-        return new Point(gapAmount + Figure.getSlotsWidth(Figure.getAllBefore(getFigure().getInputSlots(), this)) + getWidth()/2, 0);
+        double gapRatio = (double) gap / (double) (getFigure().getInputSlots().size() + 1);
+        int gapAmount = (int) ((getPosition() + 1) * gapRatio);
+        return new Point(gapAmount + Figure.getSlotsWidth(Figure.getAllBefore(getFigure().getInputSlots(), this)) + getWidth() / 2, 0);
     }
 
     @Override

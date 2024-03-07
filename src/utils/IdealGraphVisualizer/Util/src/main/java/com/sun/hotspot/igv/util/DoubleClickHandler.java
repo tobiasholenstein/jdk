@@ -27,7 +27,6 @@ import org.netbeans.api.visual.action.WidgetAction.WidgetMouseEvent;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public interface DoubleClickHandler {

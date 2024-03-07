@@ -25,10 +25,9 @@
 
 package com.sun.hotspot.igv.data;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class Util {
@@ -46,7 +45,7 @@ public class Util {
                 Group g = (Group) e;
                 Group thisG = (Group) a.getElements().get(z);
                 assertGroupEquals(thisG, g);
-            z++;
+                z++;
             }
         }
     }
@@ -78,7 +77,7 @@ public class Util {
     public static void assertGraphNotEquals(InputGraph a, InputGraph b) {
         try {
             assertGraphEquals(a, b);
-        } catch(AssertionError e) {
+        } catch (AssertionError e) {
             return;
         }
 
@@ -87,7 +86,7 @@ public class Util {
 
     public static void assertGraphEquals(InputGraph a, InputGraph b) {
 
-        if(!a.getNodesAsSet().equals(b.getNodesAsSet())) {
+        if (!a.getNodesAsSet().equals(b.getNodesAsSet())) {
             fail();
         }
 

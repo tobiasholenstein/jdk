@@ -24,7 +24,9 @@
 package com.sun.hotspot.igv.coordinator;
 
 import com.sun.hotspot.igv.connection.Server;
-import com.sun.hotspot.igv.coordinator.actions.*;
+import com.sun.hotspot.igv.coordinator.actions.ImportAction;
+import com.sun.hotspot.igv.coordinator.actions.RemoveAllAction;
+import com.sun.hotspot.igv.coordinator.actions.SaveAllAction;
 import com.sun.hotspot.igv.data.*;
 import com.sun.hotspot.igv.data.serialization.ParseMonitor;
 import com.sun.hotspot.igv.data.serialization.Parser;
@@ -57,22 +59,21 @@ import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public final class OutlineTopComponent extends TopComponent implements ExplorerManager.Provider, ChangedListener<InputGraphProvider> {
 
-    public static OutlineTopComponent instance;
     public static final String PREFERRED_ID = "OutlineTopComponent";
-    private ExplorerManager manager;
-    private final GraphDocument document;
-    private FolderNode root;
-    private SaveAllAction saveAllAction;
-    private RemoveAllAction removeAllAction;
-    private GraphNode[] selectedGraphs = new GraphNode[0];
-    private final Set<FolderNode> selectedFolders = new HashSet<>();
     private static final int WORKUNITS = 10000;
     private static final RequestProcessor RP = new RequestProcessor("OutlineTopComponent", 1);
+    public static OutlineTopComponent instance;
+    private final GraphDocument document;
+    private final Set<FolderNode> selectedFolders = new HashSet<>();
+    private ExplorerManager manager;
+    private FolderNode root;
+    private GraphNode[] selectedGraphs = new GraphNode[0];
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JScrollPane treeView;
 
     private OutlineTopComponent() {
         initComponents();
@@ -84,55 +85,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         initListView();
         initToolbar();
         initReceivers();
-    }
-
-    private void initListView() {
-        manager = new ExplorerManager();
-        root = new FolderNode(document);
-        manager.setRootContext(root);
-        ((BeanTreeView) this.treeView).setRootVisible(false);
-
-        associateLookup(ExplorerUtils.createLookup(manager, getActionMap()));
-    }
-
-    private void initToolbar() {
-        Toolbar toolbar = new Toolbar();
-        toolbar.add(ImportAction.get(ImportAction.class));
-        toolbar.add(SaveAllAction.get(SaveAllAction.class));
-        toolbar.add(RemoveAllAction.get(RemoveAllAction.class));
-
-        add(toolbar, BorderLayout.NORTH);
-
-        for (Toolbar tb : ToolbarPool.getDefault().getToolbars()) {
-            tb.setVisible(false);
-        }
-    }
-
-    private void initReceivers() {
-        final GroupCallback callback = g -> {
-            synchronized(OutlineTopComponent.this) {
-                g.setParent(getDocument());
-                getDocument().addElement(g);
-            }
-        };
-
-        new Server(callback);
-    }
-
-    public void clear() {
-        document.clear();
-        FolderNode.clearGraphNodeMap();
-        root = new FolderNode(document);
-        manager.setRootContext(root);
-    }
-
-    @Override
-    public ExplorerManager getExplorerManager() {
-        return manager;
-    }
-
-    public GraphDocument getDocument() {
-        return document;
     }
 
     /**
@@ -161,6 +113,55 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
         ErrorManager.getDefault().log(ErrorManager.WARNING, "There seem to be multiple components with the '" + PREFERRED_ID + "' ID. That is a potential source of errors and unexpected behavior.");
         return getDefault();
+    }
+
+    private void initListView() {
+        manager = new ExplorerManager();
+        root = new FolderNode(document);
+        manager.setRootContext(root);
+        ((BeanTreeView) this.treeView).setRootVisible(false);
+
+        associateLookup(ExplorerUtils.createLookup(manager, getActionMap()));
+    }
+
+    private void initToolbar() {
+        Toolbar toolbar = new Toolbar();
+        toolbar.add(ImportAction.get(ImportAction.class));
+        toolbar.add(SaveAllAction.get(SaveAllAction.class));
+        toolbar.add(RemoveAllAction.get(RemoveAllAction.class));
+
+        add(toolbar, BorderLayout.NORTH);
+
+        for (Toolbar tb : ToolbarPool.getDefault().getToolbars()) {
+            tb.setVisible(false);
+        }
+    }
+
+    private void initReceivers() {
+        final GroupCallback callback = g -> {
+            synchronized (OutlineTopComponent.this) {
+                g.setParent(getDocument());
+                getDocument().addElement(g);
+            }
+        };
+
+        new Server(callback);
+    }
+
+    public void clear() {
+        document.clear();
+        FolderNode.clearGraphNodeMap();
+        root = new FolderNode(document);
+        manager.setRootContext(root);
+    }
+
+    @Override
+    public ExplorerManager getExplorerManager() {
+        return manager;
+    }
+
+    public GraphDocument getDocument() {
+        return document;
     }
 
     @Override
@@ -387,8 +388,10 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                     try {
                         int prog = (int) (WORKUNITS * (double) channel.position() / (double) start);
                         handle.progress(prog);
-                    } catch (IOException ignored) {}
+                    } catch (IOException ignored) {
+                    }
                 }
+
                 @Override
                 public void setState(String state) {
                     updateProgress();
@@ -419,7 +422,8 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         return null;
     }
 
-    /** This method is called from within the constructor to
+    /**
+     * This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
      * always regenerated by the Form Editor.
@@ -432,8 +436,5 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         setLayout(new java.awt.BorderLayout());
         add(treeView, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JScrollPane treeView;
     // End of variables declaration//GEN-END:variables
 }

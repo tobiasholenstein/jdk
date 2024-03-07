@@ -31,11 +31,11 @@ import java.util.function.Function;
 
 public class EditPropertyFilter extends AbstractFilter {
 
-    private String name;
-    private Selector selector;
     private final String[] inputPropertyNames;
     private final String outputPropertyName;
     private final Function<String[], String> editFunction;
+    private String name;
+    private Selector selector;
 
     public EditPropertyFilter(String name, Selector selector,
                               String[] inputPropertyNames, String outputPropertyName,

@@ -22,14 +22,16 @@
  *
  */
 
- /**
+/**
  *
  * @author Thomas Wuerthinger
  */
 
 // Split a string by whitespace, collapsing repeated ones.
 function split_string(s) {
-    return s.split(/(\s+)/).filter(function(e) {return e.trim().length > 0;});
+    return s.split(/(\s+)/).filter(function (e) {
+        return e.trim().length > 0;
+    });
 }
 
 // Select the node union in a list of selectors.

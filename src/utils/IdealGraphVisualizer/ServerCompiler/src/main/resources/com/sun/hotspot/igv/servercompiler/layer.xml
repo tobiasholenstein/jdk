@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.1//EN" "https://www.netbeans.org/dtds/filesystem-1_1.dtd">
 <filesystem>
-      <folder name="Filters">
+    <folder name="Filters">
         <file name="Color by category.js" url="filters/color.filter">
             <attr name="enabled" boolvalue="true"/>
         </file>

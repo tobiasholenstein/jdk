@@ -24,8 +24,6 @@
 package com.sun.hotspot.igv.view.actions;
 
 import com.sun.hotspot.igv.view.DiagramScene;
-import java.util.HashSet;
-import java.util.Set;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionReferences;

@@ -4,7 +4,6 @@ import com.sun.hotspot.igv.data.InputNode;
 import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.data.Source;
 import com.sun.hotspot.igv.layout.Port;
-import com.sun.hotspot.igv.layout.Vertex;
 import com.sun.hotspot.igv.util.StringUtils;
 import java.awt.Color;
 import java.awt.Font;
@@ -20,14 +19,14 @@ import java.util.List;
 public abstract class Slot implements Port, Source.Provider, Properties.Provider {
     public static final int SLOT_WIDTH = 10;
     public static final int SLOT_HEIGHT = 10;
-
+    public static final Comparator<Slot> slotIndexComparator = Comparator.comparingInt(o -> o.wantedIndex);
     private final int wantedIndex;
     private final Source source;
+    private final Figure figure;
     protected List<Connection> connections;
     private Color color;
     private String text;
     private String shortName;
-    private final Figure figure;
 
     protected Slot(Figure figure, int wantedIndex) {
         this.figure = figure;
@@ -53,7 +52,6 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
         }
         return p;
     }
-    public static final Comparator<Slot> slotIndexComparator = Comparator.comparingInt(o -> o.wantedIndex);
 
     public int getWidth() {
         assert shortName != null;
@@ -77,14 +75,14 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
         return source;
     }
 
+    public String getShortName() {
+        return shortName;
+    }
+
     public void setShortName(String s) {
         assert s != null;
         this.shortName = s;
 
-    }
-
-    public String getShortName() {
-        return shortName;
     }
 
     public String getToolTipText() {

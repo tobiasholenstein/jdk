@@ -24,41 +24,33 @@
 
 package com.sun.hotspot.igv.data;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import org.junit.*;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class InputGraphTest {
-
-    /**
-     *    1
-     *   / \
-     *  2   3
-     *   \  |  5
-     *    \ | /
-     *      4
-     */
-    private static InputGraph referenceGraph;
-
-    private static InputGraph emptyGraph;
 
     private static final InputNode N1 = new InputNode(1);
     private static final InputNode N2 = new InputNode(2);
     private static final InputNode N3 = new InputNode(3);
     private static final InputNode N4 = new InputNode(4);
     private static final InputNode N5 = new InputNode(5);
-    private static final InputEdge E12 = new InputEdge((char)0, (char)0, 1, 2, "", "");
-    private static final InputEdge E13 = new InputEdge((char)0, (char)0, 1, 3, "", "");
-    private static final InputEdge E24 = new InputEdge((char)0, (char)0, 2, 4, "", "");
-    private static final InputEdge E34 = new InputEdge((char)0, (char)0, 3, 4, "", "");
-    private static final InputEdge E54 = new InputEdge((char)0, (char)0, 5, 4, "", "");
+    private static final InputEdge E12 = new InputEdge((char) 0, (char) 0, 1, 2, "", "");
+    private static final InputEdge E13 = new InputEdge((char) 0, (char) 0, 1, 3, "", "");
+    private static final InputEdge E24 = new InputEdge((char) 0, (char) 0, 2, 4, "", "");
+    private static final InputEdge E34 = new InputEdge((char) 0, (char) 0, 3, 4, "", "");
+    private static final InputEdge E54 = new InputEdge((char) 0, (char) 0, 5, 4, "", "");
+    /**
+     * 1
+     * / \
+     * 2   3
+     * \  |  5
+     * \ | /
+     * 4
+     */
+    private static InputGraph referenceGraph;
+    private static InputGraph emptyGraph;
 
     public InputGraphTest() {
     }

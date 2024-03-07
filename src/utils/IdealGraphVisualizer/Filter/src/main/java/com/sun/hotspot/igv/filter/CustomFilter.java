@@ -33,14 +33,13 @@ import org.openide.cookies.OpenCookie;
 import org.openide.util.Exceptions;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class CustomFilter extends AbstractFilter {
 
+    private final ScriptEngine engine;
     private String code;
     private String name;
-    private final ScriptEngine engine;
 
     public CustomFilter(String name, String code, ScriptEngine engine) {
         this.name = name;
@@ -54,12 +53,12 @@ public class CustomFilter extends AbstractFilter {
         return name;
     }
 
-    public String getCode() {
-        return code;
-    }
-
     public void setName(String s) {
         name = s;
+    }
+
+    public String getCode() {
+        return code;
     }
 
     public void setCode(String s) {

@@ -25,7 +25,6 @@ package com.sun.hotspot.igv.layout;
 
 import java.awt.Dimension;
 import java.awt.Point;
-import java.util.HashSet;
 import java.util.Set;
 
 

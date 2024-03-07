@@ -27,13 +27,18 @@ import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Dimension;
 import java.awt.Point;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class LayoutNode {
 
     public static final int DUMMY_HEIGHT = 1;
     public static final int DUMMY_WIDTH = 1;
-
+    private final List<LayoutEdge> preds = new ArrayList<>();
+    private final List<LayoutEdge> succs = new ArrayList<>();
+    private final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();
+    private final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
     private int layer = -1;
     private int optimal_x;
     private int x;
@@ -44,13 +49,7 @@ public class LayoutNode {
     private int bottomMargin;
     private int rightMargin;
     private int leftMargin;
-
     private Vertex vertex; // Only used for non-dummy nodes, otherwise null
-
-    private final List<LayoutEdge> preds = new ArrayList<>();
-    private final List<LayoutEdge> succs = new ArrayList<>();
-    private final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();
-    private final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
     private int pos = -1; // Position within layer
 
     private float weightedPosition = 0;
@@ -136,6 +135,7 @@ public class LayoutNode {
     public boolean isDummy() {
         return vertex == null;
     }
+
     @Override
     public String toString() {
         if (vertex != null) {

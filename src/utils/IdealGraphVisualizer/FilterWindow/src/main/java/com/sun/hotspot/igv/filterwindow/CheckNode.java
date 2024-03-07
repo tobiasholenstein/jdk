@@ -29,14 +29,13 @@ import org.openide.nodes.Children;
 import org.openide.util.Lookup;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class CheckNode extends AbstractNode {
 
-    private ChangedEvent<CheckNode> selectionChangedEvent;
     public boolean selected;
     public boolean enabled;
+    private ChangedEvent<CheckNode> selectionChangedEvent;
 
     public CheckNode(Children c, Lookup lookup) {
         super(c, lookup);
@@ -60,11 +59,11 @@ public class CheckNode extends AbstractNode {
         }
     }
 
-    public void setEnabled(boolean b) {
-        enabled = b;
-    }
-
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public void setEnabled(boolean b) {
+        enabled = b;
     }
 }

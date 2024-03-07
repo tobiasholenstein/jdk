@@ -52,22 +52,21 @@ import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public final class FilterTopComponent extends TopComponent implements ExplorerManager.Provider {
 
-    private static FilterTopComponent instance;
     public static final String FOLDER_ID = "Filters";
     public static final String AFTER_ID = "after";
     public static final String ENABLED_ID = "enabled";
     public static final String PREFERRED_ID = "FilterTopComponent";
     public static final String JAVASCRIPT_HELPER_ID = "JavaScriptHelper";
+    private static final FilterChain defaultFilterChain = new FilterChain();
+    private static FilterTopComponent instance;
     private final CheckListView view;
     private final ExplorerManager manager;
     private final ScriptEngine engine;
     private final FilterChain allFiltersOrdered = new FilterChain();
-    private static final FilterChain defaultFilterChain = new FilterChain();
     private final ChangedEvent<FilterTopComponent> filterSettingsChangedEvent = new ChangedEvent<>(this);
 
 
@@ -94,74 +93,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         this.add(view, BorderLayout.CENTER);
 
         filterSettingsChangedEvent.fire();
-    }
-
-    public ChangedEvent<FilterTopComponent> getFilterSettingsChangedEvent() {
-        return filterSettingsChangedEvent;
-    }
-
-    public FilterChain getAllFiltersOrdered() {
-        return allFiltersOrdered;
-    }
-
-    public FilterChain getCurrentChain() {
-        return defaultFilterChain;
-    }
-
-    private class FilterChildren extends Children.Keys<Filter> implements ChangedListener<CheckNode> {
-
-        private final HashMap<Filter, Node> nodeHash = new HashMap<>();
-
-        @Override
-        protected Node[] createNodes(Filter filter) {
-            if (nodeHash.containsKey(filter)) {
-                return new Node[]{nodeHash.get(filter)};
-            }
-
-            FilterNode node = new FilterNode(filter);
-            node.getSelectionChangedEvent().addListener(this);
-            nodeHash.put(filter, node);
-            return new Node[]{node};
-        }
-
-        public FilterChildren() {
-            allFiltersOrdered.getChangedEvent().addListener(source -> addNotify());
-            setBefore(false);
-        }
-
-        @Override
-        protected void addNotify() {
-            setKeys(allFiltersOrdered.getFilters());
-            updateSelection();
-        }
-
-        private void updateSelection() {
-            Node[] nodes = getExplorerManager().getSelectedNodes();
-            int[] arr = new int[nodes.length];
-            for (int i = 0; i < nodes.length; i++) {
-                int index = allFiltersOrdered.getFilters().indexOf(((FilterNode) nodes[i]).getFilter());
-                arr[i] = index;
-            }
-            view.showSelection(arr);
-        }
-
-        @Override
-        public void changed(CheckNode source) {
-            FilterNode node = (FilterNode) source;
-            Filter f = node.getFilter();
-            FilterChain chain = getCurrentChain();
-            if (node.isSelected()) {
-                if (!chain.containsFilter(f)) {
-                    chain.addFilter(f);
-                }
-            } else {
-                if (chain.containsFilter(f)) {
-                    chain.removeFilter(f);
-                }
-            }
-            view.revalidate();
-            view.repaint();
-        }
     }
 
     private static String getJsHelperText() {
@@ -194,6 +125,46 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         return sb.toString();
     }
 
+    /**
+     * Gets default instance. Do not use directly: reserved for *.settings files only,
+     * i.e. deserialization routines; otherwise you could get a non-deserialized instance.
+     * To obtain the singleton instance, use {@link #findInstance()}.
+     */
+    public static synchronized FilterTopComponent getDefault() {
+        if (instance == null) {
+            instance = new FilterTopComponent();
+        }
+        return instance;
+    }
+
+    /**
+     * Obtain the FilterTopComponent instance. Never call {@link #getDefault} directly!
+     */
+    public static synchronized FilterTopComponent findInstance() {
+        TopComponent win = WindowManager.getDefault().findTopComponent(PREFERRED_ID);
+        if (win == null) {
+            ErrorManager.getDefault().log(ErrorManager.WARNING, "Cannot find Filter component. It will not be located properly in the window system.");
+            return getDefault();
+        }
+        if (win instanceof FilterTopComponent) {
+            return (FilterTopComponent) win;
+        }
+        ErrorManager.getDefault().log(ErrorManager.WARNING, "There seem to be multiple components with the '" + PREFERRED_ID + "' ID. That is a potential source of errors and unexpected behavior.");
+        return getDefault();
+    }
+
+    public ChangedEvent<FilterTopComponent> getFilterSettingsChangedEvent() {
+        return filterSettingsChangedEvent;
+    }
+
+    public FilterChain getAllFiltersOrdered() {
+        return allFiltersOrdered;
+    }
+
+    public FilterChain getCurrentChain() {
+        return defaultFilterChain;
+    }
+
     public void addFilter(CustomFilter customFilter) {
         allFiltersOrdered.addFilter(customFilter);
         FileObject fileObject = getFileObject(customFilter);
@@ -212,40 +183,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
             }
         }
         return fileObject;
-    }
-
-    private static class FilterChangedListener implements ChangedListener<Filter> {
-
-        private FileObject fileObject;
-        private final CustomFilter filter;
-
-        public FilterChangedListener(FileObject fo, CustomFilter cf) {
-            fileObject = fo;
-            filter = cf;
-        }
-
-        @Override
-        public void changed(Filter source) {
-            try {
-                if (!fileObject.getName().equals(filter.getName())) {
-                    FileLock lock = fileObject.lock();
-                    fileObject.move(lock, fileObject.getParent(), filter.getName(), "js");
-                    lock.releaseLock();
-                    fileObject = fileObject.getParent().getFileObject(filter.getName() + ".js");
-                }
-
-                FileLock lock = fileObject.lock();
-                OutputStream os = fileObject.getOutputStream(lock);
-                try (Writer w = new OutputStreamWriter(os)) {
-                    String s = filter.getCode();
-                    w.write(s);
-                }
-                lock.releaseLock();
-
-            } catch (IOException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-        }
     }
 
     public void initFilters() {
@@ -330,7 +267,8 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         }
     }
 
-    /** This method is called from within the constructor to
+    /**
+     * This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
      * always regenerated by the Form Editor.
@@ -343,33 +281,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     }// </editor-fold>//GEN-END:initComponents
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables
-    /**
-     * Gets default instance. Do not use directly: reserved for *.settings files only,
-     * i.e. deserialization routines; otherwise you could get a non-deserialized instance.
-     * To obtain the singleton instance, use {@link #findInstance()}.
-     */
-    public static synchronized FilterTopComponent getDefault() {
-        if (instance == null) {
-            instance = new FilterTopComponent();
-        }
-        return instance;
-    }
-
-    /**
-     * Obtain the FilterTopComponent instance. Never call {@link #getDefault} directly!
-     */
-    public static synchronized FilterTopComponent findInstance() {
-        TopComponent win = WindowManager.getDefault().findTopComponent(PREFERRED_ID);
-        if (win == null) {
-            ErrorManager.getDefault().log(ErrorManager.WARNING, "Cannot find Filter component. It will not be located properly in the window system.");
-            return getDefault();
-        }
-        if (win instanceof FilterTopComponent) {
-            return (FilterTopComponent) win;
-        }
-        ErrorManager.getDefault().log(ErrorManager.WARNING, "There seem to be multiple components with the '" + PREFERRED_ID + "' ID. That is a potential source of errors and unexpected behavior.");
-        return getDefault();
-    }
 
     @Override
     public int getPersistenceType() {
@@ -402,5 +313,95 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     public void requestActive() {
         super.requestActive();
         view.requestFocus();
+    }
+
+    private static class FilterChangedListener implements ChangedListener<Filter> {
+
+        private final CustomFilter filter;
+        private FileObject fileObject;
+
+        public FilterChangedListener(FileObject fo, CustomFilter cf) {
+            fileObject = fo;
+            filter = cf;
+        }
+
+        @Override
+        public void changed(Filter source) {
+            try {
+                if (!fileObject.getName().equals(filter.getName())) {
+                    FileLock lock = fileObject.lock();
+                    fileObject.move(lock, fileObject.getParent(), filter.getName(), "js");
+                    lock.releaseLock();
+                    fileObject = fileObject.getParent().getFileObject(filter.getName() + ".js");
+                }
+
+                FileLock lock = fileObject.lock();
+                OutputStream os = fileObject.getOutputStream(lock);
+                try (Writer w = new OutputStreamWriter(os)) {
+                    String s = filter.getCode();
+                    w.write(s);
+                }
+                lock.releaseLock();
+
+            } catch (IOException ex) {
+                Exceptions.printStackTrace(ex);
+            }
+        }
+    }
+
+    private class FilterChildren extends Children.Keys<Filter> implements ChangedListener<CheckNode> {
+
+        private final HashMap<Filter, Node> nodeHash = new HashMap<>();
+
+        public FilterChildren() {
+            allFiltersOrdered.getChangedEvent().addListener(source -> addNotify());
+            setBefore(false);
+        }
+
+        @Override
+        protected Node[] createNodes(Filter filter) {
+            if (nodeHash.containsKey(filter)) {
+                return new Node[]{nodeHash.get(filter)};
+            }
+
+            FilterNode node = new FilterNode(filter);
+            node.getSelectionChangedEvent().addListener(this);
+            nodeHash.put(filter, node);
+            return new Node[]{node};
+        }
+
+        @Override
+        protected void addNotify() {
+            setKeys(allFiltersOrdered.getFilters());
+            updateSelection();
+        }
+
+        private void updateSelection() {
+            Node[] nodes = getExplorerManager().getSelectedNodes();
+            int[] arr = new int[nodes.length];
+            for (int i = 0; i < nodes.length; i++) {
+                int index = allFiltersOrdered.getFilters().indexOf(((FilterNode) nodes[i]).getFilter());
+                arr[i] = index;
+            }
+            view.showSelection(arr);
+        }
+
+        @Override
+        public void changed(CheckNode source) {
+            FilterNode node = (FilterNode) source;
+            Filter f = node.getFilter();
+            FilterChain chain = getCurrentChain();
+            if (node.isSelected()) {
+                if (!chain.containsFilter(f)) {
+                    chain.addFilter(f);
+                }
+            } else {
+                if (chain.containsFilter(f)) {
+                    chain.removeFilter(f);
+                }
+            }
+            view.revalidate();
+            view.repaint();
+        }
     }
 }

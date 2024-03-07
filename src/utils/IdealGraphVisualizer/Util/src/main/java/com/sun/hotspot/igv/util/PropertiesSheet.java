@@ -30,7 +30,6 @@ import org.openide.nodes.Node;
 import org.openide.nodes.Sheet;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class PropertiesSheet {
@@ -53,13 +52,13 @@ public class PropertiesSheet {
                 }
 
                 @Override
-                public boolean canWrite() {
-                    return false;
+                public void setValue(String arg0) throws IllegalArgumentException {
+                    properties.setProperty(p.getName(), arg0);
                 }
 
                 @Override
-                public void setValue(String arg0) throws IllegalArgumentException {
-                    properties.setProperty(p.getName(), arg0);
+                public boolean canWrite() {
+                    return false;
                 }
             };
             prop.setName(p.getName());

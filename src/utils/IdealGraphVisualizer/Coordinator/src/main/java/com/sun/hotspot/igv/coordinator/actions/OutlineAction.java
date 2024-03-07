@@ -31,7 +31,6 @@ import org.openide.util.NbBundle;
 import org.openide.windows.TopComponent;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class OutlineAction extends AbstractAction {

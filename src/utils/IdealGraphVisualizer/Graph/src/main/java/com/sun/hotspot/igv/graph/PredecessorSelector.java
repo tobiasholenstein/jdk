@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class PredecessorSelector implements Selector {

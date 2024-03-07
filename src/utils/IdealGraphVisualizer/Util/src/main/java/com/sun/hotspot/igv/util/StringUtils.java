@@ -25,7 +25,6 @@
 package com.sun.hotspot.igv.util;
 
 /**
- *
  * @author tkrodrig
  */
 public class StringUtils {
@@ -118,10 +117,10 @@ public class StringUtils {
      * followed by partial matches at the word start, followed by the rest of
      * matches in increasing size of the partially matched word, for example:
      * <p>
-     *   rank("5", "5")   = 1 (full match)
-     *   rank("5", "554") = 2 (start match)
-     *   rank("5", "25")  = 3 (middle match with excess 1)
-     *   rank("5", "253") = 4 (middle match with excess 2)
+     * rank("5", "5")   = 1 (full match)
+     * rank("5", "554") = 2 (start match)
+     * rank("5", "25")  = 3 (middle match with excess 1)
+     * rank("5", "253") = 4 (middle match with excess 2)
      */
     public static int rankMatch(String query, String word) {
         if (word.equals(query)) {

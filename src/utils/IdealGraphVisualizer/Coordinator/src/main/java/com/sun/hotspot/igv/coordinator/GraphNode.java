@@ -34,7 +34,9 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.SwingUtilities;
 import org.openide.actions.OpenAction;
-import org.openide.nodes.*;
+import org.openide.nodes.AbstractNode;
+import org.openide.nodes.Children;
+import org.openide.nodes.Sheet;
 import org.openide.util.ImageUtilities;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
@@ -45,9 +47,19 @@ public class GraphNode extends AbstractNode {
     private final InputGraph graph;
     private boolean selected = false;
 
-    /** Creates a new instance of GraphNode */
+    /**
+     * Creates a new instance of GraphNode
+     */
     public GraphNode(InputGraph graph) {
         this(graph, new InstanceContent());
+    }
+
+    private GraphNode(InputGraph graph, InstanceContent content) {
+        super(Children.LEAF, new AbstractLookup(content));
+        this.graph = graph;
+        this.setDisplayName(graph.getName());
+
+        content.add(graph);
     }
 
     @Override
@@ -56,14 +68,14 @@ public class GraphNode extends AbstractNode {
     }
 
     @Override
-    public void setName(String name) {
-        graph.setName(name);
-        fireDisplayNameChange(null, null);
+    public String getName() {
+        return graph.getName();
     }
 
     @Override
-    public String getName() {
-        return graph.getName();
+    public void setName(String name) {
+        graph.setName(name);
+        fireDisplayNameChange(null, null);
     }
 
     public void setSelected(boolean selected) {
@@ -84,14 +96,6 @@ public class GraphNode extends AbstractNode {
     @Override
     public String getDisplayName() {
         return graph.getDisplayName();
-    }
-
-    private GraphNode(InputGraph graph, InstanceContent content) {
-        super(Children.LEAF, new AbstractLookup(content));
-        this.graph = graph;
-        this.setDisplayName(graph.getName());
-
-        content.add(graph);
     }
 
     @Override

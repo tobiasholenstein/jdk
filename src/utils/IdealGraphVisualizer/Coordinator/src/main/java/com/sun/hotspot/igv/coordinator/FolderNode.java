@@ -31,23 +31,123 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.swing.Action;
 import org.openide.actions.PropertiesAction;
-import org.openide.nodes.*;
+import org.openide.nodes.AbstractNode;
+import org.openide.nodes.Children;
+import org.openide.nodes.Node;
+import org.openide.nodes.Sheet;
 import org.openide.util.ImageUtilities;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class FolderNode extends AbstractNode {
 
-    private final InstanceContent content;
-    private final FolderChildren children;
     // NetBeans node corresponding to each opened graph. Used to highlight the
     // focused graph in the Outline window.
     private static final Map<InputGraph, GraphNode> graphNodeMap = new HashMap<>();
+    private final InstanceContent content;
+    private final FolderChildren children;
     private boolean selected = false;
+
+    protected FolderNode(Folder folder) {
+        this(folder, new FolderChildren(folder), new InstanceContent());
+    }
+
+    private FolderNode(final Folder folder, FolderChildren children, InstanceContent content) {
+        super(children, new AbstractLookup(content));
+        this.content = content;
+        this.children = children;
+        if (folder instanceof FolderElement) {
+            final FolderElement folderElement = (FolderElement) folder;
+            this.setDisplayName(folderElement.getName());
+        }
+    }
+
+    public static void clearGraphNodeMap() {
+        graphNodeMap.clear();
+    }
+
+    public static GraphNode getGraphNode(InputGraph graph) {
+        return graphNodeMap.get(graph);
+    }
+
+    @Override
+    protected Sheet createSheet() {
+        Sheet s = super.createSheet();
+        if (children.folder instanceof Properties.Entity) {
+            Properties.Entity p = (Properties.Entity) children.folder;
+            PropertiesSheet.initializeSheet(p.getProperties(), s);
+        }
+        return s;
+    }
+
+    @Override
+    public Image getIcon(int i) {
+        if (selected) {
+            return ImageUtilities.loadImage("com/sun/hotspot/igv/coordinator/images/folder_selected.png");
+        } else {
+            return ImageUtilities.loadImage("com/sun/hotspot/igv/coordinator/images/folder.png");
+        }
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+        fireDisplayNameChange(null, null);
+        fireIconChange();
+    }
+
+    @Override
+    public boolean canRename() {
+        return true;
+    }
+
+    @Override
+    public String getName() {
+        return children.getFolder().getName();
+    }
+
+    @Override
+    public void setName(String name) {
+        children.getFolder().setName(name);
+        fireDisplayNameChange(null, null);
+    }
+
+    @Override
+    public String getDisplayName() {
+        return children.getFolder().getDisplayName();
+    }
+
+    @Override
+    public String getHtmlDisplayName() {
+        String htmlDisplayName = StringUtils.escapeHTML(getDisplayName());
+        if (selected) {
+            htmlDisplayName = "<b>" + htmlDisplayName + "</b>";
+        }
+        return htmlDisplayName;
+    }
+
+    public boolean isRootNode() {
+        Folder folder = getFolder();
+        return (folder instanceof GraphDocument);
+    }
+
+    @Override
+    public Image getOpenedIcon(int i) {
+        return getIcon(i);
+    }
+
+    @Override
+    public Action[] getActions(boolean b) {
+        return new Action[]{
+                PropertiesAction.findObject(PropertiesAction.class, true),
+        };
+    }
+
+    public Folder getFolder() {
+        return children.getFolder();
+    }
 
     private static class FolderChildren extends Children.Keys<FolderElement> implements ChangedListener {
 
@@ -97,103 +197,5 @@ public class FolderNode extends AbstractNode {
         public void changed(Object source) {
             addNotify();
         }
-    }
-
-    @Override
-    protected Sheet createSheet() {
-        Sheet s = super.createSheet();
-        if (children.folder instanceof Properties.Entity) {
-            Properties.Entity p = (Properties.Entity) children.folder;
-            PropertiesSheet.initializeSheet(p.getProperties(), s);
-        }
-        return s;
-    }
-
-    @Override
-    public Image getIcon(int i) {
-        if (selected) {
-            return ImageUtilities.loadImage("com/sun/hotspot/igv/coordinator/images/folder_selected.png");
-        } else {
-            return ImageUtilities.loadImage("com/sun/hotspot/igv/coordinator/images/folder.png");
-        }
-    }
-
-    protected FolderNode(Folder folder) {
-        this(folder, new FolderChildren(folder), new InstanceContent());
-    }
-
-    private FolderNode(final Folder folder, FolderChildren children, InstanceContent content) {
-        super(children, new AbstractLookup(content));
-        this.content = content;
-        this.children = children;
-        if (folder instanceof FolderElement) {
-            final FolderElement folderElement = (FolderElement) folder;
-            this.setDisplayName(folderElement.getName());
-        }
-    }
-
-    public void setSelected(boolean selected) {
-        this.selected = selected;
-        fireDisplayNameChange(null, null);
-        fireIconChange();
-    }
-
-    @Override
-    public boolean canRename() {
-        return true;
-    }
-
-    @Override
-    public void setName(String name) {
-        children.getFolder().setName(name);
-        fireDisplayNameChange(null, null);
-    }
-
-    @Override
-    public String getName() {
-        return children.getFolder().getName();
-    }
-
-    @Override
-    public String getDisplayName() {
-        return children.getFolder().getDisplayName();
-    }
-
-    @Override
-    public String getHtmlDisplayName() {
-        String htmlDisplayName = StringUtils.escapeHTML(getDisplayName());
-        if (selected) {
-            htmlDisplayName = "<b>" + htmlDisplayName + "</b>";
-        }
-        return htmlDisplayName;
-    }
-
-    public boolean isRootNode() {
-        Folder folder = getFolder();
-        return (folder instanceof GraphDocument);
-    }
-
-    @Override
-    public Image getOpenedIcon(int i) {
-        return getIcon(i);
-    }
-
-    @Override
-    public Action[] getActions(boolean b) {
-        return new Action[]{
-                PropertiesAction.findObject(PropertiesAction.class, true),
-        };
-    }
-
-    public static void clearGraphNodeMap() {
-        graphNodeMap.clear();
-    }
-
-    public static GraphNode getGraphNode(InputGraph graph) {
-        return graphNodeMap.get(graph);
-    }
-
-    public Folder getFolder() {
-        return children.getFolder();
     }
 }

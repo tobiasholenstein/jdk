@@ -40,16 +40,15 @@ import org.openide.util.Utilities;
 import org.openide.util.actions.CallableSystemAction;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 
 public final class SaveAllAction extends CallableSystemAction {
 
-    @Override
-    public void performAction() {
-        final OutlineTopComponent component = OutlineTopComponent.findInstance();
-        save(component.getDocument());
+    public SaveAllAction() {
+        putValue(Action.SHORT_DESCRIPTION, "Save all groups to XML file...");
+        // D is the Control key on most platforms, the Command (meta) key on Macintosh
+        putValue(Action.ACCELERATOR_KEY, Utilities.stringToKey("D-S"));
     }
 
     public static void save(GraphDocument doc) {
@@ -67,7 +66,7 @@ public final class SaveAllAction extends CallableSystemAction {
             if (!dir.isDirectory()) {
                 dir = dir.getParentFile();
             }
-            GraphDocument.DIRECTORY_DEFAULT =dir.getAbsolutePath();
+            GraphDocument.DIRECTORY_DEFAULT = dir.getAbsolutePath();
 
             export(file, doc);
         }
@@ -85,14 +84,14 @@ public final class SaveAllAction extends CallableSystemAction {
     }
 
     @Override
-    public String getName() {
-        return NbBundle.getMessage(SaveAllAction.class, "CTL_SaveAllAction");
+    public void performAction() {
+        final OutlineTopComponent component = OutlineTopComponent.findInstance();
+        save(component.getDocument());
     }
 
-    public SaveAllAction() {
-        putValue(Action.SHORT_DESCRIPTION, "Save all groups to XML file...");
-        // D is the Control key on most platforms, the Command (meta) key on Macintosh
-        putValue(Action.ACCELERATOR_KEY, Utilities.stringToKey("D-S"));
+    @Override
+    public String getName() {
+        return NbBundle.getMessage(SaveAllAction.class, "CTL_SaveAllAction");
     }
 
     @Override

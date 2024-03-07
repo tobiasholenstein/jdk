@@ -28,10 +28,9 @@ import com.sun.hotspot.igv.filter.FilterChainProvider;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
-@ServiceProvider(service=FilterChainProvider.class)
+@ServiceProvider(service = FilterChainProvider.class)
 public class FilterChainProviderImplementation implements FilterChainProvider {
 
     @Override

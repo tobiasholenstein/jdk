@@ -31,18 +31,17 @@ import org.openide.util.NbBundle;
 import org.openide.util.actions.CallableSystemAction;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public final class RemoveAllAction extends CallableSystemAction {
 
+    public RemoveAllAction() {
+        putValue(Action.SHORT_DESCRIPTION, "Remove all graphs and groups");
+    }
+
     @Override
     public String getName() {
         return NbBundle.getMessage(RemoveAllAction.class, "CTL_RemoveAllAction");
-    }
-
-    public RemoveAllAction() {
-        putValue(Action.SHORT_DESCRIPTION, "Remove all graphs and groups");
     }
 
     @Override

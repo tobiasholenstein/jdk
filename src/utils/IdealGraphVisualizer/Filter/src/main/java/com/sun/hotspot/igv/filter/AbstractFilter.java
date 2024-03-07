@@ -30,7 +30,6 @@ import com.sun.hotspot.igv.graph.Figure;
 import org.openide.cookies.OpenCookie;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public abstract class AbstractFilter implements Filter {
@@ -41,6 +40,16 @@ public abstract class AbstractFilter implements Filter {
     public AbstractFilter() {
         changedEvent = new ChangedEvent<>(this);
         properties = new Properties();
+    }
+
+    protected static String getFirstMatchingProperty(Figure figure, String[] propertyNames) {
+        for (String propertyName : propertyNames) {
+            String s = figure.getProperties().resolveString(propertyName);
+            if (s != null && !s.isEmpty()) {
+                return s;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -60,15 +69,5 @@ public abstract class AbstractFilter implements Filter {
 
     protected void fireChangedEvent() {
         changedEvent.fire();
-    }
-
-    protected static String getFirstMatchingProperty(Figure figure, String[] propertyNames) {
-        for (String propertyName : propertyNames) {
-            String s = figure.getProperties().resolveString(propertyName);
-            if (s != null && !s.isEmpty()) {
-                return s;
-            }
-        }
-        return null;
     }
 }

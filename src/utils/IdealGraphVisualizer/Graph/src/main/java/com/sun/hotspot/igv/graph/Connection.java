@@ -32,20 +32,12 @@ import java.util.List;
 
 public class Connection implements Link {
 
-    public enum ConnectionStyle {
-        NORMAL,
-        DASHED,
-        BOLD,
-        INVISIBLE
-    }
-
     private final InputSlot inputSlot;
     private final OutputSlot outputSlot;
+    private final String label;
     private Color color;
     private ConnectionStyle style;
     private List<Point> controlPoints;
-    private final String label;
-
     protected Connection(InputSlot inputSlot, OutputSlot outputSlot, String label) {
         this.inputSlot = inputSlot;
         this.outputSlot = outputSlot;
@@ -71,12 +63,12 @@ public class Connection implements Link {
         return color;
     }
 
-    public ConnectionStyle getStyle() {
-        return style;
-    }
-
     public void setColor(Color c) {
         color = c;
+    }
+
+    public ConnectionStyle getStyle() {
+        return style;
     }
 
     public void setStyle(ConnectionStyle s) {
@@ -106,8 +98,8 @@ public class Connection implements Link {
         builder.append(" → ");
         builder.append(getInputSlot().getFigure().getProperties().resolveString(shortNodeText));
         builder.append(" [")
-               .append(getInputSlot().getOriginalIndex())
-               .append("]");
+                .append(getInputSlot().getOriginalIndex())
+                .append("]");
         return builder.toString();
     }
 
@@ -144,6 +136,13 @@ public class Connection implements Link {
     @Override
     public void setControlPoints(List<Point> list) {
         controlPoints = list;
+    }
+
+    public enum ConnectionStyle {
+        NORMAL,
+        DASHED,
+        BOLD,
+        INVISIBLE
     }
 }
 

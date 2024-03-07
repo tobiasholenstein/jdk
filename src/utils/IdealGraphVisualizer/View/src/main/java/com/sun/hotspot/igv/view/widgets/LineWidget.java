@@ -1,7 +1,6 @@
 package com.sun.hotspot.igv.view.widgets;
 
 import com.sun.hotspot.igv.graph.Connection;
-import com.sun.hotspot.igv.graph.Figure;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.util.StringUtils;
@@ -24,7 +23,7 @@ public class LineWidget extends Widget implements DoubleClickHandler {
     public final int ARROW_SIZE = 6;
     public final int BOLD_ARROW_SIZE = 7;
     public final int BOLD_STROKE_WIDTH = 2;
-    private final  FigureWidget fromFigureWidget;
+    private final FigureWidget fromFigureWidget;
     private final DiagramScene scene;
     private final List<? extends Connection> connections;
     private final LineWidget predecessor;

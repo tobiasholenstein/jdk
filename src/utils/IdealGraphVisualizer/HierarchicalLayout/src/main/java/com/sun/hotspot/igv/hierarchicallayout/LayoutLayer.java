@@ -62,16 +62,16 @@ public class LayoutLayer extends ArrayList<LayoutNode> {
         set(i, n2);
     }
 
-    public void setTop(int top) {
-        y = top;
-    }
-
     public void shiftTop(int shift) {
         y += shift;
     }
 
     public int getTop() {
         return y;
+    }
+
+    public void setTop(int top) {
+        y = top;
     }
 
     public int getCenter() {

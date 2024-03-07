@@ -30,7 +30,6 @@ import org.openide.util.*;
 import org.openide.util.actions.CallableSystemAction;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public abstract class ContextAction<T> extends CallableSystemAction implements LookupListener, ContextAwareAction, ChangedListener<T> {

@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- *
  * @author Thomas Wuerthinger
  */
 public class FilterChain implements ChangedEventProvider<FilterChain> {
