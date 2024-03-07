@@ -311,7 +311,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
 
             // update figure widget location
-            if (fw.isVisible()) { // TODO needed?
+            if (fw.isVisible()) {
                 fw.setPreferredLocation(figure.getPosition());
             }
         }
