@@ -340,19 +340,9 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         for (Point currentPoint : pointMap.keySet()) {
             List<Connection> connectionList = pointMap.get(currentPoint);
 
-            boolean isBold = false;
-            boolean isDashed = true;
-            boolean isVisible = true;
-            for (Connection c : connectionList) {
-                if (c.getStyle() == Connection.ConnectionStyle.BOLD) {
-                    isBold = true;
-                } else if (c.getStyle() == Connection.ConnectionStyle.INVISIBLE) {
-                    isVisible = false;
-                }
-                if (c.getStyle() != Connection.ConnectionStyle.DASHED) {
-                    isDashed = false;
-                }
-            }
+            boolean isBold = connectionList.stream().anyMatch(c -> c.getStyle() == Connection.ConnectionStyle.BOLD);
+            boolean isDashed = connectionList.stream().allMatch(c -> c.getStyle() == Connection.ConnectionStyle.DASHED);
+            boolean isVisible = connectionList.stream().noneMatch(c -> c.getStyle() == Connection.ConnectionStyle.INVISIBLE);
 
             LineWidget newPredecessor = predecessor;
             if (lastPoint != null) {
