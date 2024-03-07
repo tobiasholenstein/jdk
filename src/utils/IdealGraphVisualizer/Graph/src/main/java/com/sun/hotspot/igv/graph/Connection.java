@@ -56,6 +56,10 @@ public class Connection implements Link {
         this.style = ConnectionStyle.NORMAL;
     }
 
+    public boolean isVisible() {
+        return getInputSlot().getFigure().isVisible() && getOutputSlot().getFigure().isVisible();
+    }
+
     public InputSlot getInputSlot() {
         return inputSlot;
     }

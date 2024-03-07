@@ -21,6 +21,7 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelListener;
 import java.util.*;
+import java.util.stream.Collectors;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -229,72 +230,61 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void updateVisibleFigureWidgets() {
-        for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
-            Figure figure = entry.getKey();
-            FigureWidget figureWidget = entry.getValue();
-
+        for (Figure figure : figureMap.keySet()) {
             figure.setBoundary(false);
-            figureWidget.changeVisibility(!hiddenNodes.contains(figure.getInputNode().getId()));
+            figure.setVisible(!hiddenNodes.contains(figure.getInputNode().getId()));
         }
 
         if (showNodeHull) { // update node hull
-            List<FigureWidget> boundaries = new ArrayList<>();
-            for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
-                Figure figure = entry.getKey();
-                FigureWidget fw = entry.getValue();
-
-                if (!fw.isVisible()) {
-                    Set<Figure> neighborSet = new HashSet<>(figure.getPredecessorSet());
-                    neighborSet.addAll(figure.getSuccessorSet());
+            List<Figure> boundaryFigures = new ArrayList<>();
+            for (Figure figure : figureMap.keySet()) {
+                if (!figure.isVisible()) {
                     boolean hasVisibleNeighbor = false;
-                    for (Figure neighbor : neighborSet) {
-                        FigureWidget neighborWidget = findFigureWidget(neighbor);
-                        if (neighborWidget.isVisible()) {
+                    for (Figure neighborFigure : figure.getPredecessorSet()) {
+                        if (neighborFigure.isVisible()) {
+                            hasVisibleNeighbor = true;
+                            break;
+                        }
+                    }
+                    for (Figure neighborFigure : figure.getSuccessorSet()) {
+                        if (neighborFigure.isVisible()) {
                             hasVisibleNeighbor = true;
                             break;
                         }
                     }
                     if (hasVisibleNeighbor) {
                         figure.setBoundary(true);
-                        boundaries.add(fw);
+                        boundaryFigures.add(figure);
                     }
                 }
             }
 
-            for (FigureWidget figureWidget : boundaries) {
-                figureWidget.changeVisibility(true);
+            for (Figure figure : boundaryFigures) {
+                figure.setVisible(true);
             }
         } else {
             selectedNodes.removeAll(hiddenNodes);
         }
+
+        for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
+            Figure figure = entry.getKey();
+            FigureWidget fw = entry.getValue();
+            fw.setVisible(figure.isVisible());
+        }
     }
 
     private Set<Figure> getVisibleFigures() {
-        HashSet<Figure> visibleFigures = new HashSet<>();
-        for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
-            Figure figure = entry.getKey();
-            FigureWidget figureWidget = entry.getValue();
-            if (figureWidget.isVisible()) {
-                visibleFigures.add(figure);
-            }
-        }
-        return visibleFigures;
+        return figureMap.keySet().stream().filter(Figure::isVisible).collect(Collectors.toSet());
     }
 
     private HashSet<Connection> getVisibleConnections() {
         HashSet<Connection> visibleConnections = new HashSet<>();
         for (Connection connection : getDiagram().getConnections()) {
-            if (isVisibleFigureConnection(connection)) {
+            if (connection.isVisible()) {
                 visibleConnections.add(connection);
             }
         }
         return visibleConnections;
-    }
-
-    private boolean isVisibleFigureConnection(Connection connection) {
-        FigureWidget w1 = findFigureWidget(connection.getInputSlot().getFigure());
-        FigureWidget w2 = findFigureWidget(connection.getOutputSlot().getFigure());
-        return w1.isVisible() && w2.isVisible();
     }
 
     private void rebuildConnectionLayer() {
@@ -334,7 +324,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
 
         for (Connection connection : connections) {
-            if (isVisibleFigureConnection(connection)) {
+            if (connection.isVisible()) {
                 List<Point> controlPoints = connection.getControlPoints();
                 if (controlPointIndex < controlPoints.size()) {
                     Point currentPoint = controlPoints.get(controlPointIndex);
