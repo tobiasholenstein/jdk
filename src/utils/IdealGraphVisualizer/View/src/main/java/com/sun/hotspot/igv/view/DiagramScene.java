@@ -319,6 +319,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         for (Map.Entry<Point, List<Connection>> entry : pointMap.entrySet()) {
             Point currentPoint = entry.getKey();
             List<Connection> connectionList = entry.getValue();
+            LineWidget lineWidget = null;
             if (lastPoint != null) {
                 boolean isBold = connectionList.stream().anyMatch(c -> c.getStyle() == Connection.ConnectionStyle.BOLD);
                 boolean isDashed = connectionList.stream().allMatch(c -> c.getStyle() == Connection.ConnectionStyle.DASHED);
@@ -326,15 +327,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                 Point src = new Point(lastPoint);
                 Point dest = new Point(currentPoint);
-                LineWidget newPredecessor = new LineWidget(this, outputSlot, connectionList, src, dest, predecessor, isBold, isDashed);
-                newPredecessor.setVisible(isVisible);
+                lineWidget = new LineWidget(this, outputSlot, connectionList, src, dest, predecessor, isBold, isDashed);
+                lineWidget.setVisible(isVisible);
 
-                connectionLayer.addChild(newPredecessor);
-                attachLineMovement(newPredecessor);
-                processOutputSlot(outputSlot, connectionList, controlPointIndex + 1, currentPoint, newPredecessor);
-            } else {
-                processOutputSlot(outputSlot, connectionList, controlPointIndex + 1, currentPoint, predecessor);
+                connectionLayer.addChild(lineWidget);
+                attachLineMovement(lineWidget);
             }
+            processOutputSlot(outputSlot, connectionList, controlPointIndex + 1, currentPoint, lineWidget);
         }
     }
 
