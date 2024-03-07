@@ -51,7 +51,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
     private final Map<Figure, FigureWidget> figureMap = new HashMap<>();
-    private final Map<Slot, InputSlotWidget> inputSlotMap = new HashMap<>();
     private final Map<FigureWidget, Set<LineWidget>> figureWidgetToOutLineWidgets = new HashMap<>();
     private final Map<FigureWidget, Set<LineWidget>> figureWidgetToInLineWidgets = new HashMap<>();
     private final Group group;
@@ -369,9 +368,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     private void rebuildFigureLayer() {
         // clear Objects
-        inputSlotMap.clear();
         figureMap.clear();
-
         figureLayer.removeChildren();
         for (Figure figure : getDiagram().getFigures()) {
             FigureWidget figureWidget = new FigureWidget(figure, this);
@@ -399,15 +396,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
             figureMap.put(figure, figureWidget);
             figureLayer.addChild(figureWidget);
-
-            for (InputSlot inputSlot : figure.getInputSlots()) {
-                InputSlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget);
-                inputSlotMap.put(inputSlot, slotWidget);
-            }
-
-            for (OutputSlot outputSlot : figure.getOutputSlots()) {
-                OutputSlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget);
-            }
         }
     }
 
@@ -536,10 +524,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
         // clear selection
         selectedNodesByID = new HashSet<>();
-    }
-
-    public InputSlotWidget findInputSlotWidget(Slot slot) {
-        return inputSlotMap.get(slot);
     }
 
     public void validateAll() {

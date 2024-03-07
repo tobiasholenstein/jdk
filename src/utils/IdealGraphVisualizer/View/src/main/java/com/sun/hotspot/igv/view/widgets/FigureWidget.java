@@ -26,6 +26,8 @@ package com.sun.hotspot.igv.view.widgets;
 import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
+import com.sun.hotspot.igv.graph.InputSlot;
+import com.sun.hotspot.igv.graph.OutputSlot;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.util.PropertiesConverter;
@@ -81,7 +83,7 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         middleWidget.setOpaque(true);
         middleWidget.getActions().addAction(new DoubleClickAction(this));
         middleWidget.setCheckClipping(false);
-        this.addChild(middleWidget);
+        addChild(middleWidget);
 
         Widget textWidget = new Widget(scene);
         textWidget.setLayout(LayoutFactory.createVerticalFlowLayout(SerialAlignment.CENTER, 0));
@@ -134,9 +136,22 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         };
         node.setDisplayName(getName());
 
-        this.setToolTipText(PropertiesConverter.convertToHTML(f.getProperties()));
+        setToolTipText(PropertiesConverter.convertToHTML(f.getProperties()));
 
         addBorder();
+        addSlots();
+    }
+
+    private void addSlots() {
+        for (InputSlot inputSlot : figure.getInputSlots()) {
+            InputSlotWidget slotWidget = new InputSlotWidget(inputSlot, diagramScene, this);
+            this.addChild(slotWidget);
+        }
+
+        for (OutputSlot outputSlot : figure.getOutputSlots()) {
+            OutputSlotWidget slotWidget = new OutputSlotWidget(outputSlot, diagramScene, this);
+            this.addChild(slotWidget);
+        }
     }
 
     public void updatePosition() {

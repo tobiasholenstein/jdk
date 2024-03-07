@@ -59,7 +59,6 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
         }
         // No clipping, to let input slots draw gap markers outside their bounds.
         this.setCheckClipping(false);
-        fw.addChild(this);
         if (slot.shouldShowName()) {
             Point p = slot.getRelativePosition();
             p.x -= slot.getWidth() / 2;
