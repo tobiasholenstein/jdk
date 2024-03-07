@@ -542,11 +542,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return inputSlotMap.get(slot);
     }
 
-
-    public FigureWidget findFigureWidget(Figure figure) {
-        return figureMap.get(figure);
-    }
-
     public void validateAll() {
         super.validate();
         scrollPane.validate();

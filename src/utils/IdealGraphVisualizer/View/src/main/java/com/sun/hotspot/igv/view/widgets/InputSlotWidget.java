@@ -81,9 +81,8 @@ public class InputSlotWidget extends SlotWidget {
             return true;
         }
         for (Connection c : slot.getConnections()) {
-            Figure f = c.getOutputSlot().getFigure();
-            FigureWidget fw = scene.findFigureWidget(f);
-            if (fw.isVisible()) {
+            Figure figure = c.getOutputSlot().getFigure();
+            if (figure.isVisible()) {
                 return true;
             }
         }
