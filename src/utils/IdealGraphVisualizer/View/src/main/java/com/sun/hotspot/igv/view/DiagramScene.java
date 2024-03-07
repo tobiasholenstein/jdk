@@ -432,14 +432,12 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
             for (InputSlot inputSlot : figure.getInputSlots()) {
                 InputSlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget);
-                slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
                 slotWidget.getActions().addAction(selectAction);
                 inputSlotMap.put(inputSlot, slotWidget);
             }
 
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
                 OutputSlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget);
-                slotWidget.getActions().addAction(new DoubleClickAction(slotWidget));
                 slotWidget.getActions().addAction(selectAction);
             }
         }

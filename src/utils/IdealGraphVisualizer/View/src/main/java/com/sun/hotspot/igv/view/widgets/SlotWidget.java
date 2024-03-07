@@ -26,6 +26,7 @@ package com.sun.hotspot.igv.view.widgets;
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
 import com.sun.hotspot.igv.graph.Slot;
+import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.view.DiagramScene;
 import java.awt.*;
@@ -66,6 +67,7 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
             p.y += yOffset(); // TODO use fw
             this.setPreferredLocation(p);
         }
+        getActions().addAction(new DoubleClickAction(this));
     }
 
     @Override
