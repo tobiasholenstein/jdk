@@ -36,7 +36,6 @@ import java.awt.geom.Path2D;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import javax.swing.BorderFactory;
 import javax.swing.border.Border;
@@ -263,18 +262,18 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
-        if (diagramScene.getHiddenNodes().isEmpty()) {
+        if (diagramScene.getHiddenNodesByID().isEmpty()) {
             final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getGroup().getAllNodes());
             hiddenNodes.remove(this.getFigure().getInputNode().getId());
-            diagramScene.setHiddenNodes(hiddenNodes);
+            diagramScene.setHiddenNodesByID(hiddenNodes);
         } else if (figure.isBoundary()) {
-            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodes());
+            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodesByID());
             hiddenNodes.remove(this.getFigure().getInputNode().getId());
-            diagramScene.setHiddenNodes(hiddenNodes);
+            diagramScene.setHiddenNodesByID(hiddenNodes);
         } else {
-            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodes());
+            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodesByID());
             hiddenNodes.add(this.getFigure().getInputNode().getId());
-            diagramScene.setHiddenNodes(hiddenNodes);
+            diagramScene.setHiddenNodesByID(hiddenNodes);
         }
     }
 

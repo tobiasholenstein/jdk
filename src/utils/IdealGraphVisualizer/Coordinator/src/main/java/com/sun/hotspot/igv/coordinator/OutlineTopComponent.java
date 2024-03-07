@@ -352,9 +352,9 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             out.writeInt(graph.getGroup().getIndex());
             out.writeInt(graph.getIndex());
             out.writeUTF(graph.getGroup().getName() + "#" + graph.getName());
-            int hiddenNodeCount = scene.getHiddenNodes().size();
+            int hiddenNodeCount = scene.getHiddenNodesByID().size();
             out.writeInt(hiddenNodeCount);
-            for (int hiddenNodeID : scene.getHiddenNodes()) {
+            for (int hiddenNodeID : scene.getHiddenNodesByID()) {
                 out.writeInt(hiddenNodeID);
             }
         }

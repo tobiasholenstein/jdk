@@ -65,7 +65,7 @@ public final class ShowAllAction extends ModelAwareAction {
 
     @Override
     public void performAction(DiagramScene model) {
-        model.setHiddenNodes(new HashSet<>());
+        model.setHiddenNodesByID(new HashSet<>());
     }
 
     @Override
