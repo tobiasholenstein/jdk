@@ -337,15 +337,16 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
         }
 
-        for (Point currentPoint : pointMap.keySet()) {
-            List<Connection> connectionList = pointMap.get(currentPoint);
-
-            boolean isBold = connectionList.stream().anyMatch(c -> c.getStyle() == Connection.ConnectionStyle.BOLD);
-            boolean isDashed = connectionList.stream().allMatch(c -> c.getStyle() == Connection.ConnectionStyle.DASHED);
-            boolean isVisible = connectionList.stream().noneMatch(c -> c.getStyle() == Connection.ConnectionStyle.INVISIBLE);
+        for (Map.Entry<Point, List<Connection>> entry : pointMap.entrySet()) {
+            Point currentPoint = entry.getKey();
+            List<Connection> connectionList = entry.getValue();
 
             LineWidget newPredecessor = predecessor;
             if (lastPoint != null) {
+                boolean isBold = connectionList.stream().anyMatch(c -> c.getStyle() == Connection.ConnectionStyle.BOLD);
+                boolean isDashed = connectionList.stream().allMatch(c -> c.getStyle() == Connection.ConnectionStyle.DASHED);
+                boolean isVisible = connectionList.stream().noneMatch(c -> c.getStyle() == Connection.ConnectionStyle.INVISIBLE);
+
                 Point src = new Point(lastPoint);
                 Point dest = new Point(currentPoint);
                 newPredecessor = new LineWidget(this, outputSlot, connectionList, src, dest, predecessor, isBold, isDashed);
@@ -354,7 +355,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 connectionLayer.addChild(newPredecessor);
                 attachMovementActions(newPredecessor);
             }
-
             processOutputSlot(outputSlot, connectionList, controlPointIndex + 1, currentPoint, newPredecessor);
         }
     }
