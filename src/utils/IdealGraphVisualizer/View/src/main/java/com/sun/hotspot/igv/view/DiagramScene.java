@@ -302,37 +302,20 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private void processOutputSlot(OutputSlot outputSlot, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
         Map<Point, List<Connection>> pointMap = new HashMap<>(connections.size());
 
-        if (predecessor != null) {
-            if (controlPointIndex == 2) {
-                Figure figure = outputSlot.getFigure();
-                if (figureToOutLineWidget.containsKey(figure)) {
-                    figureToOutLineWidget.get(figure).add(predecessor);
-                } else {
-                    figureToOutLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
-                }
-            }
+        if (predecessor != null && controlPointIndex == 2) {
+            Figure figure = outputSlot.getFigure();
+            figureToOutLineWidget.computeIfAbsent(figure, k -> new HashSet<>()).add(predecessor);
         }
 
         for (Connection connection : connections) {
             if (connection.isVisible()) {
                 List<Point> controlPoints = connection.getControlPoints();
                 if (controlPointIndex < controlPoints.size()) {
-                    Point currentPoint = controlPoints.get(controlPointIndex);
-                    currentPoint = new Point(currentPoint.x, currentPoint.y);
-                    if (pointMap.containsKey(currentPoint)) {
-                        pointMap.get(currentPoint).add(connection);
-                    } else {
-                        pointMap.put(currentPoint, new ArrayList<>(Collections.singletonList(connection)));
-                    }
-                } else if (controlPointIndex == controlPoints.size()) {
-                    if (predecessor != null) {
-                        Figure figure = ((Slot) connection.getToPort()).getFigure();
-                        if (figureToInLineWidget.containsKey(figure)) {
-                            figureToInLineWidget.get(figure).add(predecessor);
-                        } else {
-                            figureToInLineWidget.put(figure, new HashSet<>(Collections.singleton(predecessor)));
-                        }
-                    }
+                    Point currentPoint = new Point(controlPoints.get(controlPointIndex));
+                    pointMap.computeIfAbsent(currentPoint, k -> new ArrayList<>()).add(connection);
+                } else if (controlPointIndex == controlPoints.size() && predecessor != null) {
+                    Figure figure = ((Slot) connection.getToPort()).getFigure();
+                    figureToInLineWidget.computeIfAbsent(figure, k -> new HashSet<>()).add(predecessor);
                 }
             }
         }
