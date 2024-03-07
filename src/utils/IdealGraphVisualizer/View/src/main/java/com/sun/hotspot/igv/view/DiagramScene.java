@@ -214,10 +214,9 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         filterChain.applyInOrder(diagram, filtersOrder);
 
         // draw diagram
-        clearObjects();
-        rebuildMainLayer();
+        rebuildFigureLayer();
         relayout();
-        setFigureSelection(getSelectedFigures());
+        setFigureSelection();
         validateAll();
     }
 
@@ -448,15 +447,14 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
     }
 
-    private void clearObjects() {
+    private void rebuildFigureLayer() {
+        // clear Objects
         slotMap.clear();
         figureMap.clear();
         for (Object o : new ArrayList<>(super.getObjects())) {
             super.removeObject(o);
         }
-    }
 
-    private void rebuildMainLayer() {
         figureLayer.removeChildren();
         for (Figure figure : getDiagram().getFigures()) {
             FigureWidget figureWidget = new FigureWidget(figure, this);
@@ -606,17 +604,15 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return result;
     }
 
-    private void setFigureSelection(Set<Figure> list) {
+    private void setFigureSelection() {
+        Set<Figure> list = getSelectedFigures();
         super.setSelectedObjects(new HashSet<>(list));
-    }
-
-    public void clearSelectedNodes() {
-        super.setSelectedObjects(Collections.emptySet());
     }
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
-        clearSelectedNodes();
+        // clear selection
+        super.setSelectedObjects(Collections.emptySet());
     }
 
     public SlotWidget findSlotWidget(Slot slot) {
