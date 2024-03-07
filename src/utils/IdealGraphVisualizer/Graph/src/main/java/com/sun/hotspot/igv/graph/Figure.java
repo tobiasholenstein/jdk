@@ -40,8 +40,8 @@ public class Figure extends Properties.Entity implements Vertex {
     public static final double BOLD_LINE_FACTOR = 1.06;
     private final InputNode inputNode;
     private final Diagram diagram;
-    private final List<Figure> predecessors;
-    private final List<Figure> successors;
+    private final Set<Figure> predecessors;
+    private final Set<Figure> successors;
     private final int id;
     private final FontMetrics metrics;
     protected List<InputSlot> inputSlots;
@@ -59,10 +59,10 @@ public class Figure extends Properties.Entity implements Vertex {
     protected Figure(Diagram diagram, int id, InputNode node) {
         this.diagram = diagram;
         this.inputNode = node;
-        this.inputSlots = new ArrayList<>(5);
-        this.outputSlots = new ArrayList<>(1);
-        this.predecessors = new ArrayList<>(6);
-        this.successors = new ArrayList<>(6);
+        this.inputSlots = new ArrayList<>();
+        this.outputSlots = new ArrayList<>();
+        this.predecessors = new HashSet<>();
+        this.successors = new HashSet<>();
         this.id = id;
         this.position = new Point(0, 0);
         this.color = Color.WHITE;
@@ -163,37 +163,27 @@ public class Figure extends Properties.Entity implements Vertex {
         this.warning = getProperties().resolveString(warning);
     }
 
-    public List<Figure> getPredecessors() {
-        return Collections.unmodifiableList(predecessors);
+    public Set<Figure> getPredecessors() {
+        return Collections.unmodifiableSet(predecessors);
     }
 
-    public Set<Figure> getPredecessorSet() {
-        return Collections.unmodifiableSet(new HashSet<>(getPredecessors()));
-    }
-
-    public Set<Figure> getSuccessorSet() {
-        return Collections.unmodifiableSet(new HashSet<>(getSuccessors()));
-    }
-
-    public List<Figure> getSuccessors() {
-        return Collections.unmodifiableList(successors);
+    public Set<Figure> getSuccessors() {
+        return Collections.unmodifiableSet(successors);
     }
 
     protected void addPredecessor(Figure f) {
-        this.predecessors.add(f);
+        predecessors.add(f);
     }
 
     protected void addSuccessor(Figure f) {
-        this.successors.add(f);
+        successors.add(f);
     }
 
     protected void removePredecessor(Figure f) {
-        assert predecessors.contains(f);
         predecessors.remove(f);
     }
 
     protected void removeSuccessor(Figure f) {
-        assert successors.contains(f);
         successors.remove(f);
     }
 

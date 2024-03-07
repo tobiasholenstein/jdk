@@ -226,27 +226,27 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         Set<Figure> visibleFigures = getVisibleFigures();
         Set<Connection> visibleConnections = getVisibleConnections();
         seaLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
-        rebuildConnectionLayer();
+        updatePositions();
     }
 
     private void updateVisibleFigureWidgets() {
-        for (Figure figure : figureMap.keySet()) {
+        for (Figure figure : diagram.getFigures()) {
             figure.setBoundary(false);
             figure.setVisible(!hiddenNodes.contains(figure.getInputNode().getId()));
         }
 
         if (showNodeHull) { // update node hull
             List<Figure> boundaryFigures = new ArrayList<>();
-            for (Figure figure : figureMap.keySet()) {
+            for (Figure figure : diagram.getFigures()) {
                 if (!figure.isVisible()) {
                     boolean hasVisibleNeighbor = false;
-                    for (Figure neighborFigure : figure.getPredecessorSet()) {
+                    for (Figure neighborFigure : figure.getPredecessors()) {
                         if (neighborFigure.isVisible()) {
                             hasVisibleNeighbor = true;
                             break;
                         }
                     }
-                    for (Figure neighborFigure : figure.getSuccessorSet()) {
+                    for (Figure neighborFigure : figure.getSuccessors()) {
                         if (neighborFigure.isVisible()) {
                             hasVisibleNeighbor = true;
                             break;
@@ -274,36 +274,26 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private Set<Figure> getVisibleFigures() {
-        return figureMap.keySet().stream().filter(Figure::isVisible).collect(Collectors.toSet());
+        return diagram.getFigures().stream().filter(Figure::isVisible).collect(Collectors.toSet());
     }
 
-    private HashSet<Connection> getVisibleConnections() {
-        HashSet<Connection> visibleConnections = new HashSet<>();
-        for (Connection connection : getDiagram().getConnections()) {
-            if (connection.isVisible()) {
-                visibleConnections.add(connection);
-            }
-        }
-        return visibleConnections;
+    private Set<Connection> getVisibleConnections() {
+        return diagram.getConnections().stream().filter(Connection::isVisible).collect(Collectors.toSet());
     }
 
-    private void rebuildConnectionLayer() {
+    private void updatePositions() {
         figureToOutLineWidget.clear();
         figureToInLineWidget.clear();
         connectionLayer.removeChildren();
-        for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
-            Figure figure = entry.getKey();
-            FigureWidget fw = entry.getValue();
-
+        for (Figure figure : diagram.getFigures()) {
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
                 List<Connection> connectionList = new ArrayList<>(outputSlot.getConnections());
                 processOutputSlot(outputSlot, connectionList, 0, null, null);
             }
+        }
 
-            // update figure widget location
-            if (fw.isVisible()) {
-                fw.setPreferredLocation(figure.getPosition());
-            }
+        for (FigureWidget figureWidget : figureMap.values()) {
+            figureWidget.updatePosition();
         }
 
         validateAll();
@@ -398,7 +388,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                         Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
                         seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
                         seaLayoutManager.writeBack();
-                        rebuildConnectionLayer();
+                        updatePositions();
                     }
 
                     @Override
@@ -475,7 +465,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                         Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
                         seaLayoutManager.moveVertex(fw.getFigure(), newLocation);
                     }
-                    rebuildConnectionLayer();
+                    updatePositions();
                 }
 
                 private int magnetToStartLayerY(Widget widget, Point location) {

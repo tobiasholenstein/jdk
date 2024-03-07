@@ -36,6 +36,7 @@ import java.awt.geom.Path2D;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.swing.BorderFactory;
 import javax.swing.border.Border;
@@ -136,6 +137,12 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         node.setDisplayName(getName());
 
         this.setToolTipText(PropertiesConverter.convertToHTML(f.getProperties()));
+    }
+
+    public void updatePosition() {
+        if (figure.isVisible()) {
+            setPreferredLocation(figure.getPosition());
+        }
     }
 
     @Override
