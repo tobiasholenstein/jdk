@@ -44,8 +44,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     public static final float ZOOM_INCREMENT = 1.5f;
     private static final float ZOOM_MAX_FACTOR = 4.0f;
     private static final float ZOOM_MIN_FACTOR = 0.25f;
-
-    private final WidgetAction selectAction;
     private final JScrollPane scrollPane;
     private final LayerWidget figureLayer;
     private final LayerWidget connectionLayer;
@@ -87,13 +85,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         figureLayer = new LayerWidget(this);
         super.addChild(figureLayer);
 
-        selectAction = new CustomSelectAction(new SelectProvider() {
+        CustomSelectAction selectAction = new CustomSelectAction(new SelectProvider() {
             public boolean isAimingAllowed(Widget widget, Point localLocation, boolean invertSelection) {
                 return false;
             }
 
             public boolean isSelectionAllowed(Widget widget, Point localLocation, boolean invertSelection) {
-                return DiagramScene.super.findObject(widget) != null;
+                return true;
             }
 
             public void select(Widget widget, Point localLocation, boolean invertSelection) {
@@ -101,14 +99,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 if (editor != null) {
                     editor.requestActive();
                 }
-                Set<Integer> nodeSelection = new HashSet<>();
-                Object object = DiagramScene.super.findObject(widget);
-                if (object instanceof Figure) {
-                    nodeSelection.add(((Figure) object).getInputNode().getId());
-                } else if (object instanceof Slot) {
-                    nodeSelection.addAll(((Slot) object).getSource().getSourceNodesAsSet());
-                }
-                selectedNodesByID = nodeSelection;
+                selectedNodesByID = new HashSet<>();
             }
         });
 
@@ -407,7 +398,26 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         figureLayer.removeChildren();
         for (Figure figure : getDiagram().getFigures()) {
             FigureWidget figureWidget = new FigureWidget(figure, this);
-            figureWidget.getActions().addAction(selectAction);
+            CustomSelectAction figureSelectAction = new CustomSelectAction(new SelectProvider() {
+                public boolean isAimingAllowed(Widget widget, Point localLocation, boolean invertSelection) {
+                    return false;
+                }
+
+                public boolean isSelectionAllowed(Widget widget, Point localLocation, boolean invertSelection) {
+                    return true;
+                }
+
+                public void select(Widget widget, Point localLocation, boolean invertSelection) {
+                    EditorTopComponent editor = EditorTopComponent.getActive();
+                    if (editor != null) {
+                        editor.requestActive();
+                    }
+                    Set<Integer> nodeSelection = new HashSet<>();
+                    nodeSelection.add(figure.getInputNode().getId());
+                    selectedNodesByID = nodeSelection;
+                }
+            });
+            figureWidget.getActions().addAction(figureSelectAction);
             attachFigureMovement(figureWidget);
 
             super.addObject(figure, figureWidget);
@@ -416,13 +426,11 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
             for (InputSlot inputSlot : figure.getInputSlots()) {
                 InputSlotWidget slotWidget = new InputSlotWidget(inputSlot, this, figureWidget);
-                slotWidget.getActions().addAction(selectAction);
                 inputSlotMap.put(inputSlot, slotWidget);
             }
 
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
                 OutputSlotWidget slotWidget = new OutputSlotWidget(outputSlot, this, figureWidget);
-                slotWidget.getActions().addAction(selectAction);
             }
         }
     }
