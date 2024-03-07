@@ -222,8 +222,8 @@ public class LineWidget extends Widget implements DoubleClickHandler {
         }
 
         for (Connection connection : connections) {
-            selectedObjects.add(connection.getToVertex());
-            selectedObjects.add(connection.getFromVertex());
+            selectedObjects.add(connection.getTo());
+            selectedObjects.add(connection.getFrom());
         }
         scene.setSelectedObjects(selectedObjects);
     }

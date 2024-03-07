@@ -30,8 +30,8 @@ import java.util.List;
 public interface Link {
     Port getFromPort();
     Port getToPort();
-    Vertex getFromVertex();
-    Vertex getToVertex();
+    Vertex getFrom();
+    Vertex getTo();
     List<Point> getControlPoints();
     void setControlPoints(List<Point> list);
 }

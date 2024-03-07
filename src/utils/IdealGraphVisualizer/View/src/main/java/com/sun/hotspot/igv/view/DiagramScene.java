@@ -310,7 +310,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     Point currentPoint = new Point(controlPoints.get(controlPointIndex));
                     pointMap.computeIfAbsent(currentPoint, k -> new ArrayList<>()).add(connection);
                 } else if (controlPointIndex == controlPoints.size() && predecessor != null) {
-                    Figure figure = ((Slot) connection.getToPort()).getFigure();
+                    Figure figure = connection.getTo();
                     figureToInLineWidget.computeIfAbsent(figure, k -> new HashSet<>()).add(predecessor);
                 }
             }

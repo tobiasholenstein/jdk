@@ -177,8 +177,8 @@ public class HierarchicalLayoutManager {
     }
 
     private void applyRemoveLinkAction(Link link) {
-        Vertex from = link.getFromVertex();
-        Vertex to = link.getToVertex();
+        Vertex from = link.getFrom();
+        Vertex to = link.getTo();
         LayoutNode toNode = vertexToLayoutNode.get(to);
         LayoutNode fromNode = vertexToLayoutNode.get(from);
 
@@ -268,20 +268,20 @@ public class HierarchicalLayoutManager {
 
     public void removeEdges(LayoutNode movedNode) {
         for (Link inputLink : movedNode.getVertex().getInputLinks()) {
-            if (inputLink.getFromVertex() == inputLink.getToVertex()) continue;
+            if (inputLink.getFrom() == inputLink.getTo()) continue;
             applyRemoveLinkAction(inputLink);
         }
         for (Link outputLink : movedNode.getVertex().getOutputLinks()) {
-            if (outputLink.getFromVertex() == outputLink.getToVertex()) continue;
+            if (outputLink.getFrom() == outputLink.getTo()) continue;
             applyRemoveLinkAction(outputLink);
         }
 
         // remove link connected to movedNode
         for (Link link : graph.getLinks()) {
-            if (link.getToVertex() == movedNode.getVertex()) {
+            if (link.getTo() == movedNode.getVertex()) {
                 link.setControlPoints(new ArrayList<>());
                 movedNode.getReversedLinkStartPoints().remove(link);
-            } else if (link.getFromVertex() == movedNode.getVertex()) {
+            } else if (link.getFrom() == movedNode.getVertex()) {
                 link.setControlPoints(new ArrayList<>());
                 movedNode.getReversedLinkEndPoints().remove(link);
             }
@@ -302,7 +302,7 @@ public class HierarchicalLayoutManager {
         Set<LayoutNode> reversedLayoutNodes = new HashSet<>();
         assertOrder();
         for (Link link : nodeLinks) {
-            if (link.getFromVertex() == link.getToVertex()) continue;
+            if (link.getFrom() == link.getTo()) continue;
 
             assertOrder();
             LayoutEdge layoutEdge = createLayoutEdge(link);
@@ -579,16 +579,16 @@ public class HierarchicalLayoutManager {
             }
         }
         for (Link inputLink : node.getVertex().getInputLinks()) {
-            if (inputLink.getFromVertex() == inputLink.getToVertex()) continue;
-            LayoutNode fromNode = vertexToLayoutNode.get(inputLink.getFromVertex());
+            if (inputLink.getFrom() == inputLink.getTo()) continue;
+            LayoutNode fromNode = vertexToLayoutNode.get(inputLink.getFrom());
             if (fromNode.getLayer() == layerNr) {
                 moveExpandLayerDown(layerNr + 1);
                 return layerNr + 1;
             }
         }
         for (Link outputLink : node.getVertex().getOutputLinks()) {
-            if (outputLink.getFromVertex() == outputLink.getToVertex()) continue;
-            LayoutNode toNode = vertexToLayoutNode.get(outputLink.getToVertex());
+            if (outputLink.getFrom() == outputLink.getTo()) continue;
+            LayoutNode toNode = vertexToLayoutNode.get(outputLink.getTo());
             if (toNode.getLayer() == layerNr) {
                 moveExpandLayerDown(layerNr);
                 return layerNr;
@@ -815,8 +815,8 @@ public class HierarchicalLayoutManager {
 
     public LayoutEdge createLayoutEdge(Link link ) {
         LayoutEdge edge = new LayoutEdge(
-                vertexToLayoutNode.get(link.getFromVertex()),
-                vertexToLayoutNode.get(link.getToVertex()),
+                vertexToLayoutNode.get(link.getFrom()),
+                vertexToLayoutNode.get(link.getTo()),
                 link.getFromPort().getRelativePosition().x,
                 link.getToPort().getRelativePosition().x,
                 link);
@@ -826,8 +826,8 @@ public class HierarchicalLayoutManager {
     }
 
     public static final Comparator<Link> LINK_COMPARATOR =
-            Comparator.comparing(Link::getFromVertex)
-                    .thenComparing(Link::getToVertex)
+            Comparator.comparing(Link::getFrom)
+                    .thenComparing(Link::getTo)
                     .thenComparingInt(l -> l.getFromPort().getRelativePosition().x)
                     .thenComparingInt(l -> l.getToPort().getRelativePosition().x);
 

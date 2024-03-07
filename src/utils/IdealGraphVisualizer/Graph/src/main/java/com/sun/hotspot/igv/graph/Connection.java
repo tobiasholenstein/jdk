@@ -25,7 +25,6 @@ package com.sun.hotspot.igv.graph;
 
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Port;
-import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Color;
 import java.awt.Point;
 import java.util.ArrayList;
@@ -114,7 +113,7 @@ public class Connection implements Link {
 
     @Override
     public String toString() {
-        return "FigureConnection('" + label + "', " + getFromVertex() + " to " + getToVertex() + ")";
+        return "FigureConnection('" + label + "', " + getFrom() + " to " + getTo() + ")";
     }
 
     @Override
@@ -128,13 +127,13 @@ public class Connection implements Link {
     }
 
     @Override
-    public Vertex getFromVertex() {
-        return outputSlot.getVertex();
+    public Figure getFrom() {
+        return outputSlot.getFigure();
     }
 
     @Override
-    public Vertex getToVertex() {
-        return inputSlot.getVertex();
+    public Figure getTo() {
+        return inputSlot.getFigure();
     }
 
     @Override
