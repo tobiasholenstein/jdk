@@ -323,8 +323,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         for (Map.Entry<Point, List<Connection>> entry : pointMap.entrySet()) {
             Point currentPoint = entry.getKey();
             List<Connection> connectionList = entry.getValue();
-
-            LineWidget newPredecessor = predecessor;
             if (lastPoint != null) {
                 boolean isBold = connectionList.stream().anyMatch(c -> c.getStyle() == Connection.ConnectionStyle.BOLD);
                 boolean isDashed = connectionList.stream().allMatch(c -> c.getStyle() == Connection.ConnectionStyle.DASHED);
@@ -332,19 +330,21 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                 Point src = new Point(lastPoint);
                 Point dest = new Point(currentPoint);
-                newPredecessor = new LineWidget(this, outputSlot, connectionList, src, dest, predecessor, isBold, isDashed);
+                LineWidget newPredecessor = new LineWidget(this, outputSlot, connectionList, src, dest, predecessor, isBold, isDashed);
                 newPredecessor.setVisible(isVisible);
 
                 connectionLayer.addChild(newPredecessor);
-                attachMovementActions(newPredecessor);
+                attachLineMovement(newPredecessor);
+                processOutputSlot(outputSlot, connectionList, controlPointIndex + 1, currentPoint, newPredecessor);
+            } else {
+                processOutputSlot(outputSlot, connectionList, controlPointIndex + 1, currentPoint, predecessor);
             }
-            processOutputSlot(outputSlot, connectionList, controlPointIndex + 1, currentPoint, newPredecessor);
         }
     }
 
 
     //  Movement logic encapsulation for LineWidgets
-    private void attachMovementActions(LineWidget lineWidget) {
+    private void attachLineMovement(LineWidget lineWidget) {
         lineWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
             Point startLocation;
             Point origFrom;
@@ -424,81 +424,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         for (Figure figure : getDiagram().getFigures()) {
             FigureWidget figureWidget = new FigureWidget(figure, this);
             figureWidget.getActions().addAction(selectAction);
-            figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
+            attachFigureMovement(figureWidget);
 
-                private static final int MAGNET_SIZE = 5;
-                private int startLayerY;
-
-                @Override
-                public void movementStarted(Widget widget) {
-                    widget.bringToFront();
-                    startLayerY = widget.getLocation().y;
-                }
-
-                @Override
-                public void movementFinished(Widget widget) {
-                    Set<FigureWidget> selectedFigures = getSelectedFigureWidgets();
-                    for (FigureWidget fw : selectedFigures) {
-                        Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
-                        seaLayoutManager.moveVertex(fw.getFigure(), newLocation);
-                    }
-                    updatePositions();
-                }
-
-                private int magnetToStartLayerY(Widget widget, Point location) {
-                    int shiftY = location.y - widget.getLocation().y;
-                    if (Math.abs(location.y - startLayerY) <= MAGNET_SIZE) {
-                        if (Math.abs(widget.getLocation().y - startLayerY) > MAGNET_SIZE) {
-                            shiftY = startLayerY - widget.getLocation().y;
-                        } else {
-                            shiftY = 0;
-                        }
-                    }
-                    return shiftY;
-                }
-
-                @Override
-                public Point getOriginalLocation(Widget widget) {
-                    return ActionFactory.createDefaultMoveProvider().getOriginalLocation(widget);
-                }
-
-                @Override
-                public void setNewLocation(Widget widget, Point location) {
-                    int shiftX = location.x - widget.getLocation().x;
-                    int shiftY = magnetToStartLayerY(widget, location);
-
-                    for (FigureWidget fw : getSelectedFigureWidgets()) {
-                        if (figureToInLineWidget.containsKey(fw.getFigure())) {
-                            for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
-                                Point toPt = lw.getTo();
-                                lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
-                                Point fromPt = lw.getFrom();
-                                lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
-                                lw.revalidate();
-                                LineWidget pred = lw.getPredecessor();
-                                pred.setTo(new Point(pred.getTo().x + shiftX, pred.getTo().y));
-                                pred.revalidate();
-
-                            }
-                        }
-                        if (figureToOutLineWidget.containsKey(fw.getFigure())) {
-                            for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
-                                Point toPt = lw.getTo();
-                                lw.setTo(new Point(toPt.x + shiftX, toPt.y));
-                                Point fromPt = lw.getFrom();
-                                lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
-                                lw.revalidate();
-                                for (LineWidget succ : lw.getSuccessors()) {
-                                    succ.setFrom(new Point(succ.getFrom().x + shiftX, succ.getFrom().y));
-                                    succ.revalidate();
-                                }
-                            }
-                        }
-                        Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
-                        ActionFactory.createDefaultMoveProvider().setNewLocation(fw, newLocation);
-                    }
-                }
-            }));
             super.addObject(figure, figureWidget);
             figureMap.put(figure, figureWidget);
             figureLayer.addChild(figureWidget);
@@ -516,6 +443,84 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 slotWidget.getActions().addAction(selectAction);
             }
         }
+    }
+
+    private void attachFigureMovement(FigureWidget figureWidget) {
+        figureWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
+
+            private static final int MAGNET_SIZE = 5;
+            private int startLayerY;
+
+            @Override
+            public void movementStarted(Widget widget) {
+                widget.bringToFront();
+                startLayerY = widget.getLocation().y;
+            }
+
+            @Override
+            public void movementFinished(Widget widget) {
+                Set<FigureWidget> selectedFigures = getSelectedFigureWidgets();
+                for (FigureWidget fw : selectedFigures) {
+                    Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
+                    seaLayoutManager.moveVertex(fw.getFigure(), newLocation);
+                }
+                updatePositions();
+            }
+
+            private int magnetToStartLayerY(Widget widget, Point location) {
+                int shiftY = location.y - widget.getLocation().y;
+                if (Math.abs(location.y - startLayerY) <= MAGNET_SIZE) {
+                    if (Math.abs(widget.getLocation().y - startLayerY) > MAGNET_SIZE) {
+                        shiftY = startLayerY - widget.getLocation().y;
+                    } else {
+                        shiftY = 0;
+                    }
+                }
+                return shiftY;
+            }
+
+            @Override
+            public Point getOriginalLocation(Widget widget) {
+                return ActionFactory.createDefaultMoveProvider().getOriginalLocation(widget);
+            }
+
+            @Override
+            public void setNewLocation(Widget widget, Point location) {
+                int shiftX = location.x - widget.getLocation().x;
+                int shiftY = magnetToStartLayerY(widget, location);
+
+                for (FigureWidget fw : getSelectedFigureWidgets()) {
+                    if (figureToInLineWidget.containsKey(fw.getFigure())) {
+                        for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
+                            Point toPt = lw.getTo();
+                            lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
+                            Point fromPt = lw.getFrom();
+                            lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
+                            lw.revalidate();
+                            LineWidget pred = lw.getPredecessor();
+                            pred.setTo(new Point(pred.getTo().x + shiftX, pred.getTo().y));
+                            pred.revalidate();
+
+                        }
+                    }
+                    if (figureToOutLineWidget.containsKey(fw.getFigure())) {
+                        for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
+                            Point toPt = lw.getTo();
+                            lw.setTo(new Point(toPt.x + shiftX, toPt.y));
+                            Point fromPt = lw.getFrom();
+                            lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
+                            lw.revalidate();
+                            for (LineWidget succ : lw.getSuccessors()) {
+                                succ.setFrom(new Point(succ.getFrom().x + shiftX, succ.getFrom().y));
+                                succ.revalidate();
+                            }
+                        }
+                    }
+                    Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
+                    ActionFactory.createDefaultMoveProvider().setNewLocation(fw, newLocation);
+                }
+            }
+        }));
     }
 
     public boolean getShowNodeHull() {
