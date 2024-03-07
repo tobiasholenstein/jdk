@@ -488,30 +488,32 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 int shiftY = magnetToStartLayerY(widget, location);
 
                 for (FigureWidget fw : getSelectedFigureWidgets()) {
-                    for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
-                        Point toPt = lw.getTo();
-                        lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
-                        Point fromPt = lw.getFrom();
-                        lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
-                        lw.revalidate();
-                        LineWidget pred = lw.getPredecessor();
-                        pred.setTo(new Point(pred.getTo().x + shiftX, pred.getTo().y));
-                        pred.revalidate();
+                    if (figureToInLineWidget.containsKey(fw.getFigure())) {
+                        for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
+                            Point toPt = lw.getTo();
+                            lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
+                            Point fromPt = lw.getFrom();
+                            lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
+                            lw.revalidate();
+                            LineWidget pred = lw.getPredecessor();
+                            pred.setTo(new Point(pred.getTo().x + shiftX, pred.getTo().y));
+                            pred.revalidate();
 
-                    }
-
-                    for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
-                        Point toPt = lw.getTo();
-                        lw.setTo(new Point(toPt.x + shiftX, toPt.y));
-                        Point fromPt = lw.getFrom();
-                        lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
-                        lw.revalidate();
-                        for (LineWidget succ : lw.getSuccessors()) {
-                            succ.setFrom(new Point(succ.getFrom().x + shiftX, succ.getFrom().y));
-                            succ.revalidate();
                         }
                     }
-
+                    if (figureToOutLineWidget.containsKey(fw.getFigure())) {
+                        for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
+                            Point toPt = lw.getTo();
+                            lw.setTo(new Point(toPt.x + shiftX, toPt.y));
+                            Point fromPt = lw.getFrom();
+                            lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
+                            lw.revalidate();
+                            for (LineWidget succ : lw.getSuccessors()) {
+                                succ.setFrom(new Point(succ.getFrom().x + shiftX, succ.getFrom().y));
+                                succ.revalidate();
+                            }
+                        }
+                    }
                     Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
                     ActionFactory.createDefaultMoveProvider().setNewLocation(fw, newLocation);
                 }
