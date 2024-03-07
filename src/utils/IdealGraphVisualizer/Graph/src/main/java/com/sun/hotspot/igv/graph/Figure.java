@@ -30,6 +30,7 @@ import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Figure extends Properties.Entity implements Vertex {
 
@@ -397,5 +398,11 @@ public class Figure extends Properties.Entity implements Vertex {
 
     public void setVisible(boolean visible) {
         this.visible = visible;
+    }
+
+    public List<Connection> getVisibleConnections() {
+        return getOutputSlots().stream().flatMap(outputSlot -> outputSlot.getConnections().stream())
+                .filter(Connection::isVisible) // Keep only the visible connections
+                .collect(Collectors.toList()); // Collect the results into a new list
     }
 }

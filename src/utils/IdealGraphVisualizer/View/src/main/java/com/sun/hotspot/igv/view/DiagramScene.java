@@ -290,10 +290,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         connectionLayer.removeChildren();
         for (FigureWidget figureWidget : figureMap.values()) {
             figureWidget.updatePosition();
-            for (OutputSlot outputSlot : figureWidget.getFigure().getOutputSlots()) {
-                List<Connection> connectionList = new ArrayList<>(outputSlot.getConnections());
-                createLineWidgets(figureWidget, connectionList, 0, null, null);
-            }
+            List<Connection> visibleConnections = figureWidget.getFigure().getVisibleConnections();
+            createLineWidgets(figureWidget, visibleConnections, 0, null, null);
         }
         validateAll();
     }
@@ -306,15 +304,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
 
         for (Connection connection : connections) {
-            if (connection.isVisible()) {
-                List<Point> controlPoints = connection.getControlPoints();
-                if (controlPointIndex < controlPoints.size()) {
-                    Point currentPoint = new Point(controlPoints.get(controlPointIndex));
-                    pointMap.computeIfAbsent(currentPoint, k -> new ArrayList<>()).add(connection);
-                } else if (controlPointIndex == controlPoints.size() && prevLineWidget != null) {
-                    FigureWidget toFigureWidget = figureMap.get(connection.getTo());
-                    figureWidgetToInLineWidgets.computeIfAbsent(toFigureWidget, k -> new HashSet<>()).add(prevLineWidget);
-                }
+            List<Point> controlPoints = connection.getControlPoints();
+            if (controlPointIndex < controlPoints.size()) {
+                Point currentPoint = new Point(controlPoints.get(controlPointIndex));
+                pointMap.computeIfAbsent(currentPoint, k -> new ArrayList<>()).add(connection);
+            } else if (controlPointIndex == controlPoints.size() && prevLineWidget != null) {
+                FigureWidget toFigureWidget = figureMap.get(connection.getTo());
+                figureWidgetToInLineWidgets.computeIfAbsent(toFigureWidget, k -> new HashSet<>()).add(prevLineWidget);
             }
         }
 
