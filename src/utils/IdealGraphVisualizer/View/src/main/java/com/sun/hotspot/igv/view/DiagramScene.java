@@ -229,17 +229,21 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void updateVisibleFigureWidgets() {
-        for (Figure figure : getDiagram().getFigures()) {
-            FigureWidget figureWidget = findFigureWidget(figure);
+        for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
+            Figure figure = entry.getKey();
+            FigureWidget figureWidget = entry.getValue();
+
             figureWidget.setBoundary(false);
             figureWidget.setVisible(!hiddenNodes.contains(figure.getInputNode().getId()));
         }
 
         if (showNodeHull) { // update node hull
             List<FigureWidget> boundaries = new ArrayList<>();
-            for (Figure figure : getDiagram().getFigures()) {
-                FigureWidget figureWidget = findFigureWidget(figure);
-                if (!figureWidget.isVisible()) {
+            for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
+                Figure figure = entry.getKey();
+                FigureWidget fw = entry.getValue();
+
+                if (!fw.isVisible()) {
                     Set<Figure> neighborSet = new HashSet<>(figure.getPredecessorSet());
                     neighborSet.addAll(figure.getSuccessorSet());
                     boolean hasVisibleNeighbor = false;
@@ -251,11 +255,12 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                         }
                     }
                     if (hasVisibleNeighbor) {
-                        figureWidget.setBoundary(true);
-                        boundaries.add(figureWidget);
+                        fw.setBoundary(true);
+                        boundaries.add(fw);
                     }
                 }
             }
+
             for (FigureWidget figureWidget : boundaries) {
                 figureWidget.setVisible(true);
             }
@@ -266,8 +271,9 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     private Set<Figure> getVisibleFigures() {
         HashSet<Figure> visibleFigures = new HashSet<>();
-        for (Figure figure : getDiagram().getFigures()) {
-            FigureWidget figureWidget = findFigureWidget(figure);
+        for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
+            Figure figure = entry.getKey();
+            FigureWidget figureWidget = entry.getValue();
             if (figureWidget.isVisible()) {
                 visibleFigures.add(figure);
             }
@@ -295,19 +301,21 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         figureToOutLineWidget.clear();
         figureToInLineWidget.clear();
         connectionLayer.removeChildren();
-        for (Figure figure : getDiagram().getFigures()) {
+        for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
+            Figure figure = entry.getKey();
+            FigureWidget fw = entry.getValue();
+
             for (OutputSlot outputSlot : figure.getOutputSlots()) {
                 List<Connection> connectionList = new ArrayList<>(outputSlot.getConnections());
                 processOutputSlot(outputSlot, connectionList, 0, null, null);
             }
 
             // update figure widget location
-            FigureWidget figureWidget = findFigureWidget(figure);
-            if (figureWidget.isVisible()) {
-                Point location = new Point(figure.getPosition());
-                figureWidget.setPreferredLocation(location);
+            if (fw.isVisible()) { // TODO needed?
+                fw.setPreferredLocation(figure.getPosition());
             }
         }
+
         validateAll();
     }
 
@@ -587,9 +595,11 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     private Set<FigureWidget> getSelectedFigureWidgets() {
         Set<FigureWidget> result = new HashSet<>();
-        for (Figure f : diagram.getFigures()) {
-            if (selectedNodes.contains(f.getInputNode().getId())) {
-                result.add(findFigureWidget(f));
+        for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
+            Figure figure = entry.getKey();
+            FigureWidget figureWidget = entry.getValue();
+            if (selectedNodes.contains(figure.getInputNode().getId())) {
+                result.add(figureWidget);
             }
         }
         return result;
@@ -614,6 +624,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     public SlotWidget findSlotWidget(Slot slot) {
         return slotMap.get(slot);
     }
+
 
     public FigureWidget findFigureWidget(Figure figure) {
         return figureMap.get(figure);
