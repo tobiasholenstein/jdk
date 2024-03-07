@@ -391,9 +391,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         // clear Objects
         inputSlotMap.clear();
         figureMap.clear();
-        for (Object o : new ArrayList<>(super.getObjects())) {
-            super.removeObject(o);
-        }
 
         figureLayer.removeChildren();
         for (Figure figure : getDiagram().getFigures()) {
@@ -420,7 +417,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             figureWidget.getActions().addAction(figureSelectAction);
             attachFigureMovement(figureWidget);
 
-            super.addObject(figure, figureWidget);
             figureMap.put(figure, figureWidget);
             figureLayer.addChild(figureWidget);
 
@@ -563,13 +559,12 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 result.add(f);
             }
         }
-        super.setSelectedObjects(result);
     }
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
         // clear selection
-        super.setSelectedObjects(Collections.emptySet());
+        selectedNodesByID = new HashSet<>();
     }
 
     public InputSlotWidget findInputSlotWidget(Slot slot) {
