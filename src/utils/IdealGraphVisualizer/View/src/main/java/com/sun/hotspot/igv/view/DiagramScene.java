@@ -24,7 +24,6 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelListener;
 import java.util.*;
-import java.util.stream.Collectors;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -226,8 +225,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
     private void relayout() {  // visible nodes changed
         updateVisibleFigureWidgets();
-        Set<Figure> visibleFigures = getVisibleFigures();
-        Set<Connection> visibleConnections = getVisibleConnections();
+        Set<Figure> visibleFigures = diagram.getVisibleFigures();
+        Set<Connection> visibleConnections = diagram.getVisibleConnections();
         seaLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
         updateWidgetPositions();
     }
@@ -274,14 +273,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             FigureWidget fw = entry.getValue();
             fw.setVisible(figure.isVisible());
         }
-    }
-
-    private Set<Figure> getVisibleFigures() {
-        return diagram.getFigures().stream().filter(Figure::isVisible).collect(Collectors.toSet());
-    }
-
-    private Set<Connection> getVisibleConnections() {
-        return diagram.getConnections().stream().filter(Connection::isVisible).collect(Collectors.toSet());
     }
 
     private void updateWidgetPositions() {

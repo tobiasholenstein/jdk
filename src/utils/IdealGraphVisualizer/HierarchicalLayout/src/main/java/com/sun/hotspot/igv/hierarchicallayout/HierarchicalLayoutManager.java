@@ -314,7 +314,7 @@ public class HierarchicalLayoutManager {
         }
 
         // remove link connected to movedNode
-        for (Link link : graph.getLinks()) {
+        for (Link link : graph.links()) {
             if (link.getTo() == movedNode.getVertex()) {
                 link.setControlPoints(new ArrayList<>());
                 movedNode.getReversedLinkStartPoints().remove(link);
@@ -1389,7 +1389,7 @@ public class HierarchicalLayoutManager {
             }
         }
 
-        for (Vertex v : graph.getVertices()) {
+        for (Vertex v : graph.vertices()) {
             LayoutNode n = vertexToLayoutNode.get(v);
             assert n.getX() >= 0;
             assert n.getY() >= 0;
@@ -1406,13 +1406,13 @@ public class HierarchicalLayoutManager {
             dummyNodes.clear();
 
             // Set up nodes
-            for (Vertex v : graph.getVertices()) {
+            for (Vertex v : graph.vertices()) {
                 LayoutNode node = new LayoutNode(v);
                 vertexToLayoutNode.put(v, node);
             }
 
             // Set up edges
-            List<Link> links = new ArrayList<>(graph.getLinks());
+            List<Link> links = new ArrayList<>(graph.links());
             links.sort(LINK_COMPARATOR);
             for (Link link : links) {
                 createLayoutEdge(link);

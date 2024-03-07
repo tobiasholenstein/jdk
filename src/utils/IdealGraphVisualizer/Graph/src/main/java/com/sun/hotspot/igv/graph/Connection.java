@@ -48,7 +48,7 @@ public class Connection implements Link {
     }
 
     public boolean isVisible() {
-        return getInputSlot().getFigure().isVisible() && getOutputSlot().getFigure().isVisible();
+        return getTo().isVisible() && getFrom().isVisible();
     }
 
     public InputSlot getInputSlot() {

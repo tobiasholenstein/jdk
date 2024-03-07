@@ -5,6 +5,7 @@ import com.sun.hotspot.igv.data.InputGraph;
 import com.sun.hotspot.igv.data.InputNode;
 import java.awt.Font;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class Diagram {
@@ -72,7 +73,6 @@ public class Diagram {
         }
     }
 
-
     public String getNodeText() {
         return nodeText;
     }
@@ -132,6 +132,14 @@ public class Diagram {
         assert this.figures.contains(succ);
         freeFigure(succ);
         this.figures.remove(succ);
+    }
+
+    public Set<Figure> getVisibleFigures() {
+        return figures.stream().filter(Figure::isVisible).collect(Collectors.toSet());
+    }
+
+    public Set<Connection> getVisibleConnections() {
+        return getConnections().stream().filter(Connection::isVisible).collect(Collectors.toSet());
     }
 
     public Set<Connection> getConnections() {
