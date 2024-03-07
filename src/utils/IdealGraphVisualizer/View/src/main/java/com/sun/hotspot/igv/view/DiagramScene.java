@@ -52,8 +52,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final FilterChain filterChain;
     private final Map<Figure, FigureWidget> figureMap = new HashMap<>();
     private final Map<Slot, InputSlotWidget> inputSlotMap = new HashMap<>();
-    private final Map<Figure, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
-    private final Map<Figure, Set<LineWidget>> figureToInLineWidget = new HashMap<>();
+    private final Map<FigureWidget, Set<LineWidget>> figureToOutLineWidget = new HashMap<>();
+    private final Map<FigureWidget, Set<LineWidget>> figureToInLineWidget = new HashMap<>();
     private final Group group;
     private Set<Integer> hiddenNodes;
     private Set<Integer> selectedNodes;
@@ -289,18 +289,17 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             figureWidget.updatePosition();
             for (OutputSlot outputSlot : figureWidget.getFigure().getOutputSlots()) {
                 List<Connection> connectionList = new ArrayList<>(outputSlot.getConnections());
-                processOutputSlot(outputSlot, connectionList, 0, null, null);
+                createLineWidgets(figureWidget, connectionList, 0, null, null);
             }
         }
         validateAll();
     }
 
-    private void processOutputSlot(OutputSlot outputSlot, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
+    private void createLineWidgets(FigureWidget fromFigureWidget, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget predecessor) {
         Map<Point, List<Connection>> pointMap = new HashMap<>(connections.size());
 
         if (predecessor != null && controlPointIndex == 2) {
-            Figure figure = outputSlot.getFigure();
-            figureToOutLineWidget.computeIfAbsent(figure, k -> new HashSet<>()).add(predecessor);
+            figureToOutLineWidget.computeIfAbsent(fromFigureWidget, k -> new HashSet<>()).add(predecessor);
         }
 
         for (Connection connection : connections) {
@@ -310,8 +309,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     Point currentPoint = new Point(controlPoints.get(controlPointIndex));
                     pointMap.computeIfAbsent(currentPoint, k -> new ArrayList<>()).add(connection);
                 } else if (controlPointIndex == controlPoints.size() && predecessor != null) {
-                    Figure figure = connection.getTo();
-                    figureToInLineWidget.computeIfAbsent(figure, k -> new HashSet<>()).add(predecessor);
+                    FigureWidget toFigureWidget = figureMap.get(connection.getTo());
+                    figureToInLineWidget.computeIfAbsent(toFigureWidget, k -> new HashSet<>()).add(predecessor);
                 }
             }
         }
@@ -327,13 +326,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                 Point src = new Point(lastPoint);
                 Point dest = new Point(currentPoint);
-                lineWidget = new LineWidget(this, outputSlot, connectionList, src, dest, predecessor, isBold, isDashed);
+                lineWidget = new LineWidget(this, fromFigureWidget, connectionList, src, dest, predecessor, isBold, isDashed);
                 lineWidget.setVisible(isVisible);
 
                 connectionLayer.addChild(lineWidget);
                 attachLineMovement(lineWidget);
             }
-            processOutputSlot(outputSlot, connectionList, controlPointIndex + 1, currentPoint, lineWidget);
+            createLineWidgets(fromFigureWidget, connectionList, controlPointIndex + 1, currentPoint, lineWidget);
         }
     }
 
@@ -362,7 +361,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 if (shiftX == 0) return;
 
                 Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
-                seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
+                seaLayoutManager.moveLink(lineWidget.getFromFigureWidget().getFigure(), origFrom, newFrom);
                 seaLayoutManager.writeBack();
                 updateWidgetPositions();
             }
@@ -483,8 +482,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 int shiftY = magnetToStartLayerY(widget, location);
 
                 for (FigureWidget fw : getSelectedFigureWidgets()) {
-                    if (figureToInLineWidget.containsKey(fw.getFigure())) {
-                        for (LineWidget lw : figureToInLineWidget.get(fw.getFigure())) {
+                    if (figureToInLineWidget.containsKey(fw)) {
+                        for (LineWidget lw : figureToInLineWidget.get(fw)) {
                             Point toPt = lw.getTo();
                             lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
                             Point fromPt = lw.getFrom();
@@ -496,8 +495,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                         }
                     }
-                    if (figureToOutLineWidget.containsKey(fw.getFigure())) {
-                        for (LineWidget lw : figureToOutLineWidget.get(fw.getFigure())) {
+                    if (figureToOutLineWidget.containsKey(fw)) {
+                        for (LineWidget lw : figureToOutLineWidget.get(fw)) {
                             Point toPt = lw.getTo();
                             lw.setTo(new Point(toPt.x + shiftX, toPt.y));
                             Point fromPt = lw.getFrom();
