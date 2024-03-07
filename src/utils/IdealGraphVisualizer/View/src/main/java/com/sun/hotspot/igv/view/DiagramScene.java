@@ -362,77 +362,81 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 newPredecessor.setVisible(isVisible);
 
                 connectionLayer.addChild(newPredecessor);
-                newPredecessor.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
-
-
-                    Point startLocation;
-                    Point origFrom;
-
-                    @Override
-                    public void movementStarted(Widget widget) {
-                        LineWidget lineWidget = (LineWidget) widget;
-                        startLocation = lineWidget.getClientAreaLocation();
-                        origFrom = lineWidget.getFrom();
-                    }
-
-                    @Override
-                    public void movementFinished(Widget widget) {
-                        LineWidget lineWidget = (LineWidget) widget;
-                        if (lineWidget.getPredecessor() == null) return;
-                        if (lineWidget.getSuccessors().isEmpty()) return;
-                        if (lineWidget.getFrom().x != lineWidget.getTo().x) return;
-
-                        int shiftX = lineWidget.getClientAreaLocation().x - startLocation.x;
-                        if (shiftX == 0) return;
-
-                        Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
-                        seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
-                        seaLayoutManager.writeBack();
-                        updatePositions();
-                    }
-
-                    @Override
-                    public Point getOriginalLocation(Widget widget) {
-                        LineWidget lineWidget = (LineWidget) widget;
-                        return lineWidget.getClientAreaLocation();
-                    }
-
-                    @Override
-                    public void setNewLocation(Widget widget, Point location) {
-                        LineWidget lineWidget = (LineWidget) widget;
-                        if (lineWidget.getPredecessor() == null) return;
-                        if (lineWidget.getSuccessors().isEmpty()) return;
-                        if (lineWidget.getFrom().x != lineWidget.getTo().x) return;
-
-                        int shiftX = location.x - lineWidget.getClientAreaLocation().x;
-                        if (shiftX == 0) return;
-
-                        Point oldFrom = lineWidget.getFrom();
-                        Point newFrom = new Point(oldFrom.x + shiftX, oldFrom.y);
-
-                        Point oldTo = lineWidget.getTo();
-                        Point newTo = new Point(oldTo.x + shiftX, oldTo.y);
-
-                        lineWidget.setTo(newTo);
-                        lineWidget.setFrom(newFrom);
-                        lineWidget.revalidate();
-
-                        LineWidget predecessor = lineWidget.getPredecessor();
-                        Point toPt = predecessor.getTo();
-                        predecessor.setTo(new Point(toPt.x + shiftX, toPt.y));
-                        predecessor.revalidate();
-
-                        for (LineWidget successor : lineWidget.getSuccessors()) {
-                            Point fromPt = successor.getFrom();
-                            successor.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
-                            successor.revalidate();
-                        }
-                    }
-                }));
+                attachMovementActions(newPredecessor);
             }
 
             processOutputSlot(outputSlot, connectionList, controlPointIndex + 1, currentPoint, newPredecessor);
         }
+    }
+
+
+    //  Movement logic encapsulation for LineWidgets
+    private void attachMovementActions(LineWidget lineWidget) {
+        lineWidget.getActions().addAction(ActionFactory.createMoveAction(null, new MoveProvider() {
+            Point startLocation;
+            Point origFrom;
+
+            @Override
+            public void movementStarted(Widget widget) {
+                LineWidget lineWidget = (LineWidget) widget;
+                startLocation = lineWidget.getClientAreaLocation();
+                origFrom = lineWidget.getFrom();
+            }
+
+            @Override
+            public void movementFinished(Widget widget) {
+                LineWidget lineWidget = (LineWidget) widget;
+                if (lineWidget.getPredecessor() == null) return;
+                if (lineWidget.getSuccessors().isEmpty()) return;
+                if (lineWidget.getFrom().x != lineWidget.getTo().x) return;
+
+                int shiftX = lineWidget.getClientAreaLocation().x - startLocation.x;
+                if (shiftX == 0) return;
+
+                Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
+                seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
+                seaLayoutManager.writeBack();
+                updatePositions();
+            }
+
+            @Override
+            public Point getOriginalLocation(Widget widget) {
+                LineWidget lineWidget = (LineWidget) widget;
+                return lineWidget.getClientAreaLocation();
+            }
+
+            @Override
+            public void setNewLocation(Widget widget, Point location) {
+                LineWidget lineWidget = (LineWidget) widget;
+                if (lineWidget.getPredecessor() == null) return;
+                if (lineWidget.getSuccessors().isEmpty()) return;
+                if (lineWidget.getFrom().x != lineWidget.getTo().x) return;
+
+                int shiftX = location.x - lineWidget.getClientAreaLocation().x;
+                if (shiftX == 0) return;
+
+                Point oldFrom = lineWidget.getFrom();
+                Point newFrom = new Point(oldFrom.x + shiftX, oldFrom.y);
+
+                Point oldTo = lineWidget.getTo();
+                Point newTo = new Point(oldTo.x + shiftX, oldTo.y);
+
+                lineWidget.setTo(newTo);
+                lineWidget.setFrom(newFrom);
+                lineWidget.revalidate();
+
+                LineWidget predecessor = lineWidget.getPredecessor();
+                Point toPt = predecessor.getTo();
+                predecessor.setTo(new Point(toPt.x + shiftX, toPt.y));
+                predecessor.revalidate();
+
+                for (LineWidget successor : lineWidget.getSuccessors()) {
+                    Point fromPt = successor.getFrom();
+                    successor.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
+                    successor.revalidate();
+                }
+            }
+        }));
     }
 
     private void rebuildFigureLayer() {
