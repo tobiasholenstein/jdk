@@ -55,14 +55,14 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private final Group group;
     private Set<Integer> hiddenNodesByID;
     private Set<Integer> selectedNodesByID;
-    private int position = -1;
-    private InputGraph inputGraph;
+    private int position;
     private Diagram diagram;
     private boolean showNodeHull;
     private final ChangedListener<FilterChain> filterChangedListener = filter -> buildDiagram();
 
     public DiagramScene(InputGraph inputGraph) {
         group = inputGraph.getGroup();
+        position = group.getGraphs().indexOf(inputGraph);
 
         FilterChainProvider provider = Lookup.getDefault().lookup(FilterChainProvider.class);
         assert provider != null;
@@ -89,7 +89,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
         seaLayoutManager = new HierarchicalLayoutManager();
 
-        setPosition(group.getGraphs().indexOf(inputGraph));
+        buildDiagram();
     }
 
     public void zoomIn(Point zoomCenter, double factor) {
@@ -147,41 +147,31 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return scrollPane;
     }
 
-    private void setPosition(int pos) {
-        if (position != pos && pos >= 0 && position < getGroup().getGraphs().size()) {
-            position = pos;
-            inputGraph = group.getGraphs().get(position);
-            buildDiagram();
-        }
+    public Group getGroup() {
+        return group;
     }
 
     public void nextGraph() {
-        if (position < getGroup().getGraphs().size() - 1) {
-            setPosition(position + 1);
+        if (position < group.size() - 1) {
+            ++position;
+            buildDiagram();
         }
     }
 
     public void previousGraph() {
         if (position > 0) {
-            setPosition(position - 1);
+            --position;
+            buildDiagram();
         }
     }
 
     public InputGraph getGraph() {
-        return inputGraph;
-    }
-
-    public Group getGroup() {
-        return group;
-    }
-
-    public Diagram getDiagram() {
-        return diagram;
+        return group.getGraphs().get(position);
     }
 
     private void buildDiagram() {
         // create diagram
-        diagram = new Diagram(inputGraph);
+        diagram = new Diagram(getGraph());
 
         // filter diagram
         filterChain.applyInOrder(diagram, filtersOrder);
@@ -353,7 +343,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         // clear Objects
         figureMap.clear();
         figureLayer.removeChildren();
-        for (Figure figure : getDiagram().getFigures()) {
+        for (Figure figure : diagram.getFigures()) {
             FigureWidget figureWidget = new FigureWidget(figure, this);
             CustomSelectAction figureSelectAction = new CustomSelectAction(new SelectProvider() {
                 public boolean isAimingAllowed(Widget widget, Point localLocation, boolean invertSelection) {
@@ -480,7 +470,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     public void extractSelectedNodes() {
-        HashSet<Integer> allNodes = new HashSet<>(getGroup().getAllNodes());
+        HashSet<Integer> allNodes = new HashSet<>(group.getAllNodes());
         allNodes.removeAll(selectedNodesByID);
         setHiddenNodesByID(allNodes);
     }

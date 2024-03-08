@@ -19,6 +19,10 @@ public class Group extends Properties.Entity implements ChangedEventProvider<Gro
         getProperties().setProperty("name", "");
     }
 
+    public int size() {
+        return graphs.size();
+    }
+
     public InputMethod getMethod() {
         return method;
     }
