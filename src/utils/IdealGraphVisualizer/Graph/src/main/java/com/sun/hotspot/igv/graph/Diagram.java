@@ -13,11 +13,10 @@ public class Diagram {
 
     public static final Font FONT = new Font("Arial", Font.PLAIN, 12);
     public static final Font SLOT_FONT = new Font("Arial", Font.PLAIN, 10);
-
-    private boolean showBoundaryFigures;
-    private Set<Figure> figures;
+    private final Set<Figure> figures;
     private final Set<Figure> hiddenFigures;
     private final Set<Figure> selectedFigures;
+    private boolean showBoundaryFigures;
 
 
     public Diagram(InputGraph graph) {
@@ -80,8 +79,8 @@ public class Diagram {
         return showBoundaryFigures;
     }
 
-    public void setShowBoundaryFigures(boolean b) {
-        showBoundaryFigures = b;
+    public void setShowBoundaryFigures(boolean show) {
+        showBoundaryFigures = show;
     }
 
     public List<Integer> getHiddenNodesByID() {
@@ -181,17 +180,16 @@ public class Diagram {
     }
 
     public void removeAllFigures(Set<Figure> figuresToRemove) {
-        for (Figure f : figuresToRemove) {
-            freeFigureSlots(f);
+        for (Figure figure : figuresToRemove) {
+            removeFigure(figure);
         }
+    }
 
-        Set<Figure> newFigures = new HashSet<>();
-        for (Figure figure : figures) {
-            if (!figuresToRemove.contains(figure)) {
-                newFigures.add(figure);
-            }
+    public void removeFigure(Figure figure) {
+        if (figures.contains(figure)) {
+            freeFigureSlots(figure);
+            figures.remove(figure);
         }
-        figures = newFigures;
     }
 
     private void freeFigureSlots(Figure Figure) {
@@ -204,12 +202,6 @@ public class Diagram {
         for (OutputSlot outputSlot : outputSlots) {
             Figure.removeOutputSlot(outputSlot);
         }
-    }
-
-    public void removeFigure(Figure figure) {
-        assert figures.contains(figure);
-        freeFigureSlots(figure);
-        figures.remove(figure);
     }
 
     public Set<Figure> getVisibleFigures() {

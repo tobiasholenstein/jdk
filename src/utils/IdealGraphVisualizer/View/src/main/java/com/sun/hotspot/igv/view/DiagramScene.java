@@ -425,31 +425,12 @@ public class DiagramScene extends ObjectScene {
         return diagram.getHiddenNodesByID();
     }
 
-    public void extractFigure(Figure figure) {
-        diagram.extractFigure(figure);
-        computeLayout();
-    }
-
     private void selectFigureExclusively(Figure figure) {
         diagram.selectFigureExclusively(figure);
     }
 
-    public void hideFigure(Figure figure) {
-        diagram.hideFigure(figure);
-        computeLayout();
-    }
-
-    public void showFigure(Figure figure) {
-        diagram.showFigure(figure);
-        computeLayout();
-    }
-
-    public boolean allFiguresVisible() {
-        return diagram.allFiguresVisible();
-    }
-
-    public void showAllFigures() {
-        diagram.showAllFigures();
+    public void extractFigure(Figure figure) {
+        diagram.extractFigure(figure);
         computeLayout();
     }
 
@@ -458,9 +439,28 @@ public class DiagramScene extends ObjectScene {
         computeLayout();
     }
 
+    public void hideFigure(Figure figure) {
+        diagram.hideFigure(figure);
+        computeLayout();
+    }
+
     public void hideSelectedFigures() {
         diagram.hideSelectedFigures();
         computeLayout();
+    }
+
+    public void showFigure(Figure figure) {
+        diagram.showFigure(figure);
+        computeLayout();
+    }
+
+    public void showAllFigures() {
+        diagram.showAllFigures();
+        computeLayout();
+    }
+
+    public boolean allFiguresVisible() {
+        return diagram.allFiguresVisible();
     }
 
     private Set<FigureWidget> getSelectedFigureWidgets() {
