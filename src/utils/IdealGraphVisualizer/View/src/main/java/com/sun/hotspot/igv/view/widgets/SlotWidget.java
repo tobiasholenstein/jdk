@@ -24,7 +24,6 @@
 package com.sun.hotspot.igv.view.widgets;
 
 import com.sun.hotspot.igv.graph.Diagram;
-import com.sun.hotspot.igv.graph.Figure;
 import com.sun.hotspot.igv.graph.Slot;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
@@ -156,9 +155,6 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
             hiddenNodes = new HashSet<>(diagramScene.getGroup().getAllNodes());
         }
         hiddenNodes.remove(figureWidget.getFigure().getInputNode().getId());
-        if (slot.getSourceNode() != null) {
-            hiddenNodes.remove(slot.getSourceNode().getId());
-        }
         this.diagramScene.setHiddenNodesByID(hiddenNodes);
     }
 }

@@ -222,13 +222,6 @@ public class Figure extends Properties.Entity implements Vertex {
         return Collections.unmodifiableList(inputSlots);
     }
 
-    public Set<Slot> getSlots() {
-        Set<Slot> result = new HashSet<>();
-        result.addAll(getInputSlots());
-        result.addAll(getOutputSlots());
-        return result;
-    }
-
     public List<OutputSlot> getOutputSlots() {
         return Collections.unmodifiableList(outputSlots);
     }

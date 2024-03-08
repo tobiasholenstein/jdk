@@ -43,13 +43,6 @@ public class InputSlot extends Slot {
         return getFigure().getInputSlots().indexOf(this);
     }
 
-    @Override
-    public void setPosition(int position) {
-        List<InputSlot> inputSlots = getFigure().inputSlots;
-        InputSlot s = inputSlots.remove(position);
-        inputSlots.add(position, s);
-    }
-
     public int getOriginalIndex() {
         return originalIndex;
     }

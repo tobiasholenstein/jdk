@@ -41,19 +41,14 @@ public abstract class Slot implements Port, Properties.Provider {
     @Override
     public Properties getProperties() {
         Properties p = new Properties();
-        if (hasSourceNodes()) {
-            InputNode n = getSourceNode();
-            p.add(n.getProperties());
+        if (sourceNode != null) {
+            p.add(sourceNode.getProperties());
         } else {
             p.setProperty("name", "Slot");
             p.setProperty("figure", figure.getProperties().get("name"));
             p.setProperty("connectionCount", Integer.toString(connections.size()));
         }
         return p;
-    }
-
-    public InputNode getSourceNode() {
-        return sourceNode;
     }
 
     public void setSourceNode(InputNode n) {
@@ -97,8 +92,7 @@ public abstract class Slot implements Port, Properties.Provider {
             }
         }
 
-        InputNode n = getSourceNode();
-        sb.append(StringUtils.escapeHTML(n.getProperties().resolveString(shortNodeText)));
+        sb.append(StringUtils.escapeHTML(sourceNode.getProperties().resolveString(shortNodeText)));
 
         return sb.toString();
     }
@@ -108,7 +102,7 @@ public abstract class Slot implements Port, Properties.Provider {
     }
 
     public boolean hasSourceNodes() {
-        return getSourceNode() != null;
+        return sourceNode != null;
     }
 
     public void setText(String s) {
@@ -142,8 +136,6 @@ public abstract class Slot implements Port, Properties.Provider {
     }
 
     public abstract int getPosition();
-
-    public abstract void setPosition(int position);
 
     public static <T> List<T> getAllBefore(List<T> inputList, T tIn) {
         List<T> result = new ArrayList<>();
