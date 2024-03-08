@@ -237,9 +237,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void createLineWidgets(FigureWidget fromFigureWidget, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget prevLineWidget) {
-        Map<Point, List<Connection>> pointMap = new HashMap<>(connections.size());
-
-        if (prevLineWidget != null) {
+        if (prevLineWidget != null && controlPointIndex > 1) {
             if (controlPointIndex == 2) {
                 figureWidgetToOutLineWidgets.computeIfAbsent(fromFigureWidget, k -> new HashSet<>()).add(prevLineWidget);
             }
@@ -252,6 +250,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             }
         }
 
+        Map<Point, List<Connection>> pointMap = new HashMap<>(connections.size());
         for (Connection connection : connections) {
             List<Point> controlPoints = connection.getControlPoints();
             if (controlPointIndex < controlPoints.size()) {
@@ -263,7 +262,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         for (Map.Entry<Point, List<Connection>> entry : pointMap.entrySet()) {
             Point currentPoint = entry.getKey();
             List<Connection> connectionList = entry.getValue();
-            LineWidget lineWidget = null;
             if (lastPoint != null) {
                 boolean isBold = connectionList.stream().anyMatch(c -> c.getStyle() == Connection.ConnectionStyle.BOLD);
                 boolean isDashed = connectionList.stream().allMatch(c -> c.getStyle() == Connection.ConnectionStyle.DASHED);
@@ -271,13 +269,15 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                 Point src = new Point(lastPoint);
                 Point dest = new Point(currentPoint);
-                lineWidget = new LineWidget(this, fromFigureWidget, connectionList, src, dest, prevLineWidget, isBold, isDashed);
+                LineWidget lineWidget = new LineWidget(this, fromFigureWidget, connectionList, src, dest, prevLineWidget, isBold, isDashed);
                 lineWidget.setVisible(isVisible);
 
                 connectionLayer.addChild(lineWidget);
                 attachLineMovement(lineWidget);
+                createLineWidgets(fromFigureWidget, connectionList, controlPointIndex + 1, currentPoint, lineWidget);
+            } else {
+                createLineWidgets(fromFigureWidget, connectionList, controlPointIndex + 1, currentPoint, null);
             }
-            createLineWidgets(fromFigureWidget, connectionList, controlPointIndex + 1, currentPoint, lineWidget);
         }
     }
 
