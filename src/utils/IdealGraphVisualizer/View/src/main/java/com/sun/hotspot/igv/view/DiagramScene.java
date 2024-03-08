@@ -237,19 +237,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void createLineWidgets(FigureWidget fromFigureWidget, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget prevLineWidget) {
-        if (prevLineWidget != null && controlPointIndex > 1) {
-            if (controlPointIndex == 2) {
-                figureWidgetToOutLineWidgets.computeIfAbsent(fromFigureWidget, k -> new HashSet<>()).add(prevLineWidget);
-            }
-
-            for (Connection connection : connections) {
-                if (controlPointIndex == connection.getControlPoints().size()) {
-                    FigureWidget toFigureWidget = figureMap.get(connection.getTo());
-                    figureWidgetToInLineWidgets.computeIfAbsent(toFigureWidget, k -> new HashSet<>()).add(prevLineWidget);
-                }
-            }
-        }
-
         Map<Point, List<Connection>> pointMap = new HashMap<>(connections.size());
         for (Connection connection : connections) {
             List<Point> controlPoints = connection.getControlPoints();
@@ -274,6 +261,17 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
 
                 connectionLayer.addChild(lineWidget);
                 attachLineMovement(lineWidget);
+
+                if (controlPointIndex == 1) {
+                    figureWidgetToOutLineWidgets.computeIfAbsent(fromFigureWidget, k -> new HashSet<>()).add(lineWidget);
+                }
+
+                for (Connection connection : connections) {
+                    if (controlPointIndex == connection.getControlPoints().size() - 1) {
+                        FigureWidget toFigureWidget = figureMap.get(connection.getTo());
+                        figureWidgetToInLineWidgets.computeIfAbsent(toFigureWidget, k -> new HashSet<>()).add(lineWidget);
+                    }
+                }
                 createLineWidgets(fromFigureWidget, connectionList, controlPointIndex + 1, currentPoint, lineWidget);
             } else {
                 createLineWidgets(fromFigureWidget, connectionList, controlPointIndex + 1, currentPoint, null);
