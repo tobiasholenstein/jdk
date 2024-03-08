@@ -155,19 +155,10 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
         if (diagramScene.getHiddenNodesByID().isEmpty()) {
             hiddenNodes = new HashSet<>(diagramScene.getGroup().getAllNodes());
         }
-
-        boolean progress = false;
-        for (Figure f : diagramScene.getDiagram().getFigures()) {
-            for (Slot s : f.getSlots()) {
-                if (s.getSourceNode().getId() == slot.getSourceNode().getId()) {
-                    progress = true;
-                    hiddenNodes.remove(f.getInputNode().getId());
-                }
-            }
+        hiddenNodes.remove(figureWidget.getFigure().getInputNode().getId());
+        if (slot.getSourceNode() != null) {
+            hiddenNodes.remove(slot.getSourceNode().getId());
         }
-
-        if (progress) {
-            this.diagramScene.setHiddenNodesByID(hiddenNodes);
-        }
+        this.diagramScene.setHiddenNodesByID(hiddenNodes);
     }
 }

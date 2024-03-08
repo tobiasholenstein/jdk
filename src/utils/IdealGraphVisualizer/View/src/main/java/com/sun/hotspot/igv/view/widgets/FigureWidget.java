@@ -103,7 +103,7 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
             lw.setVerticalAlignment(LabelWidget.VerticalAlignment.CENTER);
             lw.setCheckClipping(false);
         }
-        formatExtraLabel(false);
+        formatExtraLabel();
 
         for (int i = 1; i < labelWidgets.size(); i++) {
             labelWidgets.get(i).setFont(Diagram.FONT.deriveFont(Font.ITALIC));
@@ -160,18 +160,11 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
         }
     }
 
-    @Override
-    public boolean isHitAt(Point localLocation) {
-        return middleWidget.isHitAt(localLocation);
-    }
-
-    private void formatExtraLabel(boolean selected) {
-        // If the figure contains an extra label, use a light italic font to
-        // differentiate it from the regular label.
+    private void formatExtraLabel() {
         if (getFigure().getProperties().get("extra_label") != null) {
             LabelWidget extraLabelWidget = labelWidgets.get(labelWidgets.size() - 1);
             extraLabelWidget.setFont(Diagram.FONT.deriveFont(Font.ITALIC));
-            extraLabelWidget.setForeground(selected ? getTextColor() : Color.DARK_GRAY);
+            extraLabelWidget.setForeground(Color.DARK_GRAY);
         }
     }
 
@@ -206,12 +199,6 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
 
     public Figure getFigure() {
         return figure;
-    }
-
-    public void changeVisibility(boolean visible) {
-        this.setVisible(visible);
-        figure.setVisible(visible);
-
     }
 
     private Color getTextColor() {

@@ -186,15 +186,6 @@ public class LineWidget extends Widget implements DoubleClickHandler {
         super.paintWidget();
     }
 
-    @Override
-    public boolean isHitAt(Point localPoint) {
-        return Line2D.ptLineDistSq(from.x, from.y, to.x, to.y, localPoint.x, localPoint.y) <= BORDER * BORDER;
-    }
-
-    @Override
-    protected void notifyStateChanged(ObjectState previousState, ObjectState state) {
-    }
-
     public LineWidget getPredecessor() {
         return predecessor;
     }
