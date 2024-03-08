@@ -239,8 +239,17 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private void createLineWidgets(FigureWidget fromFigureWidget, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget prevLineWidget) {
         Map<Point, List<Connection>> pointMap = new HashMap<>(connections.size());
 
-        if (prevLineWidget != null && controlPointIndex == 2) {
-            figureWidgetToOutLineWidgets.computeIfAbsent(fromFigureWidget, k -> new HashSet<>()).add(prevLineWidget);
+        if (prevLineWidget != null) {
+            if (controlPointIndex == 2) {
+                figureWidgetToOutLineWidgets.computeIfAbsent(fromFigureWidget, k -> new HashSet<>()).add(prevLineWidget);
+            }
+
+            for (Connection connection : connections) {
+                if (controlPointIndex == connection.getControlPoints().size()) {
+                    FigureWidget toFigureWidget = figureMap.get(connection.getTo());
+                    figureWidgetToInLineWidgets.computeIfAbsent(toFigureWidget, k -> new HashSet<>()).add(prevLineWidget);
+                }
+            }
         }
 
         for (Connection connection : connections) {
@@ -248,9 +257,6 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             if (controlPointIndex < controlPoints.size()) {
                 Point currentPoint = new Point(controlPoints.get(controlPointIndex));
                 pointMap.computeIfAbsent(currentPoint, k -> new ArrayList<>()).add(connection);
-            } else if (controlPointIndex == controlPoints.size() && prevLineWidget != null) {
-                FigureWidget toFigureWidget = figureMap.get(connection.getTo());
-                figureWidgetToInLineWidgets.computeIfAbsent(toFigureWidget, k -> new HashSet<>()).add(prevLineWidget);
             }
         }
 
