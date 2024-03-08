@@ -182,7 +182,7 @@ public class Diagram {
 
     public void removeAllFigures(Set<Figure> figuresToRemove) {
         for (Figure f : figuresToRemove) {
-            freeFigure(f);
+            freeFigureSlots(f);
         }
 
         Set<Figure> newFigures = new HashSet<>();
@@ -194,22 +194,22 @@ public class Diagram {
         figures = newFigures;
     }
 
-    private void freeFigure(Figure succ) {
-        List<InputSlot> inputSlots = new ArrayList<>(succ.getInputSlots());
-        for (InputSlot s : inputSlots) {
-            succ.removeInputSlot(s);
+    private void freeFigureSlots(Figure Figure) {
+        List<InputSlot> inputSlots = new ArrayList<>(Figure.getInputSlots());
+        for (InputSlot inputSlot : inputSlots) {
+            Figure.removeInputSlot(inputSlot);
         }
 
-        List<OutputSlot> outputSlots = new ArrayList<>(succ.getOutputSlots());
-        for (OutputSlot s : outputSlots) {
-            succ.removeOutputSlot(s);
+        List<OutputSlot> outputSlots = new ArrayList<>(Figure.getOutputSlots());
+        for (OutputSlot outputSlot : outputSlots) {
+            Figure.removeOutputSlot(outputSlot);
         }
     }
 
-    public void removeFigure(Figure succ) {
-        assert this.figures.contains(succ);
-        freeFigure(succ);
-        this.figures.remove(succ);
+    public void removeFigure(Figure figure) {
+        assert figures.contains(figure);
+        freeFigureSlots(figure);
+        figures.remove(figure);
     }
 
     public Set<Figure> getVisibleFigures() {
@@ -217,16 +217,10 @@ public class Diagram {
     }
 
     public Set<Connection> getVisibleConnections() {
-        return getConnections().stream().filter(Connection::isVisible).collect(Collectors.toSet());
-    }
-
-    public Set<Connection> getConnections() {
-        Set<Connection> connections = new HashSet<>();
-        for (Figure f : figures) {
-            for (InputSlot s : f.getInputSlots()) {
-                connections.addAll(s.getConnections());
-            }
-        }
-        return connections;
+        return figures.stream()
+                .flatMap(figure -> figure.getInputSlots().stream()) // all input slots of all figures
+                .flatMap(inputSlot -> inputSlot.getConnections().stream()) // all connections of all input slots
+                .filter(Connection::isVisible) // only include visible connections
+                .collect(Collectors.toSet());
     }
 }
