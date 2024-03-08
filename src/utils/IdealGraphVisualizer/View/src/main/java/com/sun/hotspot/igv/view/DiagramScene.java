@@ -202,10 +202,11 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void updateVisibleFigureWidgets() {
-        for (Figure figure : diagram.getFigures()) {
+        // Initially set all figures to not boundary and update visibility based on hiddenNodesByID
+        diagram.getFigures().forEach(figure -> {
             figure.setBoundary(false);
             figure.setVisible(!hiddenNodesByID.contains(figure.getInputNode().getId()));
-        }
+        });
 
         if (showNodeHull) { // update node hull
             // Marks non-visible figures with visible neighbors as boundary figures and makes them visible
@@ -220,11 +221,8 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
             selectedNodesByID.removeAll(hiddenNodesByID);
         }
 
-        for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
-            Figure figure = entry.getKey();
-            FigureWidget fw = entry.getValue();
-            fw.setVisible(figure.isVisible());
-        }
+        // Update figure widgets' visibility
+        figureMap.forEach((figure, fw) -> fw.setVisible(figure.isVisible()));
     }
 
     private void updateWidgetPositions() {
