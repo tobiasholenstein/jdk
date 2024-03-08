@@ -23,8 +23,7 @@
  */
 package com.sun.hotspot.igv.graph;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Thomas Wuerthinger
@@ -38,11 +37,11 @@ public class AndSelector implements Selector {
     }
 
     @Override
-    public List<Figure> selected(Diagram d) {
-        List<Figure> result = d.getFigures();
+    public Set<Figure> selected(Diagram d) {
+        Set<Figure> result = d.getFigures();
         for (Selector s : selectors) {
-            List<Figure> selected = s.selected(d);
-            List<Figure> newResult = new ArrayList<>();
+            Set<Figure> selected = s.selected(d);
+            Set<Figure> newResult = new HashSet<>();
             for (Figure f : result) {
                 if (selected.contains(f)) {
                     newResult.add(f);

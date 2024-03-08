@@ -29,11 +29,12 @@ import com.sun.hotspot.igv.graph.InputSlot;
 import com.sun.hotspot.igv.graph.Selector;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class RemoveEmptySlotsFilter extends AbstractFilter {
 
-    private String name;
-    private Selector selector;
+    private final String name;
+    private final Selector selector;
 
     public RemoveEmptySlotsFilter(String name, Selector selector) {
         this.name = name;
@@ -47,7 +48,7 @@ public class RemoveEmptySlotsFilter extends AbstractFilter {
 
     @Override
     public void apply(Diagram diagram) {
-        List<Figure> list = selector.selected(diagram);
+        Set<Figure> list = selector.selected(diagram);
         for (Figure f : list) {
             List<InputSlot> empty = new ArrayList<>();
             for (InputSlot is : f.getInputSlots()) {

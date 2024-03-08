@@ -32,7 +32,7 @@ import java.util.List;
  */
 public class RemoveSelfLoopsFilter extends AbstractFilter {
 
-    private String name;
+    private final String name;
 
     /**
      * Creates a new instance of RemoveSelfLoops
@@ -66,7 +66,7 @@ public class RemoveSelfLoopsFilter extends AbstractFilter {
                     c.remove();
 
                     OutputSlot os = c.getOutputSlot();
-                    if (os.getConnections().size() == 0) {
+                    if (os.getConnections().isEmpty()) {
                         f.removeSlot(os);
                     }
 

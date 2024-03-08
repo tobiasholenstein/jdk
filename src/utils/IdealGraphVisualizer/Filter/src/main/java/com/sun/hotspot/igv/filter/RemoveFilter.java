@@ -36,8 +36,8 @@ import java.util.Set;
  */
 public class RemoveFilter extends AbstractFilter {
 
-    private List<RemoveRule> rules;
-    private String name;
+    private final List<RemoveRule> rules;
+    private final String name;
 
     public RemoveFilter(String name) {
         this.name = name;
@@ -52,7 +52,7 @@ public class RemoveFilter extends AbstractFilter {
     @Override
     public void apply(Diagram diagram) {
         for (RemoveRule r : rules) {
-            List<Figure> selected = r.getSelector().selected(diagram);
+            Set<Figure> selected = r.getSelector().selected(diagram);
             Set<Figure> toRemove = new HashSet<>(selected);
 
             if (r.getRemoveOrphans()) {
@@ -80,8 +80,8 @@ public class RemoveFilter extends AbstractFilter {
 
     public static class RemoveRule {
 
-        private Selector selector;
-        private boolean removeOrphans;
+        private final Selector selector;
+        private final boolean removeOrphans;
 
         public RemoveRule(Selector selector) {
             this(selector, false);

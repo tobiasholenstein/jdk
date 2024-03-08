@@ -34,9 +34,9 @@ import org.openide.cookies.OpenCookie;
  */
 public interface Filter extends Properties.Provider, ChangedEventProvider<Filter> {
 
-    public String getName();
+    String getName();
 
-    public void apply(Diagram d);
+    void apply(Diagram d);
 
     OpenCookie getEditor();
 

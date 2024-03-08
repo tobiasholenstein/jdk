@@ -34,8 +34,8 @@ import org.openide.cookies.OpenCookie;
  */
 public abstract class AbstractFilter implements Filter {
 
-    private ChangedEvent<Filter> changedEvent;
-    private Properties properties;
+    private final ChangedEvent<Filter> changedEvent;
+    private final Properties properties;
 
     public AbstractFilter() {
         changedEvent = new ChangedEvent<>(this);
@@ -45,7 +45,7 @@ public abstract class AbstractFilter implements Filter {
     protected static String getFirstMatchingProperty(Figure figure, String[] propertyNames) {
         for (String propertyName : propertyNames) {
             String s = figure.getProperties().resolveString(propertyName);
-            if (s != null && !s.isEmpty()) {
+            if (!s.isEmpty()) {
                 return s;
             }
         }
@@ -65,9 +65,5 @@ public abstract class AbstractFilter implements Filter {
     @Override
     public ChangedEvent<Filter> getChangedEvent() {
         return changedEvent;
-    }
-
-    protected void fireChangedEvent() {
-        changedEvent.fire();
     }
 }

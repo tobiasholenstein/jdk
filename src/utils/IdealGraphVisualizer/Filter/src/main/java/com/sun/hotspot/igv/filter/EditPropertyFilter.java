@@ -26,7 +26,7 @@ package com.sun.hotspot.igv.filter;
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
 import com.sun.hotspot.igv.graph.Selector;
-import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 public class EditPropertyFilter extends AbstractFilter {
@@ -34,8 +34,8 @@ public class EditPropertyFilter extends AbstractFilter {
     private final String[] inputPropertyNames;
     private final String outputPropertyName;
     private final Function<String[], String> editFunction;
-    private String name;
-    private Selector selector;
+    private final String name;
+    private final Selector selector;
 
     public EditPropertyFilter(String name, Selector selector,
                               String[] inputPropertyNames, String outputPropertyName,
@@ -54,7 +54,7 @@ public class EditPropertyFilter extends AbstractFilter {
 
     @Override
     public void apply(Diagram diagram) {
-        List<Figure> list = selector.selected(diagram);
+        Set<Figure> list = selector.selected(diagram);
         String[] inputVals = new String[inputPropertyNames.length];
         for (Figure f : list) {
             for (int i = 0; i < inputPropertyNames.length; i++) {

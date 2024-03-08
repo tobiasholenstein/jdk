@@ -70,14 +70,13 @@ public class CustomFilter extends AbstractFilter {
         return this::openInEditor;
     }
 
-    public boolean openInEditor() {
+    public void openInEditor() {
         EditFilterDialog dialog = new EditFilterDialog(CustomFilter.this);
         dialog.setVisible(true);
         boolean accepted = dialog.wasAccepted();
         if (accepted) {
             getChangedEvent().fire();
         }
-        return accepted;
     }
 
     @Override

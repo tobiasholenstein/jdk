@@ -26,6 +26,7 @@ package com.sun.hotspot.igv.filter;
 import com.sun.hotspot.igv.graph.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Filter that hides slots with no connections.
@@ -51,7 +52,7 @@ public class UnconnectedSlotFilter extends AbstractFilter {
             return;
         }
 
-        List<Figure> figures = d.getFigures();
+        Set<Figure> figures = d.getFigures();
         for (Figure f : figures) {
             List<Slot> remove = new ArrayList<>();
             if (removeInputs) {

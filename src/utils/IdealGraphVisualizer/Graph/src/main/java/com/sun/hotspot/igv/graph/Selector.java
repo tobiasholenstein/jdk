@@ -23,12 +23,11 @@
  */
 package com.sun.hotspot.igv.graph;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * @author Thomas Wuerthinger
  */
 public interface Selector {
-
-    List<Figure> selected(Diagram d);
+    Set<Figure> selected(Diagram d);
 }

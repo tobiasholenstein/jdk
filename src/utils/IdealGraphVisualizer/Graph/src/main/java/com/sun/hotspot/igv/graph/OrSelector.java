@@ -24,7 +24,9 @@
 package com.sun.hotspot.igv.graph;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Thomas Wuerthinger
@@ -38,14 +40,10 @@ public class OrSelector implements Selector {
     }
 
     @Override
-    public List<Figure> selected(Diagram d) {
-        List<Figure> result = new ArrayList<>();
+    public Set<Figure> selected(Diagram d) {
+        Set<Figure> result = new HashSet<>();
         for (Selector s : selectors) {
-            for (Figure f : s.selected(d)) {
-                if (!result.contains(f)) {
-                    result.add(f);
-                }
-            }
+            result.addAll(s.selected(d));
         }
         return result;
     }

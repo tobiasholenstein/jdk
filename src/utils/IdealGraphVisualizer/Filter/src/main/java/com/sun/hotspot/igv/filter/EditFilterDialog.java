@@ -48,6 +48,7 @@ public class EditFilterDialog extends javax.swing.JDialog {
     private javax.swing.JButton okButton;
     private javax.swing.JLabel sourceLabel;
     private javax.swing.JTextPane sourceTextArea;
+
     /**
      * Creates new form EditFilterDialog
      */

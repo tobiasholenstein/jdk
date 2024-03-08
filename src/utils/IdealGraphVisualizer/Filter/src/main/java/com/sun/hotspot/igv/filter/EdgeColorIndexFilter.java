@@ -26,6 +26,7 @@ package com.sun.hotspot.igv.filter;
 import com.sun.hotspot.igv.graph.*;
 import java.awt.Color;
 import java.util.List;
+import java.util.Set;
 
 public class EdgeColorIndexFilter extends AbstractFilter {
 
@@ -50,7 +51,7 @@ public class EdgeColorIndexFilter extends AbstractFilter {
 
     @Override
     public void apply(Diagram d) {
-        List<Figure> figures = d.getFigures();
+        Set<Figure> figures = d.getFigures();
         for (Figure f : figures) {
             Slot[] slots;
             if (applyTo.equals(INPUTS)) {

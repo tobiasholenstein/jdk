@@ -6,24 +6,28 @@ import com.sun.hotspot.igv.data.InputNode;
 import java.awt.Font;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class Diagram {
 
     public static final Font FONT = new Font("Arial", Font.PLAIN, 12);
     public static final Font SLOT_FONT = new Font("Arial", Font.PLAIN, 10);
-    private final String nodeText;
-    private final String shortNodeText;
-    private List<Figure> figures;
+
+    private boolean showBoundaryFigures;
+    private Set<Figure> figures;
+    private final Set<Figure> hiddenFigures;
+    private final Set<Figure> selectedFigures;
 
 
     public Diagram(InputGraph graph) {
-        assert graph != null;
-        this.nodeText = "[idx] [name]";
-        this.shortNodeText = "[idx] [name]";
-        this.figures = new ArrayList<>();
-        int curId = 0;
+        showBoundaryFigures = true;
 
+        figures = new HashSet<>();
+        hiddenFigures = new HashSet<>();
+        selectedFigures = new HashSet<>();
+
+        int curId = 0;
         Collection<InputNode> nodes = graph.getNodes();
         Hashtable<Integer, Figure> figureHash = new Hashtable<>();
         for (InputNode n : nodes) {
@@ -31,7 +35,7 @@ public class Diagram {
             curId++;
             f.getProperties().add(n.getProperties());
             figureHash.put(n.getId(), f);
-            this.figures.add(f);
+            figures.add(f);
         }
 
         for (InputEdge e : graph.getEdges()) {
@@ -72,16 +76,91 @@ public class Diagram {
         }
     }
 
+    public boolean getShowBoundaryFigures() {
+        return showBoundaryFigures;
+    }
+
+    public void setShowBoundaryFigures(boolean b) {
+        showBoundaryFigures = b;
+    }
+
+    public List<Integer> getHiddenNodesByID() {
+        return hiddenFigures.stream()
+                .map(hiddenFigure -> hiddenFigure.getInputNode().getId())
+                .toList();
+    }
+
+    public void extractFigure(Figure figure) {
+        hiddenFigures.clear();
+        hiddenFigures.addAll(figures);
+        hiddenFigures.remove(figure);
+    }
+
+    public void selectFigureExclusively(Figure figure) {
+        selectedFigures.clear();
+        selectedFigures.add(figure);
+    }
+
+    public void hideFigure(Figure figure) {
+        hiddenFigures.add(figure);
+    }
+
+    public void showFigure(Figure figure) {
+        hiddenFigures.remove(figure);
+    }
+
+    public boolean allFiguresVisible() {
+        return hiddenFigures.isEmpty();
+    }
+
+    public void showAllFigures() {
+        hiddenFigures.clear();
+    }
+
+    public boolean isFigureSelected(Figure figure) {
+        return selectedFigures.contains(figure);
+    }
+
+    public void extractSelectedFigures() {
+        hiddenFigures.clear();
+        hiddenFigures.addAll(figures);
+        hiddenFigures.removeAll(selectedFigures);
+    }
+
+    public void hideSelectedFigures() {
+        hiddenFigures.addAll(selectedFigures);
+    }
+
+    public void updateFigureVisibility() {
+        // Initially set all figures to not boundary and update visibility based on hiddenNodesByID
+        figures.forEach(figure -> {
+            figure.setBoundary(false);
+            figure.setVisible(!hiddenFigures.contains(figure));
+        });
+        selectedFigures.removeAll(hiddenFigures);
+
+        if (showBoundaryFigures) {
+            // Marks non-visible figures with visible neighbors as boundary figures and makes them visible
+            figures.stream()
+                    .filter(figure -> !figure.isVisible())
+                    .filter(figure -> Stream.concat(figure.getPredecessors().stream(), figure.getSuccessors().stream())
+                            .anyMatch(Figure::isVisible))
+                    .peek(figure -> figure.setBoundary(true))
+                    .toList() // needed!
+                    .forEach(figure -> figure.setVisible(true));
+        }
+    }
+
     public String getNodeText() {
-        return nodeText;
+        return "[idx] [name]";
     }
 
     public String getShortNodeText() {
-        return shortNodeText;
+        return "[idx] [name]";
     }
 
-    public List<Figure> getFigures() {
-        return Collections.unmodifiableList(figures);
+    public Set<Figure> getFigures() {
+        return Collections.unmodifiableSet(figures);
     }
 
     public Connection createConnection(InputSlot inputSlot, OutputSlot outputSlot, String label) {
@@ -106,10 +185,10 @@ public class Diagram {
             freeFigure(f);
         }
 
-        ArrayList<Figure> newFigures = new ArrayList<>();
-        for (Figure f : this.figures) {
-            if (!figuresToRemove.contains(f)) {
-                newFigures.add(f);
+        Set<Figure> newFigures = new HashSet<>();
+        for (Figure figure : figures) {
+            if (!figuresToRemove.contains(figure)) {
+                newFigures.add(figure);
             }
         }
         figures = newFigures;

@@ -23,19 +23,19 @@
  */
 package com.sun.hotspot.igv.filter;
 
-import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.graph.*;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Thomas Wuerthinger
  */
 public class ConnectionFilter extends AbstractFilter {
 
-    private List<ConnectionStyleRule> connectionStyleRules;
-    private String name;
+    private final List<ConnectionStyleRule> connectionStyleRules;
+    private final String name;
 
     public ConnectionFilter(String name) {
         this.name = name;
@@ -49,10 +49,8 @@ public class ConnectionFilter extends AbstractFilter {
 
     @Override
     public void apply(Diagram diagram) {
-
-        Properties.PropertySelector<Figure> selector = new Properties.PropertySelector<>(diagram.getFigures());
         for (ConnectionStyleRule rule : connectionStyleRules) {
-            List<Figure> figures = null;
+            Set<Figure> figures;
             if (rule.getSelector() != null) {
                 figures = rule.getSelector().selected(diagram);
             } else {
@@ -76,9 +74,9 @@ public class ConnectionFilter extends AbstractFilter {
 
     public static class ConnectionStyleRule {
 
-        private Color lineColor;
-        private Connection.ConnectionStyle lineStyle;
-        private Selector selector;
+        private final Color lineColor;
+        private final Connection.ConnectionStyle lineStyle;
+        private final Selector selector;
 
         public ConnectionStyleRule(Selector selector, Color lineColor, Connection.ConnectionStyle lineStyle) {
             this.selector = selector;

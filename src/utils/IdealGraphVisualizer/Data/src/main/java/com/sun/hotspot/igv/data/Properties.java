@@ -432,8 +432,8 @@ public class Properties implements Serializable, Iterable<Property> {
             return null;
         }
 
-        public List<T> selectMultiple(PropertyMatcher matcher) {
-            List<T> result = new ArrayList<>();
+        public Set<T> selectMultiple(PropertyMatcher matcher) {
+            Set<T> result = new HashSet<>();
 
             for (T t : objects) {
                 Property p = t.getProperties().selectSingle(matcher);

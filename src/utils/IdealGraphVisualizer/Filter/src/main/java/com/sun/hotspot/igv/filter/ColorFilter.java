@@ -23,20 +23,20 @@
  */
 package com.sun.hotspot.igv.filter;
 
-import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.graph.*;
 import com.sun.hotspot.igv.graph.Connection.ConnectionStyle;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Thomas Wuerthinger
  */
 public class ColorFilter extends AbstractFilter {
 
-    private List<ColorRule> colorRules;
-    private String name;
+    private final List<ColorRule> colorRules;
+    private final String name;
 
     public ColorFilter(String name) {
         this.name = name;
@@ -50,11 +50,9 @@ public class ColorFilter extends AbstractFilter {
 
     @Override
     public void apply(Diagram diagram) {
-
-        Properties.PropertySelector<Figure> selector = new Properties.PropertySelector<>(diagram.getFigures());
         for (ColorRule rule : colorRules) {
             if (rule.getSelector() != null) {
-                List<Figure> figures = rule.getSelector().selected(diagram);
+                Set<Figure> figures = rule.getSelector().selected(diagram);
                 for (Figure f : figures) {
                     applyRule(rule, f);
                     if (rule.getColor() != null) {
@@ -95,10 +93,10 @@ public class ColorFilter extends AbstractFilter {
 
     public static class ColorRule {
 
-        private Color color;
-        private Color lineColor;
-        private Connection.ConnectionStyle lineStyle;
-        private Selector selector;
+        private final Color color;
+        private final Color lineColor;
+        private final Connection.ConnectionStyle lineStyle;
+        private final Selector selector;
 
         public ColorRule(Selector selector, Color c) {
             this(selector, c, null, null);

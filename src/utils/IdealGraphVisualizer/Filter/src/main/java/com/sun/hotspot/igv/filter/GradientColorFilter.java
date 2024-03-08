@@ -28,7 +28,7 @@ import com.sun.hotspot.igv.graph.Figure;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.Raster;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Filter that colors nodes using a customizable color gradient, based on how
@@ -71,7 +71,7 @@ public class GradientColorFilter extends AbstractFilter {
             shades[i] = new Color(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
         }
 
-        List<Figure> figures = d.getFigures();
+        Set<Figure> figures = d.getFigures();
         for (Figure f : figures) {
             String property = f.getProperties().get(propertyName);
             if (property != null) {

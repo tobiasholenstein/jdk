@@ -24,16 +24,16 @@
 package com.sun.hotspot.igv.filter;
 
 import com.sun.hotspot.igv.graph.*;
-import java.util.List;
+import java.util.Set;
 
 /**
  * @author Thomas Wuerthinger
  */
 public class SplitFilter extends AbstractFilter {
 
-    private String name;
-    private Selector selector;
-    private String[] propertyNames;
+    private final String name;
+    private final Selector selector;
+    private final String[] propertyNames;
 
     public SplitFilter(String name, Selector selector, String[] propertyNames) {
         this.name = name;
@@ -48,8 +48,7 @@ public class SplitFilter extends AbstractFilter {
 
     @Override
     public void apply(Diagram d) {
-        List<Figure> list = selector.selected(d);
-
+        Set<Figure> list = selector.selected(d);
         for (Figure f : list) {
             String s = AbstractFilter.getFirstMatchingProperty(f, propertyNames);
             for (OutputSlot os : f.getOutputSlots()) {

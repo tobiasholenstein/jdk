@@ -24,7 +24,9 @@
 package com.sun.hotspot.igv.graph;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Thomas Wuerthinger
@@ -38,14 +40,15 @@ public class SuccessorSelector implements Selector {
     }
 
     @Override
-    public List<Figure> selected(Diagram d) {
-        List<Figure> inner = innerSelector.selected(d);
-        List<Figure> result = new ArrayList<>();
+    public Set<Figure> selected(Diagram d) {
+        Set<Figure> inner = innerSelector.selected(d);
+        Set<Figure> result = new HashSet<>();
         for (Figure f : d.getFigures()) {
             boolean saved = false;
             for (Figure f2 : f.getPredecessors()) {
                 if (inner.contains(f2)) {
                     saved = true;
+                    break;
                 }
             }
 

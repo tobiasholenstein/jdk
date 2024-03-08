@@ -20,8 +20,6 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelListener;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -47,15 +45,12 @@ public class DiagramScene extends ObjectScene {
     private final HierarchicalLayoutManager seaLayoutManager;
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
-    private final Map<Figure, FigureWidget> figureMap = new HashMap<>();
+    private final Map<Figure, FigureWidget> figureToFigureWidget = new HashMap<>();
     private final Map<FigureWidget, Set<LineWidget>> figureWidgetToOutLineWidgets = new HashMap<>();
     private final Map<FigureWidget, Set<LineWidget>> figureWidgetToInLineWidgets = new HashMap<>();
     private final Group group;
-    private final Set<Figure> hiddenFigures;
-    private final Set<Figure> selectedFigures;
     private int position;
     private Diagram diagram;
-    private boolean showBoundaryFigures;
     private final ChangedListener<FilterChain> filterChangedListener = filter -> buildDiagram();
 
     public DiagramScene(InputGraph inputGraph) {
@@ -67,10 +62,6 @@ public class DiagramScene extends ObjectScene {
         filterChain = provider.getFilterChain();
         filterChain.getChangedEvent().addListener(filterChangedListener);
         filtersOrder = provider.getAllFiltersOrdered();
-
-        showBoundaryFigures = true;
-        hiddenFigures = new HashSet<>();
-        selectedFigures = new HashSet<>();
 
         MouseZoomAction mouseZoomAction = new MouseZoomAction(this);
         scrollPane = createScrollPane(mouseZoomAction);
@@ -171,46 +162,27 @@ public class DiagramScene extends ObjectScene {
 
         // draw diagram
         rebuildFigureLayer();
-        relayout();
+        computeLayout();
         validateAll();
     }
 
-    private void relayout() {  // visible nodes changed
-        updateFigureVisibility();
+    private void computeLayout() {  // visible nodes changed
+        diagram.updateFigureVisibility();
+
+        // Update FigureWidgets' visibility
+        figureToFigureWidget.forEach((figure, fw) -> fw.setVisible(figure.isVisible()));
+
         Set<Figure> visibleFigures = diagram.getVisibleFigures();
         Set<Connection> visibleConnections = diagram.getVisibleConnections();
         seaLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
         updateFigurePositions();
     }
 
-    private void updateFigureVisibility() {
-        // Initially set all figures to not boundary and update visibility based on hiddenNodesByID
-        diagram.getFigures().forEach(figure -> {
-            figure.setBoundary(false);
-            figure.setVisible(!hiddenFigures.contains(figure));
-        });
-        selectedFigures.removeAll(hiddenFigures);
-
-        if (showBoundaryFigures) {
-            // Marks non-visible figures with visible neighbors as boundary figures and makes them visible
-            diagram.getFigures().stream()
-                    .filter(figure -> !figure.isVisible())
-                    .filter(figure -> Stream.concat(figure.getPredecessors().stream(), figure.getSuccessors().stream())
-                            .anyMatch(Figure::isVisible))
-                    .peek(figure -> figure.setBoundary(true))
-                    .toList() // needed!
-                    .forEach(figure -> figure.setVisible(true));
-        }
-
-        // Update figure widgets' visibility
-        figureMap.forEach((figure, fw) -> fw.setVisible(figure.isVisible()));
-    }
-
     private void updateFigurePositions() {
         figureWidgetToOutLineWidgets.clear();
         figureWidgetToInLineWidgets.clear();
         connectionLayer.removeChildren();
-        for (FigureWidget figureWidget : figureMap.values()) {
+        for (FigureWidget figureWidget : figureToFigureWidget.values()) {
             figureWidget.updatePosition();
             List<Connection> visibleConnections = figureWidget.getFigure().getVisibleConnections();
             createLineWidgets(figureWidget, visibleConnections, 0, null, null);
@@ -250,7 +222,7 @@ public class DiagramScene extends ObjectScene {
 
                 for (Connection connection : connections) {
                     if (controlPointIndex == connection.getControlPoints().size() - 1) {
-                        FigureWidget toFigureWidget = figureMap.get(connection.getTo());
+                        FigureWidget toFigureWidget = figureToFigureWidget.get(connection.getTo());
                         figureWidgetToInLineWidgets.computeIfAbsent(toFigureWidget, k -> new HashSet<>()).add(lineWidget);
                     }
                 }
@@ -333,7 +305,7 @@ public class DiagramScene extends ObjectScene {
 
     private void rebuildFigureLayer() {
         // clear Objects
-        figureMap.clear();
+        figureToFigureWidget.clear();
         figureLayer.removeChildren();
         for (Figure figure : diagram.getFigures()) {
             FigureWidget figureWidget = new FigureWidget(figure, this);
@@ -357,7 +329,7 @@ public class DiagramScene extends ObjectScene {
             figureWidget.getActions().addAction(figureSelectAction);
             attachFigureMovement(figureWidget);
 
-            figureMap.put(figure, figureWidget);
+            figureToFigureWidget.put(figure, figureWidget);
             figureLayer.addChild(figureWidget);
         }
     }
@@ -441,69 +413,62 @@ public class DiagramScene extends ObjectScene {
     }
 
     public boolean getShowBoundaryFigures() {
-        return showBoundaryFigures;
+        return diagram.getShowBoundaryFigures();
     }
 
     public void setShowBoundaryFigures(boolean b) {
-        showBoundaryFigures = b;
-        relayout();
+        diagram.setShowBoundaryFigures(b);
+        computeLayout();
     }
 
     public List<Integer> getHiddenNodesByID() {
-        return hiddenFigures.stream()
-                .map(hiddenFigure -> hiddenFigure.getInputNode().getId())
-                .toList();
+        return diagram.getHiddenNodesByID();
     }
 
     public void extractFigure(Figure figure) {
-        hiddenFigures.clear();
-        hiddenFigures.addAll(diagram.getFigures());
-        hiddenFigures.remove(figure);
-        relayout();
+        diagram.extractFigure(figure);
+        computeLayout();
     }
 
     private void selectFigureExclusively(Figure figure) {
-        selectedFigures.clear();
-        selectedFigures.add(figure);
+        diagram.selectFigureExclusively(figure);
     }
 
     public void hideFigure(Figure figure) {
-        hiddenFigures.add(figure);
-        relayout();
+        diagram.hideFigure(figure);
+        computeLayout();
     }
 
     public void showFigure(Figure figure) {
-        hiddenFigures.remove(figure);
-        relayout();
+        diagram.showFigure(figure);
+        computeLayout();
     }
 
     public boolean allFiguresVisible() {
-        return hiddenFigures.isEmpty();
+        return diagram.allFiguresVisible();
     }
 
     public void showAllFigures() {
-        hiddenFigures.clear();
-        relayout();
+        diagram.showAllFigures();
+        computeLayout();
     }
 
     public void extractSelectedFigures() {
-        hiddenFigures.clear();
-        hiddenFigures.addAll(diagram.getFigures());
-        hiddenFigures.removeAll(selectedFigures);
-        relayout();
+        diagram.extractSelectedFigures();
+        computeLayout();
     }
 
     public void hideSelectedFigures() {
-        hiddenFigures.addAll(selectedFigures);
-        relayout();
+        diagram.hideSelectedFigures();
+        computeLayout();
     }
 
     private Set<FigureWidget> getSelectedFigureWidgets() {
         Set<FigureWidget> result = new HashSet<>();
-        for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
+        for (Map.Entry<Figure, FigureWidget> entry : figureToFigureWidget.entrySet()) {
             Figure figure = entry.getKey();
             FigureWidget figureWidget = entry.getValue();
-            if (selectedFigures.contains(figure)) {
+            if (diagram.isFigureSelected(figure)) {
                 result.add(figureWidget);
             }
         }

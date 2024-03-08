@@ -29,6 +29,7 @@ import com.sun.hotspot.igv.graph.Figure;
 import com.sun.hotspot.igv.graph.Selector;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class WarningFilter extends AbstractFilter {
 
@@ -52,7 +53,7 @@ public class WarningFilter extends AbstractFilter {
         Properties.PropertySelector<Figure> selector = new Properties.PropertySelector<>(diagram.getFigures());
         for (WarningRule rule : rules) {
             if (rule.getSelector() != null) {
-                List<Figure> figures = rule.getSelector().selected(diagram);
+                Set<Figure> figures = rule.getSelector().selected(diagram);
                 for (Figure f : figures) {
                     f.setWarning(warning);
                 }
@@ -66,7 +67,7 @@ public class WarningFilter extends AbstractFilter {
 
     public static class WarningRule {
 
-        private Selector selector;
+        private final Selector selector;
 
         public WarningRule(Selector selector) {
             this.selector = selector;
