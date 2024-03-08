@@ -22,6 +22,8 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelListener;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -206,32 +208,14 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
 
         if (showNodeHull) { // update node hull
-            List<Figure> boundaryFigures = new ArrayList<>();
-            for (Figure figure : diagram.getFigures()) {
-                if (!figure.isVisible()) {
-                    boolean hasVisibleNeighbor = false;
-                    for (Figure neighborFigure : figure.getPredecessors()) {
-                        if (neighborFigure.isVisible()) {
-                            hasVisibleNeighbor = true;
-                            break;
-                        }
-                    }
-                    for (Figure neighborFigure : figure.getSuccessors()) {
-                        if (neighborFigure.isVisible()) {
-                            hasVisibleNeighbor = true;
-                            break;
-                        }
-                    }
-                    if (hasVisibleNeighbor) {
-                        figure.setBoundary(true);
-                        boundaryFigures.add(figure);
-                    }
-                }
-            }
-
-            for (Figure figure : boundaryFigures) {
-                figure.setVisible(true);
-            }
+            // Marks non-visible figures with visible neighbors as boundary figures and makes them visible
+            diagram.getFigures().stream()
+                    .filter(figure -> !figure.isVisible())
+                    .filter(figure -> Stream.concat(figure.getPredecessors().stream(), figure.getSuccessors().stream())
+                            .anyMatch(Figure::isVisible))
+                    .peek(figure -> figure.setBoundary(true))
+                    .toList() // needed!
+                    .forEach(figure -> figure.setVisible(true));
         } else {
             selectedNodesByID.removeAll(hiddenNodesByID);
         }
