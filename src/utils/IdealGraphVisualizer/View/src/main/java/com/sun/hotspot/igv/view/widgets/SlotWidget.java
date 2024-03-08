@@ -31,7 +31,7 @@ public class SlotWidget extends Widget implements DoubleClickHandler {
             Point p = slot.getRelativePosition();
             p.x -= slot.getWidth() / 2;
             p.y -= slot.getHeight() / 2;
-            p.y += slot.yOffset(); // TODO use fw
+            p.y += slot.yOffset();
             this.setPreferredLocation(p);
         }
         getActions().addAction(new DoubleClickAction(this));

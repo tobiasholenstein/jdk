@@ -410,18 +410,18 @@ public class DiagramScene extends ObjectScene {
                         // Shift the line widget and its predecessor if applicable.
                         lineWidget.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
                         lineWidget.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
-                        LineWidget pred = lineWidget.getPredecessor();
-                        if (pred != null) {
-                            pred.setTo(new Point(pred.getTo().x + shiftX, pred.getTo().y));
-                            pred.revalidate();
+                        LineWidget predecessor = lineWidget.getPredecessor();
+                        if (predecessor != null) {
+                            predecessor.setTo(new Point(predecessor.getTo().x + shiftX, predecessor.getTo().y));
+                            predecessor.revalidate();
                         }
                     } else {
                         // Shift the line widget and its successors.
                         lineWidget.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
                         lineWidget.setTo(new Point(toPt.x + shiftX, toPt.y));
-                        for (LineWidget succ : lineWidget.getSuccessors()) {
-                            succ.setFrom(new Point(succ.getFrom().x + shiftX, succ.getFrom().y));
-                            succ.revalidate();
+                        for (LineWidget successor : lineWidget.getSuccessors()) {
+                            successor.setFrom(new Point(successor.getFrom().x + shiftX, successor.getFrom().y));
+                            successor.revalidate();
                         }
                     }
                     lineWidget.revalidate();
