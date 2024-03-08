@@ -456,8 +456,8 @@ public class DiagramScene extends ObjectScene {
         computeLayout();
     }
 
-    public boolean allFiguresVisible() {
-        return diagram.allFiguresVisible();
+    public boolean checkAllFiguresVisible() {
+        return diagram.checkAllFiguresVisible();
     }
 
     public void validateAll() {

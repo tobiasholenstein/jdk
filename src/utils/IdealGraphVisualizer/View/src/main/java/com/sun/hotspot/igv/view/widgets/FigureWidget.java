@@ -244,7 +244,7 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
-        if (diagramScene.allFiguresVisible()) {
+        if (diagramScene.checkAllFiguresVisible()) {
             diagramScene.extractFigure(figure);
         } else if (figure.isBoundary()) {
             diagramScene.showFigure(figure);

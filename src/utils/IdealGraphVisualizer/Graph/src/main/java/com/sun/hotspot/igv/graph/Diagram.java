@@ -108,7 +108,7 @@ public class Diagram {
         hiddenFigures.remove(figure);
     }
 
-    public boolean allFiguresVisible() {
+    public boolean checkAllFiguresVisible() {
         return hiddenFigures.isEmpty();
     }
 
