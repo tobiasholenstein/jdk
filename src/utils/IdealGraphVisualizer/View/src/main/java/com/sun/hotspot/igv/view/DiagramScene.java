@@ -46,8 +46,8 @@ public class DiagramScene extends ObjectScene {
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
     private final Map<Figure, FigureWidget> figureToFigureWidget = new HashMap<>();
-    private final Map<FigureWidget, Set<LineWidget>> figureWidgetToOutLineWidgets = new HashMap<>();
-    private final Map<FigureWidget, Set<LineWidget>> figureWidgetToInLineWidgets = new HashMap<>();
+    private final Map<Figure, Set<LineWidget>> figureToOutLineWidgets = new HashMap<>();
+    private final Map<Figure, Set<LineWidget>> figureToInLineWidgets = new HashMap<>();
     private final Group group;
     private int position;
     private Diagram diagram;
@@ -179,18 +179,16 @@ public class DiagramScene extends ObjectScene {
     }
 
     private void updateFigurePositions() {
-        figureWidgetToOutLineWidgets.clear();
-        figureWidgetToInLineWidgets.clear();
+        figureToOutLineWidgets.clear();
+        figureToInLineWidgets.clear();
         connectionLayer.removeChildren();
-        for (FigureWidget figureWidget : figureToFigureWidget.values()) {
-            figureWidget.updatePosition();
-            List<Connection> visibleConnections = figureWidget.getFigure().getVisibleConnections();
-            createLineWidgets(figureWidget, visibleConnections, 0, null, null);
-        }
+        figureToFigureWidget.values().forEach(FigureWidget::updatePosition);
+        figureToFigureWidget.keySet().forEach(f ->
+                createLineWidgets(f, f.getVisibleConnections(), 0, null, null));
         validateAll();
     }
 
-    private void createLineWidgets(FigureWidget fromFigureWidget, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget prevLineWidget) {
+    private void createLineWidgets(Figure fromFigure, List<Connection> connections, int controlPointIndex, Point lastPoint, LineWidget prevLineWidget) {
         Map<Point, List<Connection>> pointMap = new HashMap<>(connections.size());
         for (Connection connection : connections) {
             List<Point> controlPoints = connection.getControlPoints();
@@ -210,25 +208,24 @@ public class DiagramScene extends ObjectScene {
 
                 Point src = new Point(lastPoint);
                 Point dest = new Point(currentPoint);
-                LineWidget lineWidget = new LineWidget(this, fromFigureWidget, connectionList, src, dest, prevLineWidget, isBold, isDashed);
+                LineWidget lineWidget = new LineWidget(this, fromFigure, connectionList, src, dest, prevLineWidget, isBold, isDashed);
                 lineWidget.setVisible(isVisible);
 
                 connectionLayer.addChild(lineWidget);
                 attachLineMovement(lineWidget);
 
                 if (controlPointIndex == 1) {
-                    figureWidgetToOutLineWidgets.computeIfAbsent(fromFigureWidget, k -> new HashSet<>()).add(lineWidget);
+                    figureToOutLineWidgets.computeIfAbsent(fromFigure, k -> new HashSet<>()).add(lineWidget);
                 }
 
                 for (Connection connection : connections) {
                     if (controlPointIndex == connection.getControlPoints().size() - 1) {
-                        FigureWidget toFigureWidget = figureToFigureWidget.get(connection.getTo());
-                        figureWidgetToInLineWidgets.computeIfAbsent(toFigureWidget, k -> new HashSet<>()).add(lineWidget);
+                        figureToInLineWidgets.computeIfAbsent(connection.getTo(), k -> new HashSet<>()).add(lineWidget);
                     }
                 }
-                createLineWidgets(fromFigureWidget, connectionList, controlPointIndex + 1, currentPoint, lineWidget);
+                createLineWidgets(fromFigure, connectionList, controlPointIndex + 1, currentPoint, lineWidget);
             } else {
-                createLineWidgets(fromFigureWidget, connectionList, controlPointIndex + 1, currentPoint, null);
+                createLineWidgets(fromFigure, connectionList, controlPointIndex + 1, currentPoint, null);
             }
         }
     }
@@ -258,7 +255,7 @@ public class DiagramScene extends ObjectScene {
                 if (shiftX == 0) return;
 
                 Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
-                seaLayoutManager.moveLink(lineWidget.getFromFigureWidget().getFigure(), origFrom, newFrom);
+                seaLayoutManager.moveLink(lineWidget.getFromFigure(), origFrom, newFrom);
                 seaLayoutManager.writeBack();
                 updateFigurePositions();
             }
@@ -348,10 +345,8 @@ public class DiagramScene extends ObjectScene {
 
             @Override
             public void movementFinished(Widget widget) {
-                Set<FigureWidget> selectedFigureWidgets = getSelectedFigureWidgets();
-                for (FigureWidget fw : selectedFigureWidgets) {
-                    Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
-                    seaLayoutManager.moveVertex(fw.getFigure(), newLocation);
+                for (Figure figure : diagram.getSelectedFigures()) {
+                    seaLayoutManager.moveVertex(figure, widget.getLocation());
                 }
                 updateFigurePositions();
             }
@@ -378,9 +373,9 @@ public class DiagramScene extends ObjectScene {
                 int shiftX = location.x - widget.getLocation().x;
                 int shiftY = magnetToStartLayerY(widget, location);
 
-                for (FigureWidget fw : getSelectedFigureWidgets()) {
-                    if (figureWidgetToInLineWidgets.containsKey(fw)) {
-                        for (LineWidget lw : figureWidgetToInLineWidgets.get(fw)) {
+                for (Figure figure : diagram.getSelectedFigures()) {
+                    if (figureToInLineWidgets.containsKey(figure)) {
+                        for (LineWidget lw : figureToInLineWidgets.get(figure)) {
                             Point toPt = lw.getTo();
                             lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
                             Point fromPt = lw.getFrom();
@@ -392,8 +387,8 @@ public class DiagramScene extends ObjectScene {
 
                         }
                     }
-                    if (figureWidgetToOutLineWidgets.containsKey(fw)) {
-                        for (LineWidget lw : figureWidgetToOutLineWidgets.get(fw)) {
+                    if (figureToOutLineWidgets.containsKey(figure)) {
+                        for (LineWidget lw : figureToOutLineWidgets.get(figure)) {
                             Point toPt = lw.getTo();
                             lw.setTo(new Point(toPt.x + shiftX, toPt.y));
                             Point fromPt = lw.getFrom();
@@ -405,6 +400,8 @@ public class DiagramScene extends ObjectScene {
                             }
                         }
                     }
+                    // TODO
+                    FigureWidget fw = figureToFigureWidget.get(figure);
                     Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
                     ActionFactory.createDefaultMoveProvider().setNewLocation(fw, newLocation);
                 }
@@ -461,18 +458,6 @@ public class DiagramScene extends ObjectScene {
 
     public boolean allFiguresVisible() {
         return diagram.allFiguresVisible();
-    }
-
-    private Set<FigureWidget> getSelectedFigureWidgets() {
-        Set<FigureWidget> result = new HashSet<>();
-        for (Map.Entry<Figure, FigureWidget> entry : figureToFigureWidget.entrySet()) {
-            Figure figure = entry.getKey();
-            FigureWidget figureWidget = entry.getValue();
-            if (diagram.isFigureSelected(figure)) {
-                result.add(figureWidget);
-            }
-        }
-        return result;
     }
 
     public void validateAll() {

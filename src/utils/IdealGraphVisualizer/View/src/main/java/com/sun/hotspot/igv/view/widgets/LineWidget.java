@@ -1,6 +1,7 @@
 package com.sun.hotspot.igv.view.widgets;
 
 import com.sun.hotspot.igv.graph.Connection;
+import com.sun.hotspot.igv.graph.Figure;
 import com.sun.hotspot.igv.util.DoubleClickAction;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.util.StringUtils;
@@ -23,7 +24,7 @@ public class LineWidget extends Widget implements DoubleClickHandler {
     public final int ARROW_SIZE = 6;
     public final int BOLD_ARROW_SIZE = 7;
     public final int BOLD_STROKE_WIDTH = 2;
-    private final FigureWidget fromFigureWidget;
+    private final Figure fromFigure;
     private final DiagramScene scene;
     private final List<? extends Connection> connections;
     private final LineWidget predecessor;
@@ -34,10 +35,10 @@ public class LineWidget extends Widget implements DoubleClickHandler {
     private Point to;
     private Rectangle clientArea;
 
-    public LineWidget(DiagramScene scene, FigureWidget fromFigureWidget, List<? extends Connection> connections, Point from, Point to, LineWidget predecessor, boolean isBold, boolean isDashed) {
+    public LineWidget(DiagramScene scene, Figure fromFigure, List<? extends Connection> connections, Point from, Point to, LineWidget predecessor, boolean isBold, boolean isDashed) {
         super(scene);
         this.scene = scene;
-        this.fromFigureWidget = fromFigureWidget;
+        this.fromFigure = fromFigure;
         this.connections = connections;
         this.from = from;
         this.to = to;
@@ -194,8 +195,8 @@ public class LineWidget extends Widget implements DoubleClickHandler {
         return successors;
     }
 
-    public FigureWidget getFromFigureWidget() {
-        return fromFigureWidget;
+    public Figure getFromFigure() {
+        return fromFigure;
     }
 
     @Override

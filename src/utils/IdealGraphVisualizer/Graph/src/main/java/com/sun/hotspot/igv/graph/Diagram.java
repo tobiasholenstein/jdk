@@ -116,8 +116,8 @@ public class Diagram {
         hiddenFigures.clear();
     }
 
-    public boolean isFigureSelected(Figure figure) {
-        return selectedFigures.contains(figure);
+    public Set<Figure> getSelectedFigures() {
+        return Collections.unmodifiableSet(selectedFigures);
     }
 
     public void extractSelectedFigures() {
