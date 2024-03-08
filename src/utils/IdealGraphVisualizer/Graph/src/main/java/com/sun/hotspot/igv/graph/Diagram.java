@@ -12,7 +12,6 @@ public class Diagram {
 
     public static final Font FONT = new Font("Arial", Font.PLAIN, 12);
     public static final Font SLOT_FONT = new Font("Arial", Font.PLAIN, 10);
-    public static final Font BOLD_FONT = FONT.deriveFont(Font.BOLD);
     private final String nodeText;
     private final String shortNodeText;
     private List<Figure> figures;
