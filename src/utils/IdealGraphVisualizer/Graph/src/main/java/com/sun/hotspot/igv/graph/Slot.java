@@ -38,6 +38,17 @@ public abstract class Slot implements Port, Properties.Provider {
         assert figure != null;
     }
 
+    public static <T> List<T> getAllBefore(List<T> inputList, T tIn) {
+        List<T> result = new ArrayList<>();
+        for (T t : inputList) {
+            if (t.equals(tIn)) {
+                break;
+            }
+            result.add(t);
+        }
+        return result;
+    }
+
     @Override
     public Properties getProperties() {
         Properties p = new Properties();
@@ -136,17 +147,6 @@ public abstract class Slot implements Port, Properties.Provider {
     }
 
     public abstract int getPosition();
-
-    public static <T> List<T> getAllBefore(List<T> inputList, T tIn) {
-        List<T> result = new ArrayList<>();
-        for (T t : inputList) {
-            if (t.equals(tIn)) {
-                break;
-            }
-            result.add(t);
-        }
-        return result;
-    }
 
     public abstract int yOffset();
 }

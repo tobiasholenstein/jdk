@@ -24,7 +24,6 @@
 package com.sun.hotspot.igv.graph;
 
 import java.awt.Point;
-import java.util.List;
 
 /**
  * @author Thomas Wuerthinger

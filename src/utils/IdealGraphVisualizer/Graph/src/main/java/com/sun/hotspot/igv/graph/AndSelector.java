@@ -23,7 +23,8 @@
  */
 package com.sun.hotspot.igv.graph;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Thomas Wuerthinger
