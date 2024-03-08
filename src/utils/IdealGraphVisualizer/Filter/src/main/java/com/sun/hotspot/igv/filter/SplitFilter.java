@@ -56,7 +56,7 @@ public class SplitFilter extends AbstractFilter {
                 for (Connection c : os.getConnections()) {
                     InputSlot is = c.getInputSlot();
                     if (f.getInputNode() != null) {
-                        is.getSource().addSourceNode(f.getInputNode());
+                        is.setSourceNode(f.getInputNode());
                         is.setColor(f.getColor());
                     }
                     if (s != null) {

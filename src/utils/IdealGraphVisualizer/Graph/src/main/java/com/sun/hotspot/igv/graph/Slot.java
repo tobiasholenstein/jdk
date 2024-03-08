@@ -2,7 +2,6 @@ package com.sun.hotspot.igv.graph;
 
 import com.sun.hotspot.igv.data.InputNode;
 import com.sun.hotspot.igv.data.Properties;
-import com.sun.hotspot.igv.data.Source;
 import com.sun.hotspot.igv.layout.Port;
 import com.sun.hotspot.igv.util.StringUtils;
 import java.awt.Color;
@@ -16,25 +15,26 @@ import java.util.Comparator;
 import java.util.List;
 
 
-public abstract class Slot implements Port, Source.Provider, Properties.Provider {
+public abstract class Slot implements Port, Properties.Provider {
     public static final int SLOT_WIDTH = 10;
     public static final int SLOT_HEIGHT = 10;
     public static final Comparator<Slot> slotIndexComparator = Comparator.comparingInt(o -> o.wantedIndex);
     private final int wantedIndex;
-    private final Source source;
     private final Figure figure;
     protected List<Connection> connections;
     private Color color;
     private String text;
     private String shortName;
 
+    private InputNode sourceNode;
+
     protected Slot(Figure figure, int wantedIndex) {
         this.figure = figure;
         connections = new ArrayList<>(2);
-        source = new Source();
         this.wantedIndex = wantedIndex;
         text = "";
         shortName = "";
+        sourceNode = null;
         assert figure != null;
     }
 
@@ -42,15 +42,22 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
     public Properties getProperties() {
         Properties p = new Properties();
         if (hasSourceNodes()) {
-            for (InputNode n : source.getSourceNodes()) {
-                p.add(n.getProperties());
-            }
+            InputNode n = getSourceNode();
+            p.add(n.getProperties());
         } else {
             p.setProperty("name", "Slot");
             p.setProperty("figure", figure.getProperties().get("name"));
             p.setProperty("connectionCount", Integer.toString(connections.size()));
         }
         return p;
+    }
+
+    public InputNode getSourceNode() {
+        return sourceNode;
+    }
+
+    public void setSourceNode(InputNode n) {
+        sourceNode = n;
     }
 
     public int getWidth() {
@@ -68,11 +75,6 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
 
     public int getHeight() {
         return SLOT_HEIGHT;
-    }
-
-    @Override
-    public Source getSource() {
-        return source;
     }
 
     public String getShortName() {
@@ -95,9 +97,8 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
             }
         }
 
-        for (InputNode n : getSource().getSourceNodes()) {
-            sb.append(StringUtils.escapeHTML(n.getProperties().resolveString(shortNodeText)));
-        }
+        InputNode n = getSourceNode();
+        sb.append(StringUtils.escapeHTML(n.getProperties().resolveString(shortNodeText)));
 
         return sb.toString();
     }
@@ -107,7 +108,7 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
     }
 
     public boolean hasSourceNodes() {
-        return !getSource().getSourceNodes().isEmpty();
+        return getSourceNode() != null;
     }
 
     public void setText(String s) {

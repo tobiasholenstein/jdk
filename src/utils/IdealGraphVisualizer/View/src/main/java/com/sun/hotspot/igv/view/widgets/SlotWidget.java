@@ -31,7 +31,6 @@ import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.view.DiagramScene;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.netbeans.api.visual.action.WidgetAction;
@@ -160,7 +159,7 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
         boolean progress = false;
         for (Figure f : diagramScene.getDiagram().getFigures()) {
             for (Slot s : f.getSlots()) {
-                if (!Collections.disjoint(s.getSource().getSourceNodesAsSet(), slot.getSource().getSourceNodesAsSet())) {
+                if (s.getSourceNode().getId() == slot.getSourceNode().getId()) {
                     progress = true;
                     hiddenNodes.remove(f.getInputNode().getId());
                 }

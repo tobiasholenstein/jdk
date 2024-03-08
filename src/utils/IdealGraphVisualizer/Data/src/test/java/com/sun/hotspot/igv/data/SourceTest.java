@@ -56,23 +56,5 @@ public class SourceTest {
     /**
      * Test of getSourceNodes method, of class Source.
      */
-    @Test
-    public void testBase() {
-        final Source s = new Source();
 
-        final InputNode N1 = new InputNode(1);
-        final InputNode N2 = new InputNode(2);
-
-        s.addSourceNode(N1);
-        assertEquals(s.getSourceNodes(), Arrays.asList(N1));
-        assertEquals(s.getSourceNodesAsSet(), new LinkedHashSet<>(Arrays.asList(1)));
-
-        s.addSourceNode(N2);
-        assertEquals(s.getSourceNodes(), Arrays.asList(N1, N2));
-        assertEquals(s.getSourceNodesAsSet(), new LinkedHashSet<>(Arrays.asList(1, 2)));
-
-        s.addSourceNode(N1);
-        assertEquals(s.getSourceNodes(), Arrays.asList(N1, N2));
-        assertEquals(s.getSourceNodesAsSet(), new LinkedHashSet<>(Arrays.asList(1, 2)));
-    }
 }
