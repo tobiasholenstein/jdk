@@ -144,5 +144,16 @@ public abstract class Slot implements Port, Properties.Provider {
     public abstract int getPosition();
 
     public abstract void setPosition(int position);
+
+    public static <T> List<T> getAllBefore(List<T> inputList, T tIn) {
+        List<T> result = new ArrayList<>();
+        for (T t : inputList) {
+            if (t.equals(tIn)) {
+                break;
+            }
+            result.add(t);
+        }
+        return result;
+    }
 }
 

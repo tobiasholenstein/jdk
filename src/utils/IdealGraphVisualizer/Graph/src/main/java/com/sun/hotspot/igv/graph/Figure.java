@@ -73,17 +73,6 @@ public class Figure extends Properties.Entity implements Vertex {
         this.visible = true;
     }
 
-    public static <T> List<T> getAllBefore(List<T> inputList, T tIn) {
-        List<T> result = new ArrayList<>();
-        for (T t : inputList) {
-            if (t.equals(tIn)) {
-                break;
-            }
-            result.add(t);
-        }
-        return result;
-    }
-
     public static int getSlotsWidth(Collection<? extends Slot> slots) {
         int result = Figure.SLOT_OFFSET;
         for (Slot s : slots) {
@@ -119,10 +108,6 @@ public class Figure extends Properties.Entity implements Vertex {
         return width;
     }
 
-    public void setWidth(int width) {
-        this.width = width;
-    }
-
     private void updateWidth() {
         width = 0;
         for (String s : getLines()) {
@@ -138,10 +123,6 @@ public class Figure extends Properties.Entity implements Vertex {
         width = Math.max(width, Figure.getSlotsWidth(inputSlots));
         width = Math.max(width, Figure.getSlotsWidth(outputSlots));
         width = (int) (width * BOLD_LINE_FACTOR);
-    }
-
-    public int getId() {
-        return id;
     }
 
     public Color getColor() {
@@ -206,10 +187,9 @@ public class Figure extends Properties.Entity implements Vertex {
         return inputNode;
     }
 
-    public InputSlot createInputSlot() {
+    public void createInputSlot() {
         InputSlot slot = new InputSlot(this, -1);
         inputSlots.add(slot);
-        return slot;
     }
 
     public void removeSlot(Slot s) {
