@@ -339,6 +339,29 @@ public class DiagramScene extends ObjectScene {
             private static final int MAGNET_SIZE = 5;
             private int startLayerY;
 
+            /**
+             * Calculates the vertical shift for a widget to a new location, applying a magnetic snap effect
+             * towards a specific y-coordinate if the target location is within a specified proximity.
+             *
+             * @param widget The widget that needs to be moved.
+             * @param targetLoc The target location for the widget.
+             * @param snapY The y-coordinate to snap to.
+             * @param magnetRange The size of the magnetic effect range around the snapY.
+             * @return The calculated vertical shift, adjusted for the magnetic snap effect if applicable.
+             */
+            private static int calculateMagnetShiftY(Widget widget, Point targetLoc, int snapY, int magnetRange) {
+                int initialShiftY = targetLoc.y - widget.getLocation().y;
+                boolean isTargetNearMagnet = Math.abs(targetLoc.y - snapY) <= magnetRange;
+                boolean isCurrentNearMagnet = Math.abs(widget.getLocation().y - snapY) <= magnetRange;
+                if (isTargetNearMagnet && !isCurrentNearMagnet) {
+                    return snapY - widget.getLocation().y;
+                } else if (isTargetNearMagnet) {
+                    return 0;
+                } else {
+                    return initialShiftY;
+                }
+            }
+
             @Override
             public void movementStarted(Widget widget) {
                 widget.bringToFront();
@@ -353,18 +376,6 @@ public class DiagramScene extends ObjectScene {
                 updateFigurePositions();
             }
 
-            private int magnetToStartLayerY(Widget widget, Point location) {
-                int shiftY = location.y - widget.getLocation().y;
-                if (Math.abs(location.y - startLayerY) <= MAGNET_SIZE) {
-                    if (Math.abs(widget.getLocation().y - startLayerY) > MAGNET_SIZE) {
-                        shiftY = startLayerY - widget.getLocation().y;
-                    } else {
-                        shiftY = 0;
-                    }
-                }
-                return shiftY;
-            }
-
             @Override
             public Point getOriginalLocation(Widget widget) {
                 return ActionFactory.createDefaultMoveProvider().getOriginalLocation(widget);
@@ -373,38 +384,48 @@ public class DiagramScene extends ObjectScene {
             @Override
             public void setNewLocation(Widget widget, Point location) {
                 int shiftX = location.x - widget.getLocation().x;
-                int shiftY = magnetToStartLayerY(widget, location);
+                int shiftY = calculateMagnetShiftY(widget, location, startLayerY, MAGNET_SIZE);
+                diagram.getSelectedFigures().forEach(figure -> {
+                    updateLineWidgets(figureToInLineWidgets.get(figure), shiftX, shiftY, true);
+                    updateLineWidgets(figureToOutLineWidgets.get(figure), shiftX, shiftY, false);
+                });
+                Point newLoc = new Point(widget.getLocation().x + shiftX, widget.getLocation().y + shiftY);
+                ActionFactory.createDefaultMoveProvider().setNewLocation(widget, newLoc);
+            }
 
-                for (Figure figure : diagram.getSelectedFigures()) {
-                    if (figureToInLineWidgets.containsKey(figure)) {
-                        for (LineWidget lw : figureToInLineWidgets.get(figure)) {
-                            Point toPt = lw.getTo();
-                            lw.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
-                            Point fromPt = lw.getFrom();
-                            lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
-                            lw.revalidate();
-                            LineWidget pred = lw.getPredecessor();
+            /**
+             * Updates the positions of line widgets based on the specified shifts.
+             * It optionally shifts the predecessor or successors' positions to maintain relative positioning.
+             *
+             * @param lineWidgets The collection of line widgets to be updated.
+             * @param shiftX      The horizontal shift to be applied.
+             * @param shiftY      The vertical shift to be applied.
+             * @param shiftPred   Flag indicating whether to shift the predecessor (true) or successors (false).
+             */
+            private static void updateLineWidgets(Collection<LineWidget> lineWidgets, int shiftX, int shiftY, boolean shiftPred) {
+                if (lineWidgets == null) return;
+                for (LineWidget lineWidget : lineWidgets) {
+                    Point fromPt = lineWidget.getFrom();
+                    Point toPt = lineWidget.getTo();
+                    if (shiftPred) {
+                        // Shift the line widget and its predecessor if applicable.
+                        lineWidget.setFrom(new Point(fromPt.x + shiftX, fromPt.y));
+                        lineWidget.setTo(new Point(toPt.x + shiftX, toPt.y + shiftY));
+                        LineWidget pred = lineWidget.getPredecessor();
+                        if (pred != null) {
                             pred.setTo(new Point(pred.getTo().x + shiftX, pred.getTo().y));
                             pred.revalidate();
-
+                        }
+                    } else {
+                        // Shift the line widget and its successors.
+                        lineWidget.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
+                        lineWidget.setTo(new Point(toPt.x + shiftX, toPt.y));
+                        for (LineWidget succ : lineWidget.getSuccessors()) {
+                            succ.setFrom(new Point(succ.getFrom().x + shiftX, succ.getFrom().y));
+                            succ.revalidate();
                         }
                     }
-                    if (figureToOutLineWidgets.containsKey(figure)) {
-                        for (LineWidget lw : figureToOutLineWidgets.get(figure)) {
-                            Point toPt = lw.getTo();
-                            lw.setTo(new Point(toPt.x + shiftX, toPt.y));
-                            Point fromPt = lw.getFrom();
-                            lw.setFrom(new Point(fromPt.x + shiftX, fromPt.y + shiftY));
-                            lw.revalidate();
-                            for (LineWidget succ : lw.getSuccessors()) {
-                                succ.setFrom(new Point(succ.getFrom().x + shiftX, succ.getFrom().y));
-                                succ.revalidate();
-                            }
-                        }
-                    }
-
-                    Point newLoc = new Point(widget.getLocation().x + shiftX, widget.getLocation().y + shiftY);
-                    ActionFactory.createDefaultMoveProvider().setNewLocation(widget, newLoc);
+                    lineWidget.revalidate();
                 }
             }
         }));
