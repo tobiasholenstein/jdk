@@ -8,8 +8,6 @@ import com.sun.hotspot.igv.filter.FilterChainProvider;
 import com.sun.hotspot.igv.graph.*;
 import com.sun.hotspot.igv.hierarchicallayout.HierarchicalLayoutManager;
 import com.sun.hotspot.igv.layout.LayoutGraph;
-import com.sun.hotspot.igv.util.DoubleClickAction;
-import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.view.actions.CustomSelectAction;
 import com.sun.hotspot.igv.view.actions.CustomizablePanAction;
 import com.sun.hotspot.igv.view.actions.MouseZoomAction;
@@ -31,13 +29,12 @@ import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.MoveProvider;
 import org.netbeans.api.visual.action.SelectProvider;
-import org.netbeans.api.visual.action.WidgetAction;
 import org.netbeans.api.visual.model.ObjectScene;
 import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
 import org.openide.util.Lookup;
 
-public class DiagramScene extends ObjectScene implements DoubleClickHandler {
+public class DiagramScene extends ObjectScene {
 
     public static final float ALPHA = 0.4f;
     public static final float ZOOM_INCREMENT = 1.5f;
@@ -57,7 +54,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     private Set<Integer> selectedNodesByID;
     private int position;
     private Diagram diagram;
-    private boolean showNodeHull;
+    private boolean showBoundaryFigures;
     private final ChangedListener<FilterChain> filterChangedListener = filter -> buildDiagram();
 
     public DiagramScene(InputGraph inputGraph) {
@@ -70,7 +67,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         filterChain.getChangedEvent().addListener(filterChangedListener);
         filtersOrder = provider.getAllFiltersOrdered();
 
-        showNodeHull = true;
+        showBoundaryFigures = true;
         hiddenNodesByID = new HashSet<>();
         selectedNodesByID = new HashSet<>();
 
@@ -78,14 +75,13 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         scrollPane = createScrollPane(mouseZoomAction);
 
         connectionLayer = new LayerWidget(this);
-        super.addChild(connectionLayer);
+        addChild(connectionLayer);
 
         figureLayer = new LayerWidget(this);
-        super.addChild(figureLayer);
+        addChild(figureLayer);
 
-        super.getActions().addAction(new CustomizablePanAction(MouseEvent.BUTTON1_DOWN_MASK));
-        super.getActions().addAction(new DoubleClickAction(this));
-        super.getActions().addAction(mouseZoomAction);
+        getActions().addAction(new CustomizablePanAction(MouseEvent.BUTTON1_DOWN_MASK));
+        getActions().addAction(mouseZoomAction);
 
         seaLayoutManager = new HierarchicalLayoutManager();
 
@@ -146,11 +142,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         scrollPane.addMouseWheelListener(mouseZoomAction);
         return scrollPane;
     }
-
-    public Group getGroup() {
-        return group;
-    }
-
+    
     public void nextGraph() {
         if (position < group.size() - 1) {
             ++position;
@@ -183,21 +175,21 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
     }
 
     private void relayout() {  // visible nodes changed
-        updateVisibleFigureWidgets();
+        updateFigureVisibility();
         Set<Figure> visibleFigures = diagram.getVisibleFigures();
         Set<Connection> visibleConnections = diagram.getVisibleConnections();
         seaLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
-        updateWidgetPositions();
+        updateFigurePositions();
     }
 
-    private void updateVisibleFigureWidgets() {
+    private void updateFigureVisibility() {
         // Initially set all figures to not boundary and update visibility based on hiddenNodesByID
         diagram.getFigures().forEach(figure -> {
             figure.setBoundary(false);
             figure.setVisible(!hiddenNodesByID.contains(figure.getInputNode().getId()));
         });
 
-        if (showNodeHull) { // update node hull
+        if (showBoundaryFigures) {
             // Marks non-visible figures with visible neighbors as boundary figures and makes them visible
             diagram.getFigures().stream()
                     .filter(figure -> !figure.isVisible())
@@ -206,15 +198,14 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     .peek(figure -> figure.setBoundary(true))
                     .toList() // needed!
                     .forEach(figure -> figure.setVisible(true));
-        } else {
-            selectedNodesByID.removeAll(hiddenNodesByID);
-        }
+        } 
+        selectedNodesByID.removeAll(hiddenNodesByID);
 
         // Update figure widgets' visibility
         figureMap.forEach((figure, fw) -> fw.setVisible(figure.isVisible()));
     }
 
-    private void updateWidgetPositions() {
+    private void updateFigurePositions() {
         figureWidgetToOutLineWidgets.clear();
         figureWidgetToInLineWidgets.clear();
         connectionLayer.removeChildren();
@@ -296,7 +287,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                 Point newFrom = new Point(origFrom.x + shiftX, origFrom.y);
                 seaLayoutManager.moveLink(lineWidget.getFromFigureWidget().getFigure(), origFrom, newFrom);
                 seaLayoutManager.writeBack();
-                updateWidgetPositions();
+                updateFigurePositions();
             }
 
             @Override
@@ -391,7 +382,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
                     Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
                     seaLayoutManager.moveVertex(fw.getFigure(), newLocation);
                 }
-                updateWidgetPositions();
+                updateFigurePositions();
             }
 
             private int magnetToStartLayerY(Widget widget, Point location) {
@@ -450,12 +441,12 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }));
     }
 
-    public boolean getShowNodeHull() {
-        return showNodeHull;
+    public boolean getShowBoundaryFigures() {
+        return showBoundaryFigures;
     }
 
-    public void setShowNodeHull(boolean b) {
-        showNodeHull = b;
+    public void setShowBoundaryFigures(boolean b) {
+        showBoundaryFigures = b;
         relayout();
     }
 
@@ -463,9 +454,28 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         return hiddenNodesByID;
     }
 
+    public void extractFigure(Figure figure) {
+        hiddenNodesByID = new HashSet<>(group.getAllNodes());
+        hiddenNodesByID.remove(figure.getInputNode().getId());
+        relayout();
+    }
+
+    public void hideFigure(Figure figure) {
+        hiddenNodesByID.add(figure.getInputNode().getId());
+        relayout();
+    }
+
+    public void showFigure(Figure figure) {
+        hiddenNodesByID.remove(figure.getInputNode().getId());
+        relayout();
+    }
+
+    public boolean allFiguresVisible() {
+        return hiddenNodesByID.isEmpty();
+    }
+
     public void setHiddenNodesByID(Set<Integer> nodes) {
         hiddenNodesByID = nodes;
-        selectedNodesByID.removeAll(hiddenNodesByID);
         relayout();
     }
 
@@ -492,13 +502,7 @@ public class DiagramScene extends ObjectScene implements DoubleClickHandler {
         }
         return result;
     }
-
-    @Override
-    public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
-        // clear selection
-        selectedNodesByID = new HashSet<>();
-    }
-
+    
     public void validateAll() {
         super.validate();
         scrollPane.validate();

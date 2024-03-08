@@ -35,7 +35,7 @@ public final class EditorTopComponent extends TopComponent {
         toolBar.add(ExtractAction.get(ExtractAction.class));
         toolBar.add(HideAction.get(HideAction.class));
         toolBar.add(ShowAllAction.get(ShowAllAction.class));
-        toolBar.add(new JToggleButton(new PredSuccAction(scene.getShowNodeHull())));
+        toolBar.add(new JToggleButton(new PredSuccAction(scene.getShowBoundaryFigures())));
         add(toolBar, BorderLayout.NORTH);
 
         setDisplayName(graph.getDisplayName());

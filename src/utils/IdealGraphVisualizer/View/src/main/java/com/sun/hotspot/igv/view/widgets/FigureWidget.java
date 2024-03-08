@@ -244,18 +244,12 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
-        if (diagramScene.getHiddenNodesByID().isEmpty()) {
-            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getGroup().getAllNodes());
-            hiddenNodes.remove(figure.getInputNode().getId());
-            diagramScene.setHiddenNodesByID(hiddenNodes);
+        if (diagramScene.allFiguresVisible()) {
+            diagramScene.extractFigure(figure);
         } else if (figure.isBoundary()) {
-            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodesByID());
-            hiddenNodes.remove(figure.getInputNode().getId());
-            diagramScene.setHiddenNodesByID(hiddenNodes);
+            diagramScene.showFigure(figure);
         } else {
-            final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodesByID());
-            hiddenNodes.add(figure.getInputNode().getId());
-            diagramScene.setHiddenNodesByID(hiddenNodes);
+            diagramScene.hideFigure(figure);
         }
     }
 

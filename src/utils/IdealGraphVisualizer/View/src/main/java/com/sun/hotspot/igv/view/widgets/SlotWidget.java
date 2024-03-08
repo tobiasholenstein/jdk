@@ -144,11 +144,6 @@ public class SlotWidget extends Widget implements DoubleClickHandler {
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
-        Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodesByID());
-        if (diagramScene.getHiddenNodesByID().isEmpty()) {
-            hiddenNodes = new HashSet<>(diagramScene.getGroup().getAllNodes());
-        }
-        hiddenNodes.remove(slot.getFigure().getInputNode().getId());
-        this.diagramScene.setHiddenNodesByID(hiddenNodes);
+        diagramScene.showFigure(slot.getFigure());
     }
 }
