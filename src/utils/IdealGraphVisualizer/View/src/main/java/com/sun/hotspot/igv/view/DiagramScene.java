@@ -20,6 +20,7 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelListener;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -448,12 +449,10 @@ public class DiagramScene extends ObjectScene {
         relayout();
     }
 
-    public Set<Integer> getHiddenNodesByID() {
-        Set<Integer> hiddenNodesByID = new HashSet<>();
-        for (Figure hiddenFigure : hiddenFigures) {
-            hiddenNodesByID.add(hiddenFigure.getInputNode().getId());
-        }
-        return hiddenNodesByID;
+    public List<Integer> getHiddenNodesByID() {
+        return hiddenFigures.stream()
+                .map(hiddenFigure -> hiddenFigure.getInputNode().getId())
+                .toList();
     }
 
     public void extractFigure(Figure figure) {
