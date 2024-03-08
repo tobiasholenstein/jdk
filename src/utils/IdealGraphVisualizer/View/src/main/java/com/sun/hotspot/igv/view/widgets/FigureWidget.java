@@ -112,9 +112,9 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
 
 
         int textHeight = f.getHeight() - 2 * Figure.PADDING - f.getSlotsHeight();
-        if (getFigure().getWarning() != null) {
+        if (figure.getWarning() != null) {
             ImageWidget warningWidget = new ImageWidget(scene, warningSign);
-            warningWidget.setToolTipText(getFigure().getWarning());
+            warningWidget.setToolTipText(figure.getWarning());
             middleWidget.addChild(warningWidget);
             int textWidth = f.getWidth() - 4 * Figure.BORDER;
             textWidth -= Figure.WARNING_WIDTH + Figure.PADDING;
@@ -158,7 +158,7 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
     }
 
     private void formatExtraLabel() {
-        if (getFigure().getProperties().get("extra_label") != null) {
+        if (figure.getProperties().get("extra_label") != null) {
             LabelWidget extraLabelWidget = labelWidgets.get(labelWidgets.size() - 1);
             extraLabelWidget.setFont(Diagram.FONT.deriveFont(Font.ITALIC));
             extraLabelWidget.setForeground(Color.DARK_GRAY);
@@ -168,7 +168,7 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
     private void addBorder() {
         Font font = Diagram.FONT;
         Color borderColor = Color.BLACK;
-        Color innerBorderColor = getFigure().getColor();
+        Color innerBorderColor = figure.getColor();
 
         Border innerBorder = new RoundedBorder(borderColor, Figure.BORDER);
         Border outerBorder = new RoundedBorder(innerBorderColor, Figure.BORDER);
@@ -246,15 +246,15 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {
         if (diagramScene.getHiddenNodesByID().isEmpty()) {
             final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getGroup().getAllNodes());
-            hiddenNodes.remove(this.getFigure().getInputNode().getId());
+            hiddenNodes.remove(figure.getInputNode().getId());
             diagramScene.setHiddenNodesByID(hiddenNodes);
         } else if (figure.isBoundary()) {
             final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodesByID());
-            hiddenNodes.remove(this.getFigure().getInputNode().getId());
+            hiddenNodes.remove(figure.getInputNode().getId());
             diagramScene.setHiddenNodesByID(hiddenNodes);
         } else {
             final Set<Integer> hiddenNodes = new HashSet<>(diagramScene.getHiddenNodesByID());
-            hiddenNodes.add(this.getFigure().getInputNode().getId());
+            hiddenNodes.add(figure.getInputNode().getId());
             diagramScene.setHiddenNodesByID(hiddenNodes);
         }
     }

@@ -148,7 +148,7 @@ public class SlotWidget extends Widget implements DoubleClickHandler {
         if (diagramScene.getHiddenNodesByID().isEmpty()) {
             hiddenNodes = new HashSet<>(diagramScene.getGroup().getAllNodes());
         }
-        hiddenNodes.remove(figureWidget.getFigure().getInputNode().getId());
+        hiddenNodes.remove(slot.getFigure().getInputNode().getId());
         this.diagramScene.setHiddenNodesByID(hiddenNodes);
     }
 }
