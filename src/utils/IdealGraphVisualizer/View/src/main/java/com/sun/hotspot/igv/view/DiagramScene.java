@@ -443,8 +443,17 @@ public class DiagramScene extends ObjectScene {
         return diagram.getHiddenNodesByID();
     }
 
+    public void selectFigure(Figure figure) {
+        diagram.selectFigure(figure);
+    }
+
     private void selectFigureExclusively(Figure figure) {
-        diagram.selectFigureExclusively(figure);
+        diagram.clearFigureSelection();
+        diagram.selectFigure(figure);
+    }
+
+    public void clearFigureSelection() {
+        diagram.clearFigureSelection();
     }
 
     public void extractFigure(Figure figure) {

@@ -8,9 +8,7 @@ import com.sun.hotspot.igv.util.StringUtils;
 import com.sun.hotspot.igv.view.DiagramScene;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.netbeans.api.visual.action.WidgetAction;
 import org.netbeans.api.visual.widget.Widget;
 
@@ -199,17 +197,13 @@ public class LineWidget extends Widget implements DoubleClickHandler {
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent event) {
-        Set<Object> selectedObjects = new HashSet<>();
-
         boolean additiveSelection = (event.getModifiersEx() & DoubleClickAction.getModifierMask()) != 0;
-        if (additiveSelection) {
-            selectedObjects.addAll(scene.getSelectedObjects());
+        if (!additiveSelection) {
+            scene.clearFigureSelection();
         }
-
         for (Connection connection : connections) {
-            selectedObjects.add(connection.getTo());
-            selectedObjects.add(connection.getFrom());
+            scene.selectFigure(connection.getFrom());
+            scene.selectFigure(connection.getTo());
         }
-        scene.setSelectedObjects(selectedObjects);
     }
 }

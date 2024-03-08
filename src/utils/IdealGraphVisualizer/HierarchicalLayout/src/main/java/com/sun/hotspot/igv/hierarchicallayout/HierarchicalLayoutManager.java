@@ -1482,7 +1482,7 @@ public class HierarchicalLayoutManager {
             while (!workingList.isEmpty()) {
                 ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
                 for (LayoutNode node : workingList) {
-                    if (node.getVertex().getPrority() < 4 && !node.getVertex().isRoot()) {
+                    if (node.getVertex().getPriority() < 4 && !node.getVertex().isRoot()) {
                         continue;
                     }
                     visited.add(node);
@@ -1562,7 +1562,7 @@ public class HierarchicalLayoutManager {
             while (!workingList.isEmpty()) {
                 ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
                 if (prioritizeControl) {
-                    workingList.sort(Comparator.comparingInt(v -> v.getVertex().getPrority()));
+                    workingList.sort(Comparator.comparingInt(v -> v.getVertex().getPriority()));
                 }
                 for (LayoutNode node : workingList) {
                     for (LayoutEdge succEdge : node.getSuccs()) {
@@ -1606,7 +1606,7 @@ public class HierarchicalLayoutManager {
             while (!workingList.isEmpty()) {
                 ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
                 if (prioritizeControl) {
-                    workingList.sort(Comparator.comparingInt(v -> v.getVertex().getPrority()));
+                    workingList.sort(Comparator.comparingInt(v -> v.getVertex().getPriority()));
                 }
                 for (LayoutNode node : workingList) {
                     if (node.getLayer() < layer) {

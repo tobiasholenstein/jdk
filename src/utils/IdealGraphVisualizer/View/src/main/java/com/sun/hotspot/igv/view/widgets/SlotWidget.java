@@ -1,26 +1,3 @@
-/*
- * Copyright (c) 2008, 2023, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have any
- * questions.
- *
- */
 package com.sun.hotspot.igv.view.widgets;
 
 import com.sun.hotspot.igv.graph.Diagram;
@@ -31,25 +8,20 @@ import com.sun.hotspot.igv.view.DiagramScene;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import org.netbeans.api.visual.action.WidgetAction;
-import org.netbeans.api.visual.model.ObjectState;
 import org.netbeans.api.visual.widget.Widget;
 
-/**
- * @author Thomas Wuerthinger
- */
+
 public class SlotWidget extends Widget implements DoubleClickHandler {
 
     protected static double TEXT_ZOOM_FACTOR = 0.9;
     protected static double ZOOM_FACTOR = 0.6;
     private final Slot slot;
-    private final FigureWidget figureWidget;
     private final DiagramScene diagramScene;
 
-    public SlotWidget(Slot slot, DiagramScene scene, FigureWidget fw) {
+    public SlotWidget(Slot slot, DiagramScene scene) {
         super(scene);
         this.diagramScene = scene;
         this.slot = slot;
-        figureWidget = fw;
         if (slot.hasSourceNodes()) {
             this.setToolTipText("<HTML>" + slot.getToolTipText() + "</HTML>");
         }
@@ -63,12 +35,6 @@ public class SlotWidget extends Widget implements DoubleClickHandler {
             this.setPreferredLocation(p);
         }
         getActions().addAction(new DoubleClickAction(this));
-    }
-
-    @Override
-    protected void notifyStateChanged(ObjectState previousState, ObjectState state) {
-        super.notifyStateChanged(previousState, state);
-        repaint();
     }
 
     public Slot getSlot() {

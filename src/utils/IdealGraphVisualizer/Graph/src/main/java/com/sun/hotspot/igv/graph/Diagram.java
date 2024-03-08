@@ -95,8 +95,11 @@ public class Diagram {
         hiddenFigures.remove(figure);
     }
 
-    public void selectFigureExclusively(Figure figure) {
+    public void clearFigureSelection() {
         selectedFigures.clear();
+    }
+
+    public void selectFigure(Figure figure) {
         selectedFigures.add(figure);
     }
 

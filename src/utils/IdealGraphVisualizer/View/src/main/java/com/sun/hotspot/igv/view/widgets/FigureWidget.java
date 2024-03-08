@@ -116,10 +116,10 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
 
     private void addSlots() {
         for (InputSlot inputSlot : figure.getInputSlots()) {
-            addChild(new SlotWidget(inputSlot, diagramScene, this));
+            addChild(new SlotWidget(inputSlot, diagramScene));
         }
         for (OutputSlot outputSlot : figure.getOutputSlots()) {
-            addChild(new SlotWidget(outputSlot, diagramScene, this));
+            addChild(new SlotWidget(outputSlot, diagramScene));
         }
     }
 
