@@ -142,7 +142,7 @@ public class DiagramScene extends ObjectScene {
         scrollPane.addMouseWheelListener(mouseZoomAction);
         return scrollPane;
     }
-    
+
     public void nextGraph() {
         if (position < group.size() - 1) {
             ++position;
@@ -198,7 +198,7 @@ public class DiagramScene extends ObjectScene {
                     .peek(figure -> figure.setBoundary(true))
                     .toList() // needed!
                     .forEach(figure -> figure.setVisible(true));
-        } 
+        }
         selectedNodesByID.removeAll(hiddenNodesByID);
 
         // Update figure widgets' visibility
@@ -474,21 +474,20 @@ public class DiagramScene extends ObjectScene {
         return hiddenNodesByID.isEmpty();
     }
 
-    public void setHiddenNodesByID(Set<Integer> nodes) {
-        hiddenNodesByID = nodes;
+    public void showAllFigures() {
+        hiddenNodesByID.clear();
         relayout();
     }
 
-    public void extractSelectedNodes() {
-        HashSet<Integer> allNodes = new HashSet<>(group.getAllNodes());
-        allNodes.removeAll(selectedNodesByID);
-        setHiddenNodesByID(allNodes);
+    public void extractSelectedFigures() {
+        hiddenNodesByID = new HashSet<>(group.getAllNodes());
+        hiddenNodesByID.removeAll(selectedNodesByID);
+        relayout();
     }
 
-    public void hideSelectedNodes() {
-        HashSet<Integer> nodes = new HashSet<>(hiddenNodesByID);
-        nodes.addAll(selectedNodesByID);
-        setHiddenNodesByID(nodes);
+    public void hideSelectedFigures() {
+        hiddenNodesByID.addAll(selectedNodesByID);
+        relayout();
     }
 
     private Set<FigureWidget> getSelectedFigureWidgets() {
@@ -502,7 +501,7 @@ public class DiagramScene extends ObjectScene {
         }
         return result;
     }
-    
+
     public void validateAll() {
         super.validate();
         scrollPane.validate();

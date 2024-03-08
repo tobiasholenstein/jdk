@@ -64,7 +64,7 @@ public final class HideAction extends ModelAwareAction {
 
     @Override
     public void performAction(DiagramScene model) {
-        model.hideSelectedNodes();
+        model.hideSelectedFigures();
     }
 
     @Override
