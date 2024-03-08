@@ -402,10 +402,9 @@ public class DiagramScene extends ObjectScene {
                             }
                         }
                     }
-                    // TODO
-                    FigureWidget fw = figureToFigureWidget.get(figure);
-                    Point newLocation = new Point(fw.getLocation().x + shiftX, fw.getLocation().y + shiftY);
-                    ActionFactory.createDefaultMoveProvider().setNewLocation(fw, newLocation);
+
+                    Point newLoc = new Point(widget.getLocation().x + shiftX, widget.getLocation().y + shiftY);
+                    ActionFactory.createDefaultMoveProvider().setNewLocation(widget, newLoc);
                 }
             }
         }));

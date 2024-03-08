@@ -25,7 +25,6 @@ package com.sun.hotspot.igv.graph;
 
 import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.data.Properties.PropertyMatcher;
-import java.util.List;
 import java.util.Set;
 
 /**

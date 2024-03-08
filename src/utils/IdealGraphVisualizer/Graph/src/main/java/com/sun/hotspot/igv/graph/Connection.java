@@ -38,6 +38,7 @@ public class Connection implements Link {
     private Color color;
     private ConnectionStyle style;
     private List<Point> controlPoints;
+
     protected Connection(InputSlot inputSlot, OutputSlot outputSlot, String label) {
         this.inputSlot = inputSlot;
         this.outputSlot = outputSlot;

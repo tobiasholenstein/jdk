@@ -7,13 +7,11 @@ import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.util.StringUtils;
 import com.sun.hotspot.igv.view.DiagramScene;
 import java.awt.*;
-import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.netbeans.api.visual.action.WidgetAction;
-import org.netbeans.api.visual.model.ObjectState;
 import org.netbeans.api.visual.widget.Widget;
 
 
