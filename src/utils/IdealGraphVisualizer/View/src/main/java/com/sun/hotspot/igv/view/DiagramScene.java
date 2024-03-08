@@ -50,8 +50,8 @@ public class DiagramScene extends ObjectScene {
     private final Map<FigureWidget, Set<LineWidget>> figureWidgetToOutLineWidgets = new HashMap<>();
     private final Map<FigureWidget, Set<LineWidget>> figureWidgetToInLineWidgets = new HashMap<>();
     private final Group group;
-    private Set<Figure> hiddenFigures;
-    private Set<Figure> selectedFigures;
+    private final Set<Figure> hiddenFigures;
+    private final Set<Figure> selectedFigures;
     private int position;
     private Diagram diagram;
     private boolean showBoundaryFigures;
@@ -448,13 +448,17 @@ public class DiagramScene extends ObjectScene {
         relayout();
     }
 
-    public Set<Integer> getHiddenFigures() {
-        // TODO
-        return new HashSet<>();
+    public Set<Integer> getHiddenNodesByID() {
+        Set<Integer> hiddenNodesByID = new HashSet<>();
+        for (Figure hiddenFigure : hiddenFigures) {
+            hiddenNodesByID.add(hiddenFigure.getInputNode().getId());
+        }
+        return hiddenNodesByID;
     }
 
     public void extractFigure(Figure figure) {
-        hiddenFigures = new HashSet<>(diagram.getFigures());
+        hiddenFigures.clear();
+        hiddenFigures.addAll(diagram.getFigures());
         hiddenFigures.remove(figure);
         relayout();
     }
@@ -484,7 +488,8 @@ public class DiagramScene extends ObjectScene {
     }
 
     public void extractSelectedFigures() {
-        hiddenFigures = new HashSet<>(diagram.getFigures());
+        hiddenFigures.clear();
+        hiddenFigures.addAll(diagram.getFigures());
         hiddenFigures.removeAll(selectedFigures);
         relayout();
     }
