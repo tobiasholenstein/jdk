@@ -31,7 +31,6 @@ import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.MoveProvider;
 import org.netbeans.api.visual.action.SelectProvider;
 import org.netbeans.api.visual.model.ObjectScene;
-import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
 import org.openide.util.Lookup;
 
@@ -42,8 +41,8 @@ public class DiagramScene extends ObjectScene {
     private static final float ZOOM_MAX_FACTOR = 4.0f;
     private static final float ZOOM_MIN_FACTOR = 0.25f;
     private final JScrollPane scrollPane;
-    private final LayerWidget figureLayer;
-    private final LayerWidget connectionLayer;
+    private final Widget figureLayer;
+    private final Widget connectionLayer;
     private final HierarchicalLayoutManager seaLayoutManager;
     private final FilterChain filtersOrder;
     private final FilterChain filterChain;
@@ -68,10 +67,10 @@ public class DiagramScene extends ObjectScene {
         MouseZoomAction mouseZoomAction = new MouseZoomAction(this);
         scrollPane = createScrollPane(mouseZoomAction);
 
-        connectionLayer = new LayerWidget(this);
+        connectionLayer = new Widget(this);
         addChild(connectionLayer);
 
-        figureLayer = new LayerWidget(this);
+        figureLayer = new Widget(this);
         addChild(figureLayer);
 
         getActions().addAction(new CustomizablePanAction(MouseEvent.BUTTON1_DOWN_MASK));
