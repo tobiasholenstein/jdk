@@ -50,8 +50,8 @@ public class DiagramScene extends ObjectScene {
     private final Map<FigureWidget, Set<LineWidget>> figureWidgetToOutLineWidgets = new HashMap<>();
     private final Map<FigureWidget, Set<LineWidget>> figureWidgetToInLineWidgets = new HashMap<>();
     private final Group group;
-    private Set<Integer> hiddenNodesByID;
-    private Set<Integer> selectedNodesByID;
+    private Set<Figure> hiddenFigures;
+    private Set<Figure> selectedFigures;
     private int position;
     private Diagram diagram;
     private boolean showBoundaryFigures;
@@ -68,8 +68,8 @@ public class DiagramScene extends ObjectScene {
         filtersOrder = provider.getAllFiltersOrdered();
 
         showBoundaryFigures = true;
-        hiddenNodesByID = new HashSet<>();
-        selectedNodesByID = new HashSet<>();
+        hiddenFigures = new HashSet<>();
+        selectedFigures = new HashSet<>();
 
         MouseZoomAction mouseZoomAction = new MouseZoomAction(this);
         scrollPane = createScrollPane(mouseZoomAction);
@@ -186,8 +186,9 @@ public class DiagramScene extends ObjectScene {
         // Initially set all figures to not boundary and update visibility based on hiddenNodesByID
         diagram.getFigures().forEach(figure -> {
             figure.setBoundary(false);
-            figure.setVisible(!hiddenNodesByID.contains(figure.getInputNode().getId()));
+            figure.setVisible(!hiddenFigures.contains(figure));
         });
+        selectedFigures.removeAll(hiddenFigures);
 
         if (showBoundaryFigures) {
             // Marks non-visible figures with visible neighbors as boundary figures and makes them visible
@@ -199,7 +200,6 @@ public class DiagramScene extends ObjectScene {
                     .toList() // needed!
                     .forEach(figure -> figure.setVisible(true));
         }
-        selectedNodesByID.removeAll(hiddenNodesByID);
 
         // Update figure widgets' visibility
         figureMap.forEach((figure, fw) -> fw.setVisible(figure.isVisible()));
@@ -350,9 +350,7 @@ public class DiagramScene extends ObjectScene {
                     if (editor != null) {
                         editor.requestActive();
                     }
-                    Set<Integer> nodeSelection = new HashSet<>();
-                    nodeSelection.add(figure.getInputNode().getId());
-                    selectedNodesByID = nodeSelection;
+                    selectFigureExclusively(figure);
                 }
             });
             figureWidget.getActions().addAction(figureSelectAction);
@@ -377,8 +375,8 @@ public class DiagramScene extends ObjectScene {
 
             @Override
             public void movementFinished(Widget widget) {
-                Set<FigureWidget> selectedFigures = getSelectedFigureWidgets();
-                for (FigureWidget fw : selectedFigures) {
+                Set<FigureWidget> selectedFigureWidgets = getSelectedFigureWidgets();
+                for (FigureWidget fw : selectedFigureWidgets) {
                     Point newLocation = new Point(fw.getLocation().x, fw.getLocation().y);
                     seaLayoutManager.moveVertex(fw.getFigure(), newLocation);
                 }
@@ -450,43 +448,49 @@ public class DiagramScene extends ObjectScene {
         relayout();
     }
 
-    public Set<Integer> getHiddenNodesByID() {
-        return hiddenNodesByID;
+    public Set<Integer> getHiddenFigures() {
+        // TODO
+        return new HashSet<>();
     }
 
     public void extractFigure(Figure figure) {
-        hiddenNodesByID = new HashSet<>(group.getAllNodes());
-        hiddenNodesByID.remove(figure.getInputNode().getId());
+        hiddenFigures = new HashSet<>(diagram.getFigures());
+        hiddenFigures.remove(figure);
         relayout();
     }
 
+    private void selectFigureExclusively(Figure figure) {
+        selectedFigures.clear();
+        selectedFigures.add(figure);
+    }
+
     public void hideFigure(Figure figure) {
-        hiddenNodesByID.add(figure.getInputNode().getId());
+        hiddenFigures.add(figure);
         relayout();
     }
 
     public void showFigure(Figure figure) {
-        hiddenNodesByID.remove(figure.getInputNode().getId());
+        hiddenFigures.remove(figure);
         relayout();
     }
 
     public boolean allFiguresVisible() {
-        return hiddenNodesByID.isEmpty();
+        return hiddenFigures.isEmpty();
     }
 
     public void showAllFigures() {
-        hiddenNodesByID.clear();
+        hiddenFigures.clear();
         relayout();
     }
 
     public void extractSelectedFigures() {
-        hiddenNodesByID = new HashSet<>(group.getAllNodes());
-        hiddenNodesByID.removeAll(selectedNodesByID);
+        hiddenFigures = new HashSet<>(diagram.getFigures());
+        hiddenFigures.removeAll(selectedFigures);
         relayout();
     }
 
     public void hideSelectedFigures() {
-        hiddenNodesByID.addAll(selectedNodesByID);
+        hiddenFigures.addAll(selectedFigures);
         relayout();
     }
 
@@ -495,7 +499,7 @@ public class DiagramScene extends ObjectScene {
         for (Map.Entry<Figure, FigureWidget> entry : figureMap.entrySet()) {
             Figure figure = entry.getKey();
             FigureWidget figureWidget = entry.getValue();
-            if (selectedNodesByID.contains(figure.getInputNode().getId())) {
+            if (selectedFigures.contains(figure)) {
                 result.add(figureWidget);
             }
         }
