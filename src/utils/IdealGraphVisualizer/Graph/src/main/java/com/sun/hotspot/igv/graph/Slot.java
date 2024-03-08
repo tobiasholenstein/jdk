@@ -147,5 +147,7 @@ public abstract class Slot implements Port, Properties.Provider {
         }
         return result;
     }
+
+    public abstract int yOffset();
 }
 

@@ -54,4 +54,9 @@ public class OutputSlot extends Slot {
     public String toString() {
         return "OutputSlot[figure=" + this.getFigure().toString() + ", position=" + getPosition() + "]";
     }
+
+    @Override
+    public int yOffset() {
+        return getFigure().getHeight();
+    }
 }

@@ -144,13 +144,10 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
 
     private void addSlots() {
         for (InputSlot inputSlot : figure.getInputSlots()) {
-            InputSlotWidget slotWidget = new InputSlotWidget(inputSlot, diagramScene, this);
-            this.addChild(slotWidget);
+            addChild(new SlotWidget(inputSlot, diagramScene, this));
         }
-
         for (OutputSlot outputSlot : figure.getOutputSlots()) {
-            OutputSlotWidget slotWidget = new OutputSlotWidget(outputSlot, diagramScene, this);
-            this.addChild(slotWidget);
+            addChild(new SlotWidget(outputSlot, diagramScene, this));
         }
     }
 
@@ -166,10 +163,6 @@ public class FigureWidget extends Widget implements Properties.Provider, DoubleC
             extraLabelWidget.setFont(Diagram.FONT.deriveFont(Font.ITALIC));
             extraLabelWidget.setForeground(Color.DARK_GRAY);
         }
-    }
-
-    public int getFigureHeight() {
-        return middleWidget.getPreferredBounds().height;
     }
 
     private void addBorder() {

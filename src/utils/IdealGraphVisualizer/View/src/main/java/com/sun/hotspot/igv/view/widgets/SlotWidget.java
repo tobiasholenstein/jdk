@@ -39,7 +39,7 @@ import org.netbeans.api.visual.widget.Widget;
 /**
  * @author Thomas Wuerthinger
  */
-public abstract class SlotWidget extends Widget implements DoubleClickHandler {
+public class SlotWidget extends Widget implements DoubleClickHandler {
 
     protected static double TEXT_ZOOM_FACTOR = 0.9;
     protected static double ZOOM_FACTOR = 0.6;
@@ -61,7 +61,7 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
             Point p = slot.getRelativePosition();
             p.x -= slot.getWidth() / 2;
             p.y -= slot.getHeight() / 2;
-            p.y += yOffset(); // TODO use fw
+            p.y += slot.yOffset(); // TODO use fw
             this.setPreferredLocation(p);
         }
         getActions().addAction(new DoubleClickAction(this));
@@ -75,10 +75,6 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
 
     public Slot getSlot() {
         return slot;
-    }
-
-    public FigureWidget getFigureWidget() {
-        return figureWidget;
     }
 
     @Override
@@ -145,8 +141,6 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
     protected Rectangle calculateClientArea() {
         return new Rectangle(0, 0, slot.getWidth(), slot.getHeight());
     }
-
-    protected abstract int yOffset();
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {

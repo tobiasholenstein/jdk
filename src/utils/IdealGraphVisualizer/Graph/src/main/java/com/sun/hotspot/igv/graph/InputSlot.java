@@ -43,6 +43,11 @@ public class InputSlot extends Slot {
         return getFigure().getInputSlots().indexOf(this);
     }
 
+    @Override
+    public int yOffset() {
+        return 0;
+    }
+
     public int getOriginalIndex() {
         return originalIndex;
     }
