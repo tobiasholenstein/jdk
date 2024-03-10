@@ -6,6 +6,8 @@ import java.awt.event.MouseEvent;
 import javax.swing.JCheckBox;
 import javax.swing.JList;
 import javax.swing.ListCellRenderer;
+import org.openide.explorer.view.NodeListModel;
+import org.openide.explorer.view.Visualizer;
 
 public class CheckRenderer extends JCheckBox implements ListCellRenderer<Object> {
 
@@ -21,7 +23,7 @@ public class CheckRenderer extends JCheckBox implements ListCellRenderer<Object>
                         Point p2 = list.indexToLocation(index);
                         Rectangle r = new Rectangle(p2.x, p2.y, getPreferredSize().height, getPreferredSize().height);
                         if (r.contains(e.getPoint())) {
-                            FilterNode node = ((CheckNodeListModel) list.getModel()).getCheckNodeAt(index);
+                            FilterNode node = getCheckNodeAt(index, (NodeListModel) list.getModel());
                             node.setSelected(!node.isSelected());
                             list.repaint();
                             e.consume();
@@ -33,10 +35,18 @@ public class CheckRenderer extends JCheckBox implements ListCellRenderer<Object>
         startBackground = this.getBackground();
     }
 
+    public FilterNode getCheckNodeAt(int index, NodeListModel model) {
+        Object item = model.getElementAt(index);
+        if (item != null) {
+            return (FilterNode) Visualizer.findNode(item);
+        }
+        return null;
+    }
+
     @Override
     public Component getListCellRendererComponent(final JList<? extends Object> list, Object value, final int index, boolean isSelected, boolean cellHasFocus) {
         setText(value.toString());
-        FilterNode node = ((CheckNodeListModel) list.getModel()).getCheckNodeAt(index);
+        FilterNode node = getCheckNodeAt(index, (NodeListModel) list.getModel());
         setSelected(node.isSelected());
         setEnabled(list.isEnabled());
 

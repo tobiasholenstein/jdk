@@ -39,7 +39,7 @@ public class CheckListView extends ListView {
 
     @Override
     protected NodeListModel createModel() {
-        return new CheckNodeListModel();
+        return new NodeListModel();
     }
 
     @Override
