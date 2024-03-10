@@ -5,18 +5,27 @@ import com.sun.hotspot.igv.data.ChangedListener;
 import com.sun.hotspot.igv.filter.CustomFilter;
 import com.sun.hotspot.igv.filter.Filter;
 import com.sun.hotspot.igv.filter.FilterChain;
-import java.awt.BorderLayout;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.*;
 import java.util.*;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import javax.swing.JCheckBox;
+import javax.swing.JList;
+import javax.swing.ListCellRenderer;
 import org.openide.ErrorManager;
 import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.ExplorerUtils;
+import org.openide.explorer.view.ListView;
+import org.openide.explorer.view.NodeListModel;
+import org.openide.explorer.view.Visualizer;
 import org.openide.filesystems.FileLock;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -25,6 +34,8 @@ import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
+import org.openide.util.lookup.AbstractLookup;
+import org.openide.util.lookup.InstanceContent;
 import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
 
@@ -271,8 +282,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
 
     private class FilterChildren extends Children.Keys<Filter> implements ChangedListener<FilterNode> {
 
-        private final HashMap<Filter, Node> nodeHash = new HashMap<>();
-
         public FilterChildren() {
             allFiltersOrdered.getChangedEvent().addListener(source -> addNotify());
             setBefore(false);
@@ -280,13 +289,8 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
 
         @Override
         protected Node[] createNodes(Filter filter) {
-            if (nodeHash.containsKey(filter)) {
-                return new Node[]{nodeHash.get(filter)};
-            }
-
             FilterNode node = new FilterNode(filter);
             node.getSelectionChangedEvent().addListener(this);
-            nodeHash.put(filter, node);
             return new Node[]{node};
         }
 
@@ -317,6 +321,139 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
             }
             view.revalidate();
             view.repaint();
+        }
+    }
+
+    private static class CheckListView extends ListView {
+
+        public CheckListView() {}
+
+        @Override
+        public void showSelection(int[] indices) {
+            super.showSelection(indices);
+        }
+
+        @Override
+        protected NodeListModel createModel() {
+            return new NodeListModel();
+        }
+
+        @Override
+        protected JList<Object> createList() {
+            JList<Object> tmpList = super.createList();
+            tmpList.setCellRenderer(new CheckRenderer(tmpList));
+            return tmpList;
+        }
+
+        private static class CheckRenderer extends JCheckBox implements ListCellRenderer<Object> {
+
+            private final Color startBackground;
+
+            public CheckRenderer(final JList<Object> list) {
+                list.addMouseListener(
+                        new MouseAdapter() {
+
+                            @Override
+                            public void mouseClicked(MouseEvent e) {
+                                int index = list.locationToIndex(e.getPoint());
+                                Point p2 = list.indexToLocation(index);
+                                Rectangle r = new Rectangle(p2.x, p2.y, getPreferredSize().height, getPreferredSize().height);
+                                if (r.contains(e.getPoint())) {
+                                    FilterNode node = getCheckNodeAt(index, (NodeListModel) list.getModel());
+                                    node.setSelected(!node.isSelected());
+                                    list.repaint();
+                                    e.consume();
+                                }
+                            }
+                        });
+
+                this.setPreferredSize(new Dimension(getPreferredSize().width, getPreferredSize().height - 5));
+                startBackground = this.getBackground();
+            }
+
+            public FilterNode getCheckNodeAt(int index, NodeListModel model) {
+                Object item = model.getElementAt(index);
+                if (item != null) {
+                    return (FilterNode) Visualizer.findNode(item);
+                }
+                return null;
+            }
+
+            @Override
+            public Component getListCellRendererComponent(final JList<? extends Object> list, Object value, final int index, boolean isSelected, boolean cellHasFocus) {
+                setText(value.toString());
+                FilterNode node = getCheckNodeAt(index, (NodeListModel) list.getModel());
+                setSelected(node.isSelected());
+                setEnabled(list.isEnabled());
+
+                if (isSelected && list.hasFocus()) {
+                    setBackground(list.getSelectionBackground());
+                    setForeground(list.getSelectionForeground());
+                } else if (isSelected) {
+                    assert !list.hasFocus();
+                    setBackground(startBackground);
+                    setForeground(list.getForeground());
+
+                } else {
+                    setBackground(list.getBackground());
+                    setForeground(list.getForeground());
+                }
+                return this;
+            }
+        }
+    }
+
+    private static class FilterNode extends AbstractNode implements ChangedListener<FilterTopComponent> {
+
+        private final Filter filter;
+
+        public boolean selected;
+        public boolean enabled;
+        private final ChangedEvent<FilterNode> selectionChangedEvent;
+
+        public ChangedEvent<FilterNode> getSelectionChangedEvent() {
+            return selectionChangedEvent;
+        }
+
+        public boolean isSelected() {
+            return selected;
+        }
+
+        public void setSelected(boolean b) {
+            if (b != selected) {
+                selected = b;
+                selectionChangedEvent.fire();
+            }
+        }
+
+        public FilterNode(Filter filter) {
+            this(filter, new InstanceContent());
+        }
+
+        private FilterNode(Filter filter, InstanceContent content) {
+            super(Children.LEAF, new AbstractLookup(content));
+            selectionChangedEvent = new ChangedEvent<>(this);
+            selected = false;
+            enabled = true;
+
+
+            content.add(filter);
+
+            this.filter = filter;
+
+            setDisplayName(filter.getName());
+
+            FilterTopComponent.findInstance().getFilterSettingsChangedEvent().addListener(this);
+            changed(FilterTopComponent.findInstance());
+        }
+
+        public Filter getFilter() {
+            return filter;
+        }
+
+        @Override
+        public void changed(FilterTopComponent source) {
+            setSelected(source.getFilterChain().containsFilter(filter));
         }
     }
 }
