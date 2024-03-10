@@ -26,9 +26,7 @@ package com.sun.hotspot.igv.filter;
 import com.sun.hotspot.igv.graph.*;
 import java.util.Set;
 
-/**
- * @author Thomas Wuerthinger
- */
+
 public class SplitFilter extends AbstractFilter {
 
     private final String name;

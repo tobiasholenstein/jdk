@@ -29,9 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/**
- * @author Thomas Wuerthinger
- */
+
 public class ConnectionFilter extends AbstractFilter {
 
     private final List<ConnectionStyleRule> connectionStyleRules;

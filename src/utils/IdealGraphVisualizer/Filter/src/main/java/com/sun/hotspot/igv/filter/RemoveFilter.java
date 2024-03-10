@@ -31,9 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * @author Thomas Wuerthinger
- */
+
 public class RemoveFilter extends AbstractFilter {
 
     private final List<RemoveRule> rules;

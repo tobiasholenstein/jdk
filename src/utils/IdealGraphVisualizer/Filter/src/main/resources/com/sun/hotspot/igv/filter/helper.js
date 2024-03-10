@@ -127,41 +127,6 @@ function combine(first, second, propertyNames) {
     f.apply(graph);
 }
 
-// Color nodes using a gradient based on the given property and min/max values.
-function colorizeGradient(property, min, max) {
-    var f = new GradientColorFilter();
-    f.setPropertyName(property);
-    f.setMinValue(min);
-    f.setMaxValue(max);
-    f.apply(graph);
-}
-
-// Color nodes using a gradient based on the given property, min/max values, and
-// mode ("LINEAR" or "LOGARITHMIC").
-function colorizeGradientWithMode(property, min, max, mode) {
-    var f = new GradientColorFilter();
-    f.setPropertyName(property);
-    f.setMinValue(min);
-    f.setMaxValue(max);
-    f.setMode(mode);
-    f.apply(graph);
-}
-
-// Color nodes using a custom gradient based on the given property, min/max
-// values, mode ("LINEAR" or "LOGARITHMIC"), list of colors, list of fractions,
-// and number of shades.
-function colorizeGradientCustom(property, min, max, mode, colors, fractions, nshades) {
-    var f = new GradientColorFilter();
-    f.setPropertyName(property);
-    f.setMinValue(min);
-    f.setMaxValue(max);
-    f.setMode(mode);
-    f.setColors(colors);
-    f.setFractions(fractions);
-    f.setShadeCount(nshades);
-    f.apply(graph);
-}
-
 // Pre-defined colors for coloring filters.
 var black = Color.black;
 var blue = Color.blue;

@@ -30,9 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/**
- * @author Thomas Wuerthinger
- */
+
 public class ColorFilter extends AbstractFilter {
 
     private final List<ColorRule> colorRules;

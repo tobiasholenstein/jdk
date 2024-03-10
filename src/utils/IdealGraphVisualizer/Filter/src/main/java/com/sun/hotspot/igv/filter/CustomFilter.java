@@ -29,12 +29,8 @@ import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
-import org.openide.cookies.OpenCookie;
-import org.openide.util.Exceptions;
 
-/**
- * @author Thomas Wuerthinger
- */
+
 public class CustomFilter extends AbstractFilter {
 
     private final ScriptEngine engine;
@@ -77,8 +73,7 @@ public class CustomFilter extends AbstractFilter {
             Bindings b = engine.getContext().getBindings(ScriptContext.ENGINE_SCOPE);
             b.put("graph", d);
             engine.eval(code, b);
-        } catch (ScriptException ex) {
-            Exceptions.printStackTrace(ex);
+        } catch (ScriptException ignored) {
         }
     }
 }

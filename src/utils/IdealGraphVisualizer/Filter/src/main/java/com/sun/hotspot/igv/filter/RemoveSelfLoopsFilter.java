@@ -27,9 +27,7 @@ import com.sun.hotspot.igv.graph.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author Thomas Wuerthinger
- */
+
 public class RemoveSelfLoopsFilter extends AbstractFilter {
 
     private final String name;
