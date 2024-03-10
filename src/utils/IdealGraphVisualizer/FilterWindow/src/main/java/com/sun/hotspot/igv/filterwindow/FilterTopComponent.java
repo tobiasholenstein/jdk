@@ -139,18 +139,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         return defaultFilterChain;
     }
 
-    private FileObject getFileObject(CustomFilter customFilter) {
-        FileObject fileObject = FileUtil.getConfigRoot().getFileObject(FOLDER_ID + "/" + customFilter.getName() + ".js");
-        if (fileObject == null) {
-            try {
-                fileObject = FileUtil.getConfigRoot().getFileObject(FOLDER_ID).createData(customFilter.getName() + ".js");
-            } catch (IOException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-        }
-        return fileObject;
-    }
-
     public void initFilters() {
         FileObject folder = FileUtil.getConfigRoot().getFileObject(FOLDER_ID);
         FileObject[] children = folder.getChildren();
