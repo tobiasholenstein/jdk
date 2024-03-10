@@ -127,12 +127,6 @@ function combine(first, second, propertyNames) {
     f.apply(graph);
 }
 
-// Remove (input and/or output) slots without connecting edges.
-function removeUnconnectedSlots(inputs, outputs) {
-    var f = new UnconnectedSlotFilter(inputs, outputs);
-    f.apply(graph);
-}
-
 // Color nodes using a gradient based on the given property and min/max values.
 function colorizeGradient(property, min, max) {
     var f = new GradientColorFilter();
