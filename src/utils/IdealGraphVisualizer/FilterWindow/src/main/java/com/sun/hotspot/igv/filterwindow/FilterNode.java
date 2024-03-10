@@ -48,29 +48,15 @@ public class FilterNode extends CheckNode implements ChangedListener<FilterTopCo
         content.add(filter);
 
         this.filter = filter;
-        //filter.getChangedEvent().addListener(source -> update());
 
-        this.setDisplayName(filter.getName());
+        setDisplayName(filter.getName());
 
         FilterTopComponent.findInstance().getFilterSettingsChangedEvent().addListener(this);
         changed(FilterTopComponent.findInstance());
     }
 
-    private void update() {
-    }
-
     public Filter getFilter() {
         return filter;
-    }
-
-    @Override
-    public Action[] getActions(boolean b) {
-        return new Action[]{OpenAction.findObject(OpenAction.class, true)};
-    }
-
-    @Override
-    public Action getPreferredAction() {
-        return OpenAction.get(OpenAction.class).createContextAwareInstance(Utilities.actionsGlobalContext());
     }
 
     @Override
