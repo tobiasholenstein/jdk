@@ -1,24 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.1//EN" "https://www.netbeans.org/dtds/filesystem-1_1.dtd">
 <filesystem>
-    <folder name="Edit">
-        <file name="com-sun-hotspot-igv-filterwindow-actions-MoveFilterDownAction.instance">
-            <attr name="position" intvalue="300"/>
-        </file>
-        <file name="com-sun-hotspot-igv-filterwindow-actions-MoveFilterUpAction.instance">
-            <attr name="position" intvalue="400"/>
-        </file>
-        <file name="com-sun-hotspot-igv-filterwindow-actions-RemoveFilterAction.instance">
-            <attr name="position" intvalue="500"/>
-        </file>
-        <file name="com-sun-hotspot-igv-filterwindow-actions-RemoveFilterSettingsAction.instance">
-            <attr name="position" intvalue="600"/>
-        </file>
-        <file name="com-sun-hotspot-igv-filterwindow-actions-SaveFilterSettingsAction.instance">
-            <attr name="position" intvalue="900"/>
-        </file>
-    </folder>
-
     <folder name="Actions">
         <folder name="Window">
             <file name="com-sun-hotspot-igv-filterwindow-actions-FilterAction.instance"/>
