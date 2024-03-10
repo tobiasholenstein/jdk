@@ -269,7 +269,7 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         view.requestFocus();
     }
 
-    private class FilterChildren extends Children.Keys<Filter> implements ChangedListener<CheckNode> {
+    private class FilterChildren extends Children.Keys<Filter> implements ChangedListener<FilterNode> {
 
         private final HashMap<Filter, Node> nodeHash = new HashMap<>();
 
@@ -307,7 +307,7 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         }
 
         @Override
-        public void changed(CheckNode source) {
+        public void changed(FilterNode source) {
             FilterNode node = (FilterNode) source;
             Filter f = node.getFilter();
             FilterChain chain = getFilterChain();

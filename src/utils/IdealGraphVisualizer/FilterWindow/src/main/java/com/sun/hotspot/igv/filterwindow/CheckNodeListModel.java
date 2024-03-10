@@ -31,10 +31,10 @@ import org.openide.explorer.view.Visualizer;
  */
 public class CheckNodeListModel extends NodeListModel {
 
-    public CheckNode getCheckNodeAt(int index) {
+    public FilterNode getCheckNodeAt(int index) {
         Object item = getElementAt(index);
         if (item != null) {
-            return (CheckNode) Visualizer.findNode(item);
+            return (FilterNode) Visualizer.findNode(item);
         }
         return null;
     }

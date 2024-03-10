@@ -21,7 +21,7 @@ public class CheckRenderer extends JCheckBox implements ListCellRenderer<Object>
                         Point p2 = list.indexToLocation(index);
                         Rectangle r = new Rectangle(p2.x, p2.y, getPreferredSize().height, getPreferredSize().height);
                         if (r.contains(e.getPoint())) {
-                            CheckNode node = ((CheckNodeListModel) list.getModel()).getCheckNodeAt(index);
+                            FilterNode node = ((CheckNodeListModel) list.getModel()).getCheckNodeAt(index);
                             node.setSelected(!node.isSelected());
                             list.repaint();
                             e.consume();
@@ -36,7 +36,7 @@ public class CheckRenderer extends JCheckBox implements ListCellRenderer<Object>
     @Override
     public Component getListCellRendererComponent(final JList<? extends Object> list, Object value, final int index, boolean isSelected, boolean cellHasFocus) {
         setText(value.toString());
-        CheckNode node = ((CheckNodeListModel) list.getModel()).getCheckNodeAt(index);
+        FilterNode node = ((CheckNodeListModel) list.getModel()).getCheckNodeAt(index);
         setSelected(node.isSelected());
         setEnabled(list.isEnabled());
 
