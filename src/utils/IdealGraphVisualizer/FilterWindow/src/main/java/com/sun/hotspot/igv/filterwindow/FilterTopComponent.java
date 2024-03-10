@@ -293,10 +293,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         @Override
         protected void addNotify() {
             setKeys(allFiltersOrdered.getFilters());
-            updateSelection();
-        }
-
-        private void updateSelection() {
             Node[] nodes = getExplorerManager().getSelectedNodes();
             int[] arr = new int[nodes.length];
             for (int i = 0; i < nodes.length; i++) {
@@ -307,17 +303,16 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         }
 
         @Override
-        public void changed(FilterNode source) {
-            FilterNode node = (FilterNode) source;
-            Filter f = node.getFilter();
+        public void changed(FilterNode filterNode) {
+            Filter filter = filterNode.getFilter();
             FilterChain chain = getFilterChain();
-            if (node.isSelected()) {
-                if (!chain.containsFilter(f)) {
-                    chain.addFilter(f);
+            if (filterNode.isSelected()) {
+                if (!chain.containsFilter(filter)) {
+                    chain.addFilter(filter);
                 }
             } else {
-                if (chain.containsFilter(f)) {
-                    chain.removeFilter(f);
+                if (chain.containsFilter(filter)) {
+                    chain.removeFilter(filter);
                 }
             }
             view.revalidate();
