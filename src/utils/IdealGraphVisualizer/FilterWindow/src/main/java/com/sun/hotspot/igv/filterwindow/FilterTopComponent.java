@@ -227,9 +227,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
 
         for (CustomFilter cf : customFilters) {
             allFiltersOrdered.addFilter(cf);
-            FilterChangedListener listener = new FilterChangedListener(getFileObject(cf), cf);
-            listener.changed(cf);
-            cf.getChangedEvent().addListener(listener);
             if (enabledSet.contains(cf)) {
                 defaultFilterChain.addFilter(cf);
             }
@@ -282,40 +279,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     public void requestActive() {
         super.requestActive();
         view.requestFocus();
-    }
-
-    private static class FilterChangedListener implements ChangedListener<Filter> {
-
-        private final CustomFilter filter;
-        private FileObject fileObject;
-
-        public FilterChangedListener(FileObject fo, CustomFilter cf) {
-            fileObject = fo;
-            filter = cf;
-        }
-
-        @Override
-        public void changed(Filter source) {
-            try {
-                if (!fileObject.getName().equals(filter.getName())) {
-                    FileLock lock = fileObject.lock();
-                    fileObject.move(lock, fileObject.getParent(), filter.getName(), "js");
-                    lock.releaseLock();
-                    fileObject = fileObject.getParent().getFileObject(filter.getName() + ".js");
-                }
-
-                FileLock lock = fileObject.lock();
-                OutputStream os = fileObject.getOutputStream(lock);
-                try (Writer w = new OutputStreamWriter(os)) {
-                    String s = filter.getCode();
-                    w.write(s);
-                }
-                lock.releaseLock();
-
-            } catch (IOException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-        }
     }
 
     private class FilterChildren extends Children.Keys<Filter> implements ChangedListener<CheckNode> {
