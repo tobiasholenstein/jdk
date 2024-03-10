@@ -47,18 +47,16 @@ public class FilterNode extends CheckNode implements ChangedListener<FilterTopCo
         super(Children.LEAF, new AbstractLookup(content));
         content.add(filter);
 
-        content.add(filter.getEditor());
         this.filter = filter;
-        filter.getChangedEvent().addListener(source -> update());
+        //filter.getChangedEvent().addListener(source -> update());
 
-        update();
+        this.setDisplayName(filter.getName());
 
         FilterTopComponent.findInstance().getFilterSettingsChangedEvent().addListener(this);
         changed(FilterTopComponent.findInstance());
     }
 
     private void update() {
-        this.setDisplayName(filter.getName());
     }
 
     public Filter getFilter() {

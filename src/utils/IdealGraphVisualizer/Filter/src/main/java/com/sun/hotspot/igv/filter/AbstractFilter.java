@@ -58,11 +58,6 @@ public abstract class AbstractFilter implements Filter {
     }
 
     @Override
-    public OpenCookie getEditor() {
-        return null;
-    }
-
-    @Override
     public ChangedEvent<Filter> getChangedEvent() {
         return changedEvent;
     }
