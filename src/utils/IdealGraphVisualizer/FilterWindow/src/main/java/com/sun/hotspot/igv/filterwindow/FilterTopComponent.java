@@ -135,7 +135,7 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         return allFiltersOrdered;
     }
 
-    public FilterChain getCurrentChain() {
+    public FilterChain getFilterChain() {
         return defaultFilterChain;
     }
 
@@ -310,7 +310,7 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         public void changed(CheckNode source) {
             FilterNode node = (FilterNode) source;
             Filter f = node.getFilter();
-            FilterChain chain = getCurrentChain();
+            FilterChain chain = getFilterChain();
             if (node.isSelected()) {
                 if (!chain.containsFilter(f)) {
                     chain.addFilter(f);

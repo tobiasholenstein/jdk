@@ -77,6 +77,6 @@ public class FilterNode extends CheckNode implements ChangedListener<FilterTopCo
 
     @Override
     public void changed(FilterTopComponent source) {
-        setSelected(source.getCurrentChain().containsFilter(filter));
+        setSelected(source.getFilterChain().containsFilter(filter));
     }
 }
