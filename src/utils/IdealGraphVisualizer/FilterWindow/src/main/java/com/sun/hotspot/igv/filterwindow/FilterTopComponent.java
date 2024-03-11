@@ -11,8 +11,6 @@ import java.awt.event.MouseEvent;
 import java.io.*;
 import java.util.*;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -26,9 +24,6 @@ import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.ListView;
 import org.openide.explorer.view.NodeListModel;
 import org.openide.explorer.view.Visualizer;
-import org.openide.filesystems.FileLock;
-import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileUtil;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
@@ -41,11 +36,7 @@ import org.openide.windows.WindowManager;
 
 public final class FilterTopComponent extends TopComponent implements ExplorerManager.Provider {
 
-    public static final String FOLDER_ID = "Filters";
-    public static final String AFTER_ID = "after";
-    public static final String ENABLED_ID = "enabled";
     public static final String PREFERRED_ID = "FilterTopComponent";
-    public static final String JAVASCRIPT_HELPER_ID = "JavaScriptHelper";
     private static final FilterChain defaultFilterChain = new FilterChain();
     private static FilterTopComponent instance;
     private final CheckListView view;
@@ -81,32 +72,24 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
     }
 
     private static String getJsHelperText() {
-        InputStream is = null;
         StringBuilder sb = new StringBuilder("if (typeof importPackage === 'undefined') { try { load('nashorn:mozilla_compat.js'); } catch (e) {} }"
                 + "importPackage(Packages.com.sun.hotspot.igv.filter);"
                 + "importPackage(Packages.com.sun.hotspot.igv.graph);"
                 + "importPackage(Packages.com.sun.hotspot.igv.data);"
                 + "importPackage(Packages.com.sun.hotspot.igv.util);"
                 + "importPackage(java.awt);");
-        try {
-            FileObject fo = FileUtil.getConfigRoot().getFileObject(JAVASCRIPT_HELPER_ID);
-            is = fo.getInputStream();
-            BufferedReader r = new BufferedReader(new InputStreamReader(is));
-            String s;
-            while ((s = r.readLine()) != null) {
-                sb.append(s);
-                sb.append("\n");
-            }
 
-        } catch (IOException ex) {
-            Logger.getLogger("global").log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                is.close();
-            } catch (IOException ex) {
-                Exceptions.printStackTrace(ex);
+        String listPath = "com/sun/hotspot/igv/filterwindow/helper.js";
+        try (InputStream listStream = FilterTopComponent.class.getClassLoader().getResourceAsStream(listPath);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(listStream))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append("\n"); // Append line and newline in one go
             }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read resource: " + listPath, e);
         }
+
         return sb.toString();
     }
 
