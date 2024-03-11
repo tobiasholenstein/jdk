@@ -107,7 +107,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>FilterWindow</artifactId>
+            <artifactId>FiltersPanel</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

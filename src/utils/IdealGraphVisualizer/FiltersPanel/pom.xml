@@ -39,10 +39,10 @@
         <groupId>com.sun.hotspot.igv</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    <artifactId>View</artifactId>
+    <artifactId>FiltersPanel</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>nbm</packaging>
-    <name>View</name>
+    <name>FiltersPanel</name>
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -55,27 +55,7 @@
         </dependency>
         <dependency>
             <groupId>com.sun.hotspot.igv</groupId>
-            <artifactId>FiltersPanel</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.hotspot.igv</groupId>
             <artifactId>Graph</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.hotspot.igv</groupId>
-            <artifactId>HierarchicalLayout</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.hotspot.igv</groupId>
-            <artifactId>Layout</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.hotspot.igv</groupId>
-            <artifactId>Settings</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -85,12 +65,12 @@
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-util</artifactId>
+            <artifactId>org-openide-loaders</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-util-lookup</artifactId>
+            <artifactId>org-openide-util</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
@@ -105,27 +85,7 @@
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-dialogs</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-spi-quicksearch</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-loaders</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-util-ui</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-awt</artifactId>
+            <artifactId>org-openide-filesystems</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
@@ -135,23 +95,38 @@
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-api-visual</artifactId>
+            <artifactId>org-openide-util-lookup</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.xmlgraphics</groupId>
-            <artifactId>batik-dom</artifactId>
-            <version>${batik.version}</version>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util-ui</artifactId>
+            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.xmlgraphics</groupId>
-            <artifactId>batik-svggen</artifactId>
-            <version>${batik.version}</version>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-dialogs</artifactId>
+            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.librepdf</groupId>
-            <artifactId>openpdf</artifactId>
-            <version>${openpdf.version}</version>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-explorer</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.hotspot.igv</groupId>
+            <artifactId>Layout</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.swing-layout</groupId>
+            <artifactId>swing-layout</artifactId>
+            <version>${swinglayouts.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.nashorn</groupId>
+            <artifactId>nashorn-core</artifactId>
+            <version>15.3</version>
         </dependency>
     </dependencies>
     <build>
@@ -163,7 +138,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <publicPackages>
-                        <publicPackage>com.sun.hotspot.igv.view</publicPackage>
+                        <publicPackage>com.sun.hotspot.igv.filterspanel</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>

@@ -99,7 +99,7 @@
         <module>Coordinator</module>
         <module>Graph</module>
         <module>HierarchicalLayout</module>
-        <module>FilterWindow</module>
+        <module>FiltersPanel</module>
         <module>View</module>
     </modules>
     <properties>
