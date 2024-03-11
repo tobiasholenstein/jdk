@@ -100,7 +100,6 @@
         <module>Graph</module>
         <module>HierarchicalLayout</module>
         <module>Filter</module>
-        <module>ServerCompiler</module>
         <module>FilterWindow</module>
         <module>View</module>
     </modules>

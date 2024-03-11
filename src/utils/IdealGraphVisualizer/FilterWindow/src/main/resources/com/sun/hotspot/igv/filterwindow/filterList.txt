@@ -1,0 +1,20 @@
+color.filter, Color by category, true
+showWarnings.filter, Show node warnings, true
+customNodeInfo.filter, Show custom node info, true
+showTypes.filter, Show types, true
+simplifyGraph.filter, Simplify graph, true
+condenseGraph.filter, Condense graph, true
+hideData.filter, Hide data subgraph, false
+hideMemory.filter, Hide memory subgraph, false
+hideControl.filter, Hide control subgraph, false
+hideMixed.filter, Hide mixed subgraph, false
+hideOther.filter, Hide other subgraph, false
+onlyControlFlow.filter, Show control flow only, false
+hideDataEdges.filter, Hide data edges, false
+hideMemoryEdges.filter, Hide memory edges, false
+hideControlEdges.filter, Hide control edges, false
+hideMixedEdges.filter, Hide mixed edges, false
+hideOtherEdges.filter, Hide other edges, false
+hideRootBlock.filter, Hide root block, false
+hideUncommonTrapBlocks.filter, Hide uncommon trap blocks, false
+hideExceptionBlocks.filter, Hide exception blocks, false

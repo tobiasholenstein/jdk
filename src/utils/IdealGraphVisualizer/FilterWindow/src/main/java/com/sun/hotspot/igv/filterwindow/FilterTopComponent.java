@@ -150,79 +150,71 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
         return defaultFilterChain;
     }
 
+    public record FilterRecord(String fileName, String filterName, boolean selectedByDefault) {}
+
+
     public void initFilters() {
-        FileObject folder = FileUtil.getConfigRoot().getFileObject(FOLDER_ID);
-        FileObject[] children = folder.getChildren();
+        System.out.println("initFilters");
+        List<FilterRecord> filters = new ArrayList<>();
+        String listPath = "com/sun/hotspot/igv/filterwindow/filterList.txt";
+
+        try (InputStream listStream = FilterTopComponent.class.getClassLoader().getResourceAsStream(listPath);
+             BufferedReader listReader = new BufferedReader(new InputStreamReader(listStream))) {
+
+            String line;
+            while ((line = listReader.readLine()) != null) {
+                String[] parts = line.split(", ");
+                if (parts.length == 3) {
+                    String fileName = parts[0];
+                    String filterName = parts[1];
+                    boolean selectedByDefault = Boolean.parseBoolean(parts[2]);
+                    filters.add(new FilterRecord(fileName, filterName, selectedByDefault));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
         List<CustomFilter> customFilters = new ArrayList<>();
-        HashMap<CustomFilter, String> afterMap = new HashMap<>();
         Set<CustomFilter> enabledSet = new HashSet<>();
-        HashMap<String, CustomFilter> map = new HashMap<>();
 
-        for (final FileObject fo : children) {
-            InputStream is = null;
+        String basePath = "com/sun/hotspot/igv/filterwindow/filters/";
 
-            String code = "";
-            FileLock lock = null;
-            try {
-                lock = fo.lock();
-                is = fo.getInputStream();
-                BufferedReader r = new BufferedReader(new InputStreamReader(is));
-                String s;
-                StringBuilder sb = new StringBuilder();
-                while ((s = r.readLine()) != null) {
-                    sb.append(s);
-                    sb.append("\n");
+        for (FilterRecord filter : filters) {
+            String fileName = filter.fileName;
+            String filterName = filter.filterName;
+            boolean selectedByDefault = filter.selectedByDefault;
+
+            try (InputStream inputStream = FilterTopComponent.class.getClassLoader().getResourceAsStream(basePath + fileName)) {
+                if (inputStream == null) {
+                    System.err.println("Could not find file: " + fileName);
+                    continue;
                 }
-                code = sb.toString();
-            } catch (IOException ex) {
-                Exceptions.printStackTrace(ex);
-            } finally {
-                try {
-                    assert is != null;
-                    is.close();
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
-                }
-                lock.releaseLock();
-            }
-
-            String displayName = fo.getName();
-
-            final CustomFilter cf = new CustomFilter(displayName, code, engine);
-            map.put(displayName, cf);
-
-            String after = (String) fo.getAttribute(AFTER_ID);
-            afterMap.put(cf, after);
-
-            Boolean enabled = (Boolean) fo.getAttribute(ENABLED_ID);
-            if (enabled != null && enabled) {
-                enabledSet.add(cf);
-            }
-
-            customFilters.add(cf);
-        }
-
-        for (int j = 0; j < customFilters.size(); j++) {
-            for (int i = 0; i < customFilters.size(); i++) {
-                List<CustomFilter> copiedList = new ArrayList<>(customFilters);
-                for (CustomFilter cf : copiedList) {
-
-                    String after = afterMap.get(cf);
-
-                    if (map.containsKey(after)) {
-                        CustomFilter afterCf = map.get(after);
-                        int index = customFilters.indexOf(afterCf);
-                        int currentIndex = customFilters.indexOf(cf);
-
-                        if (currentIndex < index) {
-                            customFilters.remove(currentIndex);
-                            customFilters.add(index, cf);
-                        }
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                    String s;
+                    StringBuilder sb = new StringBuilder();
+                    while ((s = reader.readLine()) != null) {
+                        sb.append(s);
+                        sb.append("\n");
                     }
+                    String code = sb.toString();
+
+                    final CustomFilter cf = new CustomFilter(filterName, code, engine);
+                    if (selectedByDefault) {
+                        enabledSet.add(cf);
+                    }
+                    customFilters.add(cf);
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
+
+
+
+//////
+
 
         for (CustomFilter cf : customFilters) {
             allFiltersOrdered.addFilter(cf);
