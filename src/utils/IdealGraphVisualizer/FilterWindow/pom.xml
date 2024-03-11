@@ -115,8 +115,18 @@
         </dependency>
         <dependency>
             <groupId>com.sun.hotspot.igv</groupId>
-            <artifactId>Filter</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <artifactId>Layout</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.swing-layout</groupId>
+            <artifactId>swing-layout</artifactId>
+            <version>${swinglayouts.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.nashorn</groupId>
+            <artifactId>nashorn-core</artifactId>
+            <version>15.3</version>
         </dependency>
     </dependencies>
     <build>
@@ -126,6 +136,11 @@
                 <artifactId>nbm-maven-plugin</artifactId>
                 <version>${nbmmvnplugin.version}</version>
                 <extensions>true</extensions>
+                <configuration>
+                    <publicPackages>
+                        <publicPackage>com.sun.hotspot.igv.filterwindow</publicPackage>
+                    </publicPackages>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -99,7 +99,6 @@
         <module>Coordinator</module>
         <module>Graph</module>
         <module>HierarchicalLayout</module>
-        <module>Filter</module>
         <module>FilterWindow</module>
         <module>View</module>
     </modules>

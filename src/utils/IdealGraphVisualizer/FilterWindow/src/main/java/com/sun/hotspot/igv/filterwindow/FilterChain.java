@@ -1,4 +1,4 @@
-package com.sun.hotspot.igv.filter;
+package com.sun.hotspot.igv.filterwindow;
 
 import com.sun.hotspot.igv.data.ChangedEvent;
 import com.sun.hotspot.igv.data.ChangedEventProvider;

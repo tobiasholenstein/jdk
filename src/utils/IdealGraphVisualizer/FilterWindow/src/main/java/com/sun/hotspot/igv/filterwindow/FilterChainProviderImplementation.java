@@ -1,7 +1,5 @@
 package com.sun.hotspot.igv.filterwindow;
 
-import com.sun.hotspot.igv.filter.FilterChain;
-import com.sun.hotspot.igv.filter.FilterChainProvider;
 import org.openide.util.lookup.ServiceProvider;
 
 

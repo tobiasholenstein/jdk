@@ -21,7 +21,7 @@
  * questions.
  *
  */
-package com.sun.hotspot.igv.filter;
+package com.sun.hotspot.igv.filterwindow;
 
 import com.sun.hotspot.igv.graph.*;
 import com.sun.hotspot.igv.graph.Connection.ConnectionStyle;

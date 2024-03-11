@@ -55,7 +55,7 @@
         </dependency>
         <dependency>
             <groupId>com.sun.hotspot.igv</groupId>
-            <artifactId>Filter</artifactId>
+            <artifactId>FilterWindow</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

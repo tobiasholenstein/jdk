@@ -2,9 +2,6 @@ package com.sun.hotspot.igv.filterwindow;
 
 import com.sun.hotspot.igv.data.ChangedEvent;
 import com.sun.hotspot.igv.data.ChangedListener;
-import com.sun.hotspot.igv.filter.CustomFilter;
-import com.sun.hotspot.igv.filter.Filter;
-import com.sun.hotspot.igv.filter.FilterChain;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -73,7 +70,7 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
 
     private static String getJsHelperText() {
         StringBuilder sb = new StringBuilder("if (typeof importPackage === 'undefined') { try { load('nashorn:mozilla_compat.js'); } catch (e) {} }"
-                + "importPackage(Packages.com.sun.hotspot.igv.filter);"
+                + "importPackage(Packages.com.sun.hotspot.igv.filterwindow);"
                 + "importPackage(Packages.com.sun.hotspot.igv.graph);"
                 + "importPackage(Packages.com.sun.hotspot.igv.data);"
                 + "importPackage(Packages.com.sun.hotspot.igv.util);"
@@ -137,7 +134,6 @@ public final class FilterTopComponent extends TopComponent implements ExplorerMa
 
 
     public void initFilters() {
-        System.out.println("initFilters");
         List<FilterRecord> filters = new ArrayList<>();
         String listPath = "com/sun/hotspot/igv/filterwindow/filterList.txt";
 

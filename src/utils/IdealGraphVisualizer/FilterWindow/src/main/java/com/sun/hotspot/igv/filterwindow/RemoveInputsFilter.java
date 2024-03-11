@@ -1,4 +1,4 @@
-package com.sun.hotspot.igv.filter;
+package com.sun.hotspot.igv.filterwindow;
 
 import com.sun.hotspot.igv.graph.*;
 import java.util.ArrayList;

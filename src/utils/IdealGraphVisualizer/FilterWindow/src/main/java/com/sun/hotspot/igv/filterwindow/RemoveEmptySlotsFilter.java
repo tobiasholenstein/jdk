@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,22 +21,24 @@
  * questions.
  *
  */
-package com.sun.hotspot.igv.filter;
+package com.sun.hotspot.igv.filterwindow;
 
-import com.sun.hotspot.igv.graph.*;
+import com.sun.hotspot.igv.graph.Diagram;
+import com.sun.hotspot.igv.graph.Figure;
+import com.sun.hotspot.igv.graph.InputSlot;
+import com.sun.hotspot.igv.graph.Selector;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
-
-public class SplitFilter extends AbstractFilter {
+public class RemoveEmptySlotsFilter extends AbstractFilter {
 
     private final String name;
     private final Selector selector;
-    private final String[] propertyNames;
 
-    public SplitFilter(String name, Selector selector, String[] propertyNames) {
+    public RemoveEmptySlotsFilter(String name, Selector selector) {
         this.name = name;
         this.selector = selector;
-        this.propertyNames = propertyNames;
     }
 
     @Override
@@ -45,24 +47,18 @@ public class SplitFilter extends AbstractFilter {
     }
 
     @Override
-    public void apply(Diagram d) {
-        Set<Figure> list = selector.selected(d);
+    public void apply(Diagram diagram) {
+        Set<Figure> list = selector.selected(diagram);
         for (Figure f : list) {
-            String s = AbstractFilter.getFirstMatchingProperty(f, propertyNames);
-            for (OutputSlot os : f.getOutputSlots()) {
-                for (Connection c : os.getConnections()) {
-                    InputSlot is = c.getInputSlot();
-                    if (f.getInputNode() != null) {
-                        is.setSourceNode(f.getInputNode());
-                        is.setColor(f.getColor());
-                    }
-                    if (s != null) {
-                        is.setShortName(s);
-                    }
+            List<InputSlot> empty = new ArrayList<>();
+            for (InputSlot is : f.getInputSlots()) {
+                if (is.getConnections().isEmpty()) {
+                    empty.add(is);
                 }
             }
-
-            d.removeFigure(f);
+            for (InputSlot is : empty) {
+                f.removeSlot(is);
+            }
         }
     }
 }

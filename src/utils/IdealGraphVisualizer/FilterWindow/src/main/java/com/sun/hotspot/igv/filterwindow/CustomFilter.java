@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.sun.hotspot.igv.filter;
+package com.sun.hotspot.igv.filterwindow;
 
 import com.sun.hotspot.igv.graph.Diagram;
 import javax.script.Bindings;
@@ -73,7 +73,6 @@ public class CustomFilter extends AbstractFilter {
             Bindings b = engine.getContext().getBindings(ScriptContext.ENGINE_SCOPE);
             b.put("graph", d);
             engine.eval(code, b);
-        } catch (ScriptException ignored) {
-        }
+        } catch (ScriptException ignored) {}
     }
 }

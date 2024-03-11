@@ -1,4 +1,4 @@
-package com.sun.hotspot.igv.filter;
+package com.sun.hotspot.igv.filterwindow;
 
 public interface FilterChainProvider {
 
