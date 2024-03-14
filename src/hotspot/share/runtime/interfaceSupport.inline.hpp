@@ -169,14 +169,19 @@ class ThreadInVMfromUnknown {
 
 class ThreadInVMfromNative : public ThreadStateTransition {
   ResetNoHandleMark __rnhm;
+  WXMode _old_mode;
  public:
-  ThreadInVMfromNative(JavaThread* thread) : ThreadStateTransition(thread) {
+  explicit ThreadInVMfromNative(JavaThread* thread) : ThreadStateTransition(thread) {
     transition_from_native(thread, _thread_in_vm);
+    _old_mode = WXMode(thread ? thread->enable_wx(WXWrite) : WXWrite);
   }
   ~ThreadInVMfromNative() {
     // We cannot assert !_thread->owns_locks() since we have valid cases where
     // we call known native code using this wrapper holding locks.
     transition_from_vm(_thread, _thread_in_native);
+    if (_thread) {
+      _thread->enable_wx(_old_mode);
+    }
   }
 };
 
@@ -358,7 +363,6 @@ extern "C" {                                                         \
   result_type JNICALL header {                                       \
     JavaThread* thread=JavaThread::thread_from_jni_environment(env); \
     assert(thread == Thread::current(), "JNIEnv is only valid in same thread"); \
-    MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, thread));        \
     ThreadInVMfromNative __tiv(thread);                              \
     debug_only(VMNativeEntryWrapper __vew;)                          \
     VM_ENTRY_BASE(result_type, header, thread)
@@ -383,7 +387,6 @@ extern "C" {                                                         \
 extern "C" {                                                         \
   result_type JNICALL header {                                       \
     JavaThread* thread=JavaThread::thread_from_jni_environment(env); \
-    MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, thread));        \
     ThreadInVMfromNative __tiv(thread);                              \
     debug_only(VMNativeEntryWrapper __vew;)                          \
     VM_ENTRY_BASE(result_type, header, thread)
@@ -393,7 +396,6 @@ extern "C" {                                                         \
 extern "C" {                                                         \
   result_type JNICALL header {                                       \
     JavaThread* thread = JavaThread::current();                      \
-    MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, thread));        \
     ThreadInVMfromNative __tiv(thread);                              \
     debug_only(VMNativeEntryWrapper __vew;)                          \
     VM_ENTRY_BASE(result_type, header, thread)

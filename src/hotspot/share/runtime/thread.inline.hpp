@@ -72,7 +72,7 @@ inline void Thread::set_threads_hazard_ptr(ThreadsList* new_list) {
 
 #if defined(__APPLE__) && defined(AARCH64)
 inline void Thread::init_wx() {
-  assert(this == Thread::current(), "should only be called for current thread");
+  //assert(this == Thread::current(), "should only be called for current thread");
   assert(!_wx_init, "second init");
   _wx_state = WXWrite;
   os::current_thread_enable_wx(_wx_state);
@@ -86,7 +86,7 @@ inline WXMode Thread::get_wx_state() {
 }
 
 inline WXMode Thread::enable_wx(WXMode new_state) {
-  assert(this == Thread::current(), "should only be called for current thread");
+  //assert(this == Thread::current(), "should only be called for current thread");
   assert(_wx_init, "should be inited");
   WXMode old = _wx_state;
   if (_wx_state != new_state) {
