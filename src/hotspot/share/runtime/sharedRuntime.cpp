@@ -481,7 +481,7 @@ address SharedRuntime::raw_exception_handler_for_return_address(JavaThread* curr
   }
 
   // write lock needed because we might update the pc desc cache via PcDescCache::add_pc_desc
-  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, current));
+  //MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, current));
 
   // The fastest case first
   CodeBlob* blob = CodeCache::find_blob(return_address);
@@ -1772,7 +1772,7 @@ JRT_LEAF(void, SharedRuntime::fixup_callers_callsite(Method* method, address cal
   }
 
   // write lock needed because we might update the pc desc cache via PcDescCache::add_pc_desc
-  MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, JavaThread::current()));
+  //MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, JavaThread::current()));
 
   CodeBlob* cb = CodeCache::find_blob(caller_pc);
   if (cb == nullptr || !cb->is_compiled() || !callee->is_in_use() || callee->is_unloading()) {

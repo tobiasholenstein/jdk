@@ -119,6 +119,7 @@ public:
   }
 
   void set_value(int value) {
+    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, Thread::current()));
     Atomic::release_store(guard_addr(), value);
   }
 
