@@ -36,7 +36,7 @@
                          range,                                         \
                          constraint)                                    \
                                                                         \
-  AARCH64_ONLY(develop(bool, AssertWXAtThreadSync, false,                \
+  AARCH64_ONLY(develop(bool, AssertWXAtThreadSync, true,                \
           "Conservatively check W^X thread state at possible safepoint" \
           "or handshake"))
 
