@@ -79,8 +79,14 @@ inline void Thread::init_wx() {
   DEBUG_ONLY(_wx_init = true);
 }
 
-inline WXMode Thread::enable_wx(WXMode new_state) {
+inline WXMode Thread::get_wx_state() {
   assert(this == Thread::current(), "should only be called for current thread");
+  assert(_wx_init, "should be inited");
+  return _wx_state;
+}
+
+inline WXMode Thread::enable_wx(WXMode new_state) {
+  //assert(this == Thread::current(), "should only be called for current thread");
   assert(_wx_init, "should be inited");
   WXMode old = _wx_state;
   if (_wx_state != new_state) {

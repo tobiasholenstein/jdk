@@ -41,6 +41,8 @@
 #include "utilities/macros.hpp"
 #if INCLUDE_JFR
 #include "jfr/support/jfrThreadExtension.hpp"
+#include "os.hpp"
+
 #endif
 
 class CompilerThread;
@@ -135,7 +137,9 @@ class Thread: public ThreadShadow {
     return offset;
   }
 
- private:
+  WXMode get_wx_state();
+
+private:
   // Thread local data area available to the GC. The internal
   // structure and contents of this data area is GC-specific.
   // Only GC and GC barrier code should access this data area.

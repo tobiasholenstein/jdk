@@ -127,9 +127,11 @@ class ThreadStateTransition : public StackObj {
 
 class ThreadInVMfromJava : public ThreadStateTransition {
   bool _check_asyncs;
- public:
+  WXMode _old_mode;
+public:
   ThreadInVMfromJava(JavaThread* thread, bool check_asyncs = true) : ThreadStateTransition(thread), _check_asyncs(check_asyncs) {
     transition_from_java(thread, _thread_in_vm);
+    _old_mode = WXMode(thread ? thread->enable_wx(WXWrite) : WXWrite);
   }
   ~ThreadInVMfromJava()  {
     if (_thread->stack_overflow_state()->stack_yellow_reserved_zone_disabled()) {
@@ -138,13 +140,15 @@ class ThreadInVMfromJava : public ThreadStateTransition {
     // We prevent asynchronous exceptions from being installed on return to Java in situations
     // where we can't tolerate them. See bugs: 4324348, 4854693, 4998314, 5040492, 5050705.
     transition_from_vm(_thread, _thread_in_Java, _check_asyncs);
+    _thread->enable_wx(_old_mode);
   }
 };
 
 
 class ThreadInVMfromUnknown {
   JavaThread* _thread;
- public:
+  WXMode _old_mode;
+public:
   ThreadInVMfromUnknown() : _thread(nullptr) {
     Thread* t = Thread::current();
     if (t->is_Java_thread()) {
@@ -156,12 +160,14 @@ class ThreadInVMfromUnknown {
         // it could free a handle in our (indirect, nested) caller.
         // We expect any handles will be short lived and figure we
         // don't need an actual HandleMark.
+        _old_mode = WXMode(_thread ? _thread->enable_wx(WXWrite) : WXWrite);
       }
     }
   }
   ~ThreadInVMfromUnknown()  {
     if (_thread) {
       ThreadStateTransition::transition_from_vm(_thread, _thread_in_native);
+      _thread->enable_wx(_old_mode);
     }
   }
 };
@@ -169,14 +175,19 @@ class ThreadInVMfromUnknown {
 
 class ThreadInVMfromNative : public ThreadStateTransition {
   ResetNoHandleMark __rnhm;
+  WXMode _old_mode;
  public:
-  ThreadInVMfromNative(JavaThread* thread) : ThreadStateTransition(thread) {
+  explicit ThreadInVMfromNative(JavaThread* thread) : ThreadStateTransition(thread) {
     transition_from_native(thread, _thread_in_vm);
+    _old_mode = WXMode(thread ? thread->enable_wx(WXWrite) : WXWrite);
   }
   ~ThreadInVMfromNative() {
     // We cannot assert !_thread->owns_locks() since we have valid cases where
     // we call known native code using this wrapper holding locks.
     transition_from_vm(_thread, _thread_in_native);
+    if (_thread) {
+      _thread->enable_wx(_old_mode);
+    }
   }
 };
 
