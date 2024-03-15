@@ -700,6 +700,7 @@ void JfrRecorderService::emit_leakprofiler_events(int64_t cutoff_ticks, bool emi
   // The upcoming flush() or rotation() after event emit completes this typeset checkpoint
   // and serializes all event emit checkpoint events to the same segment.
   JfrRotationLock lock;
+  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::current()));
   // Take the rotation lock before the transition.
   JavaThread* current_thread = JavaThread::current();
   MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, current_thread));
