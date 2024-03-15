@@ -3912,7 +3912,6 @@ jint JNICALL jni_DetachCurrentThread(JavaVM *vm)  {
   {
     // Safepoint support. Have to do call-back to safepoint code, if in the
     // middle of a safepoint operation
-    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
     ThreadInVMfromNative transition(thread);
 
     // XXX: Note that JavaThread::exit() call below removes the guards on the

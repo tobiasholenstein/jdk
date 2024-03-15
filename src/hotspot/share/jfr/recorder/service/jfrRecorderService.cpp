@@ -471,7 +471,6 @@ void JfrRecorderService::pre_safepoint_clear() {
 
 void JfrRecorderService::invoke_safepoint_clear() {
   JfrVMOperation<JfrRecorderService, &JfrRecorderService::safepoint_clear> safepoint_task(*this);
-  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::current()));
   ThreadInVMfromNative transition(JavaThread::current());
   VMThread::execute(&safepoint_task);
 }
@@ -580,7 +579,6 @@ void JfrRecorderService::pre_safepoint_write() {
 void JfrRecorderService::invoke_safepoint_write() {
   JfrVMOperation<JfrRecorderService, &JfrRecorderService::safepoint_write> safepoint_task(*this);
   // can safepoint here
-  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::current()));
   ThreadInVMfromNative transition(JavaThread::current());
   VMThread::execute(&safepoint_task);
 }
@@ -700,7 +698,6 @@ void JfrRecorderService::emit_leakprofiler_events(int64_t cutoff_ticks, bool emi
   // The upcoming flush() or rotation() after event emit completes this typeset checkpoint
   // and serializes all event emit checkpoint events to the same segment.
   JfrRotationLock lock;
-  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::current()));
   // Take the rotation lock before the transition.
   JavaThread* current_thread = JavaThread::current();
   MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, current_thread));

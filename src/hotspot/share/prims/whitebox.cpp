@@ -1438,7 +1438,6 @@ WB_ENTRY(void, WB_SetStringVMFlag(JNIEnv* env, jobject o, jstring name, jstring 
   }
   {
     ccstr param = ccstrValue;
-    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
     ThreadInVMfromNative ttvfn(thread); // back to VM
     if (SetVMFlag <JVM_FLAG_TYPE(ccstr)> (thread, env, name, &param)) {
       assert(param == nullptr, "old value is freed automatically and not returned");
@@ -1945,7 +1944,6 @@ WB_ENTRY(jobject, WB_printClasses(JNIEnv* env, jobject wb, jstring class_name_pa
   ResourceMark rm;
   stringStream st;
   {
-    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
     ThreadInVMfromNative ttvfn(thread); // back to VM
     ClassPrinter::print_classes(c, flags, &st);
   }
@@ -1961,7 +1959,6 @@ WB_ENTRY(jobject, WB_printMethods(JNIEnv* env, jobject wb, jstring class_name_pa
   ResourceMark rm;
   stringStream st;
   {
-    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
     ThreadInVMfromNative ttvfn(thread); // back to VM
     ClassPrinter::print_methods(c, m, flags, &st);
   }
@@ -2408,7 +2405,6 @@ WB_ENTRY(jint, WB_AddCompilerDirective(JNIEnv* env, jobject o, jstring compDirec
   CHECK_JNI_EXCEPTION_(env, 0);
   int ret;
   {
-    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
     ThreadInVMfromNative ttvfn(thread); // back to VM
     ret = DirectivesParser::parse_string(dir, tty);
   }

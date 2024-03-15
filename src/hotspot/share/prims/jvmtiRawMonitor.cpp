@@ -250,7 +250,6 @@ int JvmtiRawMonitor::simple_wait(Thread* self, jlong millis) {
     guarantee(jt->thread_state() == _thread_in_native, "invariant");
     {
       // This transition must be after we exited the monitor.
-      MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, jt));
       ThreadInVMfromNative tivmfn(jt);
       if (jt->get_and_clear_interrupted()) {
         ret = M_INTERRUPTED;
@@ -339,7 +338,6 @@ void JvmtiRawMonitor::raw_enter(Thread* self) {
   } else {
     JavaThread* jt = JavaThread::cast(self);
     guarantee(jt->thread_state() == _thread_in_native, "invariant");
-    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, jt));
     ThreadInVMfromNative tivmfn(jt);
     for (;;) {
       ExitOnSuspend eos(this);
@@ -392,7 +390,6 @@ int JvmtiRawMonitor::raw_wait(jlong millis, Thread* self) {
   // we need to manage suspend requests.
   if (self->is_Java_thread()) { // JavaThread re-enter
     JavaThread* jt = JavaThread::cast(self);
-    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, jt));
     ThreadInVMfromNative tivmfn(jt);
     for (;;) {
       ExitOnSuspend eos(this);

@@ -108,7 +108,6 @@ JfrJniMethodRegistration::JfrJniMethodRegistration(JNIEnv* env) {
       JavaThread* jt = JavaThread::thread_from_jni_environment(env);
       assert(jt != nullptr, "invariant");
       assert(jt->thread_state() == _thread_in_native, "invariant");
-      MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, jt));
       ThreadInVMfromNative transition(jt);
       log_error(jfr, system)("RegisterNatives for JVM class failed!");
     }

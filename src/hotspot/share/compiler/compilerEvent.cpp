@@ -126,7 +126,6 @@ static inline void commit(EventType& event) {
   JavaThread* thread = JavaThread::current();
   JavaThreadState state = thread->thread_state();
   if (state == _thread_in_native) {
-    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
     ThreadInVMfromNative transition(thread);
     event.commit();
   } else {

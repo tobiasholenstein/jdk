@@ -130,8 +130,8 @@ class ThreadInVMfromJava : public ThreadStateTransition {
   WXMode _old_mode;
 public:
   ThreadInVMfromJava(JavaThread* thread, bool check_asyncs = true) : ThreadStateTransition(thread), _check_asyncs(check_asyncs) {
-    transition_from_java(thread, _thread_in_vm);
     _old_mode = WXMode(thread ? thread->enable_wx(WXWrite) : WXWrite);
+    transition_from_java(thread, _thread_in_vm);
   }
   ~ThreadInVMfromJava()  {
     if (_thread->stack_overflow_state()->stack_yellow_reserved_zone_disabled()) {
@@ -155,12 +155,12 @@ public:
       JavaThread* t2 = JavaThread::cast(t);
       if (t2->thread_state() == _thread_in_native) {
         _thread = t2;
+        _old_mode = WXMode(_thread ? _thread->enable_wx(WXWrite) : WXWrite);
         ThreadStateTransition::transition_from_native(t2, _thread_in_vm);
         // Used to have a HandleMarkCleaner but that is dangerous as
         // it could free a handle in our (indirect, nested) caller.
         // We expect any handles will be short lived and figure we
         // don't need an actual HandleMark.
-        _old_mode = WXMode(_thread ? _thread->enable_wx(WXWrite) : WXWrite);
       }
     }
   }
@@ -178,8 +178,8 @@ class ThreadInVMfromNative : public ThreadStateTransition {
   WXMode _old_mode;
  public:
   explicit ThreadInVMfromNative(JavaThread* thread) : ThreadStateTransition(thread) {
-    transition_from_native(thread, _thread_in_vm);
     _old_mode = WXMode(thread ? thread->enable_wx(WXWrite) : WXWrite);
+    transition_from_native(thread, _thread_in_vm);
   }
   ~ThreadInVMfromNative() {
     // We cannot assert !_thread->owns_locks() since we have valid cases where
@@ -328,7 +328,6 @@ class VMNativeEntryWrapper {
 #define JRT_BLOCK                                                    \
     {                                                                \
     assert(current == JavaThread::current(), "Must be");             \
-    MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, current));       \
     ThreadInVMfromJava __tiv(current);                               \
     JavaThread* THREAD = current; /* For exception macros. */        \
     debug_only(VMEntryWrapper __vew;)
@@ -336,7 +335,6 @@ class VMNativeEntryWrapper {
 #define JRT_BLOCK_NO_ASYNC                                           \
     {                                                                \
     assert(current == JavaThread::current(), "Must be");             \
-    MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, current));       \
     ThreadInVMfromJava __tiv(current, false /* check asyncs */);     \
     JavaThread* THREAD = current; /* For exception macros. */        \
     debug_only(VMEntryWrapper __vew;)

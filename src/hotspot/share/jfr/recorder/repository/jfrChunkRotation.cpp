@@ -56,7 +56,6 @@ static jobject get_chunk_monitor(JavaThread* thread) {
 static void notify() {
   JavaThread* const thread = JavaThread::current();
   // can safepoint here
-  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::cast(thread)));
   ThreadInVMfromNative transition(thread);
   jobject monitor = get_chunk_monitor(thread);
   if (monitor == nullptr) {
