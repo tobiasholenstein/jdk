@@ -1767,7 +1767,6 @@ bool CompileBroker::init_compiler_runtime() {
     ci_env.cache_dtrace_flags();
 
     // Switch back to VM state to do compiler initialization
-    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, thread));
     ThreadInVMfromNative tv(thread);
 
     // Perform per-thread and global initializations
@@ -2063,7 +2062,6 @@ void CompileBroker::maybe_block() {
     if (PrintCompilation && (Verbose || WizardMode))
       tty->print_cr("compiler thread " INTPTR_FORMAT " poll detects block request", p2i(Thread::current()));
 #endif
-    MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, JavaThread::current()));
     ThreadInVMfromNative tivfn(JavaThread::current());
   }
 }
