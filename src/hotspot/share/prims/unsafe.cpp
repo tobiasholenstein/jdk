@@ -445,14 +445,12 @@ UNSAFE_LEAF (void, Unsafe_WriteBack0(JNIEnv *env, jobject unsafe, jlong line)) {
   }
 #endif
 
-  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXExec, Thread::current()));
   assert(StubRoutines::data_cache_writeback() != nullptr, "sanity");
   (StubRoutines::DataCacheWriteback_stub())(addr_from_java(line));
 } UNSAFE_END
 
 static void doWriteBackSync0(bool is_pre)
 {
-  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXExec, Thread::current()));
   assert(StubRoutines::data_cache_writeback_sync() != nullptr, "sanity");
   (StubRoutines::DataCacheWritebackSync_stub())(is_pre);
 }
