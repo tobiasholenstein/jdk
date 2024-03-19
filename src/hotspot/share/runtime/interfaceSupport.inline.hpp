@@ -155,7 +155,7 @@ public:
       JavaThread* t2 = JavaThread::cast(t);
       if (t2->thread_state() == _thread_in_native) {
         _thread = t2;
-        _old_mode = WXMode(_thread ? _thread->enable_wx(WXWrite) : WXWrite);
+        _old_mode = WXMode( _thread->enable_wx(WXWrite));
         ThreadStateTransition::transition_from_native(t2, _thread_in_vm);
         // Used to have a HandleMarkCleaner but that is dangerous as
         // it could free a handle in our (indirect, nested) caller.
