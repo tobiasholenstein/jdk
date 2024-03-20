@@ -1309,7 +1309,7 @@ static bool is_patching_needed(JavaThread* current, Runtime1::StubID stub_id) {
   return true;
 }
 
-void Runtime1::patch_code(JavaThread* current, Runtime1::StubID stub_id) {
+JRT_ENTRY (void, Runtime1::patch_code(JavaThread* current, Runtime1::StubID stub_id))
 #ifndef PRODUCT
   if (PrintC1Statistics) {
     _patch_code_slowcase_cnt++;
@@ -1318,7 +1318,7 @@ void Runtime1::patch_code(JavaThread* current, Runtime1::StubID stub_id) {
 
   // Enable WXWrite: the function is called by c1 stub as a runtime function
   // (see another implementation above).
-  MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, current));
+  //MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, current));
 
   if (TracePatching) {
     tty->print_cr("Deoptimizing because patch is needed");
@@ -1344,7 +1344,7 @@ void Runtime1::patch_code(JavaThread* current, Runtime1::StubID stub_id) {
   Deoptimization::deoptimize_frame(current, caller_frame.id());
   // Return to the now deoptimized frame.
   postcond(caller_is_deopted(current));
-}
+  JRT_END
 
 #endif // DEOPTIMIZE_WHEN_PATCHING
 
