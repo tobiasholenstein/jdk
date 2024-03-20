@@ -321,7 +321,6 @@ class VMNativeEntryWrapper {
 #define JRT_BLOCK_ENTRY(result_type, header)                         \
   result_type header {                                               \
     assert(current == JavaThread::current(), "Must be");             \
-    MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, current));       \
     HandleMarkCleaner __hm(current);
 
 #define JRT_BLOCK                                                    \
