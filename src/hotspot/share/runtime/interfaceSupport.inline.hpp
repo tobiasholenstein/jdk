@@ -278,7 +278,6 @@ class VMNativeEntryWrapper {
 #define VM_ENTRY_BASE(result_type, header, thread)                   \
   HandleMarkCleaner __hm(thread);                                    \
   JavaThread* THREAD = thread; /* For exception macros. */           \
-  MACOS_AARCH64_ONLY(ThreadWXEnable ___wx(WXWrite, THREAD));          \
   os::verify_stack_alignment();                                      \
   /* begin of body */
 
