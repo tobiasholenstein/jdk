@@ -413,6 +413,8 @@ UNSAFE_ENTRY_SCOPED(void, Unsafe_CopyMemory0(JNIEnv *env, jobject unsafe, jobjec
   {
     GuardUnsafeAccess guard(thread);
     if (StubRoutines::unsafe_arraycopy() != nullptr) {
+      // IN native
+      ThreadToNativeFromVM ttnfvm(thread);
       MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXExec, thread));
       StubRoutines::UnsafeArrayCopy_stub()(src, dst, sz);
     } else {

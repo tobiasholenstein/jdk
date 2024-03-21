@@ -1316,10 +1316,6 @@ JRT_ENTRY (void, Runtime1::patch_code(JavaThread* current, Runtime1::StubID stub
   }
 #endif
 
-  // Enable WXWrite: the function is called by c1 stub as a runtime function
-  // (see another implementation above).
-  //MACOS_AARCH64_ONLY(ThreadWXEnable wx(WXWrite, current));
-
   if (TracePatching) {
     tty->print_cr("Deoptimizing because patch is needed");
   }
