@@ -30,6 +30,7 @@ import com.sun.hotspot.igv.data.serialization.ParseMonitor;
 import com.sun.hotspot.igv.data.serialization.Parser;
 import com.sun.hotspot.igv.data.serialization.Printer;
 import com.sun.hotspot.igv.data.serialization.Printer.GraphContext;
+import com.sun.hotspot.igv.data.serialization.Printer.ExportData;
 import com.sun.hotspot.igv.data.services.GraphViewer;
 import com.sun.hotspot.igv.data.services.GroupCallback;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
@@ -379,69 +380,33 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         return null;
     }
 
-    private void loadStates(String path) throws IOException {
+    private void loadContexts(Set<GraphContext> contexts) {
         RP.post(() -> {
-            try {
-                if (Files.notExists(Path.of(path))) {
-                    return;
-                }
-                FileInputStream fis = new FileInputStream(path);
-                ObjectInputStream in = new ObjectInputStream(fis);
+            final GraphViewer viewer = Lookup.getDefault().lookup(GraphViewer.class);
+            assert viewer != null;
+            for (GraphContext context : contexts) {
 
-                int formatVersion = in.readInt();
-                assert formatVersion <= STATE_FORMAT_VERSION;
+                final int difference = context.posDiff();
+                final Set<Integer> hiddenNodes = context.hiddenNodes();
+                final InputGraph firstGraph = context.inputGraph();
 
-                final GraphViewer viewer = Lookup.getDefault().lookup(GraphViewer.class);
-                assert viewer != null;
-                int tabCount = in.readInt();
-                for (int i = 0; i < tabCount; i++) {
-                    final boolean isDiffGraph = in.readBoolean();
-                    int firstGroupIdx = in.readInt();
-                    int firstGraphIdx = in.readInt();
-                    String firstGraphTag = in.readUTF();
-                    final InputGraph firstGraph = findGraph(firstGroupIdx, firstGraphIdx);
-                    if (firstGraph == null || firstGraph.getGroup() == null ||
-                            !firstGraphTag.equals(firstGraph.getGroup().getName() + "#" + firstGraph.getName())) {
-                        break;
-                    }
-                    final InputGraph secondGraph;
-                    if (isDiffGraph) {
-                        int secondGroupIdx = in.readInt();
-                        int secondGraphIdx = in.readInt();
-                        String secondGraphTag = in.readUTF();
-                        secondGraph = findGraph(secondGroupIdx, secondGraphIdx);
-                        if (secondGraph == null || secondGraph.getGroup() == null ||
-                                !secondGraphTag.equals(secondGraph.getGroup().getName() + "#" + secondGraph.getName())) {
-                            break;
-                        }
+                SwingUtilities.invokeLater(() -> {
+                    InputGraph openedGraph;
+                    if (difference > 0) {
+                        Group group = firstGraph.getGroup();
+                        int firstGraphIdx = group.getGraphs().indexOf(firstGraph);
+                        final InputGraph secondGraph = group.getGraphs().get(firstGraphIdx + difference);
+                        openedGraph = viewer.viewDifference(firstGraph, secondGraph);
                     } else {
-                        secondGraph = null;
+                        openedGraph = viewer.view(firstGraph, true);
                     }
-                    final Set<Integer> hiddenNodes = new HashSet<>();
-                    int hiddenNodeCount = in.readInt();
-                    for (int j = 0; j < hiddenNodeCount; j++) {
-                        int hiddenNodeID = in.readInt();
-                        hiddenNodes.add(hiddenNodeID);
+                    if (openedGraph != null) {
+                        EditorTopComponent etc = EditorTopComponent.findEditorForGraph(openedGraph);
+                        if (etc != null) {
+                            etc.getModel().setHiddenNodes(hiddenNodes);
+                        }
                     }
-
-                    SwingUtilities.invokeLater(() -> {
-                        InputGraph openedGraph;
-                        if (isDiffGraph) {
-                            openedGraph = viewer.viewDifference(firstGraph, secondGraph);
-                        } else {
-                            openedGraph = viewer.view(firstGraph, true);
-                        }
-                        if (openedGraph != null) {
-                            EditorTopComponent etc = EditorTopComponent.findEditorForGraph(openedGraph);
-                            if (etc != null) {
-                                etc.getModel().setHiddenNodes(hiddenNodes);
-                            }
-                        }
-                    });
-                }
-                in.close();
-            } catch (IOException ex) {
-                Exceptions.printStackTrace(ex);
+                });
             }
         });
     }
@@ -484,7 +449,10 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                 if (file.getName().endsWith(".xml")) {
                     final Parser parser = new Parser(channel, monitor, null);
                     parser.setInvokeLater(false);
-                    final GraphDocument parsedDoc = parser.parse();
+                    final ExportData parsedData = parser.parse();
+                    final GraphDocument parsedDoc = parsedData.document();
+                    final Set<GraphContext> parsedContexts = parsedData.contexts();
+                    loadContexts(parsedContexts);
                     getDocument().addGraphDocument(parsedDoc);
                     SwingUtilities.invokeLater(this::requestActive);
                 }
@@ -526,19 +494,9 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
         try (Writer writer = new OutputStreamWriter(Files.newOutputStream(graphFile.toPath()))) {
             Printer printer = new Printer();
-            printer.exportGraphDocument(writer, doc, saveContexts);
+            printer.exportGraphDocument(writer, new ExportData(doc, saveContexts));
         }
 
-    }
-
-
-
-    private InputGraph findGraph(int groupIdx, int graphIdx) {
-        FolderElement folderElement = document.getElements().get(groupIdx);
-        if (folderElement instanceof Group group) {
-            return group.getGraphs().get(graphIdx);
-        }
-        return null;
     }
 
     /** This method is called from within the constructor to

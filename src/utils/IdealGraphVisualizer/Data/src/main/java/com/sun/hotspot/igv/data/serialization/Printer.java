@@ -36,11 +36,15 @@ import java.util.stream.Collectors;
 public class Printer {
 
 
-    public record GraphContext(InputGraph openedGraph, int posDiff, Set<Integer> hiddenNodes, Set<Integer> selectedNodes) {}
+    public record GraphContext(InputGraph inputGraph, int posDiff, Set<Integer> hiddenNodes, Set<Integer> selectedNodes) {}
+
+    public record ExportData(GraphDocument document, Set<GraphContext> contexts) {}
 
     public Printer() {}
 
-    public void exportGraphDocument(Writer writer, GraphDocument document, Set<GraphContext> contexts) {
+    public void exportGraphDocument(Writer writer, ExportData exportData) {
+        GraphDocument document = exportData.document();
+        Set<GraphContext> contexts = exportData.contexts();
         XMLWriter xmlWriter = new XMLWriter(writer);
         try {
             xmlWriter.startTag(Parser.ROOT_ELEMENT);
@@ -180,7 +184,7 @@ public class Printer {
 
     private void exportStates(XMLWriter writer, InputGraph exportingGraph, Set<GraphContext> contexts) throws IOException {
         Set<GraphContext> contextsContainingGraph = contexts.stream()
-                .filter(context -> context.openedGraph().equals(exportingGraph))
+                .filter(context -> context.inputGraph().equals(exportingGraph))
                 .collect(Collectors.toSet());
 
         if (contextsContainingGraph.isEmpty()) {
@@ -190,7 +194,7 @@ public class Printer {
         writer.startTag(Parser.GRAPH_STATES_ELEMENT);
 
         for (GraphContext context : contextsContainingGraph) {
-            assert exportingGraph == context.openedGraph();
+            assert exportingGraph == context.inputGraph();
 
             writer.startTag(Parser.STATE_ELEMENT);
 
