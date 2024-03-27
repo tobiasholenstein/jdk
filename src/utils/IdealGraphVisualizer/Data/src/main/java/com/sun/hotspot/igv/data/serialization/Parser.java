@@ -29,7 +29,7 @@ import com.sun.hotspot.igv.data.serialization.XMLParser.ElementHandler;
 import com.sun.hotspot.igv.data.serialization.XMLParser.HandoverElementHandler;
 import com.sun.hotspot.igv.data.serialization.XMLParser.TopElementHandler;
 import com.sun.hotspot.igv.data.services.GroupCallback;
-import com.sun.hotspot.igv.data.serialization.Printer.ExportData;
+import com.sun.hotspot.igv.data.serialization.Printer.SerialData;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -518,7 +518,7 @@ public class Parser implements GraphParser {
 
     // Returns a new GraphDocument object deserialized from an XML input source.
     @Override
-    public ExportData parse() throws IOException {
+    public SerialData parse() throws IOException {
         if (monitor != null) {
             monitor.setState("Starting parsing");
         }
@@ -537,7 +537,7 @@ public class Parser implements GraphParser {
             monitor.setState("Finished parsing");
         }
 
-        return new ExportData(graphDocument, new HashSet<>());
+        return new SerialData(graphDocument, new HashSet<>());
     }
 
     // Whether the parser is allowed to defer connecting the parsed elements.

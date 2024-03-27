@@ -33,4 +33,5 @@ public interface Folder {
     void removeElement(FolderElement element);
     void addElement(FolderElement group);
     ChangedEvent<? extends Folder> getChangedEvent();
+    Properties getProperties();
 }

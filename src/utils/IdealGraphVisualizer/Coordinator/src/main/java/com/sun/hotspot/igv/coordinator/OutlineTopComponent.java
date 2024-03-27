@@ -30,7 +30,7 @@ import com.sun.hotspot.igv.data.serialization.ParseMonitor;
 import com.sun.hotspot.igv.data.serialization.Parser;
 import com.sun.hotspot.igv.data.serialization.Printer;
 import com.sun.hotspot.igv.data.serialization.Printer.GraphContext;
-import com.sun.hotspot.igv.data.serialization.Printer.ExportData;
+import com.sun.hotspot.igv.data.serialization.Printer.SerialData;
 import com.sun.hotspot.igv.data.services.GraphViewer;
 import com.sun.hotspot.igv.data.services.GroupCallback;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
@@ -449,8 +449,8 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                 if (file.getName().endsWith(".xml")) {
                     final Parser parser = new Parser(channel, monitor, null);
                     parser.setInvokeLater(false);
-                    final ExportData parsedData = parser.parse();
-                    final GraphDocument parsedDoc = parsedData.document();
+                    final SerialData parsedData = parser.parse();
+                    final GraphDocument parsedDoc = (GraphDocument) parsedData.folder();
                     final Set<GraphContext> parsedContexts = parsedData.contexts();
                     loadContexts(parsedContexts);
                     getDocument().addGraphDocument(parsedDoc);
@@ -494,7 +494,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
         try (Writer writer = new OutputStreamWriter(Files.newOutputStream(graphFile.toPath()))) {
             Printer printer = new Printer();
-            printer.exportGraphDocument(writer, new ExportData(doc, saveContexts));
+            printer.exportGraphDocument(writer, new SerialData(doc, saveContexts));
         }
 
     }

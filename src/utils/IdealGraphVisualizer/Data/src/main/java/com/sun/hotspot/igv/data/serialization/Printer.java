@@ -38,18 +38,18 @@ public class Printer {
 
     public record GraphContext(InputGraph inputGraph, int posDiff, Set<Integer> hiddenNodes, Set<Integer> selectedNodes) {}
 
-    public record ExportData(GraphDocument document, Set<GraphContext> contexts) {}
+    public record SerialData(Folder folder, Set<GraphContext> contexts) {}
 
     public Printer() {}
 
-    public void exportGraphDocument(Writer writer, ExportData exportData) {
-        GraphDocument document = exportData.document();
-        Set<GraphContext> contexts = exportData.contexts();
+    public void exportGraphDocument(Writer writer, SerialData serialData) {
+        Folder folder = serialData.folder();
+        Set<GraphContext> contexts = serialData.contexts();
         XMLWriter xmlWriter = new XMLWriter(writer);
         try {
             xmlWriter.startTag(Parser.ROOT_ELEMENT);
-            xmlWriter.writeProperties(document.getProperties());
-            for (FolderElement e : document.getElements()) {
+            xmlWriter.writeProperties(folder.getProperties());
+            for (FolderElement e : folder.getElements()) {
                 if (e instanceof Group group) {
                     exportGroup(xmlWriter, group, contexts);
                 } else if (e instanceof InputGraph graph) {
