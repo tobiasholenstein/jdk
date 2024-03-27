@@ -28,6 +28,7 @@ import com.sun.hotspot.igv.data.Properties;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 public class Printer {
 
 
-    public record GraphContext(InputGraph inputGraph, int posDiff, Set<Integer> hiddenNodes, Set<Integer> selectedNodes) {}
+    public record GraphContext(InputGraph inputGraph, AtomicInteger posDiff, Set<Integer> hiddenNodes, Set<Integer> selectedNodes) {}
 
     public record SerialData<T extends Properties.Provider>(T data, Set<GraphContext> contexts) implements Properties.Provider {
         @Override
@@ -204,7 +205,7 @@ public class Printer {
             writer.startTag(Parser.STATE_ELEMENT);
 
             writer.simpleTag(Parser.STATE_POSITION_DIFFERENCE,
-                    new Properties(Parser.POSITION_DIFFERENCE_PROPERTY, Integer.toString(context.posDiff())));
+                    new Properties(Parser.POSITION_DIFFERENCE_PROPERTY, Integer.toString(context.posDiff().get())));
 
             writer.startTag(Parser.HIDDEN_NODES_ELEMENT);
             for (Integer hiddenNodeID : context.hiddenNodes()) {

@@ -30,10 +30,12 @@ import com.sun.hotspot.igv.data.serialization.XMLParser.HandoverElementHandler;
 import com.sun.hotspot.igv.data.serialization.XMLParser.TopElementHandler;
 import com.sun.hotspot.igv.data.services.GroupCallback;
 import com.sun.hotspot.igv.data.serialization.Printer.SerialData;
+import com.sun.hotspot.igv.data.serialization.Printer.GraphContext;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.SwingUtilities;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
@@ -289,6 +291,73 @@ public class Parser implements GraphParser {
     private final HandoverElementHandler<SerialData<InputGraph>> nodesHandler = new HandoverElementHandler<>(NODES_ELEMENT);
     // <controlFlow>
     private final HandoverElementHandler<SerialData<InputGraph>> controlFlowHandler = new HandoverElementHandler<>(CONTROL_FLOW_ELEMENT);
+    private final HandoverElementHandler<SerialData<InputGraph>> graphStatesHandler = new HandoverElementHandler<>(GRAPH_STATES_ELEMENT);
+    private final ElementHandler<GraphContext, SerialData<InputGraph>> stateHandler = new ElementHandler<>(STATE_ELEMENT) {
+
+        @Override
+        protected GraphContext start() {
+            SerialData<InputGraph> data = getParentObject();
+            InputGraph inputGraph = data.data();
+            GraphContext graphContext = new GraphContext(inputGraph,  new AtomicInteger(0), new HashSet<>(), new HashSet<>());
+            data.contexts().add(graphContext);
+            return graphContext;
+        }
+    };
+
+
+    private final ElementHandler<GraphContext, GraphContext> hiddenNodesHandler = new ElementHandler<>(HIDDEN_NODES_ELEMENT);
+    private final ElementHandler<GraphContext, GraphContext> selectedNodesHandler = new ElementHandler<>(SELECTED_NODES_ELEMENT);
+
+    private final ElementHandler<GraphContext, GraphContext> hiddenNodeHandler = new ElementHandler<>(NODE_ELEMENT) {
+
+        @Override
+        protected GraphContext start() throws SAXException {
+            String s = readRequiredAttribute(NODE_ID_PROPERTY);
+            int nodeID;
+            try {
+                nodeID = Integer.parseInt(s);
+            } catch (NumberFormatException e) {
+                throw new SAXException(e);
+            }
+            getParentObject().hiddenNodes().add(nodeID);
+            return getParentObject();
+        }
+    };
+
+    private final ElementHandler<GraphContext, GraphContext> selectedNodeHandler = new ElementHandler<>(NODE_ELEMENT) {
+
+        @Override
+        protected GraphContext start() throws SAXException {
+            String s = readRequiredAttribute(NODE_ID_PROPERTY);
+            int nodeID;
+            try {
+                nodeID = Integer.parseInt(s);
+            } catch (NumberFormatException e) {
+                throw new SAXException(e);
+            }
+            getParentObject().selectedNodes().add(nodeID);
+            return getParentObject();
+        }
+    };
+
+
+    private final ElementHandler<GraphContext, GraphContext> differenceHandler = new ElementHandler<>(STATE_POSITION_DIFFERENCE) {
+
+        @Override
+        protected GraphContext start() throws SAXException {
+            String s = readRequiredAttribute(POSITION_DIFFERENCE_PROPERTY);
+            int posDiff;
+            try {
+                posDiff = Integer.parseInt(s);
+            } catch (NumberFormatException e) {
+                throw new SAXException(e);
+            }
+            getParentObject().posDiff().set(posDiff);
+            return getParentObject();
+        }
+    };
+
+
     // <block>
     private final ElementHandler<InputBlock, SerialData<InputGraph>> blockHandler = new ElementHandler<>(BLOCK_ELEMENT) {
 
@@ -303,6 +372,7 @@ public class Parser implements GraphParser {
             return b;
         }
     };
+
     // <nodes>
     private final HandoverElementHandler<InputBlock> blockNodesHandler = new HandoverElementHandler<>(NODES_ELEMENT);
     // <node>
@@ -494,8 +564,16 @@ public class Parser implements GraphParser {
         graphHandler.addChild(nodesHandler);
         graphHandler.addChild(edgesHandler);
         graphHandler.addChild(controlFlowHandler);
+        graphHandler.addChild(graphStatesHandler);
 
         controlFlowHandler.addChild(blockHandler);
+
+        graphStatesHandler.addChild(stateHandler);
+        stateHandler.addChild(differenceHandler);
+        stateHandler.addChild(hiddenNodesHandler);
+        hiddenNodesHandler.addChild(hiddenNodeHandler);
+        stateHandler.addChild(selectedNodesHandler);
+        hiddenNodesHandler.addChild(selectedNodeHandler);
 
         blockHandler.addChild(successorsHandler);
         successorsHandler.addChild(successorHandler);

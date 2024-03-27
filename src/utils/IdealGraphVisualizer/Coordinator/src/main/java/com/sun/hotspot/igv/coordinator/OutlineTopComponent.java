@@ -46,6 +46,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.*;
 import javax.swing.border.Border;
 import org.netbeans.api.progress.ProgressHandle;
@@ -385,7 +386,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             assert viewer != null;
             for (GraphContext context : contexts) {
 
-                final int difference = context.posDiff();
+                final int difference = context.posDiff().get();
                 final Set<Integer> hiddenNodes = context.hiddenNodes();
                 final InputGraph firstGraph = context.inputGraph();
 
@@ -484,7 +485,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                         int posDiff = etc.getModel().getSecondPosition() - etc.getModel().getFirstPosition();
                         Set<Integer> hiddenNodes = new HashSet<>(etc.getModel().getHiddenNodes());
                         Set<Integer> selectedNodes = new HashSet<>(etc.getModel().getSelectedNodes());
-                        GraphContext graphContext = new GraphContext(openedGraph, posDiff, hiddenNodes, selectedNodes);
+                        GraphContext graphContext = new GraphContext(openedGraph, new AtomicInteger(posDiff), hiddenNodes, selectedNodes);
                         saveContexts.add(graphContext);
                     }
                 }
