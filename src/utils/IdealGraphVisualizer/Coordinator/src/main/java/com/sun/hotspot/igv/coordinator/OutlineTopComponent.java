@@ -81,8 +81,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private JButton changeWorkspaceButton;
     private GraphNode[] selectedGraphs = new GraphNode[0];
     private final Set<FolderNode> selectedFolders = new HashSet<>();
-    private static final int WORKUNITS = 10000;
-    private static final int STATE_FORMAT_VERSION = 1;
+    private static final int WORK_UNITS = 10000;
     private static final RequestProcessor RP = new RequestProcessor("OutlineTopComponent", 1);
 
     private OutlineTopComponent() {
@@ -429,13 +428,13 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             }
 
             final ProgressHandle handle = ProgressHandleFactory.createHandle("Opening file " + file.getName());
-            handle.start(WORKUNITS);
+            handle.start(WORK_UNITS);
 
             ParseMonitor monitor = new ParseMonitor() {
                 @Override
                 public void updateProgress() {
                     try {
-                        int prog = (int) (WORKUNITS * (double) channel.position() / (double) start);
+                        int prog = (int) (WORK_UNITS * (double) channel.position() / (double) start);
                         handle.progress(prog);
                     } catch (IOException ignored) {}
                 }
