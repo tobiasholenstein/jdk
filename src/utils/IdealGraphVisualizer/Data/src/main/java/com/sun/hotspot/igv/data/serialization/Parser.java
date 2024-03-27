@@ -89,14 +89,14 @@ public class Parser implements GraphParser {
     public static final String SUCCESSORS_ELEMENT = "successors";
     public static final String SUCCESSOR_ELEMENT = "successor";
     public static final String DIFFERENCE_PROPERTY = "difference";
-    private final TopElementHandler<GraphDocument> xmlDocument = new TopElementHandler<>();
+    private final TopElementHandler<SerialData> xmlData = new TopElementHandler<>();
     private final Map<Group, Boolean> differenceEncoding = new HashMap<>();
     private final Map<Group, InputGraph> lastParsedGraph = new HashMap<>();
     private final GroupCallback groupCallback;
     private final HashMap<String, Integer> idCache = new HashMap<>();
     private final ArrayList<Pair<String, String>> blockConnections = new ArrayList<>();
     private int maxId = 0;
-    private GraphDocument graphDocument;
+    private SerialData serialData;
     private final ParseMonitor monitor;
     private final ReadableByteChannel channel;
     private boolean invokeLater = true;
@@ -116,20 +116,21 @@ public class Parser implements GraphParser {
     }
 
     // <graphDocument>
-    private ElementHandler<GraphDocument, Object> topHandler = new ElementHandler<GraphDocument, Object>(TOP_ELEMENT) {
+    private ElementHandler<SerialData, Object> topHandler = new ElementHandler<SerialData, Object>(TOP_ELEMENT) {
 
         @Override
-        protected GraphDocument start() throws SAXException {
-            graphDocument = new GraphDocument();
-            return graphDocument;
+        protected SerialData start() throws SAXException {
+            serialData = new SerialData(new GraphDocument(), new HashSet<>());
+            return serialData;
         }
     };
     // <group>
-    private ElementHandler<Group, Folder> groupHandler = new XMLParser.ElementHandler<Group, Folder>(GROUP_ELEMENT) {
+    private ElementHandler<SerialData, SerialData> groupHandler = new XMLParser.ElementHandler<SerialData, SerialData>(GROUP_ELEMENT) {
 
         @Override
-        protected Group start() throws SAXException {
-            final Group group = new Group(this.getParentObject());
+        protected SerialData start() throws SAXException {
+            final Folder folder = getParentObject().folder();
+            final Group group = new Group(folder);
 
             String differenceProperty = this.readAttribute(DIFFERENCE_PROPERTY);
             Parser.this.differenceEncoding.put(group, (differenceProperty != null && (differenceProperty.equals("1") || differenceProperty.equals("true"))));
@@ -139,9 +140,8 @@ public class Parser implements GraphParser {
                 monitor.setState(group.getName());
             }
 
-            final Folder parent = getParentObject();
-            if (groupCallback == null || parent instanceof Group) {
-                Runnable addToParent = () -> parent.addElement(group);
+            if (groupCallback == null || folder instanceof Group) {
+                Runnable addToParent = () -> folder.addElement(group);
                 if (invokeLater) {
                     SwingUtilities.invokeLater(addToParent);
                 } else {
@@ -149,7 +149,7 @@ public class Parser implements GraphParser {
                 }
             }
 
-            return group;
+            return new SerialData(group, getParentObject().contexts());
         }
 
         @Override
@@ -157,13 +157,13 @@ public class Parser implements GraphParser {
         }
     };
     // <method>
-    private ElementHandler<InputMethod, Group> methodHandler = new XMLParser.ElementHandler<InputMethod, Group>(METHOD_ELEMENT) {
+    private ElementHandler<InputMethod, SerialData> methodHandler = new XMLParser.ElementHandler<InputMethod, SerialData>(METHOD_ELEMENT) {
 
         @Override
         protected InputMethod start() throws SAXException {
-
-            InputMethod method = parseMethod(this, getParentObject());
-            getParentObject().setMethod(method);
+            Group group = (Group) getParentObject().folder();
+            InputMethod method = parseMethod(this, group);
+            group.setMethod(method);
             return method;
         }
     };
@@ -200,15 +200,16 @@ public class Parser implements GraphParser {
         }
     };
     // <graph>
-    private ElementHandler<InputGraph, Group> graphHandler = new XMLParser.ElementHandler<InputGraph, Group>(GRAPH_ELEMENT) {
+    private ElementHandler<InputGraph, SerialData> graphHandler = new XMLParser.ElementHandler<InputGraph, SerialData>(GRAPH_ELEMENT) {
 
         @Override
         protected InputGraph start() throws SAXException {
+            Group group = (Group) getParentObject().folder();
             String name = readAttribute(GRAPH_NAME_PROPERTY);
             InputGraph curGraph = new InputGraph(name);
-            if (differenceEncoding.get(getParentObject())) {
-                InputGraph previous = lastParsedGraph.get(getParentObject());
-                lastParsedGraph.put(getParentObject(), curGraph);
+            if (differenceEncoding.get(group)) {
+                InputGraph previous = lastParsedGraph.get(group);
+                lastParsedGraph.put(group, curGraph);
                 if (previous != null) {
                     for (InputNode n : previous.getNodes()) {
                         curGraph.addNode(n);
@@ -235,11 +236,12 @@ public class Parser implements GraphParser {
             //       defined and nodes are assigned to them.
 
             final InputGraph graph = getObject();
-            final Group parent = getParentObject();
-            if (graph.getBlocks().size() > 0) {
+
+            final Group parent = (Group) getParentObject().folder();
+            if (!graph.getBlocks().isEmpty()) {
                 boolean blocksContainNodes = false;
                 for (InputBlock b : graph.getBlocks()) {
-                    if (b.getNodes().size() > 0) {
+                    if (!b.getNodes().isEmpty()) {
                         blocksContainNodes = true;
                         break;
                     }
@@ -436,12 +438,12 @@ public class Parser implements GraphParser {
     // <properties>
     private HandoverElementHandler<Properties.Provider> propertiesHandler = new HandoverElementHandler<>(PROPERTIES_ELEMENT);
     // <properties>
-    private HandoverElementHandler<Group> groupPropertiesHandler = new HandoverElementHandler<Group>(PROPERTIES_ELEMENT) {
+    private HandoverElementHandler<SerialData> groupPropertiesHandler = new HandoverElementHandler<SerialData>(PROPERTIES_ELEMENT) {
 
         @Override
         public void end(String text) throws SAXException {
-            if (groupCallback != null && getParentObject().getParent() instanceof GraphDocument) {
-                final Group group = getParentObject();
+            final Group group = (Group) getParentObject().folder();
+            if (groupCallback != null && group.getParent() instanceof GraphDocument) {
                 Runnable addStarted = () -> groupCallback.started(group);
                 if (invokeLater) {
                     SwingUtilities.invokeLater(addStarted);
@@ -476,7 +478,7 @@ public class Parser implements GraphParser {
         this.channel = channel;
 
         // Initialize dependencies
-        xmlDocument.addChild(topHandler);
+        xmlData.addChild(topHandler);
         topHandler.addChild(groupHandler);
 
         groupHandler.addChild(methodHandler);
@@ -526,7 +528,7 @@ public class Parser implements GraphParser {
             XMLReader reader = createReader();
             // To enforce using English for non-English users, we must use Locale.ROOT rather than Locale.ENGLISH
             reader.setProperty("http://apache.org/xml/properties/locale", Locale.ROOT);
-            reader.setContentHandler(new XMLParser(xmlDocument, monitor));
+            reader.setContentHandler(new XMLParser(xmlData, monitor));
             reader.parse(new InputSource(Channels.newInputStream(channel)));
         } catch (SAXException ex) {
             if (!(ex instanceof SAXParseException) || !"XML document structures must start and end within the same entity.".equals(ex.getMessage())) {
@@ -537,7 +539,7 @@ public class Parser implements GraphParser {
             monitor.setState("Finished parsing");
         }
 
-        return new SerialData(graphDocument, new HashSet<>());
+        return serialData;
     }
 
     // Whether the parser is allowed to defer connecting the parsed elements.

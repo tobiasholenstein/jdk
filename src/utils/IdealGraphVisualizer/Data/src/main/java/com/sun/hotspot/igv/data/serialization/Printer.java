@@ -38,7 +38,12 @@ public class Printer {
 
     public record GraphContext(InputGraph inputGraph, int posDiff, Set<Integer> hiddenNodes, Set<Integer> selectedNodes) {}
 
-    public record SerialData(Folder folder, Set<GraphContext> contexts) {}
+    public record SerialData(Folder folder, Set<GraphContext> contexts) implements Properties.Provider {
+        @Override
+        public Properties getProperties() {
+            return folder.getProperties();
+        }
+    }
 
     public Printer() {}
 
