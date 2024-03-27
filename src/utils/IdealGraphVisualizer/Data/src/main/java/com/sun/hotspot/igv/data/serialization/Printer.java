@@ -38,17 +38,17 @@ public class Printer {
 
     public record GraphContext(InputGraph inputGraph, int posDiff, Set<Integer> hiddenNodes, Set<Integer> selectedNodes) {}
 
-    public record SerialData(Folder folder, Set<GraphContext> contexts) implements Properties.Provider {
+    public record SerialData<T extends Properties.Provider>(T data, Set<GraphContext> contexts) implements Properties.Provider {
         @Override
         public Properties getProperties() {
-            return folder.getProperties();
+            return data.getProperties();
         }
     }
 
     public Printer() {}
 
-    public void exportGraphDocument(Writer writer, SerialData serialData) {
-        Folder folder = serialData.folder();
+    public void exportGraphDocument(Writer writer, SerialData<Folder> serialData) {
+        Folder folder = serialData.data();
         Set<GraphContext> contexts = serialData.contexts();
         XMLWriter xmlWriter = new XMLWriter(writer);
         try {
