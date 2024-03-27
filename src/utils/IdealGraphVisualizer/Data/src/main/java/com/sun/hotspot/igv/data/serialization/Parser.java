@@ -305,8 +305,8 @@ public class Parser implements GraphParser {
     };
 
 
-    private final ElementHandler<GraphContext, GraphContext> hiddenNodesHandler = new ElementHandler<>(HIDDEN_NODES_ELEMENT);
-    private final ElementHandler<GraphContext, GraphContext> selectedNodesHandler = new ElementHandler<>(SELECTED_NODES_ELEMENT);
+    private final HandoverElementHandler<GraphContext> hiddenNodesHandler = new HandoverElementHandler<>(HIDDEN_NODES_ELEMENT);
+    private final HandoverElementHandler<GraphContext> selectedNodesHandler = new HandoverElementHandler<>(SELECTED_NODES_ELEMENT);
 
     private final ElementHandler<GraphContext, GraphContext> hiddenNodeHandler = new ElementHandler<>(NODE_ELEMENT) {
 
@@ -573,7 +573,7 @@ public class Parser implements GraphParser {
         stateHandler.addChild(hiddenNodesHandler);
         hiddenNodesHandler.addChild(hiddenNodeHandler);
         stateHandler.addChild(selectedNodesHandler);
-        hiddenNodesHandler.addChild(selectedNodeHandler);
+        selectedNodesHandler.addChild(selectedNodeHandler);
 
         blockHandler.addChild(successorsHandler);
         successorsHandler.addChild(successorHandler);

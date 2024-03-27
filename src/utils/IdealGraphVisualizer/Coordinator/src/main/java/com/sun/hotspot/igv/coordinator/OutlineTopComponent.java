@@ -85,6 +85,10 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private static final int WORK_UNITS = 10000;
     private static final RequestProcessor RP = new RequestProcessor("OutlineTopComponent", 1);
 
+    public static String WORKSPACE_XML_FILE = "graphs.xml";
+    private String documentPath;
+
+
     private OutlineTopComponent() {
         initComponents();
 
@@ -95,8 +99,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         initToolbar();
         initReceivers();
 
-        String userDirectory = Places.getUserDirectory().getAbsolutePath();
-        setWorkspacePath(userDirectory);
+        setDocumentPath(Places.getUserDirectory().getAbsolutePath() + "/" + WORKSPACE_XML_FILE);
         loadWorkspace();
     }
 
@@ -163,7 +166,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             String workspacePath = newWorkspace.getAbsolutePath();
             if (!workspacePath.isEmpty()) {
                 saveWorkspace();
-                setWorkspacePath(workspacePath);
+                setDocumentPath(workspacePath);
                 loadWorkspace();
             }
         }
@@ -320,7 +323,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         ((BeanTreeView) this.treeView).setRootVisible(false);
 
         try {
-            loadGraphDocument(getWorkspaceGraphsPath());
+            loadGraphDocument(getDocumentPath());
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
@@ -331,23 +334,19 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         super.readExternal(objectInput);
     }
 
-    private String workspacePath;
-
-    private void setWorkspacePath(String path) {
+    private void setDocumentPath(String path) {
         changeWorkspaceButton.setText(path);
-        workspacePath = path;
+        documentPath = path;
     }
 
-    public static String WORKSPACE_XML_FILE = "graphs.xml";
-
-    private String getWorkspaceGraphsPath() {
-        return workspacePath + "/" + WORKSPACE_XML_FILE;
+    private String getDocumentPath() {
+        return documentPath;
     }
 
 
     public void saveWorkspace() {
         try {
-            saveGraphDocument(getDocument(), getWorkspaceGraphsPath(), true);
+            saveGraphDocument(getDocument(), getDocumentPath(), true);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
