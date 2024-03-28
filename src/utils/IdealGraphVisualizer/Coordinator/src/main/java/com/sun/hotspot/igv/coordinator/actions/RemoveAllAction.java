@@ -64,6 +64,6 @@ public final class RemoveAllAction extends CallableSystemAction {
 
     @Override
     public void performAction() {
-        OutlineTopComponent.findInstance().clear();
+        OutlineTopComponent.findInstance().clearWorkspace();
     }
 }

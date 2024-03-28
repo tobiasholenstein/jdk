@@ -39,7 +39,6 @@ import com.sun.hotspot.igv.util.LookupHistory;
 import com.sun.hotspot.igv.view.EditorTopComponent;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -59,7 +58,6 @@ import org.openide.awt.ToolbarPool;
 import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.BeanTreeView;
-import org.openide.modules.Places;
 import org.openide.nodes.Node;
 import org.openide.util.*;
 import org.openide.windows.Mode;
@@ -83,37 +81,26 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private final Set<FolderNode> selectedFolders = new HashSet<>();
     private static final int WORK_UNITS = 10000;
     private static final RequestProcessor RP = new RequestProcessor("OutlineTopComponent", 1);
-
-    public static String DEFAULT_XML_FILE = "graphs.xml";
-
     private Path documentPath = null;
-
 
 
     private OutlineTopComponent() {
         initComponents();
-
-        setName("Untitled");
-        setToolTipText("No file opened at the moment");
-
+        setName(NbBundle.getMessage(OutlineTopComponent.class, "CTL_OutlineTopComponent"));
+        setToolTipText(NbBundle.getMessage(OutlineTopComponent.class, "HINT_OutlineTopComponent"));
         initListView();
         initToolbar();
         initReceivers();
-
-        setDocumentPath(Places.getUserDirectory().getAbsolutePath() + "/" + DEFAULT_XML_FILE);
-        loadFile();
-    }
-
-    public void saveAs() {
-        // TODO
     }
 
     private void initListView() {
-        manager = new ExplorerManager();
+        setDocumentPath(null);
+        FolderNode.clearGraphNodeMap();
+        document.clear();
         root = new FolderNode(document);
+        manager = new ExplorerManager();
         manager.setRootContext(root);
         ((BeanTreeView) this.treeView).setRootVisible(false);
-
         associateLookup(ExplorerUtils.createLookup(manager, getActionMap()));
     }
 
@@ -165,25 +152,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         };
 
         new Server(callback);
-    }
-
-    public void clear() {
-        document.clear();
-        FolderNode.clearGraphNodeMap();
-        root = new FolderNode(document);
-        manager.setRootContext(root);
-    }
-
-
-    @Override
-    public boolean canClose() {
-        SwingUtilities.invokeLater(() -> {
-            this.setDocumentPath(null);
-            this.clear();
-            this.open(); // Reopen the OutlineTopComponent
-            this.requestActive();
-        });
-        return true;
     }
 
     @Override
@@ -308,15 +276,20 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
     }
 
-    private void loadFile() {
-        clear();
-        ((BeanTreeView) this.treeView).setRootVisible(false);
+    @Override
+    public boolean canClose() {
+        SwingUtilities.invokeLater(() -> {
+            this.clearWorkspace();
+            this.open(); // Reopen the OutlineTopComponent
+            this.requestActive();
+        });
+        return true;
+    }
 
-        try {
-            loadGraphDocument(getDocumentPath(), true);
-        } catch (IOException ex) {
-            Exceptions.printStackTrace(ex);
-        }
+    @Override
+    public void setDisplayName(String fileName) {
+        super.setDisplayName(fileName);
+        setHtmlDisplayName(Objects.requireNonNullElse(fileName, "<html><i>untitled</i></html>"));
     }
 
     private void setDocumentPath(String path) {
@@ -327,121 +300,113 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         } else {
             documentPath = null;
             setDisplayName("untitled");
-            setToolTipText("File: none" );
+            setToolTipText("No file" );
         }
 
-    }
-
-    @Override
-    public void setDisplayName(String fileName) {
-        super.setDisplayName(fileName);
-        setHtmlDisplayName(Objects.requireNonNullElse(fileName, "<html><i>untitled</i></html>"));
     }
 
     private String getDocumentPath() {
         return documentPath.toAbsolutePath().toString();
     }
 
-
-    public void save() {
-        try {
-            saveGraphDocument(getDocument(), getDocumentPath(), true);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void clearWorkspace() {
+        setDocumentPath(null);
+        document.clear();
+        FolderNode.clearGraphNodeMap();
+        root = new FolderNode(document);
+        manager.setRootContext(root);
     }
 
     public void openFile() {
-        JFileChooser fc = new JFileChooser();
-        fc.setFileFilter(getFileFilter());
-        fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
-        fc.setMultiSelectionEnabled(true);
-
+        JFileChooser fc = new JFileChooser(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT));
+        fc.setFileFilter(xmlFileFilter);
         if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-            for (final File file : fc.getSelectedFiles()) {
-                File dir = file;
-                if (!dir.isDirectory()) {
-                    dir = dir.getParentFile();
-                }
-
-                Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
-                // TODO: open file.getAbsolutePath()
+            clearWorkspace();
+            String path = fc.getSelectedFile().getAbsolutePath();
+            Settings.get().put(Settings.DIRECTORY, path);
+            setDocumentPath(path);
+            try {
+                loadGraphDocument(path, true);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
-    public static FileFilter getFileFilter() {
-        return new FileFilter() {
-
-            @Override
-            public boolean accept(File f) {
-                return f.getName().toLowerCase().endsWith(".xml") || f.isDirectory();
+    public void save() {
+        String filePath = getDocumentPath();
+        boolean exists = Files.exists(Paths.get(filePath));
+        if (exists) {
+            try {
+                saveGraphDocument(getDocument(), filePath, true);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-
-            @Override
-            public String getDescription() {
-                return "Graph files (*.xml)";
-            }
-        };
+        } else {
+            saveAs();
+        }
     }
 
+    public void saveAs() {
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(xmlFileFilter);
+        fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
+        if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            String path = fc.getSelectedFile().getAbsolutePath();
+            Settings.get().put(Settings.DIRECTORY, path);
+            setDocumentPath(path);
+            try {
+                saveGraphDocument(getDocument(), path, true);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+
+    private static final FileFilter xmlFileFilter = new FileFilter() {
+        @Override
+        public boolean accept(File f) {
+            return f.getName().toLowerCase().endsWith(".xml") || f.isDirectory();
+        }
+
+        @Override
+        public String getDescription() {
+            return "Graph files (*.xml)";
+        }
+    };
+
+
     public static void exportToXML(GraphDocument doc) {
-        try {
-            saveGraphDocument(doc, null, false);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(xmlFileFilter);
+        fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
+        if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            String path = fc.getSelectedFile().getAbsolutePath();
+            try {
+                saveGraphDocument(doc, path, false);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
     public void importFromXML() {
         JFileChooser fc = new JFileChooser();
-        fc.setFileFilter(getFileFilter());
+        fc.setFileFilter(xmlFileFilter);
         fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
         fc.setMultiSelectionEnabled(true);
-
         if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             for (final File file : fc.getSelectedFiles()) {
-                File dir = file;
-                if (!dir.isDirectory()) {
-                    dir = dir.getParentFile();
-                }
-
-                Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
-
+                String path = fc.getSelectedFile().getAbsolutePath();
+                Settings.get().put(Settings.DIRECTORY, path);
                 try {
-                    loadGraphDocument(file.getAbsolutePath(), false);
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
+                    loadGraphDocument(path, false);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             }
         }
-    }
-
-    private static File chooseFile(boolean saveDialog) {
-        JFileChooser fc = new JFileChooser();
-        fc.setFileFilter(getFileFilter());
-        fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
-
-        boolean approved;
-        if (saveDialog) {
-            approved = fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION;
-        } else {
-            approved = fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION;
-        }
-        if (approved) {
-            File file = fc.getSelectedFile();
-            if (!file.getName().contains(".")) {
-                file = new File(file.getAbsolutePath() + ".xml");
-            }
-
-            File dir = file;
-            if (!dir.isDirectory()) {
-                dir = dir.getParentFile();
-            }
-            Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
-            return file;
-        }
-        return null;
     }
 
     private void loadContexts(Set<GraphContext> contexts) {
@@ -478,7 +443,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
     private void loadGraphDocument(String path,  boolean loadContext) throws IOException {
         RP.post(() -> {
-            if (Files.notExists(Path.of(path))) {
+            if (path == null || Files.notExists(Path.of(path))) {
                 return;
             }
             File file = new File(path);
@@ -530,13 +495,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
     private static void saveGraphDocument(GraphDocument doc, String path, boolean saveContext) throws IOException {
-        final File graphFile;
-        if (path == null || path.isEmpty()) {
-            graphFile = OutlineTopComponent.chooseFile(true);
-        } else {
-            graphFile = new File(path);
-        }
-        if (graphFile == null) {
+        if (path == null || Files.notExists(Path.of(path))) {
             return;
         }
 
@@ -554,7 +513,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             }
         }
 
-        try (Writer writer = new OutputStreamWriter(Files.newOutputStream(graphFile.toPath()))) {
+        try (Writer writer = new OutputStreamWriter(new FileOutputStream(path))) {
             Printer printer = new Printer();
             printer.exportGraphDocument(writer, new SerialData<>(doc, saveContexts));
         }
