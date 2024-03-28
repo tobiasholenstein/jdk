@@ -28,7 +28,7 @@
         <folder name="File">
             <file name="com-sun-hotspot-igv-coordinator-actions-OpenAction.instance"/>
             <file name="com-sun-hotspot-igv-coordinator-actions-ExportAction.instance"/>
-            <file name="com-sun-hotspot-igv-coordinator-actions-SaveAllAction.instance"/>
+            <file name="com-sun-hotspot-igv-coordinator-actions-SaveAction.instance"/>
             <file name="com-sun-hotspot-igv-coordinator-actions-SaveAsAction.instance"/>
             <file name="com-sun-hotspot-igv-coordinator-actions-ImportAction.instance"/>
             <file name="com-sun-hotspot-igv-coordinator-actions-RemoveAction.instance"/>
@@ -81,8 +81,8 @@
                 <attr name="originalFile" stringvalue="Actions/File/com-sun-hotspot-igv-coordinator-actions-ExportAction.instance"/>
                 <attr name="position" intvalue="500"/>
             </file>
-            <file name="com-sun-hotspot-igv-coordinator-actions-SaveAllAction.shadow">
-                <attr name="originalFile" stringvalue="Actions/File/com-sun-hotspot-igv-coordinator-actions-SaveAllAction.instance"/>
+            <file name="com-sun-hotspot-igv-coordinator-actions-SaveAction.shadow">
+                <attr name="originalFile" stringvalue="Actions/File/com-sun-hotspot-igv-coordinator-actions-SaveAction.instance"/>
                 <attr name="position" intvalue="600"/>
             </file>
             <file name="com-sun-hotspot-igv-coordinator-actions-SaveAsAction.shadow">
@@ -114,7 +114,7 @@
             <file name="org-netbeans-modules-project-ui-OpenProject.shadow_hidden"/>
             <file name="org-netbeans-modules-project-ui-RecentProjects.shadow_hidden"/>
             <file name="org-netbeans-modules-project-ui-groups-GroupsMenu.shadow_hidden"/>
-            <file name="org-openide-actions-SaveAllAction.shadow_hidden"/>
+            <file name="org-openide-actions-SaveAction.shadow_hidden"/>
             <file name="org-openide-actions-SaveAsAction.shadow_hidden"/>
             <file name="org-openide-actions-ExportAction.shadow_hidden"/>
         </folder>

@@ -50,10 +50,10 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.filechooser.FileFilter;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
 import org.openide.ErrorManager;
-import org.openide.actions.GarbageCollectAction;
 import org.openide.awt.Toolbar;
 import org.openide.awt.ToolbarPool;
 import org.openide.explorer.ExplorerManager;
@@ -65,7 +65,6 @@ import org.openide.util.*;
 import org.openide.windows.Mode;
 import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
-import javax.swing.JButton;
 
 /**
  *
@@ -78,7 +77,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private ExplorerManager manager;
     private static final GraphDocument document = new GraphDocument();
     private FolderNode root;
-    private SaveAllAction saveAllAction;
+    private SaveAction saveAction;
     private RemoveAllAction removeAllAction;
     private GraphNode[] selectedGraphs = new GraphNode[0];
     private final Set<FolderNode> selectedFolders = new HashSet<>();
@@ -136,9 +135,9 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         toolbar.add(OpenAction.get(OpenAction.class));
         toolbar.addSeparator();
 
-        saveAllAction = SaveAllAction.get(SaveAllAction.class);
-        saveAllAction.setEnabled(false);
-        toolbar.add(saveAllAction);
+        saveAction = SaveAction.get(SaveAction.class);
+        saveAction.setEnabled(false);
+        toolbar.add(saveAction);
         toolbar.add(SaveAsAction.get(SaveAsAction.class));
 
         toolbar.addSeparator();
@@ -164,7 +163,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         if (selectedFile != null) {
             String filePath = selectedFile.getAbsolutePath();
             if (!filePath.isEmpty()) {
-                saveFile();
+                save();
                 setDocumentPath(filePath);
                 loadFile();
             }
@@ -173,7 +172,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
     private void documentChanged() {
         boolean enableButton = !document.getElements().isEmpty();
-        saveAllAction.setEnabled(enableButton);
+        saveAction.setEnabled(enableButton);
         removeAllAction.setEnabled(enableButton);
     }
 
@@ -364,7 +363,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
 
-    public void saveFile() {
+    public void save() {
         try {
             saveGraphDocument(getDocument(), getDocumentPath(), true);
         } catch (IOException e) {
@@ -372,8 +371,39 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
     }
 
-    public void openFile(String path) {
-        //loadGraphDocument
+    public static javax.swing.filechooser.FileFilter getFileFilter() {
+        return new FileFilter() {
+
+            @Override
+            public boolean accept(File f) {
+                return f.getName().toLowerCase().endsWith(".xml") || f.isDirectory();
+            }
+
+            @Override
+            public String getDescription() {
+                return "Graph files (*.xml)";
+            }
+        };
+    }
+
+    public void openFile() {
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(getFileFilter());
+        fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
+        fc.setMultiSelectionEnabled(true);
+
+        if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            for (final File file : fc.getSelectedFiles()) {
+                File dir = file;
+                if (!dir.isDirectory()) {
+                    dir = dir.getParentFile();
+                }
+
+                Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
+                final OutlineTopComponent component = OutlineTopComponent.findInstance();
+                component.openFile(file.getAbsolutePath());
+            }
+        }
     }
 
     public void importFile(String path) {

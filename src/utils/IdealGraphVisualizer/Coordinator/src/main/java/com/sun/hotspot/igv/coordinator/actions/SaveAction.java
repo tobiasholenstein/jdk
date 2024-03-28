@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,25 +29,20 @@ import javax.swing.Action;
 import org.openide.util.*;
 import org.openide.util.actions.CallableSystemAction;
 
-/**
- *
- * @author Thomas Wuerthinger
- */
 
-public final class SaveAllAction extends CallableSystemAction {
+public final class SaveAction extends CallableSystemAction {
 
     @Override
     public void performAction() {
-        OutlineTopComponent component = OutlineTopComponent.findInstance();
-        component.saveFile();
+        OutlineTopComponent.findInstance().save();
     }
 
     @Override
     public String getName() {
-        return NbBundle.getMessage(SaveAllAction.class, "CTL_SaveAllAction");
+        return NbBundle.getMessage(SaveAction.class, "CTL_SaveAction");
     }
 
-    public SaveAllAction() {
+    public SaveAction() {
         putValue(Action.SHORT_DESCRIPTION, "Save");
         // D is the Control key on most platforms, the Command (meta) key on Macintosh
         putValue(Action.ACCELERATOR_KEY, Utilities.stringToKey("D-S"));
