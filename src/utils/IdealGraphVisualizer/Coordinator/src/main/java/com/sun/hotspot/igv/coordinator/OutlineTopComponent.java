@@ -44,6 +44,7 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -324,11 +325,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
     }
 
-    @Override
-    public void readExternal(ObjectInput objectInput) throws IOException, ClassNotFoundException {
-        super.readExternal(objectInput);
-    }
-
     private void setDocumentPath(String path) {
         changeFileButton.setText(path);
         documentPath = path;
@@ -348,9 +344,21 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
     @Override
-    public void writeExternal(ObjectOutput objectOutput) throws IOException {
-        super.writeExternal(objectOutput);
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+        out.writeUTF(getDocumentPath());
         saveFile();
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+        try {
+            String filePath = in.readUTF();
+            if (Files.exists(Paths.get(filePath))) {
+                setDocumentPath(filePath);
+            }
+        } catch (IOException ignore) {}
     }
 
     private static File chooseFile(boolean saveDialog) {
