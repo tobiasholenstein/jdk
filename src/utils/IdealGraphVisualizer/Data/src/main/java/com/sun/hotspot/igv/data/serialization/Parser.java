@@ -280,10 +280,14 @@ public class Parser implements GraphParser {
             blockConnections.clear();
 
             Runnable addToParent = () -> parent.addElement(graph);
+            Runnable addContext = () -> getParentObject().contexts().addAll(getObject().contexts());
             if (invokeLater) {
                 SwingUtilities.invokeLater(addToParent);
+                SwingUtilities.invokeLater(addContext);
+
             } else {
                 addToParent.run();
+                addContext.run();
             }
         }
     };
