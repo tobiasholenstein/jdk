@@ -76,6 +76,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private static final GraphDocument document = new GraphDocument();
     private FolderNode root;
     private SaveAction saveAction;
+    private SaveAsAction saveAsAction;
     private RemoveAllAction removeAllAction;
     private GraphNode[] selectedGraphs = new GraphNode[0];
     private final Set<FolderNode> selectedFolders = new HashSet<>();
@@ -117,7 +118,9 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         saveAction = SaveAction.get(SaveAction.class);
         saveAction.setEnabled(false);
         toolbar.add(saveAction);
-        toolbar.add(SaveAsAction.get(SaveAsAction.class));
+        saveAsAction = SaveAsAction.get(SaveAsAction.class);
+        saveAsAction.setEnabled(false);
+        toolbar.add(saveAsAction);
 
         toolbar.addSeparator();
         toolbar.add(ImportAction.get(ImportAction.class));
@@ -140,6 +143,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private void documentChanged() {
         boolean enableButton = !document.getElements().isEmpty();
         saveAction.setEnabled(enableButton);
+        saveAsAction.setEnabled(enableButton);
         removeAllAction.setEnabled(enableButton);
     }
 
