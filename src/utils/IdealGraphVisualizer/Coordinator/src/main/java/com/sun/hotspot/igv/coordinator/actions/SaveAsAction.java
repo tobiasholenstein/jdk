@@ -26,14 +26,13 @@ package com.sun.hotspot.igv.coordinator.actions;
 
 import com.sun.hotspot.igv.coordinator.OutlineTopComponent;
 import javax.swing.Action;
-import org.openide.nodes.Node;
 import org.openide.util.HelpCtx;
 import org.openide.util.ImageUtilities;
 import org.openide.util.NbBundle;
-import org.openide.util.actions.NodeAction;
+import org.openide.util.actions.CallableSystemAction;
 
 
-public final class SaveAsAction extends NodeAction {
+public final class SaveAsAction extends CallableSystemAction {
 
     public SaveAsAction() {
         putValue(Action.SHORT_DESCRIPTION, "Save as...");
@@ -41,8 +40,8 @@ public final class SaveAsAction extends NodeAction {
     }
 
     @Override
-    protected void performAction(Node[] activatedNodes) {
-        OutlineTopComponent.saveAs();
+    public void performAction() {
+        OutlineTopComponent.findInstance().saveAs();
     }
 
     @Override
@@ -63,10 +62,5 @@ public final class SaveAsAction extends NodeAction {
     @Override
     protected boolean asynchronous() {
         return false;
-    }
-
-    @Override
-    protected boolean enable(Node[] nodes) {
-        return true;
     }
 }

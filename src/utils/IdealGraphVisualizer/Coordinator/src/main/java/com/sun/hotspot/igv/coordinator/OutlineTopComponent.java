@@ -112,7 +112,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
     }
 
-    public static void saveAs() {
+    public void saveAs() {
         // TODO
     }
 
@@ -371,21 +371,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
     }
 
-    public static javax.swing.filechooser.FileFilter getFileFilter() {
-        return new FileFilter() {
-
-            @Override
-            public boolean accept(File f) {
-                return f.getName().toLowerCase().endsWith(".xml") || f.isDirectory();
-            }
-
-            @Override
-            public String getDescription() {
-                return "Graph files (*.xml)";
-            }
-        };
-    }
-
     public void openFile() {
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(getFileFilter());
@@ -400,23 +385,53 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                 }
 
                 Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
-                final OutlineTopComponent component = OutlineTopComponent.findInstance();
-                component.openFile(file.getAbsolutePath());
+                // TODO: open file.getAbsolutePath()
             }
         }
     }
 
-    public void importFile(String path) {
-        try {
-            loadGraphDocument(path);
-        } catch (IOException ex) {
-            Exceptions.printStackTrace(ex);
+    public static FileFilter getFileFilter() {
+        return new FileFilter() {
+
+            @Override
+            public boolean accept(File f) {
+                return f.getName().toLowerCase().endsWith(".xml") || f.isDirectory();
+            }
+
+            @Override
+            public String getDescription() {
+                return "Graph files (*.xml)";
+            }
+        };
+    }
+
+    public void importFromFile() {
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(getFileFilter());
+        fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
+        fc.setMultiSelectionEnabled(true);
+
+        if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            for (final File file : fc.getSelectedFiles()) {
+                File dir = file;
+                if (!dir.isDirectory()) {
+                    dir = dir.getParentFile();
+                }
+
+                Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
+
+                try {
+                    loadGraphDocument(file.getAbsolutePath());
+                } catch (IOException ex) {
+                    Exceptions.printStackTrace(ex);
+                }
+            }
         }
     }
 
     private static File chooseFile(boolean saveDialog) {
         JFileChooser fc = new JFileChooser();
-        fc.setFileFilter(ImportAction.getFileFilter());
+        fc.setFileFilter(getFileFilter());
         fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
 
         boolean approved = false;

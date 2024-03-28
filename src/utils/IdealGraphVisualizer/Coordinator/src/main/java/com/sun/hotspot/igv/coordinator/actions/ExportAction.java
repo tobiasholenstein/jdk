@@ -40,7 +40,7 @@ import org.openide.util.actions.NodeAction;
 public final class ExportAction extends NodeAction {
 
     public ExportAction() {
-        putValue(Action.SHORT_DESCRIPTION, "Export selected groups as XML file...");
+        putValue(Action.SHORT_DESCRIPTION, "Export selected groups to XML file...");
         putValue(Action.SMALL_ICON, ImageUtilities.loadImageIcon(iconResource(), true));
     }
 

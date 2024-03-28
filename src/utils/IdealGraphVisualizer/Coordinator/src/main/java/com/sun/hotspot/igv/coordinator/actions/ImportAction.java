@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,56 +25,16 @@
 package com.sun.hotspot.igv.coordinator.actions;
 
 import com.sun.hotspot.igv.coordinator.OutlineTopComponent;
-import com.sun.hotspot.igv.settings.Settings;
-import java.io.File;
-import java.io.IOException;
 import javax.swing.Action;
-import javax.swing.JFileChooser;
-import javax.swing.filechooser.FileFilter;
 import org.openide.util.*;
 import org.openide.util.actions.CallableSystemAction;
 
-/**
- *
- * @author Thomas Wuerthinger
- */
 
 public final class ImportAction extends CallableSystemAction {
 
-    public static FileFilter getFileFilter() {
-        return new FileFilter() {
-
-            @Override
-            public boolean accept(File f) {
-                return f.getName().toLowerCase().endsWith(".xml") || f.isDirectory();
-            }
-
-            @Override
-            public String getDescription() {
-                return "Graph files (*.xml)";
-            }
-        };
-    }
-
     @Override
     public void performAction() {
-        JFileChooser fc = new JFileChooser();
-        fc.setFileFilter(ImportAction.getFileFilter());
-        fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
-        fc.setMultiSelectionEnabled(true);
-
-        if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-            for (final File file : fc.getSelectedFiles()) {
-                File dir = file;
-                if (!dir.isDirectory()) {
-                    dir = dir.getParentFile();
-                }
-
-                Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
-                final OutlineTopComponent component = OutlineTopComponent.findInstance();
-                component.importFile(file.getAbsolutePath());
-            }
-        }
+        OutlineTopComponent.findInstance().importFromFile();
     }
 
     @Override
