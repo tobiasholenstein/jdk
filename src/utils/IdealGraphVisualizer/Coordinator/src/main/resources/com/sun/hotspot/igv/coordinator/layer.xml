@@ -31,6 +31,7 @@
     </folder>
     <folder name="Actions">
         <folder name="File">
+            <file name="com-sun-hotspot-igv-coordinator-actions-OpenAction.instance"/>
             <file name="com-sun-hotspot-igv-coordinator-actions-SaveAsAction.instance"/>
             <file name="com-sun-hotspot-igv-coordinator-actions-SaveAllAction.instance"/>
             <file name="com-sun-hotspot-igv-coordinator-actions-ImportAction.instance"/>
@@ -60,6 +61,10 @@
             <file name="Separator2.instance_hidden"/>
             <file name="Separator3.instance_hidden"/>
             <file name="SeparatorOpen.instance_hidden"/>
+            <file name="com-sun-hotspot-igv-coordinator-actions-OpenAction.shadow">
+                <attr name="originalFile" stringvalue="Actions/File/com-sun-hotspot-igv-coordinator-actions-OpenAction.instance"/>
+                <attr name="position" intvalue="50"/>
+            </file>
             <file name="com-sun-hotspot-igv-coordinator-actions-ImportAction.shadow">
                 <attr name="originalFile" stringvalue="Actions/File/com-sun-hotspot-igv-coordinator-actions-ImportAction.instance"/>
                 <attr name="position" intvalue="100"/>

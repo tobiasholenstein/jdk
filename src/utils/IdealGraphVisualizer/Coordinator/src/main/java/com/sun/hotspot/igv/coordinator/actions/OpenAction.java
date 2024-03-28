@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,12 +34,7 @@ import javax.swing.filechooser.FileFilter;
 import org.openide.util.*;
 import org.openide.util.actions.CallableSystemAction;
 
-/**
- *
- * @author Thomas Wuerthinger
- */
-
-public final class ImportAction extends CallableSystemAction {
+public final class OpenAction extends CallableSystemAction {
 
     public static FileFilter getFileFilter() {
         return new FileFilter() {
@@ -59,7 +54,7 @@ public final class ImportAction extends CallableSystemAction {
     @Override
     public void performAction() {
         JFileChooser fc = new JFileChooser();
-        fc.setFileFilter(ImportAction.getFileFilter());
+        fc.setFileFilter(OpenAction.getFileFilter());
         fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
         fc.setMultiSelectionEnabled(true);
 
@@ -83,11 +78,13 @@ public final class ImportAction extends CallableSystemAction {
 
     @Override
     public String getName() {
-        return NbBundle.getMessage(ImportAction.class, "CTL_ImportAction");
+        return NbBundle.getMessage(OpenAction.class, "CTL_OpenAction");
     }
 
-    public ImportAction() {
-        putValue(Action.SHORT_DESCRIPTION, "Import from XML...");
+    public OpenAction() {
+        putValue(Action.SHORT_DESCRIPTION, "Open...");
+        // D is the Control key on most platforms, the Command (meta) key on Macintosh
+        putValue(Action.ACCELERATOR_KEY, Utilities.stringToKey("D-O"));
         putValue(Action.SMALL_ICON, ImageUtilities.loadImageIcon(iconResource(), true));
     }
 
@@ -103,6 +100,6 @@ public final class ImportAction extends CallableSystemAction {
 
     @Override
     protected String iconResource() {
-        return "com/sun/hotspot/igv/coordinator/images/import.png";
+        return "com/sun/hotspot/igv/coordinator/images/open.png";
     }
 }

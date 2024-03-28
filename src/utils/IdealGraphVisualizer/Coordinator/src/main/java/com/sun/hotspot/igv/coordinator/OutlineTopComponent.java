@@ -87,7 +87,9 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private static final RequestProcessor RP = new RequestProcessor("OutlineTopComponent", 1);
 
     public static String DEFAULT_XML_FILE = "graphs.xml";
-    private String documentPath;
+
+    private Path documentPath = null;
+
 
 
     private OutlineTopComponent() {
@@ -100,7 +102,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         initToolbar();
         initReceivers();
 
-        setDocumentPath(Places.getUserDirectory().getAbsolutePath() + "/" + DEFAULT_XML_FILE);
+        setDocumentPath(Paths.get(Places.getUserDirectory().getAbsolutePath() + "/" + DEFAULT_XML_FILE));
         loadFile();
     }
 
@@ -120,6 +122,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
         this.add(toolbar, BorderLayout.NORTH);
 
+        toolbar.add(OpenAction.get(OpenAction.class));
         toolbar.add(ImportAction.get(ImportAction.class));
 
         saveAllAction = SaveAllAction.get(SaveAllAction.class);
@@ -190,6 +193,18 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         FolderNode.clearGraphNodeMap();
         root = new FolderNode(document);
         manager.setRootContext(root);
+    }
+
+
+    @Override
+    public boolean canClose() {
+        SwingUtilities.invokeLater(() -> {
+            this.setDocumentPath(null);
+            this.clear();
+            this.open(); // Reopen the OutlineTopComponent
+            this.requestActive();
+        });
+        return true;
     }
 
     @Override
@@ -325,7 +340,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
     }
 
-    private void setDocumentPath(String path) {
+    private void setDocumentPath(Path path) {
         changeFileButton.setText(path);
         documentPath = path;
         setDisplayName(path);
