@@ -387,6 +387,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
                 final int difference = context.posDiff().get();
                 final Set<Integer> hiddenNodes = context.hiddenNodes();
+                final Set<Integer> selectedNodes = context.selectedNodes();
                 final InputGraph firstGraph = context.inputGraph();
 
                 SwingUtilities.invokeLater(() -> {
@@ -403,6 +404,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                         EditorTopComponent etc = EditorTopComponent.findEditorForGraph(openedGraph);
                         if (etc != null) {
                             etc.getModel().setHiddenNodes(hiddenNodes);
+                            etc.getModel().setSelectedNodes(selectedNodes);
                         }
                     }
                 });
