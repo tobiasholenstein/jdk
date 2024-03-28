@@ -500,7 +500,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
     private static void saveGraphDocument(GraphDocument doc, String path, boolean saveContext) throws IOException {
-        if (path == null || Files.notExists(Path.of(path))) {
+        if (path == null) {
             return;
         }
 
