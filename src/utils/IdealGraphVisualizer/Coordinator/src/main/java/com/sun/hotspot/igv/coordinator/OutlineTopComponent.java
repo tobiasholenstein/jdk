@@ -93,8 +93,8 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private OutlineTopComponent() {
         initComponents();
 
-        setName(NbBundle.getMessage(OutlineTopComponent.class, "CTL_OutlineTopComponent"));
-        setToolTipText(NbBundle.getMessage(OutlineTopComponent.class, "HINT_OutlineTopComponent"));
+        setName("Untitled");
+        setToolTipText("No file opened at the moment");
 
         initListView();
         initToolbar();
