@@ -48,7 +48,7 @@ public final class SaveAllAction extends CallableSystemAction {
     }
 
     public SaveAllAction() {
-        putValue(Action.SHORT_DESCRIPTION, "Save file...");
+        putValue(Action.SHORT_DESCRIPTION, "Save");
         // D is the Control key on most platforms, the Command (meta) key on Macintosh
         putValue(Action.ACCELERATOR_KEY, Utilities.stringToKey("D-S"));
         putValue(Action.SMALL_ICON, ImageUtilities.loadImageIcon(iconResource(), true));

@@ -45,7 +45,7 @@ import org.openide.util.actions.NodeAction;
 public final class SaveAsAction extends NodeAction {
 
     public SaveAsAction() {
-        putValue(Action.SHORT_DESCRIPTION, "Save selected groups to XML file...");
+        putValue(Action.SHORT_DESCRIPTION, "Save selected groups as XML file...");
         putValue(Action.SMALL_ICON, ImageUtilities.loadImageIcon(iconResource(), true));
     }
 
