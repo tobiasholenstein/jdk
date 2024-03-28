@@ -335,11 +335,17 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         String filePath = getDocumentPath();
         boolean exists = Files.exists(Paths.get(filePath));
         if (exists) {
-            try {
-                saveGraphDocument(getDocument(), filePath, true);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            JFrame frame = new JFrame();
+            String message = "Do you want to overwrite " + documentPath.getFileName().toString() + "?";
+            int result = JOptionPane.showConfirmDialog(frame, message, "Confirm Overwrite", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (result == JOptionPane.YES_OPTION) {
+                try {
+                    saveGraphDocument(getDocument(), filePath, true);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
+            frame.dispose();
         } else {
             saveAs();
         }
@@ -347,6 +353,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
     public void saveAs() {
         JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Save As...");
         fc.setFileFilter(xmlFileFilter);
         fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
         if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
