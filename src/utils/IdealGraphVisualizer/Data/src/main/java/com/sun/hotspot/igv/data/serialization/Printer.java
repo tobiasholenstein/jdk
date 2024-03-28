@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 public class Printer {
 
 
-    public record GraphContext(InputGraph inputGraph, AtomicInteger posDiff, Set<Integer> hiddenNodes, Set<Integer> selectedNodes) {}
+    public record GraphContext(InputGraph inputGraph, AtomicInteger posDiff, Set<Integer> hiddenNodes) {}
 
     public record SerialData<T extends Properties.Provider>(T data, Set<GraphContext> contexts) implements Properties.Provider {
         @Override
@@ -212,12 +212,6 @@ public class Printer {
                 writer.simpleTag(Parser.NODE_ELEMENT, new Properties(Parser.NODE_ID_PROPERTY, hiddenNodeID.toString()));
             }
             writer.endTag(); // Parser.HIDDEN_NODES_ELEMENT
-
-            writer.startTag(Parser.SELECTED_NODES_ELEMENT);
-            for (Integer selectedNodeID : context.selectedNodes()) {
-                writer.simpleTag(Parser.NODE_ELEMENT, new Properties(Parser.NODE_ID_PROPERTY, selectedNodeID.toString()));
-            }
-            writer.endTag(); // Parser.SELECTED_NODES_ELEMENT
 
             writer.endTag(); // Parser.STATES_ELEMENT
         }

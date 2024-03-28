@@ -387,7 +387,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
                 final int difference = context.posDiff().get();
                 final Set<Integer> hiddenNodes = context.hiddenNodes();
-                final Set<Integer> selectedNodes = context.selectedNodes();
                 final InputGraph firstGraph = context.inputGraph();
 
                 SwingUtilities.invokeLater(() -> {
@@ -404,7 +403,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                         EditorTopComponent etc = EditorTopComponent.findEditorForGraph(openedGraph);
                         if (etc != null) {
                             etc.getModel().setHiddenNodes(hiddenNodes);
-                            etc.getModel().setSelectedNodes(selectedNodes);
                         }
                     }
                 });
@@ -493,15 +491,13 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             Printer printer = new Printer();
             printer.exportGraphDocument(writer, new SerialData<>(doc, saveContexts));
         }
-
     }
 
     private static GraphContext getGraphContext(EditorTopComponent etc) {
         InputGraph openedGraph = etc.getModel().getFirstGraph();
         int posDiff = etc.getModel().getSecondPosition() - etc.getModel().getFirstPosition();
         Set<Integer> hiddenNodes = new HashSet<>(etc.getModel().getHiddenNodes());
-        Set<Integer> selectedNodes = new HashSet<>(etc.getModel().getSelectedNodes());
-        return new GraphContext(openedGraph, new AtomicInteger(posDiff), hiddenNodes, selectedNodes);
+        return new GraphContext(openedGraph, new AtomicInteger(posDiff), hiddenNodes);
     }
 
     /** This method is called from within the constructor to

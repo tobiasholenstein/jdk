@@ -64,7 +64,6 @@ public class Parser implements GraphParser {
     public static final String EDGE_ELEMENT = "edge";
     public static final String NODE_ELEMENT = "node";
     public static final String NODES_ELEMENT = "nodes";
-    public static final String SELECTED_NODES_ELEMENT = "selectedNodes";
     public static final String HIDDEN_NODES_ELEMENT = "hiddenNodes";
 
     public static final String REMOVE_EDGE_ELEMENT = "removeEdge";
@@ -302,7 +301,7 @@ public class Parser implements GraphParser {
         protected GraphContext start() {
             SerialData<InputGraph> data = getParentObject();
             InputGraph inputGraph = data.data();
-            GraphContext graphContext = new GraphContext(inputGraph,  new AtomicInteger(0), new HashSet<>(), new HashSet<>());
+            GraphContext graphContext = new GraphContext(inputGraph,  new AtomicInteger(0), new HashSet<>());
             data.contexts().add(graphContext);
             return graphContext;
         }
@@ -310,7 +309,6 @@ public class Parser implements GraphParser {
 
 
     private final HandoverElementHandler<GraphContext> hiddenNodesHandler = new HandoverElementHandler<>(HIDDEN_NODES_ELEMENT);
-    private final HandoverElementHandler<GraphContext> selectedNodesHandler = new HandoverElementHandler<>(SELECTED_NODES_ELEMENT);
 
     private final ElementHandler<GraphContext, GraphContext> hiddenNodeHandler = new ElementHandler<>(NODE_ELEMENT) {
 
@@ -327,23 +325,6 @@ public class Parser implements GraphParser {
             return getParentObject();
         }
     };
-
-    private final ElementHandler<GraphContext, GraphContext> selectedNodeHandler = new ElementHandler<>(NODE_ELEMENT) {
-
-        @Override
-        protected GraphContext start() throws SAXException {
-            String s = readRequiredAttribute(NODE_ID_PROPERTY);
-            int nodeID;
-            try {
-                nodeID = Integer.parseInt(s);
-            } catch (NumberFormatException e) {
-                throw new SAXException(e);
-            }
-            getParentObject().selectedNodes().add(nodeID);
-            return getParentObject();
-        }
-    };
-
 
     private final ElementHandler<GraphContext, GraphContext> differenceHandler = new ElementHandler<>(STATE_POSITION_DIFFERENCE) {
 
@@ -576,8 +557,6 @@ public class Parser implements GraphParser {
         stateHandler.addChild(differenceHandler);
         stateHandler.addChild(hiddenNodesHandler);
         hiddenNodesHandler.addChild(hiddenNodeHandler);
-        stateHandler.addChild(selectedNodesHandler);
-        selectedNodesHandler.addChild(selectedNodeHandler);
 
         blockHandler.addChild(successorsHandler);
         successorsHandler.addChild(successorHandler);
