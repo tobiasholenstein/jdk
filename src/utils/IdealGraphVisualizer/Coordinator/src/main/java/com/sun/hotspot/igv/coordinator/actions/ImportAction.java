@@ -34,7 +34,7 @@ public final class ImportAction extends CallableSystemAction {
 
     @Override
     public void performAction() {
-        OutlineTopComponent.findInstance().importFromFile();
+        OutlineTopComponent.findInstance().importFromXML();
     }
 
     @Override

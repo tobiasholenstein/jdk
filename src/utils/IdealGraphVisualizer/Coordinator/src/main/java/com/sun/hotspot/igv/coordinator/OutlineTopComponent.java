@@ -104,14 +104,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         loadFile();
     }
 
-    public static void exportToXML(GraphDocument doc) {
-        try {
-            OutlineTopComponent.saveGraphDocument(doc, null, false);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public void saveAs() {
         // TODO
     }
@@ -156,18 +148,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
 
         document.getChangedEvent().addListener(g -> documentChanged());
-    }
-
-    private void onChangeFileClicked(ActionEvent event) {
-        File selectedFile = chooseFile(false);
-        if (selectedFile != null) {
-            String filePath = selectedFile.getAbsolutePath();
-            if (!filePath.isEmpty()) {
-                save();
-                setDocumentPath(filePath);
-                loadFile();
-            }
-        }
     }
 
     private void documentChanged() {
@@ -333,7 +313,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         ((BeanTreeView) this.treeView).setRootVisible(false);
 
         try {
-            loadGraphDocument(getDocumentPath());
+            loadGraphDocument(getDocumentPath(), true);
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
@@ -405,7 +385,15 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         };
     }
 
-    public void importFromFile() {
+    public static void exportToXML(GraphDocument doc) {
+        try {
+            saveGraphDocument(doc, null, false);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void importFromXML() {
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(getFileFilter());
         fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
@@ -421,7 +409,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                 Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
 
                 try {
-                    loadGraphDocument(file.getAbsolutePath());
+                    loadGraphDocument(file.getAbsolutePath(), false);
                 } catch (IOException ex) {
                     Exceptions.printStackTrace(ex);
                 }
@@ -434,7 +422,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         fc.setFileFilter(getFileFilter());
         fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
 
-        boolean approved = false;
+        boolean approved;
         if (saveDialog) {
             approved = fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION;
         } else {
@@ -488,7 +476,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
 
-    private void loadGraphDocument(String path) throws IOException {
+    private void loadGraphDocument(String path,  boolean loadContext) throws IOException {
         RP.post(() -> {
             if (Files.notExists(Path.of(path))) {
                 return;
@@ -527,8 +515,10 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                     parser.setInvokeLater(false);
                     final SerialData<GraphDocument> parsedData = parser.parse();
                     final GraphDocument parsedDoc = parsedData.data();
-                    final Set<GraphContext> parsedContexts = parsedData.contexts();
-                    loadContexts(parsedContexts);
+                    if (loadContext) {
+                        final Set<GraphContext> parsedContexts = parsedData.contexts();
+                        loadContexts(parsedContexts);
+                    }
                     getDocument().addGraphDocument(parsedDoc);
                     SwingUtilities.invokeLater(this::requestActive);
                 }
@@ -539,7 +529,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         });
     }
 
-    private static void saveGraphDocument(GraphDocument doc, String path, boolean saveState) throws IOException {
+    private static void saveGraphDocument(GraphDocument doc, String path, boolean saveContext) throws IOException {
         final File graphFile;
         if (path == null || path.isEmpty()) {
             graphFile = OutlineTopComponent.chooseFile(true);
@@ -551,7 +541,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
 
         Set<GraphContext> saveContexts = new HashSet<>();
-        if (saveState) {
+        if (saveContext) {
             WindowManager manager = WindowManager.getDefault();
             for (Mode mode : manager.getModes()) {
                 List<TopComponent> compList = new ArrayList<>(Arrays.asList(manager.getOpenedTopComponents(mode)));
