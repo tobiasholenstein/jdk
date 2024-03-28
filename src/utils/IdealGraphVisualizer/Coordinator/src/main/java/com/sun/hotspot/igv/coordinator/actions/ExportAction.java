@@ -24,7 +24,12 @@
 
 package com.sun.hotspot.igv.coordinator.actions;
 
+import com.sun.hotspot.igv.coordinator.FolderNode;
 import com.sun.hotspot.igv.coordinator.OutlineTopComponent;
+import com.sun.hotspot.igv.data.Folder;
+import com.sun.hotspot.igv.data.GraphDocument;
+import com.sun.hotspot.igv.data.Group;
+import java.io.IOException;
 import javax.swing.Action;
 import org.openide.nodes.Node;
 import org.openide.util.HelpCtx;
@@ -33,21 +38,31 @@ import org.openide.util.NbBundle;
 import org.openide.util.actions.NodeAction;
 
 
-public final class SaveAsAction extends NodeAction {
+public final class ExportAction extends NodeAction {
 
-    public SaveAsAction() {
-        putValue(Action.SHORT_DESCRIPTION, "Save as...");
+    public ExportAction() {
+        putValue(Action.SHORT_DESCRIPTION, "Save selected groups as XML file...");
         putValue(Action.SMALL_ICON, ImageUtilities.loadImageIcon(iconResource(), true));
     }
 
     @Override
     protected void performAction(Node[] activatedNodes) {
-        OutlineTopComponent.saveAs();
+        GraphDocument doc = new GraphDocument();
+        for (Node node : activatedNodes) {
+            if (node instanceof FolderNode folderNode) {
+                Folder folder = folderNode.getFolder();
+                if (folder instanceof Group group) {
+                    doc.addElement(group);
+                }
+            }
+        }
+
+        OutlineTopComponent.exportToXML(doc);
     }
 
     @Override
     public String getName() {
-        return NbBundle.getMessage(SaveAsAction.class, "CTL_SaveAsAction");
+        return NbBundle.getMessage(ExportAction.class, "CTL_ExportAction");
     }
 
     @Override
@@ -67,6 +82,14 @@ public final class SaveAsAction extends NodeAction {
 
     @Override
     protected boolean enable(Node[] nodes) {
-        return true;
+        if (nodes.length > 0) {
+            for (Node n : nodes) {
+                if (!(n instanceof FolderNode) || ((FolderNode) n).isRootNode()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 }

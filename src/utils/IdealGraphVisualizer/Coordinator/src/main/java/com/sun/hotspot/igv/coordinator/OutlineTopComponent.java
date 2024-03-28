@@ -80,7 +80,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private FolderNode root;
     private SaveAllAction saveAllAction;
     private RemoveAllAction removeAllAction;
-    private JButton changeFileButton;
     private GraphNode[] selectedGraphs = new GraphNode[0];
     private final Set<FolderNode> selectedFolders = new HashSet<>();
     private static final int WORK_UNITS = 10000;
@@ -102,8 +101,20 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         initToolbar();
         initReceivers();
 
-        setDocumentPath(Paths.get(Places.getUserDirectory().getAbsolutePath() + "/" + DEFAULT_XML_FILE));
+        setDocumentPath(Places.getUserDirectory().getAbsolutePath() + "/" + DEFAULT_XML_FILE);
         loadFile();
+    }
+
+    public static void exportToXML(GraphDocument doc) {
+        try {
+            OutlineTopComponent.saveGraphDocument(doc, null, false);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void saveAs() {
+        // TODO
     }
 
     private void initListView() {
@@ -128,8 +139,10 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         saveAllAction = SaveAllAction.get(SaveAllAction.class);
         saveAllAction.setEnabled(false);
         toolbar.add(saveAllAction);
+        toolbar.add(SaveAsAction.get(SaveAsAction.class));
 
-        toolbar.add(SaveAsAction.get(SaveAsAction.class).createContextAwareInstance(this.getLookup()));
+
+        toolbar.add(ExportAction.get(ExportAction.class).createContextAwareInstance(this.getLookup()));
         toolbar.add(RemoveAction.get(RemoveAction.class).createContextAwareInstance(this.getLookup()));
 
         removeAllAction = RemoveAllAction.get(RemoveAllAction.class);
@@ -137,23 +150,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         toolbar.add(removeAllAction);
 
         for (Toolbar tb : ToolbarPool.getDefault().getToolbars()) {
-            if (tb.getName().equals("GlobalToolbar")) {
-                continue;
-            }
             tb.setVisible(false);
-        }
-
-        JToolBar globalToolbar = ToolbarPool.getDefault().findToolbar("GlobalToolbar");
-        if (globalToolbar != null) {
-            Icon folderIcon = UIManager.getIcon("FileView.hardDriveIcon");
-            changeFileButton = new JButton("Select a file...", folderIcon);
-            changeFileButton.setToolTipText("Select a file...");
-            changeFileButton.addActionListener(this::onChangeFileClicked);
-            globalToolbar.add(changeFileButton);
-            globalToolbar.add(Box.createHorizontalGlue());
-            globalToolbar.add(GarbageCollectAction.get(GarbageCollectAction.class).getToolbarPresenter());
-            globalToolbar.revalidate();
-            globalToolbar.repaint();
         }
 
         document.getChangedEvent().addListener(g -> documentChanged());
@@ -340,11 +337,17 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
     }
 
-    private void setDocumentPath(Path path) {
-        changeFileButton.setText(path);
-        documentPath = path;
-        setDisplayName(path);
-        setToolTipText("File: " + path);
+    private void setDocumentPath(String path) {
+        if (path != null) {
+            documentPath = Paths.get(path);
+            setDisplayName(path);
+            setToolTipText("File: " + path);
+        } else {
+            documentPath = null;
+            setDisplayName("untitled");
+            setToolTipText("File: none" );
+        }
+
     }
 
     @Override
@@ -354,7 +357,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
     private String getDocumentPath() {
-        return documentPath;
+        return documentPath.toAbsolutePath().toString();
     }
 
 
@@ -366,22 +369,16 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-        out.writeUTF(getDocumentPath());
-        saveFile();
+    public void openFile(String path) {
+        //loadGraphDocument
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
+    public void importFile(String path) {
         try {
-            String filePath = in.readUTF();
-            if (Files.exists(Paths.get(filePath))) {
-                setDocumentPath(filePath);
-            }
-        } catch (IOException ignore) {}
+            loadGraphDocument(path);
+        } catch (IOException ex) {
+            Exceptions.printStackTrace(ex);
+        }
     }
 
     private static File chooseFile(boolean saveDialog) {
@@ -443,7 +440,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
 
-    public void loadGraphDocument(String path) throws IOException {
+    private void loadGraphDocument(String path) throws IOException {
         RP.post(() -> {
             if (Files.notExists(Path.of(path))) {
                 return;
@@ -494,7 +491,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         });
     }
 
-    public static void saveGraphDocument(GraphDocument doc, String path, boolean saveState) throws IOException {
+    private static void saveGraphDocument(GraphDocument doc, String path, boolean saveState) throws IOException {
         final File graphFile;
         if (path == null || path.isEmpty()) {
             graphFile = OutlineTopComponent.chooseFile(true);

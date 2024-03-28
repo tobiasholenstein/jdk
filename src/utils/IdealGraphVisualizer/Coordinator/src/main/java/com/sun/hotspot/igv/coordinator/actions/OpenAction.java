@@ -66,12 +66,8 @@ public final class OpenAction extends CallableSystemAction {
                 }
 
                 Settings.get().put(Settings.DIRECTORY, dir.getAbsolutePath());
-                try {
-                    final OutlineTopComponent component = OutlineTopComponent.findInstance();
-                    component.loadGraphDocument(file.getAbsolutePath());
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
-                }
+                final OutlineTopComponent component = OutlineTopComponent.findInstance();
+                component.openFile(file.getAbsolutePath());
             }
         }
     }
