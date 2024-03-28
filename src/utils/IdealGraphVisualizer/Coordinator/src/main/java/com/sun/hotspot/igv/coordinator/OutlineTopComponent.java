@@ -480,11 +480,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                 List<TopComponent> compList = new ArrayList<>(Arrays.asList(manager.getOpenedTopComponents(mode)));
                 for (TopComponent comp : compList) {
                     if (comp instanceof EditorTopComponent etc) {
-                        InputGraph openedGraph = etc.getModel().getFirstGraph();
-                        int posDiff = etc.getModel().getSecondPosition() - etc.getModel().getFirstPosition();
-                        Set<Integer> hiddenNodes = new HashSet<>(etc.getModel().getHiddenNodes());
-                        Set<Integer> selectedNodes = new HashSet<>(etc.getModel().getSelectedNodes());
-                        GraphContext graphContext = new GraphContext(openedGraph, new AtomicInteger(posDiff), hiddenNodes, selectedNodes);
+                        GraphContext graphContext = getGraphContext(etc);
                         saveContexts.add(graphContext);
                     }
                 }
@@ -493,9 +489,17 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
 
         try (Writer writer = new OutputStreamWriter(Files.newOutputStream(graphFile.toPath()))) {
             Printer printer = new Printer();
-            printer.exportGraphDocument(writer, new SerialData(doc, saveContexts));
+            printer.exportGraphDocument(writer, new SerialData<>(doc, saveContexts));
         }
 
+    }
+
+    private static GraphContext getGraphContext(EditorTopComponent etc) {
+        InputGraph openedGraph = etc.getModel().getFirstGraph();
+        int posDiff = etc.getModel().getSecondPosition() - etc.getModel().getFirstPosition();
+        Set<Integer> hiddenNodes = new HashSet<>(etc.getModel().getHiddenNodes());
+        Set<Integer> selectedNodes = new HashSet<>(etc.getModel().getSelectedNodes());
+        return new GraphContext(openedGraph, new AtomicInteger(posDiff), hiddenNodes, selectedNodes);
     }
 
     /** This method is called from within the constructor to
