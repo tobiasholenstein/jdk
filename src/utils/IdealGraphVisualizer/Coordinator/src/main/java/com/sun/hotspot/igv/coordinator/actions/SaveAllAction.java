@@ -25,7 +25,6 @@
 package com.sun.hotspot.igv.coordinator.actions;
 
 import com.sun.hotspot.igv.coordinator.OutlineTopComponent;
-import java.io.IOException;
 import javax.swing.Action;
 import org.openide.util.*;
 import org.openide.util.actions.CallableSystemAction;
@@ -40,7 +39,7 @@ public final class SaveAllAction extends CallableSystemAction {
     @Override
     public void performAction() {
         OutlineTopComponent component = OutlineTopComponent.findInstance();
-        component.saveWorkspace();
+        component.saveFile();
     }
 
     @Override
@@ -49,7 +48,7 @@ public final class SaveAllAction extends CallableSystemAction {
     }
 
     public SaveAllAction() {
-        putValue(Action.SHORT_DESCRIPTION, "Save workspace...");
+        putValue(Action.SHORT_DESCRIPTION, "Save file...");
         // D is the Control key on most platforms, the Command (meta) key on Macintosh
         putValue(Action.ACCELERATOR_KEY, Utilities.stringToKey("D-S"));
         putValue(Action.SMALL_ICON, ImageUtilities.loadImageIcon(iconResource(), true));

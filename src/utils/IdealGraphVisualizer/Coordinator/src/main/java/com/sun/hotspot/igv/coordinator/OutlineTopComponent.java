@@ -79,13 +79,13 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private FolderNode root;
     private SaveAllAction saveAllAction;
     private RemoveAllAction removeAllAction;
-    private JButton changeWorkspaceButton;
+    private JButton changeFileButton;
     private GraphNode[] selectedGraphs = new GraphNode[0];
     private final Set<FolderNode> selectedFolders = new HashSet<>();
     private static final int WORK_UNITS = 10000;
     private static final RequestProcessor RP = new RequestProcessor("OutlineTopComponent", 1);
 
-    public static String WORKSPACE_XML_FILE = "graphs.xml";
+    public static String DEFAULT_XML_FILE = "graphs.xml";
     private String documentPath;
 
 
@@ -99,8 +99,8 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         initToolbar();
         initReceivers();
 
-        setDocumentPath(Places.getUserDirectory().getAbsolutePath() + "/" + WORKSPACE_XML_FILE);
-        loadWorkspace();
+        setDocumentPath(Places.getUserDirectory().getAbsolutePath() + "/" + DEFAULT_XML_FILE);
+        loadFile();
     }
 
     private void initListView() {
@@ -142,10 +142,10 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         JToolBar globalToolbar = ToolbarPool.getDefault().findToolbar("GlobalToolbar");
         if (globalToolbar != null) {
             Icon folderIcon = UIManager.getIcon("FileView.hardDriveIcon");
-            changeWorkspaceButton = new JButton("Select a workspace...", folderIcon);
-            changeWorkspaceButton.setToolTipText("Select a workspace...");
-            changeWorkspaceButton.addActionListener(this::onChangeWorkspaceClicked);
-            globalToolbar.add(changeWorkspaceButton);
+            changeFileButton = new JButton("Select a file...", folderIcon);
+            changeFileButton.setToolTipText("Select a file...");
+            changeFileButton.addActionListener(this::onChangeFileClicked);
+            globalToolbar.add(changeFileButton);
             globalToolbar.add(Box.createHorizontalGlue());
             globalToolbar.add(GarbageCollectAction.get(GarbageCollectAction.class).getToolbarPresenter());
             globalToolbar.revalidate();
@@ -155,19 +155,14 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         document.getChangedEvent().addListener(g -> documentChanged());
     }
 
-    private void onChangeWorkspaceClicked(ActionEvent event) {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Select Workspace Folder");
-        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        fileChooser.setAcceptAllFileFilterUsed(false);
-
-        if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-            File newWorkspace = fileChooser.getSelectedFile();
-            String workspacePath = newWorkspace.getAbsolutePath();
-            if (!workspacePath.isEmpty()) {
-                saveWorkspace();
-                setDocumentPath(workspacePath);
-                loadWorkspace();
+    private void onChangeFileClicked(ActionEvent event) {
+        File selectedFile = chooseFile(false);
+        if (selectedFile != null) {
+            String filePath = selectedFile.getAbsolutePath();
+            if (!filePath.isEmpty()) {
+                saveFile();
+                setDocumentPath(filePath);
+                loadFile();
             }
         }
     }
@@ -318,7 +313,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
         }
     }
 
-    private void loadWorkspace() {
+    private void loadFile() {
         clear();
         ((BeanTreeView) this.treeView).setRootVisible(false);
 
@@ -335,7 +330,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
     private void setDocumentPath(String path) {
-        changeWorkspaceButton.setText(path);
+        changeFileButton.setText(path);
         documentPath = path;
     }
 
@@ -344,7 +339,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
 
-    public void saveWorkspace() {
+    public void saveFile() {
         try {
             saveGraphDocument(getDocument(), getDocumentPath(), true);
         } catch (IOException e) {
@@ -355,15 +350,21 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     @Override
     public void writeExternal(ObjectOutput objectOutput) throws IOException {
         super.writeExternal(objectOutput);
-        saveWorkspace();
+        saveFile();
     }
 
-    private static File chooseFile() {
+    private static File chooseFile(boolean saveDialog) {
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(ImportAction.getFileFilter());
         fc.setCurrentDirectory(new File(Settings.get().get(Settings.DIRECTORY, Settings.DIRECTORY_DEFAULT)));
 
-        if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+        boolean approved = false;
+        if (saveDialog) {
+            approved = fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION;
+        } else {
+            approved = fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION;
+        }
+        if (approved) {
             File file = fc.getSelectedFile();
             if (!file.getName().contains(".")) {
                 file = new File(file.getAbsolutePath() + ".xml");
@@ -465,7 +466,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     public static void saveGraphDocument(GraphDocument doc, String path, boolean saveState) throws IOException {
         final File graphFile;
         if (path == null || path.isEmpty()) {
-            graphFile = OutlineTopComponent.chooseFile();
+            graphFile = OutlineTopComponent.chooseFile(true);
         } else {
             graphFile = new File(path);
         }
