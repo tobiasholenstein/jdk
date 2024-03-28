@@ -29,7 +29,6 @@ import com.sun.hotspot.igv.coordinator.OutlineTopComponent;
 import com.sun.hotspot.igv.data.Folder;
 import com.sun.hotspot.igv.data.GraphDocument;
 import com.sun.hotspot.igv.data.Group;
-import java.io.IOException;
 import javax.swing.Action;
 import org.openide.nodes.Node;
 import org.openide.util.HelpCtx;
@@ -41,7 +40,7 @@ import org.openide.util.actions.NodeAction;
 public final class ExportAction extends NodeAction {
 
     public ExportAction() {
-        putValue(Action.SHORT_DESCRIPTION, "Save selected groups as XML file...");
+        putValue(Action.SHORT_DESCRIPTION, "Export selected groups as XML file...");
         putValue(Action.SMALL_ICON, ImageUtilities.loadImageIcon(iconResource(), true));
     }
 
@@ -67,7 +66,7 @@ public final class ExportAction extends NodeAction {
 
     @Override
     protected String iconResource() {
-        return "com/sun/hotspot/igv/coordinator/images/saveall.gif";
+        return "com/sun/hotspot/igv/coordinator/images/export.png";
     }
 
     @Override
