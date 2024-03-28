@@ -328,6 +328,14 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private void setDocumentPath(String path) {
         changeFileButton.setText(path);
         documentPath = path;
+        setDisplayName(path);
+        setToolTipText("File: " + path);
+    }
+
+    @Override
+    public void setDisplayName(String fileName) {
+        super.setDisplayName(fileName);
+        setHtmlDisplayName(Objects.requireNonNullElse(fileName, "<html><i>untitled</i></html>"));
     }
 
     private String getDocumentPath() {
