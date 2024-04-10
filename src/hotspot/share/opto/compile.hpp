@@ -710,7 +710,7 @@ private:
 #ifndef PRODUCT
   void dump_igv(const char* graph_name, int level = 3) {
     if (should_print_igv(level)) {
-      _igv_printer->print_method(graph_name, level);
+      _igv_printer->print_graph(graph_name);
     }
   }
 

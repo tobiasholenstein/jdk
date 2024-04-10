@@ -5217,7 +5217,7 @@ void Compile::print_method(CompilerPhaseType cpt, int level, Node* n) {
 
   const char* name = ss.as_string();
   if (should_print_igv(level)) {
-    _igv_printer->print_method(name, level);
+    _igv_printer->print_graph(name);
   }
   if (should_print_phase(cpt)) {
     print_ideal_ir(CompilerPhaseTypeHelper::to_name(cpt));

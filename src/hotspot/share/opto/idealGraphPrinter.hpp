@@ -44,7 +44,6 @@ class ciMethod;
 class IdealGraphPrinter : public CHeapObj<mtCompiler> {
  private:
 
-  static const char *INDENT;
   static const char *TOP_ELEMENT;
   static const char *GROUP_ELEMENT;
   static const char *GRAPH_ELEMENT;
@@ -55,13 +54,10 @@ class IdealGraphPrinter : public CHeapObj<mtCompiler> {
   static const char *NODE_ELEMENT;
   static const char *NODES_ELEMENT;
   static const char *CONTROL_FLOW_ELEMENT;
-  static const char *REMOVE_EDGE_ELEMENT;
-  static const char *REMOVE_NODE_ELEMENT;
   static const char *COMPILATION_ID_PROPERTY;
   static const char *COMPILATION_OSR_PROPERTY;
   static const char *METHOD_NAME_PROPERTY;
   static const char *BLOCK_NAME_PROPERTY;
-  static const char *BLOCK_DOMINATOR_PROPERTY;
   static const char *BLOCK_ELEMENT;
   static const char *SUCCESSORS_ELEMENT;
   static const char *SUCCESSOR_ELEMENT;
@@ -69,7 +65,6 @@ class IdealGraphPrinter : public CHeapObj<mtCompiler> {
   static const char *METHOD_IS_STATIC_PROPERTY;
   static const char *TRUE_VALUE;
   static const char *NODE_NAME_PROPERTY;
-  static const char *EDGE_NAME_PROPERTY;
   static const char *NODE_ID_PROPERTY;
   static const char *FROM_PROPERTY;
   static const char *TO_PROPERTY;
@@ -81,7 +76,6 @@ class IdealGraphPrinter : public CHeapObj<mtCompiler> {
   static const char *BYTECODES_ELEMENT;
   static const char *METHOD_BCI_PROPERTY;
   static const char *METHOD_SHORT_NAME_PROPERTY;
-  static const char *ASSEMBLY_ELEMENT;
 
   static int _file_count;
   networkStream *_network_stream;
@@ -98,12 +92,12 @@ class IdealGraphPrinter : public CHeapObj<mtCompiler> {
 
   void print_method(ciMethod *method, int bci, InlineTree *tree);
   void print_inline_tree(InlineTree *tree);
-  void visit_node(Node *n, bool edges, VectorSet* temp_set);
+  void visit_node(Node *n, bool edges);
   void print_field(const Node* node);
   ciField* get_field(const Node* node);
   ciField* find_source_field_of_array_access(const Node* node, uint& depth);
   static Node* get_load_node(const Node* node);
-  void walk_nodes(Node *start, bool edges, VectorSet* temp_set);
+  void walk_nodes(Node *start, bool edges);
   void begin_elem(const char *s);
   void end_elem();
   void begin_head(const char *s);
@@ -131,8 +125,8 @@ class IdealGraphPrinter : public CHeapObj<mtCompiler> {
   void print_inlining();
   void begin_method();
   void end_method();
-  void print_method(const char *name, int level = 0);
-  void print(const char *name, Node *root);
+  void print_graph(const char *name);
+  void print(const char *name, Node *root, GrowableArray<const Node *> &hidden_nodes);
   void set_compile(Compile* compile) {C = compile; }
   void update_compiled_method(ciMethod* current_method);
 };

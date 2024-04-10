@@ -1827,6 +1827,8 @@ private:
   bool _print_blocks = false;
   bool _print_old = false;
   bool _dump_only = false;
+  bool _print_igv = false;
+
   void print_options_help(bool print_examples);
   bool parse_options();
 
@@ -2044,6 +2046,10 @@ void PrintBFS::print() {
       const Node* n = _print_list.at(i);
       print_node(n);
     }
+    if (_print_igv) {
+      IdealGraphPrinter* igv_printer = Compile::current()->igv_printer();
+      igv_printer->print("PrintBFS", (Node *) Compile::current()->root(), _print_list);
+    }
   } else {
     _output->print_cr("No nodes to print.");
   }
@@ -2198,6 +2204,9 @@ bool PrintBFS::parse_options() {
         break;
       case '$':
         _dump_only = true;
+        break;
+      case '!':
+        _print_igv = true;
         break;
       case 'h':
         print_options_help(false);
