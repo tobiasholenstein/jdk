@@ -250,13 +250,6 @@ public class Printer {
 
     public record GraphContext(InputGraph inputGraph, AtomicInteger posDiff, Set<Integer> visibleNodes) { }
 
-    public record SerialData<T extends Properties.Provider>(T data) implements Properties.Provider {
-        @Override
-        public Properties getProperties() {
-            return data.getProperties();
-        }
-    }
-
     public interface GraphContextAction {
         void performAction(GraphContext context);
     }

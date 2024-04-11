@@ -32,7 +32,6 @@ import com.sun.hotspot.igv.data.serialization.ParseMonitor;
 import com.sun.hotspot.igv.data.serialization.Parser;
 import com.sun.hotspot.igv.data.serialization.Printer;
 import com.sun.hotspot.igv.data.serialization.Printer.GraphContext;
-import com.sun.hotspot.igv.data.serialization.Printer.SerialData;
 import com.sun.hotspot.igv.data.services.GraphViewer;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
 import com.sun.hotspot.igv.settings.Settings;
@@ -526,7 +525,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             try {
                 if (file.getName().endsWith(".xml")) {
                     final Parser parser = new Parser(channel, monitor, document, loadContext ? this::loadContext : null);
-                    final SerialData<GraphDocument> parsedData = parser.parse();
+                    parser.parse();
 
                     for (Node child : manager.getRootContext().getChildren().getNodes(true)) {
                         // Nodes a lazily created. By expanding and collapsing they are all initialized

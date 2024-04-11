@@ -72,9 +72,8 @@ public class ParserTest {
         InputStream in = new ByteArrayInputStream(xmlString.getBytes(UTF_8));
         try {
             Parser parser = new Parser(Channels.newChannel(in), null, null, null);
-            final Printer.SerialData<GraphDocument> exportData = parser.parse();
-            final GraphDocument parsedDocument = exportData.data();
-            Util.assertGraphDocumentEquals(document, parsedDocument);
+            final GraphDocument exportData = parser.parse();
+            Util.assertGraphDocumentEquals(document, exportData);
         } catch (IOException ex) {
             fail(ex.toString());
         }
