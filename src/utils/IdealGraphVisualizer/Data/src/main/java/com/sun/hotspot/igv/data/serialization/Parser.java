@@ -297,7 +297,7 @@ public class Parser implements GraphParser {
 
         @Override
         protected SerialData<GraphDocument> start() {
-            serialData = new SerialData<>(new GraphDocument(), new HashSet<>());
+            serialData = new SerialData<>(new GraphDocument());
             return serialData;
         }
     };
@@ -321,7 +321,7 @@ public class Parser implements GraphParser {
                 folder.addElement(group);
             }
 
-            return new SerialData<>(group, getParentObject().contexts());
+            return new SerialData<>(group);
         }
 
         @Override
@@ -352,7 +352,7 @@ public class Parser implements GraphParser {
             if (monitor != null) {
                 monitor.updateProgress();
             }
-            return new SerialData<>(curGraph, new HashSet<>());
+            return new SerialData<>(curGraph);
         }
 
         @Override
@@ -408,7 +408,6 @@ public class Parser implements GraphParser {
             blockConnections.clear();
 
             parent.addElement(graph);
-            getParentObject().contexts().addAll(getObject().contexts());
         }
     };
     // <properties>

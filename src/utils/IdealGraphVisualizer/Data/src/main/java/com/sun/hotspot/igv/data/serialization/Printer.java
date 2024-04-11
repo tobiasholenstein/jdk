@@ -37,10 +37,7 @@ import java.util.stream.Collectors;
  */
 public class Printer {
 
-
-    public static void exportGraphDocument(Writer writer, SerialData<Folder> serialData) {
-        Folder folder = serialData.data();
-        Set<GraphContext> contexts = serialData.contexts();
+    public static void exportGraphDocument(Writer writer, Folder folder, Set<GraphContext> contexts) {
         XMLWriter xmlWriter = new XMLWriter(writer);
         try {
             xmlWriter.startTag(Parser.ROOT_ELEMENT);
@@ -253,8 +250,7 @@ public class Printer {
 
     public record GraphContext(InputGraph inputGraph, AtomicInteger posDiff, Set<Integer> visibleNodes) { }
 
-    public record SerialData<T extends Properties.Provider>(T data,
-                                                            Set<GraphContext> contexts) implements Properties.Provider {
+    public record SerialData<T extends Properties.Provider>(T data) implements Properties.Provider {
         @Override
         public Properties getProperties() {
             return data.getProperties();
