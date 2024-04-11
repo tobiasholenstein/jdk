@@ -46,6 +46,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -173,8 +174,12 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     private static GraphContext getGraphContext(EditorTopComponent etc) {
         InputGraph openedGraph = etc.getModel().getFirstGraph();
         int posDiff = etc.getModel().getSecondPosition() - etc.getModel().getFirstPosition();
-        Set<Integer> visibleNodes = new HashSet<>(etc.getModel().getVisibleNodes());
-        return new GraphContext(openedGraph, new AtomicInteger(posDiff), visibleNodes);
+        if (etc.getModel().getHiddenNodes().isEmpty()) {
+            return new GraphContext(openedGraph, new AtomicInteger(posDiff), new HashSet<>(), new AtomicBoolean(true));
+        } else {
+            Set<Integer> visibleNodes = new HashSet<>(etc.getModel().getVisibleNodes());
+            return new GraphContext(openedGraph, new AtomicInteger(posDiff), visibleNodes, new AtomicBoolean(false));
+        }
     }
 
     private void initListView() {
@@ -464,15 +469,20 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             assert viewer != null;
 
             final int difference = context.posDiff().get();
-            final Set<Integer> visibleNodes = context.visibleNodes();
             final InputGraph firstGraph = context.inputGraph();
+            final Set<Integer> visibleNodes = context.visibleNodes();
+            final boolean showAll = context.showAll().get();
 
             SwingUtilities.invokeLater(() -> {
                 InputGraph openedGraph = viewer.view(firstGraph, true);
                 if (openedGraph != null) {
                     EditorTopComponent etc = EditorTopComponent.findEditorForGraph(firstGraph);
                     if (etc != null) {
-                        etc.getModel().showOnly(visibleNodes);
+                        if (showAll) {
+                            etc.getModel().setHiddenNodes(new HashSet<>());
+                        } else {
+                            etc.getModel().showOnly(visibleNodes);
+                        }
                         if (difference > 0) {
                             int firstGraphIdx = firstGraph.getIndex();
                             etc.getModel().setPositions(firstGraphIdx, firstGraphIdx + difference);

@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
@@ -63,7 +64,7 @@ public class Parser implements GraphParser {
     public static final String NODE_ELEMENT = "node";
     public static final String NODES_ELEMENT = "nodes";
     public static final String VISIBLE_NODES_ELEMENT = "visibleNodes";
-
+    public static final String ALL_PROPERTY = "all";
     public static final String REMOVE_EDGE_ELEMENT = "removeEdge";
     public static final String REMOVE_NODE_ELEMENT = "removeNode";
     public static final String METHOD_NAME_PROPERTY = "name";
@@ -138,14 +139,27 @@ public class Parser implements GraphParser {
         @Override
         protected GraphContext start() {
             InputGraph inputGraph = getParentObject();
-            GraphContext graphContext = new GraphContext(inputGraph, new AtomicInteger(0), new HashSet<>());
+            GraphContext graphContext = new GraphContext(inputGraph, new AtomicInteger(0), new HashSet<>(), new AtomicBoolean(false));
             if (contextAction != null) {
                 contextAction.performAction(graphContext);
             }
             return graphContext;
         }
     };
-    private final HandoverElementHandler<GraphContext> visibleNodesHandler = new HandoverElementHandler<>(VISIBLE_NODES_ELEMENT);
+    private final ElementHandler<GraphContext, GraphContext> visibleNodesHandler = new ElementHandler<>(VISIBLE_NODES_ELEMENT) {
+
+        @Override
+        protected GraphContext start() throws SAXException {
+            String s = readRequiredAttribute(ALL_PROPERTY);
+            try {
+                boolean all = Boolean.parseBoolean(s);
+                getParentObject().showAll().set(all);
+            } catch (NumberFormatException e) {
+                throw new SAXException(e);
+            }
+            return getParentObject();
+        }
+    };
     private final ElementHandler<GraphContext, GraphContext> visibleNodeHandler = new ElementHandler<>(NODE_ELEMENT) {
 
         @Override
