@@ -64,6 +64,11 @@ const char *IdealGraphPrinter::BYTECODES_ELEMENT = "bytecodes";
 const char *IdealGraphPrinter::METHOD_BCI_PROPERTY = "bci";
 const char *IdealGraphPrinter::METHOD_SHORT_NAME_PROPERTY = "shortName";
 const char *IdealGraphPrinter::CONTROL_FLOW_ELEMENT = "controlFlow";
+const char *IdealGraphPrinter::GRAPH_STATES_ELEMENT = "graphStates";
+const char *IdealGraphPrinter::STATE_ELEMENT = "state";
+const char *IdealGraphPrinter::DIFFERENCE_ELEMENT = "difference";
+const char *IdealGraphPrinter::DIFFERENCE_VALUE_PROPERTY = "value";
+const char *IdealGraphPrinter::VISIBLE_NODES_ELEMENT = "visibleNodes";
 const char *IdealGraphPrinter::BLOCK_NAME_PROPERTY = "name";
 const char *IdealGraphPrinter::BLOCK_ELEMENT = "block";
 const char *IdealGraphPrinter::SUCCESSORS_ELEMENT = "successors";
@@ -782,7 +787,7 @@ void IdealGraphPrinter::print_graph(const char *name) {
 }
 
 // Print current ideal graph
-void IdealGraphPrinter::print(const char *name, Node *node, GrowableArray<const Node *>  &visible_nodes) {
+void IdealGraphPrinter::print(const char *name, Node *node, GrowableArray<const Node*>  &visible_nodes) {
 
   if (!_current_method || !_should_send_method || node == nullptr) return;
 
@@ -837,6 +842,24 @@ void IdealGraphPrinter::print(const char *name, Node *node, GrowableArray<const 
       tail(BLOCK_ELEMENT);
     }
     tail(CONTROL_FLOW_ELEMENT);
+  }
+  if (visible_nodes.is_nonempty()) {
+    head(GRAPH_STATES_ELEMENT);
+    {
+      head(STATE_ELEMENT);
+      {
+        begin_head(DIFFERENCE_ELEMENT);
+        print_attr(DIFFERENCE_VALUE_PROPERTY, "0");
+        end_head();
+        for (int i = 0; i < visible_nodes.length(); ++i) {
+          begin_elem(NODE_ELEMENT);
+          print_attr(NODE_ID_PROPERTY, visible_nodes.at(i)->_igv_idx);
+          end_elem();
+        }
+      }
+      tail(STATE_ELEMENT);
+    }
+    tail(GRAPH_STATES_ELEMENT);
   }
   tail(GRAPH_ELEMENT);
   _xml->flush();
