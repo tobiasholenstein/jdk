@@ -24,6 +24,7 @@
  */
 package com.sun.hotspot.igv.connection;
 
+import com.sun.hotspot.igv.data.GraphDocument;
 import com.sun.hotspot.igv.data.serialization.Parser;
 import com.sun.hotspot.igv.data.services.GroupCallback;
 import java.io.IOException;
@@ -32,10 +33,10 @@ import org.openide.util.Exceptions;
 
 public class Client implements Runnable {
     private final SocketChannel socket;
-    private final GroupCallback callback;
+    private final GraphDocument callbackDocument;
 
-    public Client(SocketChannel socket, GroupCallback callback) {
-        this.callback = callback;
+    public Client(SocketChannel socket, GraphDocument callbackDocument) {
+        this.callbackDocument = callbackDocument;
         this.socket = socket;
     }
 
@@ -46,7 +47,7 @@ public class Client implements Runnable {
             final SocketChannel channel = socket;
             channel.configureBlocking(true);
             channel.socket().getOutputStream().write('y');
-            new Parser(channel, null, callback).parse();
+            new Parser(channel, null, callbackDocument).parse();
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         } finally {

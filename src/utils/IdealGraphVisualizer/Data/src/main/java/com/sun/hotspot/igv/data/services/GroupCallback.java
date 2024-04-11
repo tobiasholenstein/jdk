@@ -32,5 +32,5 @@ import com.sun.hotspot.igv.data.Group;
  */
 public interface GroupCallback {
 
-    public void started(Group g);
+    void started(Group g);
 }

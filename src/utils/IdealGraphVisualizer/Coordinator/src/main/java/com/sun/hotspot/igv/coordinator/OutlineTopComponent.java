@@ -229,15 +229,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
     private void initReceivers() {
-
-        final GroupCallback callback = g -> {
-            synchronized(OutlineTopComponent.this) {
-                g.setParent(getDocument());
-                getDocument().addElement(g);
-            }
-        };
-
-        new Server(callback);
+        new Server(document);
     }
 
     @Override

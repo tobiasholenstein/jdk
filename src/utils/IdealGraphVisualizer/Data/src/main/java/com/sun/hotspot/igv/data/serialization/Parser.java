@@ -30,7 +30,6 @@ import com.sun.hotspot.igv.data.serialization.Printer.SerialData;
 import com.sun.hotspot.igv.data.serialization.XMLParser.ElementHandler;
 import com.sun.hotspot.igv.data.serialization.XMLParser.HandoverElementHandler;
 import com.sun.hotspot.igv.data.serialization.XMLParser.TopElementHandler;
-import com.sun.hotspot.igv.data.services.GroupCallback;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -92,7 +91,7 @@ public class Parser implements GraphParser {
     private final TopElementHandler<SerialData<GraphDocument>> xmlData = new TopElementHandler<>();
     private final Map<Group, Boolean> differenceEncoding = new HashMap<>();
     private final Map<Group, InputGraph> lastParsedGraph = new HashMap<>();
-    private final GroupCallback groupCallback;
+    private final GraphDocument callbackDocument;
     private final HashMap<String, Integer> idCache = new HashMap<>();
     private final ArrayList<Pair<String, String>> blockConnections = new ArrayList<>();
     private final ParseMonitor monitor;
@@ -314,7 +313,7 @@ public class Parser implements GraphParser {
                 monitor.setState(group.getName());
             }
 
-            if (groupCallback == null || folder instanceof Group) {
+            if (callbackDocument == null || folder instanceof Group) {
                 folder.addElement(group);
             }
 
@@ -413,18 +412,20 @@ public class Parser implements GraphParser {
 
         @Override
         public void end(String text) {
-            final Group group = getParentObject().data();
-            if (groupCallback != null && group.getParent() instanceof GraphDocument) {
-                groupCallback.started(group);
+            final SerialData<Group> groupSerialData = getParentObject();
+            final Group group = groupSerialData.data();
+            if (callbackDocument != null && group.getParent() instanceof GraphDocument) {
+                group.setParent(callbackDocument);
+                callbackDocument.addElement(group);
             }
         }
     };
     public Parser(ReadableByteChannel channel) {
         this(channel, null, null);
     }
-    public Parser(ReadableByteChannel channel, ParseMonitor monitor, GroupCallback groupCallback) {
+    public Parser(ReadableByteChannel channel, ParseMonitor monitor, GraphDocument callbackDocument) {
 
-        this.groupCallback = groupCallback;
+        this.callbackDocument = callbackDocument;
         this.monitor = monitor;
         this.channel = channel;
 
