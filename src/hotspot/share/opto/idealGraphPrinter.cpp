@@ -50,6 +50,7 @@ const char *IdealGraphPrinter::COMPILATION_OSR_PROPERTY = "osr";
 const char *IdealGraphPrinter::METHOD_NAME_PROPERTY = "name";
 const char *IdealGraphPrinter::METHOD_IS_PUBLIC_PROPERTY = "public";
 const char *IdealGraphPrinter::METHOD_IS_STATIC_PROPERTY = "static";
+const char *IdealGraphPrinter::FALSE_VALUE = "false";
 const char *IdealGraphPrinter::TRUE_VALUE = "true";
 const char *IdealGraphPrinter::NODE_NAME_PROPERTY = "name";
 const char *IdealGraphPrinter::NODE_ID_PROPERTY = "id";
@@ -69,6 +70,7 @@ const char *IdealGraphPrinter::STATE_ELEMENT = "state";
 const char *IdealGraphPrinter::DIFFERENCE_ELEMENT = "difference";
 const char *IdealGraphPrinter::DIFFERENCE_VALUE_PROPERTY = "value";
 const char *IdealGraphPrinter::VISIBLE_NODES_ELEMENT = "visibleNodes";
+const char *IdealGraphPrinter::ALL_PROPERTY = "all";
 const char *IdealGraphPrinter::BLOCK_NAME_PROPERTY = "name";
 const char *IdealGraphPrinter::BLOCK_ELEMENT = "block";
 const char *IdealGraphPrinter::SUCCESSORS_ELEMENT = "successors";
@@ -848,7 +850,10 @@ void IdealGraphPrinter::print(const char *name, Node *node, GrowableArray<const 
     begin_elem(DIFFERENCE_ELEMENT);
     print_attr(DIFFERENCE_VALUE_PROPERTY, "0");
     end_elem();
-    head(VISIBLE_NODES_ELEMENT);
+
+    begin_head(VISIBLE_NODES_ELEMENT);
+    print_attr(ALL_PROPERTY, FALSE_VALUE);
+    end_head();
     for (int i = 0; i < visible_nodes.length(); ++i) {
       begin_elem(NODE_ELEMENT);
       print_attr(NODE_ID_PROPERTY, visible_nodes.at(i)->_igv_idx);

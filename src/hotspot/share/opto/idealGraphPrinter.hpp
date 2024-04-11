@@ -59,6 +59,7 @@ class IdealGraphPrinter : public CHeapObj<mtCompiler> {
   static const char *DIFFERENCE_ELEMENT;
   static const char *DIFFERENCE_VALUE_PROPERTY;
   static const char *VISIBLE_NODES_ELEMENT;
+  static const char *ALL_PROPERTY;
   static const char *COMPILATION_ID_PROPERTY;
   static const char *COMPILATION_OSR_PROPERTY;
   static const char *METHOD_NAME_PROPERTY;
@@ -68,6 +69,7 @@ class IdealGraphPrinter : public CHeapObj<mtCompiler> {
   static const char *SUCCESSOR_ELEMENT;
   static const char *METHOD_IS_PUBLIC_PROPERTY;
   static const char *METHOD_IS_STATIC_PROPERTY;
+  static const char *FALSE_VALUE;
   static const char *TRUE_VALUE;
   static const char *NODE_NAME_PROPERTY;
   static const char *NODE_ID_PROPERTY;
