@@ -2047,8 +2047,12 @@ void PrintBFS::print() {
       print_node(n);
     }
     if (_print_igv) {
-      IdealGraphPrinter* igv_printer = Compile::current()->igv_printer();
-      igv_printer->print("PrintBFS", (Node *) Compile::current()->root(), _print_list);
+      Compile* C = Compile::current();
+      if (C->should_print_igv(0)) {
+        //IdealGraphPrinter* printer = C->igv_printer();
+        IdealGraphPrinter*  printer = new IdealGraphPrinter(C);
+        printer->print("PrintBFS", (Node *) Compile::current()->root(), _print_list);
+      }
     }
   } else {
     _output->print_cr("No nodes to print.");

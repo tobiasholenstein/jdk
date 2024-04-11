@@ -783,7 +783,6 @@ void IdealGraphPrinter::print_graph(const char *name) {
     ResourceMark rm;
     GrowableArray<const Node*> empty_list;
     print(name, (Node *) C->root(), empty_list);
-
 }
 
 // Print current ideal graph
@@ -846,14 +845,16 @@ void IdealGraphPrinter::print(const char *name, Node *node, GrowableArray<const 
   if (visible_nodes.is_nonempty()) {
     head(GRAPH_STATES_ELEMENT);
     head(STATE_ELEMENT);
-    begin_head(DIFFERENCE_ELEMENT);
+    begin_elem(DIFFERENCE_ELEMENT);
     print_attr(DIFFERENCE_VALUE_PROPERTY, "0");
-    end_head();
+    end_elem();
+    head(VISIBLE_NODES_ELEMENT);
     for (int i = 0; i < visible_nodes.length(); ++i) {
       begin_elem(NODE_ELEMENT);
       print_attr(NODE_ID_PROPERTY, visible_nodes.at(i)->_igv_idx);
       end_elem();
     }
+    tail(VISIBLE_NODES_ELEMENT);
     tail(STATE_ELEMENT);
     tail(GRAPH_STATES_ELEMENT);
   }
