@@ -228,7 +228,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
     private void initReceivers() {
-        new Server(document);
+        new Server(document, this::loadContext);
     }
 
     @Override
