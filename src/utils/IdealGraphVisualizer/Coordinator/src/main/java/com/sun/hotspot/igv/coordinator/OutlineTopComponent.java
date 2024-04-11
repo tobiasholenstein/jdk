@@ -528,10 +528,8 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             };
             try {
                 if (file.getName().endsWith(".xml")) {
-                    final Parser parser = new Parser(channel, monitor, null);
+                    final Parser parser = new Parser(channel, monitor, document);
                     final SerialData<GraphDocument> parsedData = parser.parse();
-                    final GraphDocument parsedDoc = parsedData.data();
-                    getDocument().addGraphDocument(parsedDoc);
 
                     for (Node child : manager.getRootContext().getChildren().getNodes(true)) {
                         // Nodes a lazily created. By expanding and collapsing they are all initialized
