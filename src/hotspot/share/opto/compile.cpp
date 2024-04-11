@@ -5340,13 +5340,19 @@ void Compile::igv_print_method_to_file(const char* phase_name, bool append) {
 }
 
 void Compile::igv_print_method_to_network(const char* phase_name) {
+  ResourceMark rm;
+  GrowableArray<const Node*> empty_list;
+  igv_print_graph_to_network(phase_name, (Node *) C->root(), empty_list);
+}
+
+void Compile::igv_print_graph_to_network(const char *name, Node *node, GrowableArray<const Node*>  &visible_nodes) {
   if (_debug_network_printer == nullptr) {
     _debug_network_printer = new IdealGraphPrinter(C);
   } else {
     _debug_network_printer->update_compiled_method(C->method());
   }
   tty->print_cr("Method printed over network stream to IGV");
-  _debug_network_printer->print_graph(phase_name);
+  _debug_network_printer->print(name, (Node *) Compile::current()->root(), visible_nodes);
 }
 #endif
 
