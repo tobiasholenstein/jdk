@@ -34,7 +34,6 @@ import com.sun.hotspot.igv.data.serialization.Printer;
 import com.sun.hotspot.igv.data.serialization.Printer.GraphContext;
 import com.sun.hotspot.igv.data.serialization.Printer.SerialData;
 import com.sun.hotspot.igv.data.services.GraphViewer;
-import com.sun.hotspot.igv.data.services.GroupCallback;
 import com.sun.hotspot.igv.data.services.InputGraphProvider;
 import com.sun.hotspot.igv.settings.Settings;
 import com.sun.hotspot.igv.util.LookupHistory;
@@ -458,32 +457,30 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
     }
 
     /**
-     * Loads and opens the given set of graph contexts (opened graphs and visible nodes).
+     * Loads and opens the given a graph contexts (opened graphs and visible nodes).
      */
-    private void loadContexts(Set<GraphContext> contexts) {
+    private void loadContext(GraphContext context) {
         RP.post(() -> {
             final GraphViewer viewer = Lookup.getDefault().lookup(GraphViewer.class);
             assert viewer != null;
-            for (GraphContext context : contexts) {
 
-                final int difference = context.posDiff().get();
-                final Set<Integer> visibleNodes = context.visibleNodes();
-                final InputGraph firstGraph = context.inputGraph();
+            final int difference = context.posDiff().get();
+            final Set<Integer> visibleNodes = context.visibleNodes();
+            final InputGraph firstGraph = context.inputGraph();
 
-                SwingUtilities.invokeLater(() -> {
-                    InputGraph openedGraph = viewer.view(firstGraph, true);
-                    if (openedGraph != null) {
-                        EditorTopComponent etc = EditorTopComponent.findEditorForGraph(firstGraph);
-                        if (etc != null) {
-                            etc.getModel().showOnly(visibleNodes);
-                            if (difference > 0) {
-                                int firstGraphIdx = firstGraph.getIndex();
-                                etc.getModel().setPositions(firstGraphIdx, firstGraphIdx + difference);
-                            }
+            SwingUtilities.invokeLater(() -> {
+                InputGraph openedGraph = viewer.view(firstGraph, true);
+                if (openedGraph != null) {
+                    EditorTopComponent etc = EditorTopComponent.findEditorForGraph(firstGraph);
+                    if (etc != null) {
+                        etc.getModel().showOnly(visibleNodes);
+                        if (difference > 0) {
+                            int firstGraphIdx = firstGraph.getIndex();
+                            etc.getModel().setPositions(firstGraphIdx, firstGraphIdx + difference);
                         }
                     }
-                });
-            }
+                }
+            });
         });
     }
 
@@ -528,7 +525,7 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
             };
             try {
                 if (file.getName().endsWith(".xml")) {
-                    final Parser parser = new Parser(channel, monitor, document);
+                    final Parser parser = new Parser(channel, monitor, document, loadContext ? this::loadContext : null);
                     final SerialData<GraphDocument> parsedData = parser.parse();
 
                     for (Node child : manager.getRootContext().getChildren().getNodes(true)) {
@@ -537,9 +534,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                         ((BeanTreeView) this.treeView).collapseNode(child);
                     }
 
-                    if (loadContext) {
-                        loadContexts(parsedData.contexts());
-                    }
                     SwingUtilities.invokeLater(this::requestActive);
                 }
             } catch (IOException ex) {

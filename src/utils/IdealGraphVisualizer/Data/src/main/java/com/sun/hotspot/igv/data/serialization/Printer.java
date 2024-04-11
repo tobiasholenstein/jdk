@@ -260,4 +260,8 @@ public class Printer {
             return data.getProperties();
         }
     }
+
+    public interface GraphContextAction {
+        void performAction(GraphContext context);
+    }
 }

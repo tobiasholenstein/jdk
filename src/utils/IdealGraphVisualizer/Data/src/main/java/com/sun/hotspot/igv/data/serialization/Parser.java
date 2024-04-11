@@ -27,6 +27,7 @@ import com.sun.hotspot.igv.data.Properties;
 import com.sun.hotspot.igv.data.*;
 import com.sun.hotspot.igv.data.serialization.Printer.GraphContext;
 import com.sun.hotspot.igv.data.serialization.Printer.SerialData;
+import com.sun.hotspot.igv.data.serialization.Printer.GraphContextAction;
 import com.sun.hotspot.igv.data.serialization.XMLParser.ElementHandler;
 import com.sun.hotspot.igv.data.serialization.XMLParser.HandoverElementHandler;
 import com.sun.hotspot.igv.data.serialization.XMLParser.TopElementHandler;
@@ -92,6 +93,7 @@ public class Parser implements GraphParser {
     private final Map<Group, Boolean> differenceEncoding = new HashMap<>();
     private final Map<Group, InputGraph> lastParsedGraph = new HashMap<>();
     private final GraphDocument callbackDocument;
+    private final GraphContextAction contextAction;
     private final HashMap<String, Integer> idCache = new HashMap<>();
     private final ArrayList<Pair<String, String>> blockConnections = new ArrayList<>();
     private final ParseMonitor monitor;
@@ -139,7 +141,9 @@ public class Parser implements GraphParser {
             SerialData<InputGraph> data = getParentObject();
             InputGraph inputGraph = data.data();
             GraphContext graphContext = new GraphContext(inputGraph, new AtomicInteger(0), new HashSet<>());
-            data.contexts().add(graphContext);
+            if (contextAction != null) {
+                contextAction.performAction(graphContext);
+            }
             return graphContext;
         }
     };
@@ -420,12 +424,10 @@ public class Parser implements GraphParser {
             }
         }
     };
-    public Parser(ReadableByteChannel channel) {
-        this(channel, null, null);
-    }
-    public Parser(ReadableByteChannel channel, ParseMonitor monitor, GraphDocument callbackDocument) {
 
+    public Parser(ReadableByteChannel channel, ParseMonitor monitor, GraphDocument callbackDocument, GraphContextAction contextAction) {
         this.callbackDocument = callbackDocument;
+        this.contextAction = contextAction;
         this.monitor = monitor;
         this.channel = channel;
 
