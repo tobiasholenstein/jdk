@@ -51,7 +51,6 @@ public class Server implements PreferenceChangeListener {
         this.graphDocument = graphDocument;
         this.contextAction = contextAction;
         port = Integer.parseInt(Settings.get().get(Settings.PORT, Settings.PORT_DEFAULT));
-        startServer();
         Settings.get().addPreferenceChangeListener(this);
     }
 
