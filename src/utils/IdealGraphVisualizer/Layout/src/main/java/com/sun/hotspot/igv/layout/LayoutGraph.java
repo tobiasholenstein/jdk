@@ -186,6 +186,22 @@ public class LayoutGraph {
         return findRootVertices(new HashSet<>());
     }
 
+    public Set<Link> getInputLinks(Vertex vertex) {
+        Set<Link> inputLinks = new HashSet<>();
+        for (Port inputPort : getInputPorts(vertex)) {
+            inputLinks.addAll(getPortLinks(inputPort));
+        }
+        return inputLinks;
+    }
+
+    public Set<Link> getOutputLinks(Vertex vertex) {
+        Set<Link> outputLinks = new HashSet<>();
+        for (Port outputPort : getOutputPorts(vertex)) {
+            outputLinks.addAll(getPortLinks(outputPort));
+        }
+        return outputLinks;
+    }
+
     public SortedSet<Cluster> getClusters() {
 
         SortedSet<Cluster> clusters = new TreeSet<>();

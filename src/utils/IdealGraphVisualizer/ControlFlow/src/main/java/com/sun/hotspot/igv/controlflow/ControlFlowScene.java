@@ -118,6 +118,10 @@ public class ControlFlowScene extends GraphScene<InputBlock, InputBlockEdge> imp
         SceneLayout sceneLayout = LayoutFactory.createSceneGraphLayout(this, layout);
         sceneLayout.invokeLayout();
 
+        //Reset color to default
+        for (Widget widget : mainLayer.getChildren()) {
+            widget.setBackground(BlockWidget.DEFAULT_COLOR);
+        }
         validate();
     }
 
@@ -132,14 +136,20 @@ public class ControlFlowScene extends GraphScene<InputBlock, InputBlockEdge> imp
     private void selectionChanged() {
         InputGraphProvider p = LookupHistory.getLast(InputGraphProvider.class);
         if (p != null) {
+            //Reset color to default
+            for (Widget widget : mainLayer.getChildren()) {
+                widget.setBackground(BlockWidget.DEFAULT_COLOR);
+            }
             Set<InputNode> inputNodes = new HashSet<>();
             for (BlockWidget w : selection) {
                 inputNodes.addAll(w.getBlock().getNodes());
+                w.setBackground(BlockWidget.SELECTED_COLOR);
             }
             p.clearSelectedNodes();
             p.addSelectedNodes(inputNodes, true);
             p.centerSelectedNodes();
         }
+        validate();
     }
 
     private void addToSelection(BlockWidget widget) {

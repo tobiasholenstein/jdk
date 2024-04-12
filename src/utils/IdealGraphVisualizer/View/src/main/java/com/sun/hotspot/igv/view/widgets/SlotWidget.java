@@ -25,7 +25,6 @@ package com.sun.hotspot.igv.view.widgets;
 
 import com.sun.hotspot.igv.graph.Diagram;
 import com.sun.hotspot.igv.graph.Figure;
-import com.sun.hotspot.igv.graph.OutputSlot;
 import com.sun.hotspot.igv.graph.Slot;
 import com.sun.hotspot.igv.util.DoubleClickHandler;
 import com.sun.hotspot.igv.view.DiagramScene;
@@ -44,13 +43,13 @@ import org.netbeans.api.visual.widget.Widget;
  */
 public abstract class SlotWidget extends Widget implements DoubleClickHandler {
 
-    private Slot slot;
-    private FigureWidget figureWidget;
+    private final Slot slot;
+    private final FigureWidget figureWidget;
     protected static double TEXT_ZOOM_FACTOR = 0.9;
     protected static double ZOOM_FACTOR = 0.6;
-    private DiagramScene diagramScene;
+    private final DiagramScene diagramScene;
 
-    public SlotWidget(Slot slot, DiagramScene scene, Widget parent, FigureWidget fw) {
+    public SlotWidget(Slot slot, DiagramScene scene, FigureWidget fw) {
         super(scene);
         this.diagramScene = scene;
         this.slot = slot;
@@ -60,12 +59,14 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
         }
         // No clipping, to let input slots draw gap markers outside their bounds.
         this.setCheckClipping(false);
-        parent.addChild(this);
-
-        Point p = slot.getRelativePosition();
-        p.x -= this.calculateClientArea().width / 2;
-        p.y += yOffset();
-        this.setPreferredLocation(p);
+        fw.addChild(this);
+        if (slot.shouldShowName()) {
+            Point p = slot.getRelativePosition();
+            p.x -= slot.getWidth() / 2;
+            p.y -= slot.getHeight() / 2;
+            p.y += yOffset(); // TODO use fw
+            this.setPreferredLocation(p);
+        }
     }
 
     @Override
@@ -84,13 +85,12 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
 
     @Override
     protected void paintWidget() {
-
         if (getScene().getZoomFactor() < ZOOM_FACTOR) {
             return;
         }
 
         Graphics2D g = this.getGraphics();
-        // g.setColor(Color.DARK_GRAY);
+        assert this.getBounds() != null;
         int w = this.getBounds().width;
         int h = this.getBounds().height;
 
@@ -131,7 +131,6 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
             }
 
         } else {
-
             if (this.getSlot().getConnections().isEmpty() &&
                 !getFigureWidget().getFigure().getDiagram().isCFG()) {
                 if (this.getState().isHighlighted()) {
@@ -140,29 +139,17 @@ public abstract class SlotWidget extends Widget implements DoubleClickHandler {
                     g.setColor(Color.BLACK);
                 }
                 int r = 2;
-                if (slot instanceof OutputSlot) {
-                    g.fillOval(w / 2 - r, Figure.SLOT_WIDTH - Figure.SLOT_START - r, 2 * r, 2 * r);
-                } else {
-                    g.fillOval(w / 2 - r, Figure.SLOT_START - r, 2 * r, 2 * r);
-                }
-            } else {
-                // Do not paint a slot with connections.
+                g.fillOval(w / 2 - r, h / 2 - r, 2 * r, 2 * r);
             }
         }
     }
 
     @Override
     protected Rectangle calculateClientArea() {
-        return new Rectangle(0, 0, slot.getWidth(), Figure.SLOT_WIDTH);
+        return new Rectangle(0, 0, slot.getWidth(), slot.getHeight());
     }
-
-    protected abstract int calculateSlotWidth();
 
     protected abstract int yOffset();
-
-    protected int calculateWidth(int count) {
-        return getFigureWidget().getFigure().getWidth() / count;
-    }
 
     @Override
     public void handleDoubleClick(Widget w, WidgetAction.WidgetMouseEvent e) {

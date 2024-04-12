@@ -24,35 +24,30 @@
 package com.sun.hotspot.igv.hierarchicallayout;
 
 import com.sun.hotspot.igv.layout.*;
-import java.awt.Point;
-import java.awt.Rectangle;
+import com.sun.hotspot.igv.layout.LayoutManager;
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 /**
  *
  * @author Thomas Wuerthinger
  */
-public class HierarchicalClusterLayoutManager implements LayoutManager {
+public class HierarchicalClusterLayoutManager extends LayoutManager {
 
-    private HierarchicalLayoutManager.Combine combine;
-    private LayoutManager subManager = new HierarchicalLayoutManager(combine);
-    private LayoutManager manager = new HierarchicalLayoutManager(combine);
-    private static final boolean TRACE = false;
+    private final LayoutManager subManager;
+    private final LayoutManager manager;
 
-    public HierarchicalClusterLayoutManager(HierarchicalLayoutManager.Combine combine) {
-        this.combine = combine;
+    public HierarchicalClusterLayoutManager() {
+        this.manager =  new NewHierarchicalLayoutManager();
+        this.subManager =  new NewHierarchicalLayoutManager();
     }
 
-    public void doLayout(LayoutGraph graph, Set<? extends Link> importantLinks) {
-        doLayout(graph);
-    }
-
-    public void setSubManager(LayoutManager manager) {
-        this.subManager = manager;
-    }
-
-    public void setManager(LayoutManager manager) {
-        this.manager = manager;
+    @Override
+    public void setCutEdges(boolean enable) {
+        manager.setCutEdges(enable);
+        subManager.setCutEdges(enable);
+        maxLayerLength = enable ? 10 : -1;
     }
 
     public void doLayout(LayoutGraph graph) {
@@ -81,7 +76,14 @@ public class HierarchicalClusterLayoutManager implements LayoutManager {
             clusterOutputSlotHash.put(c, new HashMap<>());
             clusterOutputSlotSet.put(c, new TreeSet<>());
             clusterInputSlotSet.put(c, new TreeSet<>());
-            ClusterNode cn = new ClusterNode(c, "" + z);
+
+            String blockLabel = "B" + c;
+            Canvas canvas = new Canvas();
+            FontMetrics fontMetrics = canvas.getFontMetrics(TITLE_FONT);
+            Dimension emptySize = new Dimension(fontMetrics.stringWidth(blockLabel) + ClusterNode.PADDING * 2,
+                    fontMetrics.getHeight() + ClusterNode.PADDING * 2);
+            ClusterNode cn = new ClusterNode(c, "" + z, fontMetrics.getHeight(), emptySize);
+
             clusterNodes.put(c, cn);
             clusterNodeSet.add(cn);
             z++;
@@ -89,9 +91,7 @@ public class HierarchicalClusterLayoutManager implements LayoutManager {
 
         // Add cluster edges
         for (Cluster c : cluster) {
-
             ClusterNode start = clusterNodes.get(c);
-
             for (Cluster succ : c.getSuccessors()) {
                 ClusterNode end = clusterNodes.get(succ);
                 if (end != null && start != end) {
@@ -109,20 +109,12 @@ public class HierarchicalClusterLayoutManager implements LayoutManager {
         }
 
         for (Link l : graph.getLinks()) {
-
             Port fromPort = l.getFrom();
             Port toPort = l.getTo();
             Vertex fromVertex = fromPort.getVertex();
             Vertex toVertex = toPort.getVertex();
             Cluster fromCluster = fromVertex.getCluster();
             Cluster toCluster = toVertex.getCluster();
-
-            Port samePort = null;
-            if (combine == HierarchicalLayoutManager.Combine.SAME_INPUTS) {
-                samePort = toPort;
-            } else if (combine == HierarchicalLayoutManager.Combine.SAME_OUTPUTS) {
-                samePort = fromPort;
-            }
 
             assert listsConnection.containsKey(fromCluster);
             assert listsConnection.containsKey(toCluster);
@@ -131,23 +123,19 @@ public class HierarchicalClusterLayoutManager implements LayoutManager {
                 listsConnection.get(fromCluster).add(l);
                 clusterNodes.get(fromCluster).addSubEdge(l);
             } else {
-                ClusterInputSlotNode inputSlotNode = null;
-                ClusterOutputSlotNode outputSlotNode = null;
+                ClusterInputSlotNode inputSlotNode;
+                ClusterOutputSlotNode outputSlotNode;
 
-                if (samePort != null) {
-                    outputSlotNode = clusterOutputSlotHash.get(fromCluster).get(samePort);
-                    inputSlotNode = clusterInputSlotHash.get(toCluster).get(samePort);
-                }
+                outputSlotNode = clusterOutputSlotHash.get(fromCluster).get(fromPort);
+                inputSlotNode = clusterInputSlotHash.get(toCluster).get(fromPort);
 
                 if (outputSlotNode == null) {
-                    outputSlotNode = new ClusterOutputSlotNode(clusterNodes.get(fromCluster), "Out " + fromCluster.toString() + " " + samePort);
+                    outputSlotNode = new ClusterOutputSlotNode(clusterNodes.get(fromCluster), "Out " + fromCluster.toString() + " " + fromPort);
                     clusterOutputSlotSet.get(fromCluster).add(outputSlotNode);
                     ClusterOutgoingConnection conn = new ClusterOutgoingConnection(outputSlotNode, l);
                     outputSlotNode.setOutgoingConnection(conn);
                     clusterNodes.get(fromCluster).addSubEdge(conn);
-                    if (samePort != null) {
-                        clusterOutputSlotHash.get(fromCluster).put(samePort, outputSlotNode);
-                    }
+                    clusterOutputSlotHash.get(fromCluster).put(fromPort, outputSlotNode);
 
                     linkClusterOutgoingConnection.put(l, conn);
                 } else {
@@ -155,13 +143,13 @@ public class HierarchicalClusterLayoutManager implements LayoutManager {
                 }
 
                 if (inputSlotNode == null) {
-                    inputSlotNode = new ClusterInputSlotNode(clusterNodes.get(toCluster), "In " + toCluster.toString() + " " + samePort);
+                    inputSlotNode = new ClusterInputSlotNode(clusterNodes.get(toCluster), "In " + toCluster.toString() + " " + fromPort);
                     clusterInputSlotSet.get(toCluster).add(inputSlotNode);
                 }
 
                 ClusterIngoingConnection conn = new ClusterIngoingConnection(inputSlotNode, l);
                 clusterNodes.get(toCluster).addSubEdge(conn);
-                clusterInputSlotHash.get(toCluster).put(samePort, inputSlotNode);
+                clusterInputSlotHash.get(toCluster).put(fromPort, inputSlotNode);
 
                 linkClusterIngoingConnection.put(l, conn);
 
@@ -172,16 +160,9 @@ public class HierarchicalClusterLayoutManager implements LayoutManager {
             }
         }
 
-        Timing t = null;
-
-        if (TRACE) {
-            t = new Timing("Child timing");
-            t.start();
-        }
-
         for (Cluster c : cluster) {
             ClusterNode n = clusterNodes.get(c);
-            subManager.doLayout(new LayoutGraph(n.getSubEdges(), n.getSubNodes()), new HashSet<>());
+            subManager.doLayout(new LayoutGraph(n.getSubEdges(), n.getSubNodes()));
             n.updateSize();
         }
 
@@ -191,22 +172,14 @@ public class HierarchicalClusterLayoutManager implements LayoutManager {
             ((ClusterNode) v).setRoot(true);
         }
 
-        manager.doLayout(new LayoutGraph(clusterEdges, clusterNodeSet), interClusterEdges);
+        manager.doLayout(new LayoutGraph(clusterEdges, clusterNodeSet));
 
         for (Cluster c : cluster) {
             ClusterNode n = clusterNodes.get(c);
             c.setBounds(new Rectangle(n.getPosition(), n.getSize()));
         }
 
-        // TODO: handle case where blocks are not fully connected
-
-        if (TRACE) {
-            t.stop();
-            t.print();
-        }
-
         for (Link l : graph.getLinks()) {
-
             if (linkInterClusterConnection.containsKey(l)) {
                 ClusterOutgoingConnection conn1 = linkClusterOutgoingConnection.get(l);
                 InterClusterConnection conn2 = linkInterClusterConnection.get(l);

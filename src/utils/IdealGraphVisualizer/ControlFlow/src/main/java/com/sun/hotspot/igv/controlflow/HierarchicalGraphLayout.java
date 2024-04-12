@@ -23,7 +23,7 @@
  */
 package com.sun.hotspot.igv.controlflow;
 
-import com.sun.hotspot.igv.hierarchicallayout.HierarchicalLayoutManager;
+import com.sun.hotspot.igv.hierarchicallayout.NewHierarchicalLayoutManager;
 import com.sun.hotspot.igv.layout.*;
 import java.awt.Dimension;
 import java.awt.Point;
@@ -109,6 +109,16 @@ public class HierarchicalGraphLayout<N, E> extends GraphLayout<N, E> {
             return null;
         }
 
+        @Override
+        public int getID() {
+            return 0;
+        }
+
+        @Override
+        public int getPrority() {
+            return 0;
+        }
+
         public Dimension getSize() {
             Widget w = graph.getScene().findWidget(node);
             assert w.getBounds() != null;
@@ -158,7 +168,7 @@ public class HierarchicalGraphLayout<N, E> extends GraphLayout<N, E> {
             links.add(l);
         }
 
-        HierarchicalLayoutManager m = new HierarchicalLayoutManager(HierarchicalLayoutManager.Combine.NONE);
+        NewHierarchicalLayoutManager m = new NewHierarchicalLayoutManager(false);
 
         LayoutGraph layoutGraph = new LayoutGraph(links, vertices);
         m.doLayout(layoutGraph);
