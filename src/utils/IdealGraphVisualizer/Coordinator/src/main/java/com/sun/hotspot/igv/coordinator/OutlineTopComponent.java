@@ -471,7 +471,6 @@ public final class OutlineTopComponent extends TopComponent implements ExplorerM
                 if (openedGraph != null) {
                     EditorTopComponent etc = EditorTopComponent.findEditorForGraph(firstGraph);
                     if (etc != null) {
-                        System.out.println("etc");
                         if (showAll) {
                             etc.getModel().setHiddenNodes(new HashSet<>());
                         } else {
