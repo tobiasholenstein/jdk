@@ -51,9 +51,6 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
     }
 
     public void doLayout(LayoutGraph graph) {
-
-        assert graph.verify();
-
         HashMap<Cluster, List<Link>> listsConnection = new HashMap<>();
         HashMap<Cluster, HashMap<Port, ClusterInputSlotNode>> clusterInputSlotHash = new HashMap<>();
         HashMap<Cluster, HashMap<Port, ClusterOutputSlotNode>> clusterOutputSlotHash = new HashMap<>();

@@ -43,7 +43,6 @@ public class LayoutGraph {
 
     public LayoutGraph(Set<? extends Link> links, Set<? extends Vertex> additionalVertices) {
         this.links = links;
-        assert verify();
 
         vertices = new TreeSet<>();
         portLinks = new HashMap<>(links.size());
@@ -61,8 +60,8 @@ public class LayoutGraph {
 
             if (!vertices.contains(v1)) {
 
-                outputPorts.put(v1, new HashSet<>(1));
-                inputPorts.put(v1, new HashSet<>(3));
+                outputPorts.put(v1, new HashSet<>());
+                inputPorts.put(v1, new HashSet<>());
                 vertices.add(v1);
                 assert vertices.contains(v1);
             }
@@ -70,17 +69,17 @@ public class LayoutGraph {
             if (!vertices.contains(v2)) {
                 vertices.add(v2);
                 assert vertices.contains(v2);
-                outputPorts.put(v2, new HashSet<>(1));
-                inputPorts.put(v2, new HashSet<>(3));
+                outputPorts.put(v2, new HashSet<>());
+                inputPorts.put(v2, new HashSet<>());
             }
 
             if (!portLinks.containsKey(p)) {
-                HashSet<Link> hashSet = new HashSet<>(3);
+                HashSet<Link> hashSet = new HashSet<>();
                 portLinks.put(p, hashSet);
             }
 
             if (!portLinks.containsKey(p2)) {
-                portLinks.put(p2, new HashSet<>(3));
+                portLinks.put(p2, new HashSet<>());
             }
 
             outputPorts.get(v1).add(p);
@@ -92,8 +91,8 @@ public class LayoutGraph {
 
         for (Vertex v : additionalVertices) {
             if (!vertices.contains(v)) {
-                outputPorts.put(v, new HashSet<>(1));
-                inputPorts.put(v, new HashSet<>(3));
+                outputPorts.put(v, new HashSet<>());
+                inputPorts.put(v, new HashSet<>());
                 vertices.add(v);
             }
         }
@@ -115,16 +114,11 @@ public class LayoutGraph {
         return links;
     }
 
-    public boolean verify() {
-        return true;
-    }
-
     public SortedSet<Vertex> getVertices() {
         return vertices;
     }
 
     private void markNotRoot(Set<Vertex> notRootSet, Vertex v, Vertex startingVertex) {
-
         if (notRootSet.contains(v)) {
             return;
         }
@@ -144,23 +138,12 @@ public class LayoutGraph {
         }
     }
 
-    // Returns a set of vertices with the following properties:
-    // - All Vertices in the set startingRoots are elements of the set.
-    // - When starting a DFS at every vertex in the set, every vertex of the
-    //   whole graph is visited.
-    public Set<Vertex> findRootVertices(Set<Vertex> startingRoots) {
-
+    public Set<Vertex> findRootVertices() {
         Set<Vertex> notRootSet = new HashSet<>();
-        for (Vertex v : startingRoots) {
-            if (!notRootSet.contains(v)) {
-                markNotRoot(notRootSet, v, v);
-            }
-        }
-
         Set<Vertex> tmpVertices = getVertices();
         for (Vertex v : tmpVertices) {
             if (!notRootSet.contains(v)) {
-                if (this.getInputPorts(v).size() == 0) {
+                if (this.getInputPorts(v).isEmpty()) {
                     markNotRoot(notRootSet, v, v);
                 }
             }
@@ -178,12 +161,7 @@ public class LayoutGraph {
                 result.add(v);
             }
         }
-        assert tmpVertices.size() == 0 || result.size() > 0;
         return result;
-    }
-
-    public Set<Vertex> findRootVertices() {
-        return findRootVertices(new HashSet<>());
     }
 
     public Set<Link> getInputLinks(Vertex vertex) {
@@ -203,7 +181,6 @@ public class LayoutGraph {
     }
 
     public SortedSet<Cluster> getClusters() {
-
         SortedSet<Cluster> clusters = new TreeSet<>();
         for (Vertex v : getVertices()) {
             if (v.getCluster() != null) {
