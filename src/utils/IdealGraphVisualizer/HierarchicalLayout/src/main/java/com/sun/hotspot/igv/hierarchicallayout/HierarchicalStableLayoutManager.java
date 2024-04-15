@@ -39,12 +39,12 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     private Set<? extends Link> currentLinks;
     private Set<Link> reversedLinks;
     private List<LayoutNode> nodes;
-    private final HashMap<Vertex, LayoutNode> vertexToLayoutNode;
+    private final LinkedHashMap<Vertex, LayoutNode> vertexToLayoutNode;
     private HashMap<Link, List<Point>> reversedLinkStartPoints;
     private HashMap<Link, List<Point>> reversedLinkEndPoints;
     private HashMap<Integer, List<LayoutNode>> layers;
 
-    private final HierarchicalLayoutManager manager;
+    private final NewHierarchicalLayoutManager manager;
     private HashMap<Vertex, VertexAction> vertexToAction;
     private List<VertexAction> vertexActions;
     private List<LinkAction> linkActions;
@@ -93,8 +93,8 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     public HierarchicalStableLayoutManager() {
         oldVertices = new HashSet<>();
         oldLinks = new HashSet<>();
-        manager = new HierarchicalLayoutManager(true);
-        vertexToLayoutNode = new HashMap<>();
+        manager = new NewHierarchicalLayoutManager(true);
+        vertexToLayoutNode = new LinkedHashMap<>();
         nodes = new ArrayList<>();
     }
 
@@ -119,6 +119,67 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
         return Statistics.median(values);
     }
 
+    public static final Comparator<LayoutNode> nodePositionComparator = Comparator.comparingInt(LayoutNode::getPos);
+    public static final Comparator<LayoutNode> nodeProcessingUpComparator = (n1, n2) -> {
+        if (n1.isDummy()) {
+            if (n2.isDummy()) {
+                return 0;
+            }
+            return -1;
+        }
+        if (n2.isDummy()) {
+            return 1;
+        }
+        return n1.getSuccs().size() - n2.getSuccs().size();
+    };
+
+    public static class NodeRow {
+
+        private final TreeSet<LayoutNode> treeSet;
+        private final ArrayList<Integer> space;
+
+        public NodeRow(ArrayList<Integer> space) {
+            treeSet = new TreeSet<>(nodePositionComparator);
+            this.space = space;
+        }
+
+        public int offset(LayoutNode n1, LayoutNode n2) {
+            int v1 = space.get(n1.getPos()) + n1.getWidth();
+            int v2 = space.get(n2.getPos());
+            return v2 - v1;
+        }
+
+        public void insert(LayoutNode n, int pos) {
+
+            SortedSet<LayoutNode> headSet = treeSet.headSet(n);
+
+            LayoutNode leftNeighbor;
+            int minX = Integer.MIN_VALUE;
+            if (!headSet.isEmpty()) {
+                leftNeighbor = headSet.last();
+                minX = leftNeighbor.getX() + leftNeighbor.getWidth() + offset(leftNeighbor, n);
+            }
+
+            if (pos < minX) {
+                n.setX(minX);
+            } else {
+
+                LayoutNode rightNeighbor;
+                SortedSet<LayoutNode> tailSet = treeSet.tailSet(n);
+                int maxX = Integer.MAX_VALUE;
+                if (!tailSet.isEmpty()) {
+                    rightNeighbor = tailSet.first();
+                    maxX = rightNeighbor.getX() - offset(n, rightNeighbor) - n.getWidth();
+                }
+
+                n.setX(Math.min(pos, maxX));
+
+                assert minX <= maxX : minX + " vs " + maxX;
+            }
+
+            treeSet.add(n);
+        }
+    }
     /**
      * Adjust the X-coordinates of the nodes in the given layer, as a new node has
      * been inserted at that layer
@@ -128,7 +189,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
         ArrayList<Integer> space = new ArrayList<>();
         List<LayoutNode> nodeProcessingOrder = new ArrayList<>();
 
-        nodes.sort(HierarchicalLayoutManager.nodePositionComparator);
+        nodes.sort(nodePositionComparator);
 
         int curX = 0;
         for (LayoutNode n : nodes) {
@@ -137,8 +198,8 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             nodeProcessingOrder.add(n);
         }
 
-        nodeProcessingOrder.sort(HierarchicalLayoutManager.nodeProcessingUpComparator);
-        HierarchicalLayoutManager.NodeRow r = new HierarchicalLayoutManager.NodeRow(space);
+        nodeProcessingOrder.sort(nodeProcessingUpComparator);
+        NodeRow r = new NodeRow(space);
         for (LayoutNode n : nodeProcessingOrder) {
             int optimal = calculateOptimalBoth(n);
             r.insert(n, optimal);
@@ -417,8 +478,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
         new ProcessInput().run();
 
         if (shouldRedrawLayout) {
-            // If the layout is too messy it should be redrawn using the static algorithm,
-            // currently HierarchicalLayoutManager
+            // If the layout is too messy it should be redrawn using the static algorithm
             manager.doLayout(new LayoutGraph(links, vertices));
             nodes = manager.getNodes();
             shouldRedrawLayout = false;
@@ -569,7 +629,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             assert layers.containsKey(layer);
 
             List<LayoutNode> layerNodes = layers.get(layer);
-            layerNodes.sort(HierarchicalLayoutManager.nodePositionComparator);
+            layerNodes.sort(nodePositionComparator);
             int edgeCrossings = Integer.MAX_VALUE;
             int optimalPos = -1;
 
