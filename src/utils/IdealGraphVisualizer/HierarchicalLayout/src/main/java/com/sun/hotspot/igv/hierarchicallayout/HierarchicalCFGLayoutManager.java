@@ -42,7 +42,7 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
         // Anticipate block label sizes to dimension blocks appropriately.
         Canvas canvas = new Canvas();
         fontMetrics = canvas.getFontMetrics(TITLE_FONT);
-        this.manager =  new NewHierarchicalLayoutManager();
+        this.manager =  new HierarchicalLayoutManager();
     }
 
     public void setSubManager(LayoutManager manager) {

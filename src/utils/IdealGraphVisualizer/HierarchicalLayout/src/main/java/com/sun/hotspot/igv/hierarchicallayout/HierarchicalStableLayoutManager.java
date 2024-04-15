@@ -44,7 +44,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     private HashMap<Link, List<Point>> reversedLinkEndPoints;
     private HashMap<Integer, List<LayoutNode>> layers;
 
-    private final NewHierarchicalLayoutManager manager;
+    private final HierarchicalLayoutManager manager;
     private HashMap<Vertex, VertexAction> vertexToAction;
     private List<VertexAction> vertexActions;
     private List<LinkAction> linkActions;
@@ -93,7 +93,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     public HierarchicalStableLayoutManager() {
         oldVertices = new HashSet<>();
         oldLinks = new HashSet<>();
-        manager = new NewHierarchicalLayoutManager(true);
+        manager = new HierarchicalLayoutManager(true);
         vertexToLayoutNode = new LinkedHashMap<>();
         nodes = new ArrayList<>();
     }
