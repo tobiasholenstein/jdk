@@ -35,27 +35,25 @@ import java.util.*;
 
 public class HierarchicalLayoutManager extends LayoutManager {
 
-    public static final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = (n1, n2) -> {
-        if (n1.isDummy()) {
-            if (n2.isDummy()) {
-                return 0;
-            }
-            return -1;
-        }
-        if (n2.isDummy()) {
-            return 1;
-        }
-        return n1.getSuccs().size() - n2.getSuccs().size();
-    };
+    public static final Comparator<LayoutNode> LAYOUT_NODE_DEGREE_COMPARATOR = Comparator.comparingInt(LayoutNode::getDegree);
+    public static final Comparator<LayoutNode> LAYOUT_NODE_PRIORITY_COMPARATOR = Comparator.comparingInt(n -> n.getVertex().getPrority());
     public static final Comparator<LayoutNode> NODE_POS_COMPARATOR = Comparator.comparingInt(LayoutNode::getPos);
     public static final Comparator<LayoutNode> NODE_X_COMPARATOR = Comparator.comparingInt(LayoutNode::getX);
     public static final Comparator<LayoutNode> ROOTS_FIRST_COMPARATOR = Comparator.comparingInt(n -> n.getPreds().size());
+    public static final Comparator<LayoutNode> ROOTS_FIRST_VERTEX_COMPARATOR = ROOTS_FIRST_COMPARATOR.thenComparing(LayoutNode::getVertex);
     public static final Comparator<LayoutNode> CROSSING_NODE_COMPARATOR = Comparator.comparingDouble(LayoutNode::getWeightedPosition);
+    public static final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
+    public static final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(n -> n.getPreds().size());
+    public static final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(n -> n.getSuccs().size());
+    public static final Comparator<LayoutNode> DUMMY_NODES_THEN_OPTMAL_X = DUMMY_NODES_FIRST.thenComparing(LayoutNode::getOptimal_x);
+
     public static final Comparator<Link> LINK_COMPARATOR =
             Comparator.comparing((Link l) -> l.getFrom().getVertex())
                     .thenComparing(l -> l.getTo().getVertex())
                     .thenComparingInt(l -> l.getFrom().getRelativePosition().x)
                     .thenComparingInt(l -> l.getTo().getRelativePosition().x);
+
+    public static final Comparator<LayoutEdge> LAYOUT_EDGE_LAYER_COMPARATOR = Comparator.comparingInt(e -> e.getTo().getLayer());
 
     private final boolean combine;
     // Algorithm global datastructures
@@ -1171,7 +1169,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
             for (Map.Entry<Integer, List<LayoutEdge>> portToUnprocessedEdges : portsToUnprocessedEdges.entrySet()) {
                 Integer startPort = portToUnprocessedEdges.getKey();
                 List<LayoutEdge> unprocessedEdges = portToUnprocessedEdges.getValue();
-                unprocessedEdges.sort(Comparator.comparingInt(e -> e.getTo().getLayer()));
+                unprocessedEdges.sort(LAYOUT_EDGE_LAYER_COMPARATOR);
 
                 if (unprocessedEdges.size() == 1) {
                     // process a single edge
@@ -1530,7 +1528,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                 active.clear();
 
                 // Start DFS and reverse back edges
-                layoutNodes.sort(ROOTS_FIRST_COMPARATOR.thenComparing(LayoutNode::getVertex));
+                layoutNodes.sort(ROOTS_FIRST_VERTEX_COMPARATOR);
             }
 
             for (LayoutNode node : layoutNodes) {
@@ -1632,7 +1630,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
             while (!workingList.isEmpty()) {
                 ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
                 if (prioritizeControl) {
-                    workingList.sort(Comparator.comparingInt(v -> v.getVertex().getPrority()));
+                    workingList.sort(LAYOUT_NODE_PRIORITY_COMPARATOR);
                 }
                 for (LayoutNode node : workingList) {
                     for (LayoutEdge succEdge : node.getSuccs()) {
@@ -1676,7 +1674,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
             while (!workingList.isEmpty()) {
                 ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
                 if (prioritizeControl) {
-                    workingList.sort(Comparator.comparingInt(v -> v.getVertex().getPrority()));
+                    workingList.sort(LAYOUT_NODE_PRIORITY_COMPARATOR);
                 }
                 for (LayoutNode node : workingList) {
                     if (node.getLayer() < layer) {
@@ -1730,7 +1728,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
             createLayers();
 
             List<LayoutNode> layoutNodes = getNodes();
-            layoutNodes.sort(Comparator.comparingInt(LayoutNode::getDegree));
+            layoutNodes.sort(LAYOUT_NODE_DEGREE_COMPARATOR);
 
             // Generate initial ordering
             HashSet<LayoutNode> visited = new HashSet<>();
@@ -1946,10 +1944,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
     private class AssignXCoordinates {
 
-        private final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
-        private final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(n -> n.getPreds().size());
-        private final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(n -> n.getSuccs().size());
-        private final Comparator<LayoutNode> DUMMY_NODES_THEN_OPTMMAL_X = DUMMY_NODES_FIRST.thenComparing(LayoutNode::getOptimal_x);
         int[][] space;
         LayoutNode[][] downProcessingOrder;
         LayoutNode[][] upProcessingOrder;
@@ -2034,7 +2028,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
         }
 
         private void processRow(int[] space, LayoutNode[] processingOrder) {
-            Arrays.sort(processingOrder, DUMMY_NODES_THEN_OPTMMAL_X);
+            Arrays.sort(processingOrder, DUMMY_NODES_THEN_OPTMAL_X);
             TreeSet<LayoutNode> treeSet = new TreeSet<>(NODE_POS_COMPARATOR);
             for (LayoutNode node : processingOrder) {
                 int minX = Integer.MIN_VALUE;
