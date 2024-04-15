@@ -1949,7 +1949,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
         private final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
         private final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(n -> n.getPreds().size());
         private final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(n -> n.getSuccs().size());
-        private final Comparator<LayoutNode> DUMMY_NODES_THEN_OPTMMAL_X = DUMMY_NODES_FIRST.thenComparing(n -> n.getOptimal_x());
+        private final Comparator<LayoutNode> DUMMY_NODES_THEN_OPTMMAL_X = DUMMY_NODES_FIRST.thenComparing(LayoutNode::getOptimal_x);
         int[][] space;
         LayoutNode[][] downProcessingOrder;
         LayoutNode[][] upProcessingOrder;
@@ -2035,7 +2035,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
         private void processRow(int[] space, LayoutNode[] processingOrder) {
             Arrays.sort(processingOrder, DUMMY_NODES_THEN_OPTMMAL_X);
-            TreeSet<LayoutNode> treeSet = new TreeSet<>(Comparator.comparingInt(n -> n.getPos()));
+            TreeSet<LayoutNode> treeSet = new TreeSet<>(NODE_POS_COMPARATOR);
             for (LayoutNode node : processingOrder) {
                 int minX = Integer.MIN_VALUE;
                 SortedSet<LayoutNode> headSet = treeSet.headSet(node, false);
