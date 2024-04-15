@@ -484,18 +484,18 @@ public class HierarchicalLayoutManager extends LayoutManager {
         return optimalLayer;
     }
 
-    public void removeEmptyLayers(int emtpyLayerNr) {
+    public void removeEmptyLayers(int emptyLayerNr) {
         for (LayoutNode layoutNode : getLayoutNodes()) {
             for (LayoutEdge predEdge : layoutNode.getPreds()) {
                 assert predEdge.getLink() != null;
             }
         }
-        for (LayoutNode layoutNode : layers[emtpyLayerNr]) {
+        for (LayoutNode layoutNode : layers[emptyLayerNr]) {
             assert layoutNode.isDummy() : "has to be empty layer";
         }
 
-        if (0 < emtpyLayerNr && emtpyLayerNr < layerCount - 1) {
-            LayoutLayer emptyLayer = layers[emtpyLayerNr];
+        if (0 < emptyLayerNr && emptyLayerNr < layerCount - 1) {
+            LayoutLayer emptyLayer = layers[emptyLayerNr];
             for (LayoutNode dummyNode : emptyLayer) {
                 assert dummyNode.isDummy();
                 LayoutEdge predEdge = dummyNode.getPreds().get(0);
@@ -523,22 +523,22 @@ public class HierarchicalLayoutManager extends LayoutManager {
                     assert predEdge.getLink() != null;
                 }
             }
-        } else if (0 == emtpyLayerNr) {
+        } else if (0 == emptyLayerNr) {
             assert layers[0].isEmpty();
-        } else { // emtpyLayerNr = layerCount -1
+        } else { // emptyLayerNr = layerCount -1
             assert 0 != layerCount - 1 || layers[layerCount - 1].isEmpty();
         }
 
         LayoutLayer[] compactedLayers = new LayoutLayer[layerCount - 1];
         // copy upper part from layers to extendedLayers
-        System.arraycopy(layers, 0, compactedLayers, 0, emtpyLayerNr);
+        System.arraycopy(layers, 0, compactedLayers, 0, emptyLayerNr);
         // copy lower part from layers to extendedLayers
-        System.arraycopy(layers, emtpyLayerNr + 1, compactedLayers, emtpyLayerNr, layerCount - emtpyLayerNr - 1);
+        System.arraycopy(layers, emptyLayerNr + 1, compactedLayers, emptyLayerNr, layerCount - emptyLayerNr - 1);
 
         --layerCount;
         layers = compactedLayers;
 
-        for (int l = emtpyLayerNr; l < layerCount; l++) {
+        for (int l = emptyLayerNr; l < layerCount; l++) {
             for (LayoutNode layoutNode : layers[l]) {
                 layoutNode.setLayer(l);
             }
