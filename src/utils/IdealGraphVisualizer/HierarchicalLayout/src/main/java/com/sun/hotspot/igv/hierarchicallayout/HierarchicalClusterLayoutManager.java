@@ -39,8 +39,8 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
     private final LayoutManager manager;
 
     public HierarchicalClusterLayoutManager() {
-        this.manager =  new NewHierarchicalLayoutManager();
-        this.subManager =  new NewHierarchicalLayoutManager();
+        this.manager =  new HierarchicalLayoutManager();
+        this.subManager =  new HierarchicalLayoutManager();
     }
 
     @Override
