@@ -853,7 +853,7 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     private void doClusteredLayout(Set<Connection> edges) {
         HierarchicalClusterLayoutManager clusterLayoutManager = new HierarchicalClusterLayoutManager();
         clusterLayoutManager.setCutEdges(model.getCutEdges());
-        clusterLayoutManager.doLayout(new LayoutGraph(edges));
+        clusterLayoutManager.doLayout(new LayoutGraph(edges, new HashSet<>()));
     }
 
     private void doCFGLayout(Set<Figure> figures, Set<Connection> edges) {

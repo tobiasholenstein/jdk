@@ -44,7 +44,7 @@ public class LayoutGraph {
     public LayoutGraph(Set<? extends Link> links, Set<? extends Vertex> additionalVertices) {
         this.links = links;
 
-        vertices = new TreeSet<>();
+        vertices = new TreeSet<>(additionalVertices);
         portLinks = new HashMap<>(links.size());
         inputPorts = new HashMap<>(links.size());
         outputPorts = new HashMap<>(links.size());
@@ -67,8 +67,6 @@ public class LayoutGraph {
             portLinks.computeIfAbsent(fromPort, k -> new HashSet<>()).add(link);
             portLinks.computeIfAbsent(toPort, k -> new HashSet<>()).add(link);
         }
-
-        vertices.addAll(additionalVertices);
     }
 
     public Set<? extends Link> getLinks() {
