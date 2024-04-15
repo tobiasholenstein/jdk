@@ -484,27 +484,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
         return optimalLayer;
     }
 
-    private int findPosInLayer(int x, int layerNr) {
-        LayoutLayer layer = layers[layerNr];
-
-        // find the position in the new layer at location
-        int newPos = 0;
-        for (int j = 1; j < layer.size(); j++) {
-            LayoutNode leftNode = layer.get(j - 1);
-            LayoutNode rightNode = layer.get(j);
-            if (x < leftNode.getRight()) {
-                newPos = leftNode.getPos();
-                break;
-            } else if (x <= rightNode.getRight()) {
-                newPos = rightNode.getPos();
-                break;
-            } else {
-                newPos = rightNode.getPos() + 1;
-            }
-        }
-        return newPos;
-    }
-
     public void removeEmptyLayers(int emtpyLayerNr) {
         for (LayoutNode layoutNode : getLayoutNodes()) {
             for (LayoutEdge predEdge : layoutNode.getPreds()) {
@@ -573,7 +552,8 @@ public class HierarchicalLayoutManager extends LayoutManager {
     }
 
     public void moveNode(LayoutNode node, int newX, int newLayerNr) {
-        int newPos = findPosInLayer(newX, newLayerNr);
+        LayoutLayer layer = layers[newLayerNr];
+        int newPos = layer.findPosInLayer(newX);
 
         // remove from old layer and update positions in old layer
         int oldLayerNr = node.getLayer();

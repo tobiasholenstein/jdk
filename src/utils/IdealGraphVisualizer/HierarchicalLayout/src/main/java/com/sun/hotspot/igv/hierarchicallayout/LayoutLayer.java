@@ -47,6 +47,25 @@ public class LayoutLayer extends ArrayList<LayoutNode> {
         return super.add(n);
     }
 
+    public int findPosInLayer(int x) {
+        // find the position in the new layer at location
+        int newPos = 0;
+        for (int j = 1; j < this.size(); j++) {
+            LayoutNode leftNode = this.get(j - 1);
+            LayoutNode rightNode = this.get(j);
+            if (x < leftNode.getRight()) {
+                newPos = leftNode.getPos();
+                break;
+            } else if (x <= rightNode.getRight()) {
+                newPos = rightNode.getPos();
+                break;
+            } else {
+                newPos = rightNode.getPos() + 1;
+            }
+        }
+        return newPos;
+    }
+
     public void swap(int i, int j) {
         LayoutNode n1 = get(i);
         LayoutNode n2 = get(j);
