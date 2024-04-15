@@ -93,7 +93,7 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
         }
 
         // Add cluster edges
-        for (Cluster c : cluster) {
+        for (Cluster c : clusters) {
             ClusterNode start = clusterNodes.get(c);
             for (Cluster succ : c.getSuccessors()) {
                 ClusterNode end = clusterNodes.get(succ);
@@ -163,7 +163,7 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
             }
         }
 
-        for (Cluster c : cluster) {
+        for (Cluster c : clusters) {
             ClusterNode n = clusterNodes.get(c);
             subManager.doLayout(new LayoutGraph(n.getSubEdges(), n.getSubNodes()));
             n.updateSize();
@@ -177,7 +177,7 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
 
         manager.doLayout(new LayoutGraph(clusterEdges, clusterNodeSet));
 
-        for (Cluster c : cluster) {
+        for (Cluster c : clusters) {
             ClusterNode n = clusterNodes.get(c);
             c.setBounds(new Rectangle(n.getPosition(), n.getSize()));
         }

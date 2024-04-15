@@ -49,53 +49,26 @@ public class LayoutGraph {
         inputPorts = new HashMap<>(links.size());
         outputPorts = new HashMap<>(links.size());
 
-        for (Link l : links) {
-            if (l.getFrom() == null || l.getTo() == null) {
+        for (Link link : links) {
+            if (link.getFrom() == null || link.getTo() == null) {
                 continue;
             }
-            Port p = l.getFrom();
-            Port p2 = l.getTo();
-            Vertex v1 = p.getVertex();
-            Vertex v2 = p2.getVertex();
+            Port fromPort = link.getFrom();
+            Port toPort = link.getTo();
+            Vertex fromVertex = fromPort.getVertex();
+            Vertex toVertex = toPort.getVertex();
 
-            if (!vertices.contains(v1)) {
+            vertices.add(fromVertex);
+            vertices.add(toVertex);
 
-                outputPorts.put(v1, new HashSet<>());
-                inputPorts.put(v1, new HashSet<>());
-                vertices.add(v1);
-                assert vertices.contains(v1);
-            }
+            outputPorts.computeIfAbsent(fromVertex, k -> new HashSet<>()).add(fromPort);
+            inputPorts.computeIfAbsent(toVertex, k -> new HashSet<>()).add(toPort);
 
-            if (!vertices.contains(v2)) {
-                vertices.add(v2);
-                assert vertices.contains(v2);
-                outputPorts.put(v2, new HashSet<>());
-                inputPorts.put(v2, new HashSet<>());
-            }
-
-            if (!portLinks.containsKey(p)) {
-                HashSet<Link> hashSet = new HashSet<>();
-                portLinks.put(p, hashSet);
-            }
-
-            if (!portLinks.containsKey(p2)) {
-                portLinks.put(p2, new HashSet<>());
-            }
-
-            outputPorts.get(v1).add(p);
-            inputPorts.get(v2).add(p2);
-
-            portLinks.get(p).add(l);
-            portLinks.get(p2).add(l);
+            portLinks.computeIfAbsent(fromPort, k -> new HashSet<>()).add(link);
+            portLinks.computeIfAbsent(toPort, k -> new HashSet<>()).add(link);
         }
 
-        for (Vertex v : additionalVertices) {
-            if (!vertices.contains(v)) {
-                outputPorts.put(v, new HashSet<>());
-                inputPorts.put(v, new HashSet<>());
-                vertices.add(v);
-            }
-        }
+        vertices.addAll(additionalVertices);
     }
 
     public Set<? extends Link> getLinks() {
@@ -113,14 +86,12 @@ public class LayoutGraph {
         if (v != startingVertex) {
             notRootSet.add(v);
         }
-        Set<Port> outPorts = this.outputPorts.get(v);
-        for (Port p : outPorts) {
-            Set<Link> portLinks = this.portLinks.get(p);
-            for (Link l : portLinks) {
-                Port other = l.getTo();
-                Vertex otherVertex = other.getVertex();
-                if (otherVertex != startingVertex) {
-                    markNotRoot(notRootSet, otherVertex, startingVertex);
+        for (Port port : outputPorts.getOrDefault(v, Collections.emptySet())) {
+            for (Link link : portLinks.get(port)) {
+                Port toLink = link.getTo();
+                Vertex toVertex = toLink.getVertex();
+                if (toVertex != startingVertex) {
+                    markNotRoot(notRootSet, toVertex, startingVertex);
                 }
             }
         }
@@ -128,25 +99,24 @@ public class LayoutGraph {
 
     public Set<Vertex> findRootVertices() {
         Set<Vertex> notRootSet = new HashSet<>();
-        Set<Vertex> tmpVertices = getVertices();
-        for (Vertex v : tmpVertices) {
-            if (!notRootSet.contains(v)) {
-                if (this.inputPorts.get(v).isEmpty()) {
-                    markNotRoot(notRootSet, v, v);
+        for (Vertex vertex : vertices) {
+            if (!notRootSet.contains(vertex)) {
+                if (inputPorts.getOrDefault(vertex, Collections.emptySet()).isEmpty()) {
+                    markNotRoot(notRootSet, vertex, vertex);
                 }
             }
         }
 
-        for (Vertex v : tmpVertices) {
-            if (!notRootSet.contains(v)) {
-                markNotRoot(notRootSet, v, v);
+        for (Vertex vertex : vertices) {
+            if (!notRootSet.contains(vertex)) {
+                markNotRoot(notRootSet, vertex, vertex);
             }
         }
 
         Set<Vertex> result = new HashSet<>();
-        for (Vertex v : tmpVertices) {
-            if (!notRootSet.contains(v)) {
-                result.add(v);
+        for (Vertex vertex : vertices) {
+            if (!notRootSet.contains(vertex)) {
+                result.add(vertex);
             }
         }
         return result;
@@ -154,7 +124,7 @@ public class LayoutGraph {
 
     public Set<Link> getInputLinks(Vertex vertex) {
         Set<Link> inputLinks = new HashSet<>();
-        for (Port inputPort : this.inputPorts.get(vertex)) {
+        for (Port inputPort : inputPorts.getOrDefault(vertex, Collections.emptySet())) {
             inputLinks.addAll(portLinks.get(inputPort));
         }
         return inputLinks;
@@ -162,7 +132,7 @@ public class LayoutGraph {
 
     public Set<Link> getOutputLinks(Vertex vertex) {
         Set<Link> outputLinks = new HashSet<>();
-        for (Port outputPort : outputPorts.get(vertex)) {
+        for (Port outputPort : outputPorts.getOrDefault(vertex, Collections.emptySet())) {
             outputLinks.addAll(portLinks.get(outputPort));
         }
         return outputLinks;
