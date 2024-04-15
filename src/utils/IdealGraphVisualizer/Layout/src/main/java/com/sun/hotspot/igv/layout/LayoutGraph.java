@@ -105,12 +105,6 @@ public class LayoutGraph {
             }
         }
 
-        for (Vertex vertex : vertices) {
-            if (!notRootSet.contains(vertex)) {
-                markNotRoot(notRootSet, vertex, vertex);
-            }
-        }
-
         Set<Vertex> result = new HashSet<>();
         for (Vertex vertex : vertices) {
             if (!notRootSet.contains(vertex)) {
@@ -123,7 +117,7 @@ public class LayoutGraph {
     public Set<Link> getInputLinks(Vertex vertex) {
         Set<Link> inputLinks = new HashSet<>();
         for (Port inputPort : inputPorts.getOrDefault(vertex, Collections.emptySet())) {
-            inputLinks.addAll(portLinks.get(inputPort));
+            inputLinks.addAll(portLinks.getOrDefault(inputPort, Collections.emptySet()));
         }
         return inputLinks;
     }
@@ -131,7 +125,7 @@ public class LayoutGraph {
     public Set<Link> getOutputLinks(Vertex vertex) {
         Set<Link> outputLinks = new HashSet<>();
         for (Port outputPort : outputPorts.getOrDefault(vertex, Collections.emptySet())) {
-            outputLinks.addAll(portLinks.get(outputPort));
+            outputLinks.addAll(portLinks.getOrDefault(outputPort, Collections.emptySet()));
         }
         return outputLinks;
     }
