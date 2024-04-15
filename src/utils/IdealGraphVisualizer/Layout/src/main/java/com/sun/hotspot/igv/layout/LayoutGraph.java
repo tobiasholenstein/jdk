@@ -98,18 +98,6 @@ public class LayoutGraph {
         }
     }
 
-    public Set<Port> getInputPorts(Vertex v) {
-        return this.inputPorts.get(v);
-    }
-
-    public Set<Port> getOutputPorts(Vertex v) {
-        return this.outputPorts.get(v);
-    }
-
-    public Set<Link> getPortLinks(Port p) {
-        return portLinks.get(p);
-    }
-
     public Set<? extends Link> getLinks() {
         return links;
     }
@@ -125,9 +113,9 @@ public class LayoutGraph {
         if (v != startingVertex) {
             notRootSet.add(v);
         }
-        Set<Port> outPorts = getOutputPorts(v);
+        Set<Port> outPorts = this.outputPorts.get(v);
         for (Port p : outPorts) {
-            Set<Link> portLinks = getPortLinks(p);
+            Set<Link> portLinks = this.portLinks.get(p);
             for (Link l : portLinks) {
                 Port other = l.getTo();
                 Vertex otherVertex = other.getVertex();
@@ -143,7 +131,7 @@ public class LayoutGraph {
         Set<Vertex> tmpVertices = getVertices();
         for (Vertex v : tmpVertices) {
             if (!notRootSet.contains(v)) {
-                if (this.getInputPorts(v).isEmpty()) {
+                if (this.inputPorts.get(v).isEmpty()) {
                     markNotRoot(notRootSet, v, v);
                 }
             }
@@ -166,33 +154,17 @@ public class LayoutGraph {
 
     public Set<Link> getInputLinks(Vertex vertex) {
         Set<Link> inputLinks = new HashSet<>();
-        for (Port inputPort : getInputPorts(vertex)) {
-            inputLinks.addAll(getPortLinks(inputPort));
+        for (Port inputPort : this.inputPorts.get(vertex)) {
+            inputLinks.addAll(portLinks.get(inputPort));
         }
         return inputLinks;
     }
 
     public Set<Link> getOutputLinks(Vertex vertex) {
         Set<Link> outputLinks = new HashSet<>();
-        for (Port outputPort : getOutputPorts(vertex)) {
-            outputLinks.addAll(getPortLinks(outputPort));
+        for (Port outputPort : outputPorts.get(vertex)) {
+            outputLinks.addAll(portLinks.get(outputPort));
         }
         return outputLinks;
-    }
-
-    public SortedSet<Cluster> getClusters() {
-        SortedSet<Cluster> clusters = new TreeSet<>();
-        for (Vertex v : getVertices()) {
-            if (v.getCluster() != null) {
-                clusters.add(v.getCluster());
-            }
-        }
-
-        return clusters;
-    }
-
-    @Override
-    public String toString() {
-        return "LayoutGraph(" + vertices + ", " + links + ", " + getClusters() + ")";
     }
 }

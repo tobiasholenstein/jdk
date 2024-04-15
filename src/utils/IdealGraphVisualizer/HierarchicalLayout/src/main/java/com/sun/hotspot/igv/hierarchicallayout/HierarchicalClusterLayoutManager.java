@@ -65,9 +65,15 @@ public class HierarchicalClusterLayoutManager extends LayoutManager {
         HashMap<Link, ClusterIngoingConnection> linkClusterIngoingConnection = new HashMap<>();
         Set<ClusterNode> clusterNodeSet = new HashSet<>();
 
-        Set<Cluster> cluster = graph.getClusters();
+        Set<Cluster> clusters = new TreeSet<>();
+        for (Vertex v : graph.getVertices()) {
+            if (v.getCluster() != null) {
+                clusters.add(v.getCluster());
+            }
+        }
+
         int z = 0;
-        for (Cluster c : cluster) {
+        for (Cluster c : clusters) {
             listsConnection.put(c, new ArrayList<>());
             clusterInputSlotHash.put(c, new HashMap<>());
             clusterOutputSlotHash.put(c, new HashMap<>());
