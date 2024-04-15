@@ -369,7 +369,7 @@ public class Figure extends Properties.Entity implements Vertex {
     }
 
     @Override
-    public int getPrority() {
+    public int getPriority() {
         String category = getInputNode().getProperties().get("category");
         if (category.equals("control")) {
             return 5;

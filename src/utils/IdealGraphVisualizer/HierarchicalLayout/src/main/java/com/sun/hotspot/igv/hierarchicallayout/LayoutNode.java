@@ -148,11 +148,11 @@ public class LayoutNode {
         }
     }
 
-    public int getOptimal_x() {
+    public int getOptimalX() {
         return optimal_x;
     }
 
-    public void setOptimal_x(int optimal_x) {
+    public void setOptimalX(int optimal_x) {
         this.optimal_x = optimal_x;
     }
 

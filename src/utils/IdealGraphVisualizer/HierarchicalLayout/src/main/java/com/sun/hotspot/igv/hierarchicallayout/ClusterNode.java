@@ -162,7 +162,7 @@ public class ClusterNode implements Vertex {
     }
 
     @Override
-    public int getPrority() {
+    public int getPriority() {
         return 0;
     }
 

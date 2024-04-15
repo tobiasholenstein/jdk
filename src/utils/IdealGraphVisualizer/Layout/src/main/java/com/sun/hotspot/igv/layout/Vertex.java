@@ -32,7 +32,7 @@ import java.awt.Point;
  */
 public interface Vertex extends Comparable<Vertex> {
 
-    int getPrority();
+    int getPriority();
 
     Dimension getSize();
 

@@ -36,7 +36,7 @@ import java.util.*;
 public class HierarchicalLayoutManager extends LayoutManager {
 
     public static final Comparator<LayoutNode> LAYOUT_NODE_DEGREE_COMPARATOR = Comparator.comparingInt(LayoutNode::getDegree);
-    public static final Comparator<LayoutNode> LAYOUT_NODE_PRIORITY_COMPARATOR = Comparator.comparingInt(n -> n.getVertex().getPrority());
+    public static final Comparator<LayoutNode> LAYOUT_NODE_PRIORITY_COMPARATOR = Comparator.comparingInt(n -> n.getVertex().getPriority());
     public static final Comparator<LayoutNode> NODE_POS_COMPARATOR = Comparator.comparingInt(LayoutNode::getPos);
     public static final Comparator<LayoutNode> NODE_X_COMPARATOR = Comparator.comparingInt(LayoutNode::getX);
     public static final Comparator<LayoutNode> ROOTS_FIRST_COMPARATOR = Comparator.comparingInt(n -> n.getPreds().size());
@@ -45,7 +45,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
     public static final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
     public static final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(n -> n.getPreds().size());
     public static final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(n -> n.getSuccs().size());
-    public static final Comparator<LayoutNode> DUMMY_NODES_THEN_OPTMAL_X = DUMMY_NODES_FIRST.thenComparing(LayoutNode::getOptimal_x);
+    public static final Comparator<LayoutNode> DUMMY_NODES_THEN_OPTIMAL_X = DUMMY_NODES_FIRST.thenComparing(LayoutNode::getOptimalX);
 
     public static final Comparator<Link> LINK_COMPARATOR =
             Comparator.comparing((Link l) -> l.getFrom().getVertex())
@@ -1550,7 +1550,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
             while (!workingList.isEmpty()) {
                 ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
                 for (LayoutNode node : workingList) {
-                    if (node.getVertex().getPrority() < 4 && !node.getVertex().isRoot()) {
+                    if (node.getVertex().getPriority() < 4 && !node.getVertex().isRoot()) {
                         continue;
                     }
                     visited.add(node);
@@ -2028,7 +2028,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
         }
 
         private void processRow(int[] space, LayoutNode[] processingOrder) {
-            Arrays.sort(processingOrder, DUMMY_NODES_THEN_OPTMAL_X);
+            Arrays.sort(processingOrder, DUMMY_NODES_THEN_OPTIMAL_X);
             TreeSet<LayoutNode> treeSet = new TreeSet<>(NODE_POS_COMPARATOR);
             for (LayoutNode node : processingOrder) {
                 int minX = Integer.MIN_VALUE;
@@ -2046,7 +2046,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
                 }
 
                 assert minX <= maxX : minX + " vs " + maxX;
-                node.setX(Math.min(Math.max(node.getOptimal_x(), minX), maxX));
+                node.setX(Math.min(Math.max(node.getOptimalX(), minX), maxX));
                 treeSet.add(node);
             }
         }
@@ -2054,7 +2054,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
         private void sweepUp() {
             for (int i = layers.length - 2; i >= 0; i--) {
                 for (LayoutNode node : upProcessingOrder[i]) {
-                    node.setOptimal_x(calculateOptimalUp(node));
+                    node.setOptimalX(calculateOptimalUp(node));
                 }
                 processRow(space[i], upProcessingOrder[i]);
             }
@@ -2063,7 +2063,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
         private void sweepDown() {
             for (int i = 1; i < layers.length; i++) {
                 for (LayoutNode node : downProcessingOrder[i]) {
-                    node.setOptimal_x(calculateOptimalDown(node));
+                    node.setOptimalX(calculateOptimalDown(node));
                 }
                 processRow(space[i], downProcessingOrder[i]);
             }
