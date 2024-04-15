@@ -31,6 +31,18 @@ import java.util.*;
 
 public class LayoutNode {
 
+    public static final Comparator<LayoutNode> LAYOUT_NODE_DEGREE_COMPARATOR = Comparator.comparingInt(LayoutNode::getDegree);
+    public static final Comparator<LayoutNode> LAYOUT_NODE_PRIORITY_COMPARATOR = Comparator.comparingInt(LayoutNode::getVertexPriority);
+    public static final Comparator<LayoutNode> NODE_POS_COMPARATOR = Comparator.comparingInt(LayoutNode::getPos);
+    public static final Comparator<LayoutNode> NODE_X_COMPARATOR = Comparator.comparingInt(LayoutNode::getX);
+    public static final Comparator<LayoutNode> ROOTS_FIRST_COMPARATOR = Comparator.comparing(LayoutNode::isRoot);
+    public static final Comparator<LayoutNode> ROOTS_FIRST_VERTEX_COMPARATOR = ROOTS_FIRST_COMPARATOR.thenComparing(LayoutNode::getVertex);
+    public static final Comparator<LayoutNode> CROSSING_NODE_COMPARATOR = Comparator.comparingDouble(LayoutNode::getWeightedPosition);
+    public static final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
+    public static final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(LayoutNode::getOutDegree);
+    public static final Comparator<LayoutNode> NODE_PROCESSING_UP_COMPARATOR = DUMMY_NODES_FIRST.thenComparing(LayoutNode::getInDegree);
+    public static final Comparator<LayoutNode> DUMMY_NODES_THEN_OPTIMAL_X = DUMMY_NODES_FIRST.thenComparing(LayoutNode::getOptimalX);
+
     public static final int DUMMY_HEIGHT = 1;
     public static final int DUMMY_WIDTH = 1;
 
@@ -73,6 +85,14 @@ public class LayoutNode {
 
     public LayoutNode() {
         this(null);
+    }
+
+    public int getOutDegree() {
+        return succs.size();
+    }
+
+    public int getInDegree() {
+        return preds.size();
     }
 
     public int getDegree() {
@@ -232,12 +252,20 @@ public class LayoutNode {
         return vertex;
     }
 
+    public int getVertexPriority() {
+        return vertex.getPriority();
+    }
+
     public void setVertex(Vertex vertex) {
         this.vertex = vertex;
     }
 
     public List<LayoutEdge> getPreds() {
         return preds;
+    }
+
+    public boolean isRoot() {
+        return preds.isEmpty();
     }
 
     public boolean hasPreds() {

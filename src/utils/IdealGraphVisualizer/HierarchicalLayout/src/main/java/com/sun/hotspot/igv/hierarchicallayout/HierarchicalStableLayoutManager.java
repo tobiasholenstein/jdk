@@ -23,8 +23,8 @@
  */
 package com.sun.hotspot.igv.hierarchicallayout;
 
-import static com.sun.hotspot.igv.hierarchicallayout.HierarchicalLayoutManager.NODE_POS_COMPARATOR;
-import static com.sun.hotspot.igv.hierarchicallayout.HierarchicalLayoutManager.NODE_PROCESSING_UP_COMPARATOR;
+import static com.sun.hotspot.igv.hierarchicallayout.LayoutNode.NODE_POS_COMPARATOR;
+import static com.sun.hotspot.igv.hierarchicallayout.LayoutNode.NODE_PROCESSING_UP_COMPARATOR;
 import com.sun.hotspot.igv.layout.LayoutGraph;
 import com.sun.hotspot.igv.layout.LayoutManager;
 import com.sun.hotspot.igv.layout.Link;
