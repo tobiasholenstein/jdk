@@ -83,7 +83,8 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
     @Override
     public void doLayout(LayoutGraph graph) {
-        updateLayout(graph.getVertices(), graph.getLinks());
+        manager.doLayout(graph);
+        nodes = manager.getNodes();
     }
 
     private int calculateOptimalBoth(LayoutNode n) {
@@ -371,13 +372,6 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
         }
     }
 
-    /**
-     * Indicate that the layout should be redrawn with a static algorithm
-     */
-    public void setShouldRedrawLayout(boolean shouldRedrawLayout) {
-        this.shouldRedrawLayout = shouldRedrawLayout;
-    }
-
     public void updateLayout(Set<? extends Vertex> vertices, Set<? extends Link> links) {
         currentVertices = vertices;
         currentLinks = links;
@@ -390,27 +384,22 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
         new ProcessInput().run();
 
-        if (shouldRedrawLayout) {
-            // If the layout is too messy it should be redrawn using the static algorithm
-            manager.doLayout(new LayoutGraph(links, vertices));
-            nodes = manager.getNodes();
-            shouldRedrawLayout = false;
-        } else {
-            generateActions();
 
-            new BuildDatastructure().run();
+        generateActions();
 
-            findInitialReversedLinks();
+        new BuildDatastructure().run();
 
-            // Only apply updates if there are any
-            if (!linkActions.isEmpty() || !vertexActions.isEmpty()) {
-                new ApplyActionUpdates().run();
-            }
+        findInitialReversedLinks();
 
-            new AssignYCoordinates().run();
-
-            new WriteResult().run();
+        // Only apply updates if there are any
+        if (!linkActions.isEmpty() || !vertexActions.isEmpty()) {
+            new ApplyActionUpdates().run();
         }
+
+        new AssignYCoordinates().run();
+
+        new WriteResult().run();
+
 
         oldVertices = new HashSet<>(currentVertices);
         oldLinks = new HashSet<>(currentLinks);
