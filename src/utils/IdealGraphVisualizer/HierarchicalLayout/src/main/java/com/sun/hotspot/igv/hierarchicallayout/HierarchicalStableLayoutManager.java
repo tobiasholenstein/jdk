@@ -58,7 +58,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     private List<LayoutNode> nodes;
     private HashMap<Link, List<Point>> reversedLinkStartPoints;
     private HashMap<Link, List<Point>> reversedLinkEndPoints;
-    private HashMap<Integer, List<LayoutNode>> layers;
+    private HashMap<Integer, LayoutLayer> layers;
     private HashMap<Vertex, VertexAction> vertexToAction;
     private List<VertexAction> vertexActions;
     private List<LinkAction> linkActions;
@@ -654,13 +654,13 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             layers = new HashMap<>();
             for (LayoutNode node : nodes) {
                 if (!layers.containsKey(node.getLayer())) {
-                    layers.put(node.getLayer(), new ArrayList<>());
+                    layers.put(node.getLayer(), new LayoutLayer());
                 }
                 layers.get(node.getLayer()).add(node);
             }
             for (int i = 0; i < layers.keySet().size(); i++) {
                 if (!layers.containsKey(i)) {
-                    layers.put(i, new ArrayList<>());
+                    layers.put(i, new LayoutLayer());
                 }
             }
         }
@@ -774,7 +774,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             assert layers.containsKey(layer) || layer == 0;
 
             node.setLayer(layer);
-            List<LayoutNode> layerNodes = layers.getOrDefault(layer, new ArrayList<LayoutNode>());
+            LayoutLayer layerNodes = layers.getOrDefault(layer, new LayoutLayer());
 
             if (layerNodes.isEmpty()) {
                 node.setPos(0);
@@ -971,7 +971,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
             // Move all necessary layers down one step
             for (int i = layers.size() - 1; i >= layer; i--) {
-                List<LayoutNode> list = layers.get(i);
+                LayoutLayer list = layers.get(i);
                 for (LayoutNode n : list) {
                     n.setLayer(i + 1);
                 }
@@ -980,7 +980,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             }
 
             // Create new empty layer
-            List<LayoutNode> l = new ArrayList<>();
+            LayoutLayer l = new LayoutLayer();
             layers.put(layer, l);
 
             assert layers.get(layer).isEmpty();
@@ -1255,7 +1255,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             }
             int layer = node.getLayer();
             int pos = node.getPos();
-            List<LayoutNode> remainingLayerNodes = layers.get(layer);
+            LayoutLayer remainingLayerNodes = layers.get(layer);
             assert remainingLayerNodes.contains(node);
             remainingLayerNodes.remove(node);
 
@@ -1273,7 +1273,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             if (onlyDummiesLeft && shouldRemoveEmptyLayers) {
                 layers.remove(layer);
                 for (int i = layer + 1; i <= layers.size(); i++) {
-                    List<LayoutNode> list = layers.get(i);
+                    LayoutLayer list = layers.get(i);
                     layers.remove(i);
                     layers.put(i - 1, list);
                     for (LayoutNode n : list) {
