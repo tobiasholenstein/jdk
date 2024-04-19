@@ -51,6 +51,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     };
     private final LinkedHashMap<Vertex, LayoutNode> vertexToLayoutNode;
     private final HierarchicalLayoutManager manager;
+
     // Algorithm global data structures
     private Set<? extends Vertex> currentVertices;
     private Set<? extends Link> currentLinks;
@@ -64,7 +65,6 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     private List<LinkAction> linkActions;
     private HashSet<? extends Vertex> oldVertices;
     private HashSet<? extends Link> oldLinks;
-    private boolean shouldRedrawLayout = true;
     private boolean shouldRemoveEmptyLayers = true;
 
     public HierarchicalStableLayoutManager() {
@@ -113,7 +113,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
      * been inserted at that layer
      */
     private void adjustXCoordinates(int layer) {
-        List<LayoutNode> nodes = layers.get(layer);
+        LayoutLayer nodes = layers.get(layer);
         ArrayList<Integer> space = new ArrayList<>();
         List<LayoutNode> nodeProcessingOrder = new ArrayList<>();
 
@@ -375,6 +375,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     public void updateLayout(Set<? extends Vertex> vertices, Set<? extends Link> links) {
         currentVertices = vertices;
         currentLinks = links;
+
         reversedLinks = new HashSet<>();
         reversedLinkStartPoints = new HashMap<>();
         reversedLinkEndPoints = new HashMap<>();
@@ -383,7 +384,6 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
         vertexToAction = new HashMap<>();
 
         new ProcessInput().run();
-
 
         generateActions();
 
@@ -416,7 +416,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     }
 
     private void straightenLayer(int layerNr) {
-        List<LayoutNode> layer = layers.get(layerNr);
+        LayoutLayer layer = layers.get(layerNr);
         for (LayoutNode node : layer) {
             straightenDown(node);
         }
@@ -441,7 +441,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
     private void tryAlignDummy(int x, LayoutNode dummy) {
         if (x == dummy.getX()) return;
-        List<LayoutNode> nextLayer = layers.get(dummy.getLayer());
+        LayoutLayer nextLayer = layers.get(dummy.getLayer());
 
         if (dummy.getX() < x) {
             // try move nextDummyNode.x to the right
@@ -675,7 +675,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
         private int optimalPosition(LayoutNode node, int layer) {
             assert layers.containsKey(layer);
 
-            List<LayoutNode> layerNodes = layers.get(layer);
+            LayoutLayer layerNodes = layers.get(layer);
             layerNodes.sort(NODE_POS_COMPARATOR);
             int edgeCrossings = Integer.MAX_VALUE;
             int optimalPos = -1;
@@ -692,7 +692,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                 int currentCrossings = 0;
 
                 if (layers.containsKey(layer - 1)) {
-                    List<LayoutNode> predNodes = layers.get(layer - 1);
+                    LayoutLayer predNodes = layers.get(layer - 1);
                     // For each link with an end point in vertex, check how many edges cross it
                     for (LayoutEdge edge : node.getPreds()) {
                         if (edge.getFrom().getLayer() == layer - 1) {
@@ -720,7 +720,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                 }
                 // Edge crossings across current layer and layer below
                 if (layers.containsKey(layer + 1)) {
-                    List<LayoutNode> succsNodes = layers.get(layer + 1);
+                    LayoutLayer succsNodes = layers.get(layer + 1);
                     // For each link with an end point in vertex, check how many edges cross it
                     for (LayoutEdge edge : node.getSuccs()) {
                         if (edge.getTo().getLayer() == layer + 1) {
@@ -1360,7 +1360,6 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             assert currentVertices.size() == layoutedNodes.size();
             assert currentLinks.size() == layoutedLinks.size();
 
-            // TODO: straigten edges
             straightenEdges();
         }
     }
@@ -1381,7 +1380,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             int curY = 0;
 
             for (int i = 0; i < layers.size(); i++) {
-                List<LayoutNode> layer = layers.get(i);
+                LayoutLayer layer = layers.get(i);
                 int maxHeight = 0;
                 int baseLine = 0;
                 int bottomBaseLine = 0;
