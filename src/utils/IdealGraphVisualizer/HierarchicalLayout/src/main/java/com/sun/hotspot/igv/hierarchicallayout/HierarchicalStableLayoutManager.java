@@ -151,57 +151,57 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
         HashSet<Link> addedLinks = new HashSet<>(currentLinks);
         HashSet<Link> removedLinks = new HashSet<>(oldLinks);
-        for (Link link1 : currentLinks) {
-            for (Link link2 : oldLinks) {
-                if (link1.equals(link2)) {
-                    addedLinks.remove(link1);
-                    removedLinks.remove(link2);
+        for (Link currentLink : currentLinks) {
+            for (Link oldLink : oldLinks) {
+                if (currentLink.equals(oldLink)) {
+                    addedLinks.remove(currentLink);
+                    removedLinks.remove(oldLink);
                     break;
                 }
             }
         }
 
-        for (Vertex v : addedVertices) {
-            VertexAction a = new VertexAction(v, Action.ADD);
-            vertexActions.add(a);
-            vertexToAction.put(v, a);
+        for (Vertex addedVertex : addedVertices) {
+            VertexAction vertexAction = new VertexAction(addedVertex, Action.ADD);
+            vertexActions.add(vertexAction);
+            vertexToAction.put(addedVertex, vertexAction);
         }
 
-        for (Vertex v : removedVertices) {
-            VertexAction a = new VertexAction(v, Action.REMOVE);
-            vertexActions.add(a);
-            vertexToAction.put(v, a);
+        for (Vertex removedVertex : removedVertices) {
+            VertexAction vertexAction = new VertexAction(removedVertex, Action.REMOVE);
+            vertexActions.add(vertexAction);
+            vertexToAction.put(removedVertex, vertexAction);
         }
 
-        for (Link l : addedLinks) {
-            Vertex to = l.getTo().getVertex();
-            Vertex from = l.getFrom().getVertex();
-            LinkAction a = new LinkAction(l, Action.ADD);
+        for (Link addedLink : addedLinks) {
+            Vertex toLink = addedLink.getTo().getVertex();
+            Vertex fromLink = addedLink.getFrom().getVertex();
+            LinkAction linkAction = new LinkAction(addedLink, Action.ADD);
 
-            if (addedVertices.contains(to)) {
-                vertexToAction.get(to).linkActions.add(a);
+            if (addedVertices.contains(toLink)) {
+                vertexToAction.get(toLink).linkActions.add(linkAction);
             }
-            if (addedVertices.contains(from)) {
-                vertexToAction.get(from).linkActions.add(a);
+            if (addedVertices.contains(fromLink)) {
+                vertexToAction.get(fromLink).linkActions.add(linkAction);
             }
-            if (!addedVertices.contains(to) && !addedVertices.contains(from)) {
-                linkActions.add(a);
+            if (!addedVertices.contains(toLink) && !addedVertices.contains(fromLink)) {
+                linkActions.add(linkAction);
             }
         }
 
-        for (Link l : removedLinks) {
-            Vertex to = l.getTo().getVertex();
-            Vertex from = l.getFrom().getVertex();
-            LinkAction a = new LinkAction(l, Action.REMOVE);
+        for (Link removedLink : removedLinks) {
+            Vertex toVertex = removedLink.getTo().getVertex();
+            Vertex fromVertex = removedLink.getFrom().getVertex();
+            LinkAction linkAction = new LinkAction(removedLink, Action.REMOVE);
 
-            if (removedVertices.contains(to)) {
-                vertexToAction.get(to).linkActions.add(a);
+            if (removedVertices.contains(toVertex)) {
+                vertexToAction.get(toVertex).linkActions.add(linkAction);
             }
-            if (removedVertices.contains(from)) {
-                vertexToAction.get(from).linkActions.add(a);
+            if (removedVertices.contains(fromVertex)) {
+                vertexToAction.get(fromVertex).linkActions.add(linkAction);
             }
-            if (!removedVertices.contains(to) && !removedVertices.contains(from)) {
-                linkActions.add(a);
+            if (!removedVertices.contains(toVertex) && !removedVertices.contains(fromVertex)) {
+                linkActions.add(linkAction);
             }
         }
 
@@ -209,14 +209,14 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     }
 
     private void findInitialReversedLinks() {
-        for (Link link : oldLinks) {
-            for (Link l : currentLinks) {
-                if (l.equals(link)) {
-                    if (vertexToLayoutNode.get(l.getFrom().getVertex()).getLayer() > vertexToLayoutNode
-                            .get(l.getTo().getVertex()).getLayer()) {
+        for (Link oldLink : oldLinks) {
+            for (Link currentLink : currentLinks) {
+                if (currentLink.equals(oldLink)) {
+                    if (vertexToLayoutNode.get(currentLink.getFrom().getVertex()).getLayer() > vertexToLayoutNode
+                            .get(currentLink.getTo().getVertex()).getLayer()) {
                         // Link is reversed
-                        reversedLinks.add(l);
-                        updateReversedLinkPositions(l);
+                        reversedLinks.add(currentLink);
+                        updateReversedLinkPositions(currentLink);
                     }
                 }
             }
@@ -1166,10 +1166,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
 
             if (toNode.getLayer() < fromNode.getLayer()) {
                 // Reversed edge
-                LayoutNode temp = toNode;
                 toNode = fromNode;
-                fromNode = temp;
-
                 reversedLinks.remove(l);
                 reversedLinkEndPoints.remove(l);
                 reversedLinkStartPoints.remove(l);
