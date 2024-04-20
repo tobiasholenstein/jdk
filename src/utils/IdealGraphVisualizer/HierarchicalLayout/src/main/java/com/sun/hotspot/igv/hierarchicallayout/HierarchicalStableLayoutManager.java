@@ -65,7 +65,6 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
     private List<LinkAction> linkActions;
     private HashSet<? extends Vertex> oldVertices;
     private HashSet<? extends Link> oldLinks;
-    private boolean shouldRemoveEmptyLayers = true;
 
     public HierarchicalStableLayoutManager() {
         oldVertices = new HashSet<>();
@@ -904,10 +903,10 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                     node.getPreds().add(e);
                     node.getPreds().remove(edge);
                 }
-                removeNodeWithoutRemovingLayer(predNode);
+                removeNode(predNode, false);
             }
 
-            removeNodeWithoutRemovingLayer(node);
+            removeNode(node, false);
             insertNode(node, node.getLayer() - 1);
 
             for (LayoutEdge edge : List.copyOf(node.getSuccs())) {
@@ -928,10 +927,9 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                     node.getSuccs().add(e);
                     node.getSuccs().remove(edge);
                 }
-                removeNodeWithoutRemovingLayer(succNode);
+                removeNode(succNode, false);
             }
-
-            removeNodeWithoutRemovingLayer(node);
+            removeNode(node, false);
             insertNode(node, node.getLayer() + 1);
 
             for (LayoutEdge edge : List.copyOf(node.getPreds())) {
@@ -1206,7 +1204,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                         if (n.getSuccs().size() <= 1 && n.getPreds().size() <= 1) {
                             // Dummy node used only for this link, remove if not already removed
                             if (nodes.contains(n)) {
-                                removeNode(n);
+                                removeNode(n, true);
                             }
                         } else {
                             // anchor node, should not be removed
@@ -1231,14 +1229,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
             ensureNeighborEdgeConsistency();
         }
 
-        private void removeNodeWithoutRemovingLayer(LayoutNode node) {
-            boolean prevShouldRemoveEmptyLayers = shouldRemoveEmptyLayers;
-            shouldRemoveEmptyLayers = false;
-            removeNode(node);
-            shouldRemoveEmptyLayers = prevShouldRemoveEmptyLayers;
-        }
-
-        private void removeNode(LayoutNode node) {
+        private void removeNode(LayoutNode node, boolean shouldRemoveEmptyLayers) {
             if (!nodes.contains(node)) {
                 return;
             }
@@ -1303,7 +1294,7 @@ public class HierarchicalStableLayoutManager extends LayoutManager {
                 }
             }
 
-            removeNode(node);
+            removeNode(node, true);
         }
 
         void run() {
