@@ -1730,7 +1730,6 @@ void SharedRuntime::check_member_name_argument_is_last_argument(const methodHand
 // interpreted. If the caller is compiled we attempt to patch the caller
 // so he no longer calls into the interpreter.
 JRT_LEAF(void, SharedRuntime::fixup_callers_callsite(Method* method, address caller_pc))
-  MACOS_AARCH64_ONLY(ThreadWXEnable __wx(WXWrite, JavaThread::current()));
   AARCH64_PORT_ONLY(assert(pauth_ptr_is_raw(caller_pc), "should be raw"));
 
   // It's possible that deoptimization can occur at a call site which hasn't
