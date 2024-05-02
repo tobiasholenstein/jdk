@@ -4656,6 +4656,135 @@ void PhaseIdealLoop::build_and_optimize(const LoopOptsMode mode) {
   }
 }
 
+void PhaseIdealLoop::do_default_loop_opts() {
+  const bool do_split_ifs = true;
+  const bool skip_loop_opts = false;
+  const bool do_max_unroll = false;
+  const bool do_expensive_nodes = C->should_optimize_expensive_nodes(_igvn);
+  _is_gc_specific_pass = false;
+  _strip_mined_loops_expanded = false;
+
+  int old_progress = C->major_progress();
+  uint orig_worklist_size = _igvn._worklist.size();
+  // Reset major-progress flag for the driver's heuristics
+  C->clear_major_progress();
+
+#ifndef PRODUCT
+  // Capture for later assert
+  uint unique = C->unique();
+  _loop_invokes++;
+  _loop_work += unique;
+#endif
+
+  VectorSet visited;
+  Node_List worklist;
+  // Allocate stack with enough space to avoid frequent realloc
+  int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
+  Node_Stack nstack(stack_size);
+
+  if (!initialize(visited, worklist, nstack, false)) return;
+
+  // Some parser-inserted loop predicates could never be used by loop
+  // predication or they were moved away from loop during some optimizations.
+  // For example, peeling. Eliminate them before next loop optimizations.
+  eliminate_useless_predicates();
+
+#ifndef PRODUCT
+  C->verify_graph_edges();
+  DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
+  if (TraceLoopOpts && C->has_loops()) {
+    _ltree_root->dump();
+  }
+#endif
+
+  if (!C->major_progress() && ReassociateInvariants) {
+    // Reassociate invariants and prep for split_thru_phi
+    for (LoopTreeIterator iter(_ltree_root); !iter.done(); iter.next()) {
+      IdealLoopTree* lpt = iter.current();
+      if (!lpt->is_loop()) {
+        continue;
+      }
+      Node* head = lpt->_head;
+      if (!head->is_BaseCountedLoop() || !lpt->is_innermost()) continue;
+
+      // check for vectorized loops, any reassociation of invariants was already done
+      if (head->is_CountedLoop()) {
+        if (head->as_CountedLoop()->is_unroll_only()) {
+          continue;
+        } else {
+          AutoNodeBudget node_budget(this);
+          lpt->reassociate_invariants(this);
+        }
+      }
+      // Because RCE opportunities can be masked by split_thru_phi,
+      // look for RCE candidates and inhibit split_thru_phi
+      // on just their loop-phi's for this pass of loop opts
+      if (SplitIfBlocks &&
+          head->as_BaseCountedLoop()->is_valid_counted_loop(head->as_BaseCountedLoop()->bt()) &&
+          (lpt->policy_range_check(this, true, T_LONG) ||
+           (head->is_CountedLoop() && lpt->policy_range_check(this, true, T_INT)))) {
+        lpt->_rce_candidate = 1; // = true
+      }
+    }
+  }
+
+  // Check for aggressive application of split-if and other transforms
+  // that require basic-block info (like cloning through Phi's)
+  if (!C->major_progress() && SplitIfBlocks) {
+    visited.clear();
+    split_if_with_blocks( visited, nstack);
+    DEBUG_ONLY( if (VerifyLoopOptimizations) { verify(); } );
+  }
+
+  if (!C->major_progress() && do_expensive_nodes && process_expensive_nodes()) {
+    C->set_major_progress();
+    return;
+  }
+
+  // Perform loop predication before iteration splitting
+  if (!C->major_progress() && C->has_loops() && (C->predicate_count() > 0)) {
+    _ltree_root->_child->loop_predication(this);
+  }
+
+  if (!C->major_progress() && C->has_loops() && OptimizeFill && UseLoopPredicate) {
+    if (do_intrinsify_fill()) {
+      C->set_major_progress();
+      return;
+    }
+  }
+
+  // Perform iteration-splitting on inner loops.  Split iterations to avoid
+  // range checks or one-shot null checks.
+
+  // If split-if's didn't hack the graph too bad (no CFG changes)
+  // then do loop opts.
+  if (!C->major_progress() && C->has_loops()) {
+    memset( worklist.adr(), 0, worklist.Size()*sizeof(Node*) );
+    _ltree_root->_child->iteration_split( this, worklist );
+    // No verify after peeling!  GCM has hoisted code out of the loop.
+    // After peeling, the hoisted code could sink inside the peeled area.
+    // The peeling code does not try to recompute the best location for
+    // all the code before the peeled area, so the verify pass will always
+    // complain about it.
+  }
+
+  // Check for bailout, and return
+  if (C->failing()) {
+    return;
+  }
+
+  // Do verify graph edges in any case
+  NOT_PRODUCT( C->verify_graph_edges(); );
+
+  // We saw major progress in Split-If to get here.  We forced a
+  // pass with unrolling and not split-if, however more split-if's
+  // might make progress.  If the unrolling didn't make progress
+  // then the major-progress flag got cleared and we won't try
+  // another round of Split-If.  In particular the ever-common
+  // instance-of/check-cast pattern requires at least 2 rounds of
+  // Split-If to clear out.
+  C->set_major_progress();
+}
 #ifndef PRODUCT
 //------------------------------print_statistics-------------------------------
 int PhaseIdealLoop::_loop_invokes=0;// Count of PhaseIdealLoop invokes

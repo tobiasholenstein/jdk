@@ -1109,7 +1109,29 @@ private:
     _igvn(igvn),
     _nodes_required(UINT_MAX) {
     assert(mode != LoopOptsVerify, "wrong constructor to verify IdealLoop");
-    build_and_optimize(mode);
+    switch (mode) {
+      case LoopOptsDefault:
+        do_default_loop_opts();
+        break;
+      case LoopOptsNone:
+        build_and_optimize(mode);
+        break;
+      case LoopOptsMaxUnroll:
+        build_and_optimize(mode);
+        break;
+      case LoopOptsSkipSplitIf:
+        build_and_optimize(mode);
+        break;
+      case LoopOptsVerify:
+        build_and_optimize(mode);
+        break;
+      case LoopOptsShenandoahExpand:
+      case LoopOptsShenandoahPostExpand:
+        build_and_optimize(mode);
+        break;
+      default:
+        build_and_optimize(mode);
+    }
   }
 
 #ifndef PRODUCT
@@ -1770,6 +1792,8 @@ public:
   bool at_relevant_ctrl(Node* n, const Node* blk1, const Node* blk2);
 
   bool initialize(VectorSet &visited, Node_List &worklist, Node_Stack &nstack, bool verify_only);
+
+  void do_default_loop_opts();
 };
 
 
