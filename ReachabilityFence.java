@@ -26,15 +26,6 @@ import java.lang.ref.Reference;
 import java.lang.ref.Cleaner;
 
 
-// /Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -XX:CompileCommand=compileonly,*ReachabilityFence::*  -Xmx512M -Xms512M ReachabilityFence.java
-/*
-/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -DCASE=0 ReachabilityFence.java
-/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -DCASE=1 ReachabilityFence.java
-/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -DCASE=2 ReachabilityFence.java
-/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -DCASE=3 ReachabilityFence.java
-/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -DCASE=10 ReachabilityFence.java
-
-*/
 public class ReachabilityFence {
     static class A {
         public B obj;
@@ -44,27 +35,10 @@ public class ReachabilityFence {
     }
 
     static class B {
+        public static int[] arr = new int[1024];
         public final int id;
-
-        static int[] arr = new int[1024];
-
         public B(int id) {
             this.id = id;
-        }
-    }
-
-    static final int CASE = Integer.getInteger("CASE", 1);
-
-    static void test(A foo, int[] arr, int limit) {
-        switch (CASE) {
-            case 0: test0(foo, arr, arr, limit); break;
-            case 1: test1(foo, arr, arr, limit); break;
-            case 2: test2(foo, arr, arr, limit); break;
-            case 3: test3(foo, arr, arr, limit); break;
-
-            case 10: test10(foo, arr, arr, limit); break;
-
-            default: throw new Error();
         }
     }
 
@@ -73,14 +47,13 @@ public class ReachabilityFence {
 
         for (int i = 0; i < limit; i++) {
             B bar = foo.obj;
+            assert bar != null;
             int id = bar.id;
             int idx = i % 1024;
             arr[idx] = id * arr[idx];
+            Reference.reachabilityFence(bar);
         }
-
-        if (arr1[0] != arr0) {
-            throw new AssertionError(arr[0] + " != " + arr0);
-        }
+        assert arr1[0] == arr0;
     }
 
     static void test1(A foo, int[] arr, int[] arr1, int limit) {
@@ -89,6 +62,7 @@ public class ReachabilityFence {
         for (int j = 0; j < limit; j += arr.length) {
             for (int i = 0; i < arr.length; i++) {
                 B bar = foo.obj;
+                assert bar != null;
                 int id = bar.id;
                 int idx = i;
                 arr[idx] = id * arr[idx];
@@ -96,12 +70,8 @@ public class ReachabilityFence {
             }
         }
 
-        if (arr1[0] != arr0) {
-            throw new AssertionError(arr[0] + " != " + arr0);
-        }
+        assert arr1[0] == arr0;
     }
-
-    static boolean flag = true;
 
     static void test2(A foo, int[] arr, int[] arr1, int limit) {
         int arr0 = arr[0];
@@ -109,6 +79,7 @@ public class ReachabilityFence {
         for (int j = 0; j < limit; j += arr.length) {
             for (int i = 0; i < arr.length; i++) {
                 B bar = foo.obj;
+                assert bar != null;
                 int id = bar.id;
                 int idx = i;
                 arr[idx] = id * arr[idx];
@@ -116,63 +87,38 @@ public class ReachabilityFence {
             }
         }
 
-        if (arr1[0] != arr0) {
-            throw new AssertionError(arr[0] + " != " + arr0);
-        }
+        assert arr1[0] == arr0;
     }
 
     static void test3(A foo, int[] arr, int[] arr1, int limit) {
         int arr0 = arr[0];
 
-        B bar = foo.obj;
-        for (int j = 0; j < limit; j += arr.length) {
-            for (int i = 0; i < arr.length; i++) {
-                int id = bar.id;
-                int idx = i;// % 1024;
-                arr[idx] = id * arr[idx] ;
-                Reference.reachabilityFence(bar);
-            }
-        }
-
-        if (arr1[0] != arr0) {
-            throw new AssertionError(arr[0] + " != " + arr0);
-        }
-    }
-
-    static void noinline(Object o) {}
-
-    static void test10(A foo, int[] arr, int[] arr1, int limit) {
-        int arr0 = arr[0];
-
         for (int j = 0; j < limit; j += arr.length) {
             for (int i = 0; i < arr.length; i++) {
                 B bar = foo.obj;
+                assert bar != null;
                 bar.getClass(); // NPE
                 Reference.reachabilityFence(bar);
             }
         }
 
-        if (arr1[0] != arr0) {
-            throw new AssertionError(arr[0] + " != " + arr0);
-        }
+        assert arr1[0] == arr0;
     }
 
-    public static void main(String[] args) {
+    static void test(int nr) {
         final A foo = new A(new B(1));
         Cleaner.create().register(foo.obj, () -> {
+            // called when foo.obj is no longer reachable and garbage colllected
             System.out.println("!!! GONE !!!");
             B.arr[0] = 1_000_000 + foo.obj.id;
         });
 
-        for (int i = 0; i < 20_000; i++) {
-            test(foo, foo.obj.arr, foo.obj.arr.length);
-        }
-
         Thread threadGC = new Thread() {
+            // requests garbage collection every 50 milliseconds.
             public void run() {
                 try {
                     while (true) {
-                        Thread.sleep(50);
+                        Thread.sleep(10);
                         System.gc();
                     }
                 } catch (Throwable e) {
@@ -185,7 +131,7 @@ public class ReachabilityFence {
         Thread threadUpdate = new Thread() {
             public void run() {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                     int newId = foo.obj.id + 1;
                     foo.obj = null; // newB;
                     System.out.println("!!! CLEAN !!!");
@@ -199,6 +145,29 @@ public class ReachabilityFence {
         threadGC.start();
         threadUpdate.start();
 
-        test(foo, foo.obj.arr, Integer.MAX_VALUE);
+
+        int limit = Integer.MAX_VALUE - 1024;
+        try {
+            switch (nr) {
+                case 0: test0(foo, foo.obj.arr, foo.obj.arr, limit); break;
+                case 1: test1(foo, foo.obj.arr, foo.obj.arr, limit); break;
+                case 2: test2(foo, foo.obj.arr, foo.obj.arr, limit); break;
+                case 3: test3(foo, foo.obj.arr, foo.obj.arr, limit); break;
+                default: throw new Error("Invalid test case number: " + nr);
+            }
+        } catch (Exception e) {
+            System.err.println("Exception occurred in test" + nr + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /*
+    /Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -XX:CompileCommand=compileonly,*ReachabilityFence::* -XX:PrintIdealGraphLevel=3 ReachabilityFence.java
+    */
+    public static void main(String[] args) {
+        test(0);
+        test(1);
+        test(2);
+        test(3);
     }
 }
