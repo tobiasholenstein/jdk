@@ -26,14 +26,8 @@ import java.lang.ref.Reference;
 import java.lang.ref.Cleaner;
 
 
-// /Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -XX:CompileCommand=compileonly,*ReachabilityFence::*  -Xmx512M -Xms512M ReachabilityFence.java
 /*
-/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -DCASE=0 ReachabilityFence.java
-/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -DCASE=1 ReachabilityFence.java
-/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -DCASE=2 ReachabilityFence.java
-/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -DCASE=3 ReachabilityFence.java
-/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -DCASE=10 ReachabilityFence.java
-
+/Users/tholenst/dev/jdk/build/macosx-aarch64-debug/jdk/bin/java -XX:CompileCommand=compileonly,*ReachabilityFence::test1  -ea  ReachabilityFence.java
 */
 public class ReachabilityFence {
     static class A {
@@ -45,133 +39,57 @@ public class ReachabilityFence {
 
     static class B {
         public final int id;
-
         static int[] arr = new int[1024];
-
         public B(int id) {
             this.id = id;
         }
     }
 
-    static final int CASE = Integer.getInteger("CASE", 1);
-
     static void test(A foo, int[] arr, int limit) {
-        switch (CASE) {
-            case 0: test0(foo, arr, arr, limit); break;
-            case 1: test1(foo, arr, arr, limit); break;
-            case 2: test2(foo, arr, arr, limit); break;
-            case 3: test3(foo, arr, arr, limit); break;
+        int val = B.arr[0];
+        test1(foo, arr, limit);
+        assert B.arr[0] == val : "Invariant violated";
 
-            case 10: test10(foo, arr, arr, limit); break;
-
-            default: throw new Error();
-        }
     }
 
-    static void test0(A foo, int[] arr, int[] arr1, int limit) {
-        int arr0 = arr[0];
 
-        for (int i = 0; i < limit; i++) {
-            B bar = foo.obj;
-            int id = bar.id;
-            int idx = i % 1024;
-            arr[idx] = id * arr[idx];
-        }
-
-        if (arr1[0] != arr0) {
-            throw new AssertionError(arr[0] + " != " + arr0);
-        }
-    }
-
-    static void test1(A foo, int[] arr, int[] arr1, int limit) {
-        int arr0 = arr[0];
-
-        for (int j = 0; j < limit; j += arr.length) {
-            for (int i = 0; i < arr.length; i++) {
+    static void test1(A foo, int[] arr, int limit) {
+        for (long j = 0; j < limit; j += 1) {
+            for (int i = 0; i < arr.length ; i++) {
                 B bar = foo.obj;
-                int id = bar.id;
-                int idx = i;
-                arr[idx] = id * arr[idx];
+                // it would be bad in perforance if B bar load is not move out of the loop anymore after the fix
+                if (i > 0) {
+                    arr[i] = bar.id * arr[i];
+
+                }
                 Reference.reachabilityFence(bar);
             }
         }
-
-        if (arr1[0] != arr0) {
-            throw new AssertionError(arr[0] + " != " + arr0);
-        }
     }
 
-    static boolean flag = true;
-
-    static void test2(A foo, int[] arr, int[] arr1, int limit) {
-        int arr0 = arr[0];
-
-        for (int j = 0; j < limit; j += arr.length) {
-            for (int i = 0; i < arr.length; i++) {
-                B bar = foo.obj;
-                int id = bar.id;
-                int idx = i;
-                arr[idx] = id * arr[idx];
-                Reference.reachabilityFence(bar);
-            }
-        }
-
-        if (arr1[0] != arr0) {
-            throw new AssertionError(arr[0] + " != " + arr0);
-        }
-    }
-
-    static void test3(A foo, int[] arr, int[] arr1, int limit) {
-        int arr0 = arr[0];
-
-        B bar = foo.obj;
-        for (int j = 0; j < limit; j += arr.length) {
-            for (int i = 0; i < arr.length; i++) {
-                int id = bar.id;
-                int idx = i;// % 1024;
-                arr[idx] = id * arr[idx] ;
-                Reference.reachabilityFence(bar);
-            }
-        }
-
-        if (arr1[0] != arr0) {
-            throw new AssertionError(arr[0] + " != " + arr0);
-        }
-    }
-
-    static void noinline(Object o) {}
-
-    static void test10(A foo, int[] arr, int[] arr1, int limit) {
-        int arr0 = arr[0];
-
-        for (int j = 0; j < limit; j += arr.length) {
-            for (int i = 0; i < arr.length; i++) {
-                B bar = foo.obj;
-                bar.getClass(); // NPE
-                Reference.reachabilityFence(bar);
-            }
-        }
-
-        if (arr1[0] != arr0) {
-            throw new AssertionError(arr[0] + " != " + arr0);
-        }
-    }
 
     public static void main(String[] args) {
         final A foo = new A(new B(1));
+
+        // calls this lambda if GC collected he object
         Cleaner.create().register(foo.obj, () -> {
             System.out.println("!!! GONE !!!");
-            B.arr[0] = 1_000_000 + foo.obj.id;
+            B.arr[0] = 42;
         });
 
+        for (int j = 0; j < foo.obj.arr.length; j += 1) {
+            foo.obj.arr[j] = 1;
+        }
+
         for (int i = 0; i < 20_000; i++) {
-            test(foo, foo.obj.arr, foo.obj.arr.length);
+            test(foo, foo.obj.arr, 100);
         }
 
         Thread threadGC = new Thread() {
             public void run() {
                 try {
                     while (true) {
+                        // triggers GC every 50ms
                         Thread.sleep(50);
                         System.gc();
                     }
@@ -185,9 +103,8 @@ public class ReachabilityFence {
         Thread threadUpdate = new Thread() {
             public void run() {
                 try {
-                    Thread.sleep(1000);
-                    int newId = foo.obj.id + 1;
-                    foo.obj = null; // newB;
+                    Thread.sleep(500);
+                    foo.obj = null; // triggers the GC to remove the object
                     System.out.println("!!! CLEAN !!!");
                 } catch (Throwable e) {
                     throw new InternalError(e);
@@ -199,6 +116,6 @@ public class ReachabilityFence {
         threadGC.start();
         threadUpdate.start();
 
-        test(foo, foo.obj.arr, Integer.MAX_VALUE);
+        test(foo, foo.obj.arr, 10_000_000);
     }
 }
