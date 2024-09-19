@@ -30,7 +30,30 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class TemplateGenerator {
+    /*
+     * Use-cases:
+     * - very narrow: systematically find a bug. very well defined testcase. run extensively
+     *   => manual execution, for limited time, no IR, no JTreg?
+     *
+     * - smarter regression tests. start with failing case. make it randomized to search in local search space
+     *   => taking a JTreg test and add holes
+     *
+     * - a more guided complete java fuzzer. make use of known code-shapes. use in different combinations
+     *
+     * goals: fast, easy to use, general
+     * - failure modes: assert, crashes, interp vs c1 vs c2
+     *
+     * flags: always on, always off, randomized flags
+     *
+     * timeout: - failure vs ok to have
+     *
+     * combination with JTReg and IRFramework
+     * */
+
     static final String JAVA_HOME = System.getProperty("java.home");
     static final String[] FLAGS = {
             "-XX:CompileCommand=compileonly,GeneratedTest::test*",
@@ -49,30 +72,16 @@ public class TemplateGenerator {
             "InputTemplate7.java",
             "InputTemplate8.java",
             "InputTemplate9.java",
-            "InputTemplate10.java",
-            "InputTemplate11.java",
-            "InputTemplate12.java",
-            "InputTemplate13.java",
-            "InputTemplate14.java",
-            "InputTemplate15.java",
-            "InputTemplate16.java",
-            "InputTemplate17.java",
-
+            "InputTemplate10.java"
     };
     private static long testId = 0L;
     public static long getID() {
         return testId++;
     }
-    /* TODO:
-     * Measure performance: we want to generate and execute as many tests as possible
-     * - Would in memory execution speed up test execution
-     * - How to maximize generated+executed tests on multiple cores
-     * - Where are the bottleneck?
-    **/
+
     public static void main(String[] args) {
         ThreadPoolExecutor threadPool = new ThreadPoolExecutor(NUM_THREADS, NUM_THREADS, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(MAX_TASKS_IN_QUEUE));
-        String out=OUTPUT_FOLDER+File.separator+"final";
-        setOutputFolder(out);
+        setOutputFolder(OUTPUT_FOLDER);
         for (String filePath : TEMPLATE_FILES) {
             try {
                 Class<?> inputTemplateClass = DynamicClassLoader.compileAndLoadClass(filePath);
@@ -108,7 +117,15 @@ public class TemplateGenerator {
             throw new RuntimeException("Couldn't find test method: ", e);
         }
     }
-    public static String OUTPUT_FOLDER = System.getProperty("user.dir");
+
+    public static String OUTPUT_FOLDER;
+
+    static {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        OUTPUT_FOLDER = System.getProperty("user.dir") + File.separator + timeStamp;
+        new File(OUTPUT_FOLDER).mkdirs();
+    }
+
     public static void setOutputFolder(String outputFolder) {
         OUTPUT_FOLDER= outputFolder;
     }
