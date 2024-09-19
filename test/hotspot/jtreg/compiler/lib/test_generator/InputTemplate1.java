@@ -112,6 +112,6 @@ public class InputTemplate1 extends InputTemplate {
     }
     @Override
     public int getNumberOfTestMethods() {
-        return 1;
+        return 10;
     }
 }
