@@ -30,7 +30,6 @@ import javax.tools.ToolProvider;
 public class DynamicClassLoader {
     public static Class<?> compileAndLoadClass(String filePath) throws Exception {
         String className = computeClassName(filePath);
-        // TODO: does using JavaCompiler interfere with JAVA_HOME for execution?
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         int compilationResult = compiler.run(null, null, null, filePath);
         if (compilationResult != 0) {

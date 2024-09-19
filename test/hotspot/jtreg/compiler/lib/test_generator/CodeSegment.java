@@ -24,8 +24,8 @@
 package compiler.lib.test_generator;
 public class CodeSegment {
     private final String statics;
-    private StringBuilder calls = new StringBuilder();
-    private StringBuilder methods = new StringBuilder();
+    private final StringBuilder calls;
+    private final StringBuilder methods;
     private final String imports;
     public CodeSegment(String statics, String calls, String methods, String imports) {
         this.statics = statics;

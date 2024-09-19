@@ -103,8 +103,7 @@ public class TemplateGenerator {
         try {
             String javaCode = InputTemplate.getJavaCode(template, replacements, num);
             String fileName = writeJavaCodeToFile(javaCode, num);
-            ProcessOutput processOutput = executeJavaFile(fileName, compileFlags);
-            processOutput.checkExecutionOutput(num);
+            boolean success = executeJavaFile(fileName, compileFlags);
         } catch (Exception e) {
             throw new RuntimeException("Couldn't find test method: ", e);
         }
@@ -127,7 +126,7 @@ public class TemplateGenerator {
         }
         return fileName;
     }
-        private static ProcessOutput executeJavaFile(String fileName, String[] compileFlags) throws Exception {
+        private static boolean executeJavaFile(String fileName, String[] compileFlags) throws Exception {
         ProcessBuilder builder = getProcessBuilder(fileName, compileFlags);
         Process process = builder.start();
         boolean exited = process.waitFor(TIMEOUT, TimeUnit.SECONDS);
@@ -137,7 +136,15 @@ public class TemplateGenerator {
         }
         String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
         int exitCode = process.exitValue();
-        return new ProcessOutput(exitCode, output);
+
+        if (exitCode == 0 && Objects.requireNonNull(output).contains("Passed")) {
+            System.out.printf("Test passed successfully %s%n", fileName );
+            return true;
+        } else {
+            System.err.println("Test failed with exit code :");
+            System.err.println(output);
+            return false;
+        }
     }
     private static ProcessBuilder getProcessBuilder(String fileName, String[] compileFlags) {
         List<String> command = new ArrayList<>();
