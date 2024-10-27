@@ -23,6 +23,7 @@
  */
 package com.sun.hotspot.igv.hierarchicallayout;
 
+import static com.sun.hotspot.igv.hierarchicallayout.LayoutManager.NODE_OFFSET;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Port;
 import com.sun.hotspot.igv.layout.Vertex;
@@ -61,14 +62,6 @@ public class LayoutGraph {
         for (int i = 0; i < layerCount; i++) {
             layers.add(new LayoutLayer());
         }
-    }
-
-    public void removeDummyNode(LayoutNode node) {
-        dummyNodes.remove(node);
-    }
-
-    public void addDummyNode(LayoutNode node) {
-        dummyNodes.add(node);
     }
 
     public List<LayoutNode> getDummyNodes() {
@@ -163,12 +156,52 @@ public class LayoutGraph {
     }
 
     public void addNode(LayoutNode node) {
+        int layer = node.getLayer();
+        layers.get(layer).add(node);
+        layers.get(layer).updateLayerPositions();
+
         if (node.isDummy()) {
             dummyNodes.add(node);
         } else {
             vertexToLayoutNode.put(node.getVertex(), node);
         }
     }
+
+    public void insertNodeAtPos(LayoutNode node, int layerNr, int pos) {
+        node.setPos(pos);
+        node.setX(0);
+
+        LayoutLayer layer = getLayer(layerNr);
+
+        // update pos of the nodes right (and including) of pos
+        for (LayoutNode n : layer) {
+            if (n.getPos() >= pos) {
+                n.setPos(n.getPos() + 1);
+            }
+        }
+
+        // insert in layer at pos
+        if (pos < layer.size()) {
+            layer.add(pos, node);
+        } else {
+            layer.add(node);
+        }
+
+        int minX = node.getPos() == 0 ? 0 : layer.get(node.getPos() - 1).getOuterRight() + NODE_OFFSET;
+        node.setX(Math.max(node.getX(), minX));
+
+        // update x of the nodes right of inserted node at pos
+        int prevRightSide = node.getOuterRight();
+        for (LayoutNode n : layer) {
+            if (n.getPos() > pos) {
+                n.setX(Math.max(n.getX(), prevRightSide + NODE_OFFSET));
+                prevRightSide = n.getOuterRight();
+            }
+        }
+
+        addNode(node);
+    }
+
 
     public void updatePositions() {
         for (LayoutLayer layer : layers) {
@@ -232,8 +265,8 @@ public class LayoutGraph {
         return allLinks;
     }
 
-    private void removeEdges(LayoutNode movedNode) {
-        for (Link inputLink : getAllLinks(movedNode.getVertex())) {
+    private void removeEdges(LayoutNode node) {
+        for (Link inputLink : getAllLinks(node.getVertex())) {
             Vertex from = inputLink.getFrom().getVertex();
             Vertex to = inputLink.getTo().getVertex();
             LayoutNode toNode = getLayoutNode(to);
@@ -275,7 +308,7 @@ public class LayoutGraph {
                         if (predNode.getSuccs().size() <= 1 && predNode.getPreds().size() <= 1) {
                             // Dummy node used only for this link, remove if not already removed
                             if (getDummyNodes().contains(predNode)) {
-                                removeDummyNode(predNode);
+                                removeNode(predNode);
                             }
                         } else {
                             // anchor node, should not be removed
@@ -300,16 +333,19 @@ public class LayoutGraph {
 
         // remove link connected to movedNode
         for (Link link : getLinks()) {
-            if (link.getTo().getVertex() == movedNode.getVertex()) {
+            if (link.getTo().getVertex() == node.getVertex()) {
                 link.setControlPoints(new ArrayList<>());
-                movedNode.getReversedLinkStartPoints().remove(link);
-            } else if (link.getFrom().getVertex() == movedNode.getVertex()) {
+                node.getReversedLinkStartPoints().remove(link);
+            } else if (link.getFrom().getVertex() == node.getVertex()) {
                 link.setControlPoints(new ArrayList<>());
-                movedNode.getReversedLinkEndPoints().remove(link);
+                node.getReversedLinkEndPoints().remove(link);
             }
         }
 
-        movedNode.initSize();
+        assert node.getPreds().isEmpty();
+        assert node.getSuccs().isEmpty();
+
+        node.initSize();
     }
 
     public void removeNodeAndEdges(LayoutNode node) {
@@ -349,7 +385,6 @@ public class LayoutGraph {
                 n.setPos(n.getPos() + 1);
             }
         }
-        layer.add(node);
 
         addNode(node);
 
@@ -394,5 +429,4 @@ public class LayoutGraph {
             currentY += layer.calculateScalePaddedBottom();
         }
     }
-
 }

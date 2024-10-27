@@ -41,38 +41,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
         maxLayerLength = -1;
     }
 
-    private void insertNodeAndAdjustLayer(LayoutNode node) {
-        LayoutLayer layer = graph.getLayer(node.getLayer());
-        int pos = node.getPos();
-
-        // update pos of the nodes right (and including) of pos
-        for (LayoutNode n : layer) {
-            if (n.getPos() >= pos) {
-                n.setPos(n.getPos() + 1);
-            }
-        }
-
-        // insert in layer at pos
-        if (pos < layer.size()) {
-            layer.add(pos, node);
-        } else {
-            layer.add(node);
-        }
-
-        int minX = node.getPos() == 0 ? 0 : layer.get(node.getPos() - 1).getOuterRight() + NODE_OFFSET;
-        node.setX(Math.max(node.getX(), minX));
-
-        // update x of the nodes right of inserted node at pos
-        int prevRightSide = node.getOuterRight();
-        for (LayoutNode n : layer) {
-            if (n.getPos() > pos) {
-                n.setX(Math.max(n.getX(), prevRightSide + NODE_OFFSET));
-                prevRightSide = n.getOuterRight();
-            }
-        }
-
-        graph.addNode(node);
-    }
 
     private void addEdges(LayoutNode movedNode) {
         // BuildDatastructure
@@ -195,30 +163,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
         LayoutLayer layer = graph.getLayer(emptyLayerNr);
         if (!layer.isDummyLayer()) return;
 
-        for (LayoutNode dummyNode : layer) {
-
-
-            LayoutEdge predEdge = dummyNode.getPreds().get(0);
-            LayoutNode fromNode = predEdge.getFrom(); // Root
-            // remove the dummy node from Root
-            fromNode.getSuccs().remove(predEdge);
-            if (predEdge.getLink() != null) {
-                LayoutEdge succEdge = dummyNode.getSuccs().get(0);
-                succEdge.setLink(predEdge.getLink());
-            }
-
-            // modify succEdge to come from fromNode and add to succs
-            for (LayoutEdge succEdge : dummyNode.getSuccs()) {
-                succEdge.setFrom(fromNode);
-                fromNode.getSuccs().add(succEdge);
-                succEdge.setRelativeFromX(predEdge.getRelativeFromX());
-            }
-
-            graph.removeDummyNode(dummyNode);
-        }
-
-
-        graph.removeLayer(emptyLayerNr);
     }
 
     // check that NO neighbors of node are in a given layer
@@ -240,7 +184,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
             }
         }
         return layerNr;
-
     }
 
     private void moveExpandLayerDown(int layerNr) {
@@ -281,40 +224,29 @@ public class HierarchicalLayoutManager extends LayoutManager {
         writeBack();
     }
 
-    public void moveVertex(Vertex movedVertex) {
-        Point newLoc = movedVertex.getPosition();
-        LayoutNode movedNode = graph.getLayoutNode(movedVertex);
+    public void moveVertex(Vertex vertex) {
+        Point newLoc = vertex.getPosition();
+        LayoutNode node = graph.getLayoutNode(vertex);
 
-        int layerNr = graph.findLayer(newLoc.y + movedNode.getOuterHeight() / 2);
-        if (movedNode.getLayer() == layerNr) { // we move the node in the same layer
+        int layerNr = graph.findLayer(newLoc.y + node.getOuterHeight() / 2);
+        if (node.getLayer() == layerNr) { // we move the node in the same layer
             LayoutLayer layer = graph.getLayer(layerNr);
-            if (layer.contains(movedNode)) {
-                System.out.println(movedNode.getX() + " -> " + newLoc.x);
-                movedNode.setX(newLoc.x);
-                // TODO: only call once per moveVertices()
+            if (layer.contains(node)) {
+                node.setX(newLoc.x);
                 layer.sortNodesByXAndSetPositions();
             }
         } else { // only remove edges if we moved the node to a new layer
-            removeVertex(movedVertex);
+            graph.removeNodeAndEdges(node);
+           // layerNr = insertNewLayerIfNeeded(node, layerNr);
+            node.setLayer(layerNr);
+            node.setX(newLoc.x);
 
-            // TODO
-            /*
-            removeEdges(movedNode);
-            layerNr = insertNewLayerIfNeeded(movedNode, layerNr);
-            // remove from old layer and update positions in old layer
-            int oldLayerNr = movedNode.getLayer();
-            graph.removeNode(movedNode);
-            insertNodeAndAdjustLayer(movedNode);
-            addEdges(movedNode);
-
-             */
+            graph.addNode(node);
+            LayoutLayer layer = graph.getLayer(layerNr);
+            layer.sortNodesByXAndSetPositions();
+            //addEdges(node);
+            //removeDummyLayer();
         }
-    }
-
-    public void removeVertex(Vertex vertex) {
-        LayoutNode node = graph.getLayoutNode(vertex);
-        graph.removeNodeAndEdges(node);
-        //removeDummyLayer();
     }
 
     private void writeBack() {
@@ -567,12 +499,11 @@ public class HierarchicalLayoutManager extends LayoutManager {
                         topCutNode = new LayoutNode();
                         topCutNode.setLayer(fromNode.getLayer() + 1);
                         if (optimalPos) {
-                            topCutNode.setPos(optimalPosition(topCutNode, topCutNode.getLayer()));
-                            topCutNode.setX(0);
-                            insertNodeAndAdjustLayer(topCutNode);
+                            int layerNr = topCutNode.getLayer();
+                            int pos = optimalPosition(topCutNode, layerNr);
+                            graph.insertNodeAtPos(topCutNode, layerNr, pos);
                         } else {
-                            graph.addDummyNode(topCutNode);
-                            graph.getLayer(topCutNode.getLayer()).add(topCutNode);
+                            graph.addNode(topCutNode);
                         }
                         portToTopNode.put(startPort, topCutNode);
                         portToBottomNodeMapping.put(startPort, new HashMap<>());
@@ -588,12 +519,11 @@ public class HierarchicalLayoutManager extends LayoutManager {
                         bottomCutNode = new LayoutNode();
                         bottomCutNode.setLayer(toNode.getLayer() - 1);
                         if (optimalPos) {
-                            bottomCutNode.setPos(optimalPosition(bottomCutNode, bottomCutNode.getLayer()));
-                            bottomCutNode.setX(0);
-                            insertNodeAndAdjustLayer(bottomCutNode);
+                            int layerNr = bottomCutNode.getLayer();
+                            int pos = optimalPosition(bottomCutNode, layerNr);
+                            graph.insertNodeAtPos(bottomCutNode, layerNr, pos);
                         } else {
-                            graph.addDummyNode(bottomCutNode);
-                            graph.getLayer(bottomCutNode.getLayer()).add(bottomCutNode);
+                            graph.addNode(bottomCutNode);
                         }
                         layerToBottomNode.put(toNode.getLayer(), bottomCutNode);
                     }
@@ -625,12 +555,11 @@ public class HierarchicalLayoutManager extends LayoutManager {
                         dummyNode.setLayer(i);
                         dummyNode.getPreds().add(previousEdge);
                         if (optimalPos) {
-                            dummyNode.setPos(optimalPosition(dummyNode, dummyNode.getLayer()));
-                            dummyNode.setX(0);
-                            insertNodeAndAdjustLayer(dummyNode);
+                            int layerNr = dummyNode.getLayer();
+                            int pos = optimalPosition(dummyNode, layerNr);
+                            graph.insertNodeAtPos(dummyNode, layerNr, pos);
                         } else {
-                            graph.addDummyNode(dummyNode);
-                            graph.getLayer(dummyNode.getLayer()).add(dummyNode);
+                            graph.addNode(dummyNode);
                         }
                         LayoutEdge dummyEdge = new LayoutEdge(dummyNode, previousEdge.getTo(), dummyNode.getWidth() / 2, previousEdge.getRelativeToX(), null);
                         if (previousEdge.isReversed()) dummyEdge.reverse();
@@ -670,12 +599,11 @@ public class HierarchicalLayoutManager extends LayoutManager {
                 }
                 for (LayoutNode dummyNode : newDummyNodes) {
                     if (optimalPos) {
-                        dummyNode.setPos(optimalPosition(dummyNode, dummyNode.getLayer()));
-                        dummyNode.setX(0);
-                        insertNodeAndAdjustLayer(dummyNode);
+                        int layerNr = dummyNode.getLayer();
+                        int pos = optimalPosition(dummyNode, layerNr);
+                        graph.insertNodeAtPos(dummyNode, layerNr, pos);
                     } else {
-                        graph.addDummyNode(dummyNode);
-                        graph.getLayer(dummyNode.getLayer()).add(dummyNode);
+                        graph.addNode(dummyNode);
                     }
                 }
             }
