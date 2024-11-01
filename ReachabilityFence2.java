@@ -50,6 +50,7 @@ public class ReachabilityFence {
 
         private static int current = 0;
         private static long payload[] = new long[10];
+        private boolean isFreed = false;  // Track if memory is freed
 
         private final int id;
 
@@ -63,15 +64,22 @@ public class ReachabilityFence {
         }
 
         private void free(int id) {
+            isFreed = true;
             UNSAFE.freeMemory(payload[id]);
             payload[id] = 0;
         }
 
         public void put(int offset, byte b) {
+            if (isFreed) {
+                throw new IllegalStateException("Memory has already been freed.");
+            }
             UNSAFE.putByte(payload[id] + offset, b);
         }
 
         public byte get(int offset) {
+            if (isFreed) {
+                throw new IllegalStateException("Memory has already been freed.");
+            }
             return UNSAFE.getByte(payload[id] + offset);
         }
     }
@@ -94,10 +102,10 @@ public class ReachabilityFence {
                 for (int i = 0; i < 100; i++) {
                     byte b = myBuffer.get(i);
                     if (b != 42) {
-                        // Exit the program if a buffer value is unexpected
-                        System.err.println("Unexpected value = " + b +
-                            ". Buffer was garbage collected before reachabilityFence was reached!");
-                        System.exit(1);  // Terminate all threads and the JVM
+                        throw new RuntimeException(
+                            "Unexpected value = " + b +
+                            ". Buffer was garbage collected before reachabilityFence was reached!"
+                        );
                     }
                 }
                 // Keep the buffer live while we read from it
@@ -129,13 +137,20 @@ public class ReachabilityFence {
                 }
 
                 // Recreate all buffers quickly after freeing them
-                //initBuffers();
+                initBuffers();
             }
         });
         gcThread.start();
 
         // Add multiple threads to increase the load on memory and garbage collection
-        Thread testThreads = new Thread(() -> test(1_000_000, 1));
-        testThreads.start();
+        Thread[] testThreads = new Thread[10];
+        for (int i = 0; i < testThreads.length; i++) {
+            testThreads[i] = new Thread(() -> test(10_000_000, 1));  // Run with multiple threads
+            testThreads[i].start();
+        }
+
+        for (Thread t : testThreads) {
+            t.join();  // Wait for all threads to finish
+        }
     }
 }
