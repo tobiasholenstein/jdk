@@ -306,10 +306,10 @@ public class HierarchicalLayoutManager extends LayoutManager {
         graph = layoutGraph;
 
         // STEP 2: Reverse edges, handle backedges
-        ReverseEdges.apply(graph, true);
+        ReverseEdges.apply(graph);
 
         // STEP 3: Assign layers and create dummy nodes
-        LayerManager.apply(graph, true, maxLayerLength);
+        LayerManager.apply(graph, maxLayerLength);
 
         // STEP 5: Crossing Reduction
         CrossingReduction.apply(graph);
@@ -321,34 +321,12 @@ public class HierarchicalLayoutManager extends LayoutManager {
         WriteResult.apply(graph);
     }
 
-
     static private class ReverseEdges {
 
-        static private final Set<LayoutNode> visited = new HashSet<>();
-        static private final Set<LayoutNode> active = new HashSet<>();
-
-        static public void apply(LayoutGraph graph, boolean prioritizeControl) {
-            visited.clear();
-            active.clear();
-
+        static public void apply(LayoutGraph graph) {
             removeSelfEdges(graph);
             reverseRootInputs(graph);
-
-            visited.clear();
-            active.clear();
-
-            List<LayoutNode> layoutNodes = new ArrayList<>(graph.getLayoutNodes());
-
-            if (prioritizeControl) {
-                detectControlFlowBackEdges(graph);
-                visited.clear();
-                active.clear();
-                layoutNodes.sort(ROOTS_FIRST_VERTEX_COMPARATOR);
-            }
-
-            for (LayoutNode node : layoutNodes) {
-                depthFirstSearch(node);
-            }
+            depthFirstSearch(graph);
 
             for (LayoutNode node : graph.getLayoutNodes()) {
                 node.computeReversedLinkPoints(false);
@@ -378,44 +356,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
             }
         }
 
-        private static void detectControlFlowBackEdges(LayoutGraph graph) {
-            Queue<LayoutNode> workingQueue = initializeWorkingQueue(graph);
-
-            while (!workingQueue.isEmpty()) {
-                LayoutNode node = workingQueue.poll();
-                if (shouldSkipNode(node)) {
-                    continue;
-                }
-
-                visited.add(node);
-                for (LayoutEdge edge : new ArrayList<>(node.getSuccs())) {
-                    if (edge.isReversed()) {
-                        continue;
-                    }
-                    LayoutNode successor = edge.getTo();
-                    if (visited.contains(successor)) {
-                        reverseEdge(edge);
-                    } else {
-                        workingQueue.add(successor);
-                    }
-                }
-            }
-        }
-
-        private static Queue<LayoutNode> initializeWorkingQueue(LayoutGraph graph) {
-            Queue<LayoutNode> workingQueue = new LinkedList<>();
-            for (LayoutNode node : graph.getLayoutNodes()) {
-                if (!node.hasPreds()) {
-                    workingQueue.add(node);
-                }
-            }
-            return workingQueue;
-        }
-
-        private static boolean shouldSkipNode(LayoutNode node) {
-            return node.getVertex().getPriority() < 4 && !node.getVertex().isRoot();
-        }
-
         public static void reverseEdge(LayoutEdge edge) {
             edge.reverse();
 
@@ -435,32 +375,33 @@ public class HierarchicalLayoutManager extends LayoutManager {
             toNode.getSuccs().add(edge);
         }
 
-        private static void depthFirstSearch(LayoutNode startNode) {
-            if (visited.contains(startNode)) {
-                return;
-            }
+        private static void depthFirstSearch(LayoutGraph graph) {
+            Set<LayoutNode> visited = new HashSet<>();
+            Set<LayoutNode> active = new HashSet<>();
 
-            Deque<LayoutNode> stack = new ArrayDeque<>();
-            stack.push(startNode);
+            for (LayoutNode startNode : graph.getLayoutNodes()) {
+                Deque<LayoutNode> stack = new ArrayDeque<>();
+                stack.push(startNode);
 
-            while (!stack.isEmpty()) {
-                LayoutNode node = stack.pop();
+                while (!stack.isEmpty()) {
+                    LayoutNode node = stack.pop();
 
-                if (visited.contains(node)) {
-                    active.remove(node);
-                    continue;
-                }
+                    if (visited.contains(node)) {
+                        active.remove(node);
+                        continue;
+                    }
 
-                stack.push(node);
-                visited.add(node);
-                active.add(node);
+                    stack.push(node);
+                    visited.add(node);
+                    active.add(node);
 
-                for (LayoutEdge edge : new ArrayList<>(node.getSuccs())) {
-                    LayoutNode successor = edge.getTo();
-                    if (active.contains(successor)) {
-                        reverseEdge(edge);
-                    } else if (!visited.contains(successor)) {
-                        stack.push(successor);
+                    for (LayoutEdge edge : new ArrayList<>(node.getSuccs())) {
+                        LayoutNode successor = edge.getTo();
+                        if (active.contains(successor)) {
+                            reverseEdge(edge);
+                        } else if (!visited.contains(successor)) {
+                            stack.push(successor);
+                        }
                     }
                 }
             }
@@ -743,7 +684,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
             }
         }
 
-        static public void apply(LayoutGraph graph, boolean prioritizeControl, int maxLayerLength) {
+        static public void apply(LayoutGraph graph, int maxLayerLength) {
             assignLayers(graph);
             createDummyNodes(graph, maxLayerLength);
             graph.updatePositions();
