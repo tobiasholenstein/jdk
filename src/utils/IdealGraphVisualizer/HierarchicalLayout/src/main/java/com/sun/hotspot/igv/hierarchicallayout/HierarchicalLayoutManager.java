@@ -470,7 +470,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
     static private class LayerManager {
 
-        static private void assignLayers(LayoutGraph graph, boolean prioritizeControl) {
+        private static void assignLayerDownwards(LayoutGraph graph) {
             ArrayList<LayoutNode> workingList = new ArrayList<>();
 
             // add all root nodes to layer 0
@@ -485,9 +485,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
             int layer = 1;
             while (!workingList.isEmpty()) {
                 ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
-                if (prioritizeControl) {
-                    workingList.sort(LAYOUT_NODE_PRIORITY_COMPARATOR);
-                }
                 for (LayoutNode node : workingList) {
                     for (LayoutEdge succEdge : node.getSuccs()) {
                         LayoutNode succNode = succEdge.getTo();
@@ -514,10 +511,17 @@ public class HierarchicalLayoutManager extends LayoutManager {
                 layer++;
             }
 
+            int layerCount = layer - 1;
+            for (LayoutNode n : graph.getLayoutNodes()) {
+                n.setLayer((layerCount - 1 - n.getLayer()));
+            }
+        }
+
+        private static void assignLayerUpwards(LayoutGraph graph) {
+            ArrayList<LayoutNode> workingList = new ArrayList<>();
             // add all leaves to working list, reset layer of non-leave nodes
             for (LayoutNode node : graph.getLayoutNodes()) {
                 if (!node.hasSuccs()) {
-                    node.setLayer((layer - 2 - node.getLayer()));
                     workingList.add(node);
                 } else {
                     node.setLayer(-1);
@@ -526,12 +530,9 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
             // assign layer upwards starting from leaves
             // sinks non-leave nodes down as much as possible
-            layer = 1;
+            int layer = 1;
             while (!workingList.isEmpty()) {
                 ArrayList<LayoutNode> newWorkingList = new ArrayList<>();
-                if (prioritizeControl) {
-                    workingList.sort(LAYOUT_NODE_PRIORITY_COMPARATOR);
-                }
                 for (LayoutNode node : workingList) {
                     if (node.getLayer() < layer) {
                         for (LayoutEdge predEdge : node.getPreds()) {
@@ -570,6 +571,12 @@ public class HierarchicalLayoutManager extends LayoutManager {
             }
 
             graph.initLayers(layerCount);
+        }
+
+
+        static private void assignLayers(LayoutGraph graph) {
+            assignLayerDownwards(graph);
+            assignLayerUpwards(graph);
         }
 
         static private void createDummyNodes(LayoutGraph graph, int maxLayerLength) {
@@ -737,7 +744,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
         }
 
         static public void apply(LayoutGraph graph, boolean prioritizeControl, int maxLayerLength) {
-            assignLayers(graph, prioritizeControl);
+            assignLayers(graph);
             createDummyNodes(graph, maxLayerLength);
             graph.updatePositions();
         }
