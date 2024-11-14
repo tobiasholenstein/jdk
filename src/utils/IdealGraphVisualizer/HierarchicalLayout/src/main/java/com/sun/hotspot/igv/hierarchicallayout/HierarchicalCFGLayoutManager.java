@@ -30,7 +30,6 @@ import java.util.*;
 public class HierarchicalCFGLayoutManager extends LayoutManager {
 
     private final FontMetrics fontMetrics;
-    // Lays out clusters in the CFG.
     private final HierarchicalLayoutManager manager;
     private final Set<? extends Cluster> clusters;
     private final Set<? extends Link> clusterLinks;
@@ -47,7 +46,6 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
     @Override
     public void setCutEdges(boolean enable) {
         manager.setCutEdges(enable);
-        maxLayerLength = enable ? 10 : -1;
     }
 
     Map<Cluster, ClusterNode> clusterNodesMap;
@@ -126,9 +124,8 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
 
     private void writeBackClusterBounds() {
         assert clusterNodesMap.size() == clusters.size();
-        for (Cluster cluster : clusters) {
-            ClusterNode clusterNode = clusterNodesMap.get(cluster);
-            cluster.setBounds(new Rectangle(clusterNode.getPosition(), clusterNode.getSize()));
+        for (ClusterNode clusterNode : clusterNodesMap.values()) {
+            clusterNode.updateClusterBounds();
         }
     }
 

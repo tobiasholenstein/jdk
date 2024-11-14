@@ -29,6 +29,7 @@ import com.sun.hotspot.igv.layout.Port;
 import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Dimension;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.*;
 
 /**
@@ -60,6 +61,10 @@ public class ClusterNode implements Vertex {
         if (emptySize.width > 0 || emptySize.height > 0) {
             updateSize();
         }
+    }
+
+    public void updateClusterBounds() {
+        cluster.setBounds(new Rectangle(position, size));
     }
 
     public String getName() {
