@@ -76,9 +76,6 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
 
         // Compute inter-cluster layout.
         manager.doLayout(clusterGraph);
-        for (Link clusterLink : clusterGraph.getLinks()) {
-           // assert clusterLink.getControlPoints() != null; // TODO should not fail
-        }
 
         // Write back results.
         writeBackClusterBounds(clusterNodes);
