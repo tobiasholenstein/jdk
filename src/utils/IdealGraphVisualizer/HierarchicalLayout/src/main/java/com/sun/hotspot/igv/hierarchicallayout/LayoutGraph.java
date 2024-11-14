@@ -23,6 +23,7 @@
  */
 package com.sun.hotspot.igv.hierarchicallayout;
 
+import static com.sun.hotspot.igv.hierarchicallayout.LayoutEdge.LAYOUT_EDGE_LAYER_COMPARATOR;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Port;
 import com.sun.hotspot.igv.layout.Vertex;
@@ -45,16 +46,17 @@ public class LayoutGraph {
 
     private final Set<? extends Link> links;
     private final SortedSet<Vertex> vertices;
-    private final HashMap<Vertex, Set<Port>> inputPorts;
-    private final HashMap<Vertex, Set<Port>> outputPorts;
-    private final HashMap<Port, Set<Link>> portLinks;
+    private final HashMap<Vertex, List<Port>> inputPorts;
+    private final HashMap<Vertex, List<Port>> outputPorts;
+    private final HashMap<Port, List<Link>> portLinks;
 
     private final List<LayoutNode> dummyNodes;
+    private final List<LayoutNode> layoutNodes;
     private final LinkedHashMap<Vertex, LayoutNode> vertexToLayoutNode;
 
     private List<LayoutLayer> layers;
 
-    public LayoutGraph(Set<? extends Link> links) {
+    public LayoutGraph(Collection<? extends Link> links) {
         this(links, new HashSet<>());
     }
 
@@ -162,8 +164,8 @@ public class LayoutGraph {
         return layers.size();
     }
 
-    public Collection<LayoutNode> getLayoutNodes() {
-        return vertexToLayoutNode.values();
+    public List<LayoutNode> getLayoutNodes() {
+        return layoutNodes;
     }
 
     public LayoutNode getLayoutNode(Vertex vertex) {
@@ -189,21 +191,22 @@ public class LayoutGraph {
             vertices.add(fromVertex);
             vertices.add(toVertex);
 
-            outputPorts.computeIfAbsent(fromVertex, k -> new HashSet<>()).add(fromPort);
-            inputPorts.computeIfAbsent(toVertex, k -> new HashSet<>()).add(toPort);
+            outputPorts.computeIfAbsent(fromVertex, k -> new ArrayList<>()).add(fromPort);
+            inputPorts.computeIfAbsent(toVertex, k -> new ArrayList<>()).add(toPort);
 
-            portLinks.computeIfAbsent(fromPort, k -> new HashSet<>()).add(link);
-            portLinks.computeIfAbsent(toPort, k -> new HashSet<>()).add(link);
+            portLinks.computeIfAbsent(fromPort, k -> new ArrayList<>()).add(link);
+            portLinks.computeIfAbsent(toPort, k -> new ArrayList<>()).add(link);
         }
 
         // cleanup
         vertexToLayoutNode = new LinkedHashMap<>();
         dummyNodes = new ArrayList<>();
-
+        layoutNodes = new ArrayList<>();
 
         // Set up nodes
         for (Vertex v : getVertices()) {
             LayoutNode node = new LayoutNode(v);
+            layoutNodes.add(node);
             vertexToLayoutNode.put(v, node);
         }
 
@@ -276,35 +279,35 @@ public class LayoutGraph {
 
     public Set<Vertex> findRootVertices() {
         return vertices.stream()
-                .filter(v -> inputPorts.getOrDefault(v, Collections.emptySet()).isEmpty())
+                .filter(v -> inputPorts.getOrDefault(v, Collections.emptyList()).isEmpty())
                 .collect(Collectors.toSet());
     }
 
-    public Set<Link> getInputLinks(Vertex vertex) {
-        Set<Link> inputLinks = new HashSet<>();
-        for (Port inputPort : inputPorts.getOrDefault(vertex, Collections.emptySet())) {
-            inputLinks.addAll(portLinks.getOrDefault(inputPort, Collections.emptySet()));
+    public List<Link> getInputLinks(Vertex vertex) {
+        List<Link> inputLinks = new ArrayList<>();
+        for (Port inputPort : inputPorts.getOrDefault(vertex, Collections.emptyList())) {
+            inputLinks.addAll(portLinks.getOrDefault(inputPort, Collections.emptyList()));
         }
         return inputLinks;
     }
 
-    public Set<Link> getOutputLinks(Vertex vertex) {
-        Set<Link> outputLinks = new HashSet<>();
-        for (Port outputPort : outputPorts.getOrDefault(vertex, Collections.emptySet())) {
-            outputLinks.addAll(portLinks.getOrDefault(outputPort, Collections.emptySet()));
+    public List<Link> getOutputLinks(Vertex vertex) {
+        List<Link> outputLinks = new ArrayList<>();
+        for (Port outputPort : outputPorts.getOrDefault(vertex, Collections.emptyList())) {
+            outputLinks.addAll(portLinks.getOrDefault(outputPort, Collections.emptyList()));
         }
         return outputLinks;
     }
 
-    private Set<Link> getAllLinks(Vertex vertex) {
-        Set<Link> allLinks = new HashSet<>();
+    private List<Link> getAllLinks(Vertex vertex) {
+        List<Link> allLinks = new ArrayList<>();
 
-        for (Port inputPort : inputPorts.getOrDefault(vertex, Collections.emptySet())) {
-            allLinks.addAll(portLinks.getOrDefault(inputPort, Collections.emptySet()));
+        for (Port inputPort : inputPorts.getOrDefault(vertex, Collections.emptyList())) {
+            allLinks.addAll(portLinks.getOrDefault(inputPort, Collections.emptyList()));
         }
 
-        for (Port outputPort : outputPorts.getOrDefault(vertex, Collections.emptySet())) {
-            allLinks.addAll(portLinks.getOrDefault(outputPort, Collections.emptySet()));
+        for (Port outputPort : outputPorts.getOrDefault(vertex, Collections.emptyList())) {
+            allLinks.addAll(portLinks.getOrDefault(outputPort, Collections.emptyList()));
         }
 
         return allLinks;
@@ -580,4 +583,307 @@ public class LayoutGraph {
         }
     }
 
+
+    private int optimalPosition(LayoutNode node, int layerNr) {
+
+        getLayer(layerNr).sort(NODE_POS_COMPARATOR);
+        int edgeCrossings = Integer.MAX_VALUE;
+        int optimalPos = -1;
+
+        for (int i = 0; i < getLayer(layerNr).size() + 1; i++) {
+            int xCoord;
+            if (i == 0) {
+                xCoord = getLayer(layerNr).get(i).getX() - node.getWidth() - 1;
+            } else {
+                xCoord = getLayer(layerNr).get(i - 1).getX() + getLayer(layerNr).get(i - 1).getWidth() + 1;
+            }
+
+            int currentCrossings = 0;
+
+            if (0 <= layerNr - 1) {
+                for (LayoutEdge edge : node.getPreds()) {
+                    if (edge.getFrom().getLayer() == layerNr - 1) {
+                        int fromNodeXCoord = edge.getFromX();
+                        int toNodeXCoord = xCoord;
+                        if (!node.isDummy()) {
+                            toNodeXCoord += edge.getRelativeToX();
+                        }
+                        for (LayoutNode n : getLayer(layerNr - 1)) {
+                            for (LayoutEdge e : n.getSuccs()) {
+                                if (e.getTo() == null) {
+                                    continue;
+                                }
+                                int compFromXCoord = e.getFromX();
+                                int compToXCoord = e.getToX();
+                                if ((fromNodeXCoord > compFromXCoord && toNodeXCoord < compToXCoord)
+                                        || (fromNodeXCoord < compFromXCoord
+                                        && toNodeXCoord > compToXCoord)) {
+                                    currentCrossings += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Edge crossings across current layerNr and layerNr below
+            if (layerNr + 1 < getLayerCount()) {
+                // For each link with an end point in vertex, check how many edges cross it
+                for (LayoutEdge edge : node.getSuccs()) {
+                    if (edge.getTo().getLayer() == layerNr + 1) {
+                        int toNodeXCoord = edge.getToX();
+                        int fromNodeXCoord = xCoord;
+                        if (!node.isDummy()) {
+                            fromNodeXCoord += edge.getRelativeFromX();
+                        }
+                        for (LayoutNode n : getLayer(layerNr + 1)) {
+                            for (LayoutEdge e : n.getPreds()) {
+                                if (e.getFrom() == null) {
+                                    continue;
+                                }
+                                int compFromXCoord = e.getFromX();
+                                int compToXCoord = e.getToX();
+                                if ((fromNodeXCoord > compFromXCoord && toNodeXCoord < compToXCoord)
+                                        || (fromNodeXCoord < compFromXCoord
+                                        && toNodeXCoord > compToXCoord)) {
+                                    currentCrossings += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (currentCrossings <= edgeCrossings) {
+                edgeCrossings = currentCrossings;
+                optimalPos = i;
+            }
+        }
+        return optimalPos;
+    }
+
+
+    public void createAndReverseLayoutEdges(LayoutNode node) {
+        List<Link> nodeLinks = new ArrayList<>(getInputLinks(node.getVertex()));
+        nodeLinks.addAll(getOutputLinks(node.getVertex()));
+        nodeLinks.sort(LINK_COMPARATOR);
+
+        List<LayoutNode> reversedLayoutNodes = new ArrayList<>();
+        for (Link link : nodeLinks) {
+            if (link.getFrom().getVertex() == link.getTo().getVertex()) continue;
+            LayoutEdge layoutEdge = createLayoutEdge(link);
+
+            LayoutNode fromNode = layoutEdge.getFrom();
+            LayoutNode toNode = layoutEdge.getTo();
+
+            if (fromNode.getLayer() > toNode.getLayer()) {
+                HierarchicalLayoutManager.ReverseEdges.reverseEdge(layoutEdge);
+                reversedLayoutNodes.add(fromNode);
+                reversedLayoutNodes.add(toNode);
+            }
+        }
+
+        // ReverseEdges
+        for (LayoutNode layoutNode : reversedLayoutNodes) {
+            layoutNode.computeReversedLinkPoints();
+        }
+    }
+
+    public void createDummiesForNodePredecessor(LayoutNode layoutNode) {
+        for (LayoutEdge predEdge : layoutNode.getPreds()) {
+            LayoutNode fromNode = predEdge.getFrom();
+            LayoutNode toNode = predEdge.getTo();
+            if (Math.abs(toNode.getLayer() - fromNode.getLayer()) <= 1) continue;
+
+            boolean hasEdgeFromSamePort = false;
+            LayoutEdge edgeFromSamePort = new LayoutEdge(fromNode, toNode, predEdge.getLink());
+            if (predEdge.isReversed()) edgeFromSamePort.reverse();
+
+            for (LayoutEdge succEdge : fromNode.getSuccs()) {
+                if (succEdge.getRelativeFromX() == predEdge.getRelativeFromX() && succEdge.getTo().isDummy()) {
+                    edgeFromSamePort = succEdge;
+                    hasEdgeFromSamePort = true;
+                    break;
+                }
+            }
+
+            if (hasEdgeFromSamePort) {
+                LayoutEdge curEdge = edgeFromSamePort;
+                boolean newEdge = true;
+                while (curEdge.getTo().getLayer() < toNode.getLayer() - 1 && curEdge.getTo().isDummy() && newEdge) {
+                    // Traverse down the chain of dummy nodes linking together the edges originating
+                    // from the same port
+                    newEdge = false;
+                    if (curEdge.getTo().getSuccs().size() == 1) {
+                        curEdge = curEdge.getTo().getSuccs().get(0);
+                        newEdge = true;
+                    } else {
+                        for (LayoutEdge e : curEdge.getTo().getSuccs()) {
+                            if (e.getTo().isDummy()) {
+                                curEdge = e;
+                                newEdge = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                LayoutNode prevDummy;
+                if (!curEdge.getTo().isDummy()) {
+                    prevDummy = curEdge.getFrom();
+                } else {
+                    prevDummy = curEdge.getTo();
+                }
+
+                predEdge.setFrom(prevDummy);
+                predEdge.setRelativeFromX(prevDummy.getWidth() / 2);
+                fromNode.getSuccs().remove(predEdge);
+                prevDummy.getSuccs().add(predEdge);
+            }
+
+            LayoutNode layoutNode1 = predEdge.getTo();
+            if (predEdge.getTo().getLayer() - 1 > predEdge.getFrom().getLayer()) {
+                LayoutEdge prevEdge = predEdge;
+                for (int l = layoutNode1.getLayer() - 1; l > prevEdge.getFrom().getLayer(); l--) {
+                    LayoutNode dummyNode = new LayoutNode();
+                    dummyNode.getSuccs().add(prevEdge);
+                    LayoutEdge result = new LayoutEdge(prevEdge.getFrom(), dummyNode, prevEdge.getRelativeFromX(), 0, prevEdge.getLink());
+                    if (prevEdge.isReversed()) result.reverse();
+                    dummyNode.getPreds().add(result);
+                    prevEdge.setRelativeFromX(0);
+                    prevEdge.getFrom().getSuccs().remove(prevEdge);
+                    prevEdge.getFrom().getSuccs().add(result);
+                    prevEdge.setFrom(dummyNode);
+                    dummyNode.setLayer(l);
+                    List<LayoutNode> layerNodes = getLayer(l);
+                    if (layerNodes.isEmpty()) {
+                        dummyNode.setPos(0);
+                    } else {
+                        dummyNode.setPos(optimalPosition(dummyNode, l));
+                    }
+                    for (LayoutNode n : layerNodes) {
+                        if (n.getPos() >= dummyNode.getPos()) {
+                            n.setPos(n.getPos() + 1);
+                        }
+                    }
+                    addNodeToLayer(dummyNode, l);
+                    prevEdge = dummyNode.getPreds().get(0);
+                }
+            }
+        }
+    }
+
+    public void createDummiesForNodeSuccessor(LayoutNode layoutNode, int maxLayerLength) {
+        HashMap<Integer, List<LayoutEdge>> portsToUnprocessedEdges = new HashMap<>();
+        ArrayList<LayoutEdge> succs = new ArrayList<>(layoutNode.getSuccs());
+        HashMap<Integer, LayoutNode> portToTopNode = new HashMap<>();
+        HashMap<Integer, HashMap<Integer, LayoutNode>> portToBottomNodeMapping = new HashMap<>();
+        for (LayoutEdge succEdge : succs) {
+            int startPort = succEdge.getRelativeFromX();
+            LayoutNode fromNode = succEdge.getFrom();
+            LayoutNode toNode = succEdge.getTo();
+
+            // edge is longer than one layer => needs dummy nodes
+            if (fromNode.getLayer() != toNode.getLayer() - 1) {
+                // the edge needs to be cut
+                if (maxLayerLength != -1 && toNode.getLayer() - fromNode.getLayer() > maxLayerLength) {
+                    // remove the succEdge before replacing it
+                    toNode.getPreds().remove(succEdge);
+                    fromNode.getSuccs().remove(succEdge);
+
+                    LayoutNode topCutNode = portToTopNode.get(startPort);
+                    if (topCutNode == null) {
+                        topCutNode = new LayoutNode();
+                        topCutNode.setLayer(fromNode.getLayer() + 1);
+                        addNodeToLayer(topCutNode, topCutNode.getLayer());
+                        portToTopNode.put(startPort, topCutNode);
+                        portToBottomNodeMapping.put(startPort, new HashMap<>());
+                    }
+                    LayoutEdge edgeToTopCut = new LayoutEdge(fromNode, topCutNode, succEdge.getRelativeFromX(), topCutNode.getWidth() / 2, succEdge.getLink());
+                    if (succEdge.isReversed()) edgeToTopCut.reverse();
+                    fromNode.getSuccs().add(edgeToTopCut);
+                    topCutNode.getPreds().add(edgeToTopCut);
+
+                    HashMap<Integer, LayoutNode> layerToBottomNode = portToBottomNodeMapping.get(startPort);
+                    LayoutNode bottomCutNode = layerToBottomNode.get(toNode.getLayer());
+                    if (bottomCutNode == null) {
+                        bottomCutNode = new LayoutNode();
+                        bottomCutNode.setLayer(toNode.getLayer() - 1);
+                        addNodeToLayer(bottomCutNode, bottomCutNode.getLayer());
+                        layerToBottomNode.put(toNode.getLayer(), bottomCutNode);
+                    }
+                    LayoutEdge bottomEdge = new LayoutEdge(bottomCutNode, toNode, bottomCutNode.getWidth() / 2, succEdge.getRelativeToX(), succEdge.getLink());
+                    if (succEdge.isReversed()) bottomEdge.reverse();
+                    toNode.getPreds().add(bottomEdge);
+                    bottomCutNode.getSuccs().add(bottomEdge);
+
+                } else { // the edge is not cut, but needs dummy nodes
+                    portsToUnprocessedEdges.putIfAbsent(startPort, new ArrayList<>());
+                    portsToUnprocessedEdges.get(startPort).add(succEdge);
+                }
+            }
+        }
+
+        for (Map.Entry<Integer, List<LayoutEdge>> portToUnprocessedEdges : portsToUnprocessedEdges.entrySet()) {
+            Integer startPort = portToUnprocessedEdges.getKey();
+            List<LayoutEdge> unprocessedEdges = portToUnprocessedEdges.getValue();
+            unprocessedEdges.sort(LAYOUT_EDGE_LAYER_COMPARATOR);
+
+            if (unprocessedEdges.size() == 1) {
+                // process a single edge
+                LayoutEdge singleEdge = unprocessedEdges.get(0);
+                LayoutNode fromNode = singleEdge.getFrom();
+                if (singleEdge.getTo().getLayer() > fromNode.getLayer() + 1) {
+                    LayoutEdge previousEdge = singleEdge;
+                    for (int i = fromNode.getLayer() + 1; i < previousEdge.getTo().getLayer(); i++) {
+                        LayoutNode dummyNode = new LayoutNode();
+                        dummyNode.setLayer(i);
+                        dummyNode.getPreds().add(previousEdge);
+                        addNodeToLayer(dummyNode, dummyNode.getLayer());
+                        LayoutEdge dummyEdge = new LayoutEdge(dummyNode, previousEdge.getTo(), dummyNode.getWidth() / 2, previousEdge.getRelativeToX(), singleEdge.getLink());
+                        if (previousEdge.isReversed()) dummyEdge.reverse();
+                        dummyNode.getSuccs().add(dummyEdge);
+                        previousEdge.setRelativeToX(dummyNode.getWidth() / 2);
+                        previousEdge.getTo().getPreds().remove(previousEdge);
+                        previousEdge.getTo().getPreds().add(dummyEdge);
+                        previousEdge.setTo(dummyNode);
+                        previousEdge = dummyEdge;
+                    }
+                }
+            } else {
+                int lastLayer = unprocessedEdges.get(unprocessedEdges.size() - 1).getTo().getLayer();
+                int dummyCnt = lastLayer - layoutNode.getLayer() - 1;
+                LayoutEdge[] newDummyEdges = new LayoutEdge[dummyCnt];
+                LayoutNode[] newDummyNodes = new LayoutNode[dummyCnt];
+
+                newDummyNodes[0] = new LayoutNode();
+                newDummyNodes[0].setLayer(layoutNode.getLayer() + 1);
+                newDummyEdges[0] = new LayoutEdge(layoutNode, newDummyNodes[0], startPort, newDummyNodes[0].getWidth() / 2, null);
+                newDummyNodes[0].getPreds().add(newDummyEdges[0]);
+                layoutNode.getSuccs().add(newDummyEdges[0]);
+                for (int j = 1; j < dummyCnt; j++) {
+                    newDummyNodes[j] = new LayoutNode();
+                    newDummyNodes[j].setLayer(layoutNode.getLayer() + j + 1);
+                    newDummyEdges[j] = new LayoutEdge(newDummyNodes[j - 1], newDummyNodes[j], null);
+                    newDummyNodes[j].getPreds().add(newDummyEdges[j]);
+                    newDummyNodes[j - 1].getSuccs().add(newDummyEdges[j]);
+                }
+                for (LayoutEdge unprocessedEdge : unprocessedEdges) {
+                    LayoutNode anchorNode = newDummyNodes[unprocessedEdge.getTo().getLayer() - layoutNode.getLayer() - 2];
+                    anchorNode.getSuccs().add(unprocessedEdge);
+                    unprocessedEdge.setFrom(anchorNode);
+                    unprocessedEdge.setRelativeFromX(anchorNode.getWidth() / 2);
+                    layoutNode.getSuccs().remove(unprocessedEdge);
+                }
+                for (LayoutNode dummyNode : newDummyNodes) {
+                    addNodeToLayer(dummyNode, dummyNode.getLayer());
+                }
+            }
+        }
+    }
+
+    public void addEdges(LayoutNode node, int maxLayerLength) {
+        createAndReverseLayoutEdges(node);
+        createDummiesForNodeSuccessor(node, maxLayerLength);
+        createDummiesForNodePredecessor(node);
+        updatePositions();
+    }
 }

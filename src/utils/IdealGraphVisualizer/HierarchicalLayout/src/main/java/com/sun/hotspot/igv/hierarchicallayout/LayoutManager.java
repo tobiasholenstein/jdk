@@ -31,9 +31,8 @@ import java.awt.Font;
  */
 public abstract class LayoutManager {
 
-    void setCutEdges(boolean enable);
-
-    void doLayout(LayoutGraph graph);
+    // Options
+    protected int maxLayerLength = -1;
 
     public abstract void setCutEdges(boolean enable);
 

@@ -33,9 +33,11 @@ import java.util.*;
 
 public class HierarchicalLayoutManager extends LayoutManager {
 
+    private LayoutGraph graph;
     public HierarchicalLayoutManager() {
-        setCutEdges(false);
+        maxLayerLength = -1;
     }
+
 
     @Override
     public void setCutEdges(boolean enable) {
@@ -43,10 +45,9 @@ public class HierarchicalLayoutManager extends LayoutManager {
     }
 
     @Override
-    public void setCutEdges(boolean enable) {
-        maxLayerLength = enable ? 10 : -1;
-    }
-
+    public void doLayout(LayoutGraph layoutGraph) {
+        graph = layoutGraph;
+        ReverseEdges.apply(layoutGraph);
         // STEP 2: Assign layers and create dummy nodes
         LayerManager.apply(layoutGraph, maxLayerLength);
 
@@ -55,12 +56,64 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
         // STEP 4: Assign X coordinates
         AssignXCoordinates.apply(layoutGraph);
+        //AssignXCoordinatesLegacy.apply(layoutGraph);
 
         // STEP 5: Write back to interface
         WriteResult.apply(layoutGraph);
     }
 
-    static private class ReverseEdges {
+    public void moveLink(Point linkPos, int shiftX) {
+        int layerNr = graph.findLayer(linkPos.y);
+        for (LayoutNode node : graph.getLayer(layerNr)) {
+            if (node.isDummy() && linkPos.x == node.getX()) {
+                LayoutLayer layer = graph.getLayer(layerNr);
+                if (layer.contains(node)) {
+                    node.setX(linkPos.x + shiftX);
+                    layer.sortNodesByXAndSetPositions();
+                    break;
+                }
+            }
+        }
+        writeBack();
+    }
+
+    public void moveVertices(Set<? extends Vertex> movedVertices) {
+        for (Vertex vertex : movedVertices) {
+            moveVertex(vertex);
+        }
+        writeBack();
+    }
+
+    private void writeBack() {
+        graph.optimizeBackEdgeCrossings();
+        graph.straightenEdges();
+        WriteResult.apply(graph);
+    }
+
+    public void moveVertex(Vertex movedVertex) {
+        Point newLoc = movedVertex.getPosition();
+        LayoutNode movedNode = graph.getLayoutNode(movedVertex);
+
+        int layerNr = graph.findLayer(newLoc.y + movedNode.getOuterHeight() / 2);
+        if (movedNode.getLayer() == layerNr) { // we move the node in the same layer
+            LayoutLayer layer = graph.getLayer(layerNr);
+            if (layer.contains(movedNode)) {
+                movedNode.setX(newLoc.x);
+                layer.sortNodesByXAndSetPositions();
+            }
+        } else { // only remove edges if we moved the node to a new layer
+            if (maxLayerLength > 0) return; // TODO: not implemented
+            graph.removeNodeAndEdges(movedNode);
+            layerNr = graph.insertNewLayerIfNeeded(movedNode, layerNr);
+            graph.addNodeToLayer(movedNode, layerNr);
+            movedNode.setX(newLoc.x);
+            graph.getLayer(layerNr).sortNodesByXAndSetPositions();
+            graph.removeEmptyLayers();
+            graph.addEdges(movedNode, maxLayerLength);
+        }
+    }
+
+    static class ReverseEdges {
 
         static public void apply(LayoutGraph graph) {
             removeSelfEdges(graph);
@@ -277,6 +330,7 @@ public class HierarchicalLayoutManager extends LayoutManager {
 
             for (LayoutNode layoutNode : layoutNodes) {
                 createDummiesForNodeSuccessor(graph, layoutNode, maxLayerLength);
+                // graph.createDummiesForNodeSuccessor(layoutNode, maxLayerLength);
             }
 
             for (int i = 0; i < graph.getLayerCount() - 1; i++) {
@@ -585,6 +639,128 @@ public class HierarchicalLayoutManager extends LayoutManager {
             }
         }
     }
+
+    private class AssignXCoordinatesLegacy {
+
+        private static ArrayList<Integer>[] space;
+        private static ArrayList<LayoutNode>[] downProcessingOrder;
+        private static ArrayList<LayoutNode>[] upProcessingOrder;
+
+        public static void apply(LayoutGraph graph) {
+            space = new ArrayList[graph.getLayerCount()];
+            downProcessingOrder = new ArrayList[graph.getLayerCount()];
+            upProcessingOrder = new ArrayList[graph.getLayerCount()];
+
+            for (int i = 0; i < graph.getLayerCount(); i++) {
+                space[i] = new ArrayList<>();
+                downProcessingOrder[i] = new ArrayList<>();
+                upProcessingOrder[i] = new ArrayList<>();
+
+                int curX = 0;
+                for (LayoutNode n : graph.getLayer(i)) {
+                    space[i].add(curX);
+                    curX += n.getOuterWidth() + NODE_OFFSET;
+                    downProcessingOrder[i].add(n);
+                    upProcessingOrder[i].add(n);
+                }
+
+                downProcessingOrder[i].sort(NODE_PROCESSING_DOWN_COMPARATOR);
+                upProcessingOrder[i].sort(NODE_PROCESSING_UP_COMPARATOR);
+            }
+
+            for (LayoutNode n : graph.getLayoutNodes()) {
+                n.setX(space[n.getLayer()].get(n.getPos()));
+            }
+
+            for (LayoutNode n : graph.getDummyNodes()) {
+                n.setX(space[n.getLayer()].get(n.getPos()));
+            }
+
+            sweepDown(graph);
+            adjustSpace(graph);
+            sweepUp(graph);
+            adjustSpace(graph);
+            sweepDown(graph);
+            adjustSpace(graph);
+            sweepUp(graph);
+        }
+
+        private static void adjustSpace(LayoutGraph graph) {
+            for (int i = 0; i < graph.getLayerCount(); i++) {
+                for (LayoutNode n : graph.getLayer(i)) {
+                    space[i].add(n.getX());
+                }
+            }
+        }
+
+        private static void sweepUp(LayoutGraph graph) {
+            for (int i = graph.getLayerCount() - 1; i >= 0; i--) {
+                NodeRow r = new NodeRow(space[i]);
+                for (LayoutNode n : upProcessingOrder[i]) {
+                    int optimal = n.calculateOptimalPositionUp();
+                    r.insert(n, optimal);
+                }
+            }
+        }
+
+        private static void sweepDown(LayoutGraph graph) {
+            for (int i = 1; i < graph.getLayerCount(); i++) {
+                NodeRow r = new NodeRow(space[i]);
+                for (LayoutNode n : downProcessingOrder[i]) {
+                    int optimal = n.calculateOptimalPositionDown();
+                    r.insert(n, optimal);
+                }
+            }
+        }
+
+        private static class NodeRow {
+
+            private final TreeSet<LayoutNode> treeSet;
+            private final ArrayList<Integer> space;
+
+            public NodeRow(ArrayList<Integer> space) {
+                treeSet = new TreeSet<>(NODE_POS_COMPARATOR);
+                this.space = space;
+            }
+
+            public int offset(LayoutNode n1, LayoutNode n2) {
+                int v1 = space.get(n1.getPos()) + n1.getOuterWidth();
+                int v2 = space.get(n2.getPos());
+                return v2 - v1;
+            }
+
+            public void insert(LayoutNode n, int pos) {
+
+                SortedSet<LayoutNode> headSet = treeSet.headSet(n);
+
+                LayoutNode leftNeighbor;
+                int minX = Integer.MIN_VALUE;
+                if (!headSet.isEmpty()) {
+                    leftNeighbor = headSet.last();
+                    minX = leftNeighbor.getOuterRight() + offset(leftNeighbor, n);
+                }
+
+                if (pos < minX) {
+                    n.setX(minX);
+                } else {
+
+                    LayoutNode rightNeighbor;
+                    SortedSet<LayoutNode> tailSet = treeSet.tailSet(n);
+                    int maxX = Integer.MAX_VALUE;
+                    if (!tailSet.isEmpty()) {
+                        rightNeighbor = tailSet.first();
+                        maxX = rightNeighbor.getX() - offset(n, rightNeighbor) - n.getOuterWidth();
+                    }
+
+                    n.setX(Math.min(pos, maxX));
+                }
+
+                treeSet.add(n);
+            }
+        }
+
+    }
+
 
     private static class WriteResult {
 
