@@ -31,9 +31,9 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
 
     private final FontMetrics fontMetrics;
     // Lays out nodes within a single cluster (basic block).
-    private final LayoutManager subManager;
+    private final LinearLayoutManager subManager;
     // Lays out clusters in the CFG.
-    private final LayoutManager manager;
+    private final HierarchicalLayoutManager manager;
     private final Set<? extends Cluster> clusters;
     private final Set<? extends Link> clusterLinks;
 
@@ -54,21 +54,24 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
         maxLayerLength = enable ? 10 : -1;
     }
 
+    Map<Cluster, ClusterNode> clusterNodesMap;
+    Map<Link, ClusterEdge> clusterEdgesMap;
+
     public void doLayout(LayoutGraph graph) {
         // Create cluster-level nodes and edges.
-        Map<Cluster, ClusterNode> clusterNodes = createClusterNodes(graph.getVertices());
-        assert clusterNodes.size() == clusters.size();
-        Map<Link, ClusterEdge> clusterEdges = createClusterEdges(clusterNodes);
-        assert clusterEdges.size() == clusterLinks.size();
+        clusterNodesMap = createClusterNodes(graph.getVertices());
+        assert clusterNodesMap.size() == clusters.size();
+        clusterEdgesMap = createClusterEdges(clusterNodesMap);
+        assert clusterEdgesMap.size() == clusterLinks.size();
 
         // Compute layout for each cluster.
-        for (ClusterNode clusterNode : clusterNodes.values()) {
+        for (ClusterNode clusterNode : clusterNodesMap.values()) {
             subManager.doLayout(new LayoutGraph(clusterNode.getSubEdges(), clusterNode.getSubNodes()));
             clusterNode.updateSize();
         }
 
         // mark root nodes
-        LayoutGraph clusterGraph = new LayoutGraph(clusterEdges.values(), clusterNodes.values());
+        LayoutGraph clusterGraph = new LayoutGraph(clusterEdgesMap.values(), clusterNodesMap.values());
         for (Vertex rootVertex : clusterGraph.findRootVertices()) {
             assert rootVertex instanceof ClusterNode;
             ((ClusterNode) rootVertex).setRoot(true);
@@ -78,8 +81,8 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
         manager.doLayout(clusterGraph);
 
         // Write back results.
-        writeBackClusterBounds(clusterNodes);
-        writeBackClusterEdgePoints(clusterEdges);
+        writeBackClusterBounds();
+        writeBackClusterEdgePoints();
     }
 
     private Map<Cluster, ClusterNode> createClusterNodes(SortedSet<Vertex> vertices) {
@@ -113,15 +116,15 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
         return clusterEdges;
     }
 
-    private void writeBackClusterBounds(Map<Cluster, ClusterNode> clusterNodeMap) {
-        assert clusterNodeMap.size() == clusters.size();
+    private void writeBackClusterBounds() {
+        assert clusterNodesMap.size() == clusters.size();
         for (Cluster cluster : clusters) {
-            ClusterNode clusterNode = clusterNodeMap.get(cluster);
+            ClusterNode clusterNode = clusterNodesMap.get(cluster);
             cluster.setBounds(new Rectangle(clusterNode.getPosition(), clusterNode.getSize()));
         }
     }
 
-    private void writeBackClusterEdgePoints(Map<Link, ClusterEdge> clusterEdgesMap) {
+    private void writeBackClusterEdgePoints() {
         assert clusterEdgesMap.size() == clusterLinks.size();
         for (Link clusterLink : clusterLinks) {
             ClusterEdge clusterEdge = clusterEdgesMap.get(clusterLink);
@@ -131,5 +134,14 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
                 clusterLink.setControlPoints(new ArrayList<>());
             }
         }
+    }
+
+    public void moveCluster(Cluster movedCluster) {
+        Vertex clusterVertex = clusterNodesMap.get(movedCluster);
+        System.out.println("moveCluster " + clusterVertex.getPosition());
+        manager.moveVertex(clusterVertex);
+        writeBackClusterBounds();
+        writeBackClusterEdgePoints();
+        System.out.println("moveCluster2 " + clusterVertex.getPosition());
     }
 }

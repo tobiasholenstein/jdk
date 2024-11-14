@@ -28,6 +28,7 @@ import com.sun.hotspot.igv.data.InputNode;
 import com.sun.hotspot.igv.layout.Cluster;
 import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Dimension;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.*;
 
@@ -71,6 +72,16 @@ public class Block implements Cluster {
 
     public void setBounds(Rectangle r) {
         this.bounds = r;
+    }
+
+    public void setPosition(Point p) {
+        if (bounds != null) {
+            bounds.setLocation(p);
+        }
+    }
+
+    public Point getPosition() {
+        return bounds.getLocation();
     }
 
     public Rectangle getBounds() {
