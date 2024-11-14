@@ -72,7 +72,6 @@ public class HierarchicalLayoutManager extends LayoutManager {
             if (layer.contains(movedNode)) {
                 movedNode.setX(newLoc.x);
                 layer.sortNodesByXAndSetPositions();
-                System.out.println("moveVertex");
             }
         } else { // only remove edges if we moved the node to a new layer
             if (maxLayerLength > 0) return; // TODO: not implemented

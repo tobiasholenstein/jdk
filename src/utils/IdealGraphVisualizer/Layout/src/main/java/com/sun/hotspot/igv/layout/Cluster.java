@@ -23,6 +23,7 @@
  */
 package com.sun.hotspot.igv.layout;
 
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.List;
 import java.util.Set;
@@ -34,6 +35,12 @@ import java.util.Set;
 public interface Cluster extends Comparable<Cluster> {
 
     void setBounds(Rectangle r);
+
+    void setPosition(Point p);
+
+    Point getPosition();
+
+    Rectangle getBounds();
 
     List<? extends Vertex> getVertices();
 

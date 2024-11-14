@@ -30,8 +30,6 @@ import java.util.*;
 public class HierarchicalCFGLayoutManager extends LayoutManager {
 
     private final FontMetrics fontMetrics;
-    // Lays out nodes within a single cluster (basic block).
-    private final LinearLayoutManager subManager;
     // Lays out clusters in the CFG.
     private final HierarchicalLayoutManager manager;
     private final Set<? extends Cluster> clusters;
@@ -43,19 +41,30 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
         // Anticipate block label sizes to dimension blocks appropriately.
         Canvas canvas = new Canvas();
         fontMetrics = canvas.getFontMetrics(TITLE_FONT);
-        this.subManager = new LinearLayoutManager(clusters);
         this.manager =  new HierarchicalLayoutManager();
     }
 
     @Override
     public void setCutEdges(boolean enable) {
         manager.setCutEdges(enable);
-        subManager.setCutEdges(enable);
         maxLayerLength = enable ? 10 : -1;
     }
 
     Map<Cluster, ClusterNode> clusterNodesMap;
     Map<Link, ClusterEdge> clusterEdgesMap;
+
+    private static void doLinearLayout(ClusterNode clusterNode) {
+        Cluster cluster = clusterNode.getCluster();
+        LayoutGraph graph = new LayoutGraph(clusterNode.getSubEdges(), clusterNode.getSubNodes());
+        int curY = 0;
+        for (Vertex vertex : cluster.getVertices()) {
+            if (graph.containsVertex(vertex)) {
+                vertex.setPosition(new Point(0, curY));
+                curY += vertex.getSize().height;
+            }
+        }
+        clusterNode.updateSize();
+    }
 
     public void doLayout(LayoutGraph graph) {
         // Create cluster-level nodes and edges.
@@ -66,8 +75,7 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
 
         // Compute layout for each cluster.
         for (ClusterNode clusterNode : clusterNodesMap.values()) {
-            subManager.doLayout(new LayoutGraph(clusterNode.getSubEdges(), clusterNode.getSubNodes()));
-            clusterNode.updateSize();
+            doLinearLayout(clusterNode);
         }
 
         // mark root nodes
@@ -138,10 +146,13 @@ public class HierarchicalCFGLayoutManager extends LayoutManager {
 
     public void moveCluster(Cluster movedCluster) {
         Vertex clusterVertex = clusterNodesMap.get(movedCluster);
+        clusterVertex.setPosition(movedCluster.getPosition());
         System.out.println("moveCluster " + clusterVertex.getPosition());
+
         manager.moveVertex(clusterVertex);
+
+        // Write back results.
         writeBackClusterBounds();
         writeBackClusterEdgePoints();
-        System.out.println("moveCluster2 " + clusterVertex.getPosition());
     }
 }

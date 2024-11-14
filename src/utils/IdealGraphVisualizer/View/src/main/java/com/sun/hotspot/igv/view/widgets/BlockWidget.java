@@ -92,7 +92,6 @@ public class BlockWidget extends Widget implements DoubleClickHandler {
         setPreferredLocation(block.getPosition());
     }
 
-
     public InputBlock getBlockNode() {
         return block.getInputBlock();
     }

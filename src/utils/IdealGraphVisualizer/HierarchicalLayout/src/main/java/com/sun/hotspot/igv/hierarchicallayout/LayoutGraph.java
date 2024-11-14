@@ -270,6 +270,10 @@ public class LayoutGraph {
         return vertices;
     }
 
+    public boolean containsVertex(Vertex vertex) {
+        return vertices.contains(vertex);
+    }
+
     public Set<Vertex> findRootVertices() {
         return vertices.stream()
                 .filter(v -> inputPorts.getOrDefault(v, Collections.emptySet()).isEmpty())
