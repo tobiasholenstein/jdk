@@ -32,8 +32,6 @@ import java.awt.Point;
  */
 public interface Vertex extends Comparable<Vertex> {
 
-    int getPriority();
-
     Dimension getSize();
 
     Point getPosition();

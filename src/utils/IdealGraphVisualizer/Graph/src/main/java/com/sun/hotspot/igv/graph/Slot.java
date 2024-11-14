@@ -45,14 +45,13 @@ import java.util.List;
  */
 public abstract class Slot implements Port, Source.Provider, Properties.Provider {
 
-    private int wantedIndex;
-    private Source source;
+    private final int wantedIndex;
+    private final Source source;
     protected List<FigureConnection> connections;
-    private InputNode associatedNode;
     private Color color;
     private String text;
     private String shortName;
-    private Figure figure;
+    private final Figure figure;
 
     protected Slot(Figure figure, int wantedIndex) {
         this.figure = figure;
@@ -79,10 +78,6 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
         return p;
     }
     public static final Comparator<Slot> slotIndexComparator = Comparator.comparingInt(o -> o.wantedIndex);
-
-    public void setAssociatedNode(InputNode node) {
-        associatedNode = node;
-    }
 
     public int getWidth() {
         assert shortName != null;
@@ -112,7 +107,6 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
 
     public void setShortName(String s) {
         assert s != null;
-//        assert s.length() <= 2;
         this.shortName = s;
 
     }
@@ -139,7 +133,7 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
     }
 
     public boolean shouldShowName() {
-        return getShortName() != null && getShortName().length() > 0;
+        return getShortName() != null && !getShortName().isEmpty();
     }
 
     public boolean hasSourceNodes() {
@@ -154,7 +148,6 @@ public abstract class Slot implements Port, Source.Provider, Properties.Provider
     }
 
     public Figure getFigure() {
-        assert figure != null;
         return figure;
     }
 

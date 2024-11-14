@@ -41,7 +41,7 @@ public class FigureConnection implements Connection {
     private Color color;
     private ConnectionStyle style;
     private List<Point> controlPoints;
-    private String label;
+    private final String label;
 
     protected FigureConnection(InputSlot inputSlot, OutputSlot outputSlot, String label) {
         this.inputSlot = inputSlot;

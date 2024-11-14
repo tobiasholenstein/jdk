@@ -34,11 +34,8 @@ import static com.sun.hotspot.igv.hierarchicallayout.LayoutManager.NODE_OFFSET;
 public class LayoutNode {
 
     public static final Comparator<LayoutNode> LAYOUT_NODE_DEGREE_COMPARATOR = Comparator.comparingInt(LayoutNode::getDegree);
-    public static final Comparator<LayoutNode> LAYOUT_NODE_PRIORITY_COMPARATOR = Comparator.comparingInt(LayoutNode::getVertexPriority);
     public static final Comparator<LayoutNode> NODE_POS_COMPARATOR = Comparator.comparingInt(LayoutNode::getPos);
     public static final Comparator<LayoutNode> NODE_X_COMPARATOR = Comparator.comparingInt(LayoutNode::getX);
-    public static final Comparator<LayoutNode> ROOTS_FIRST_COMPARATOR = Comparator.comparing(LayoutNode::isRoot);
-    public static final Comparator<LayoutNode> ROOTS_FIRST_VERTEX_COMPARATOR = ROOTS_FIRST_COMPARATOR.thenComparing(LayoutNode::getVertex);
     public static final Comparator<LayoutNode> CROSSING_NODE_COMPARATOR = Comparator.comparingDouble(LayoutNode::getWeightedPosition);
     public static final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
     public static final Comparator<LayoutNode> NODE_PROCESSING_DOWN_COMPARATOR = DUMMY_NODES_FIRST.thenComparingInt(LayoutNode::getOutDegree);
@@ -59,13 +56,10 @@ public class LayoutNode {
     private int rightMargin;
     private int leftMargin;
 
-    // TODO make final
-    private Vertex vertex; // Only used for non-dummy nodes, otherwise null
+    private final Vertex vertex; // Only used for non-dummy nodes, otherwise null
 
     private final List<LayoutEdge> preds = new ArrayList<>();
     private final List<LayoutEdge> succs = new ArrayList<>();
-    private final HashMap<Integer, Integer> outOffsets = new HashMap<>(); // deprecated
-    private final HashMap<Integer, Integer> inOffsets = new HashMap<>(); // deprecated
     private final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>();
     private final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();
     private int pos = -1; // Position within layer
@@ -294,20 +288,8 @@ public class LayoutNode {
         return vertex;
     }
 
-    public int getVertexPriority() {
-        return vertex.getPriority();
-    }
-
-    public void setVertex(Vertex vertex) {
-        this.vertex = vertex;
-    }
-
     public List<LayoutEdge> getPreds() {
         return preds;
-    }
-
-    public boolean isRoot() {
-        return preds.isEmpty();
     }
 
     public boolean hasPreds() {
@@ -328,14 +310,6 @@ public class LayoutNode {
             result.computeIfAbsent(succEdge.getRelativeFromX(), k -> new ArrayList<>()).add(succEdge);
         }
         return result;
-    }
-
-    public HashMap<Integer, Integer> getOutOffsets() {
-        return outOffsets;
-    }
-
-    public HashMap<Integer, Integer> getInOffsets() {
-        return inOffsets;
     }
 
     public HashMap<Link, List<Point>> getReversedLinkStartPoints() {
@@ -362,8 +336,8 @@ public class LayoutNode {
         this.weightedPosition = weightedPosition;
     }
 
-    public boolean isReverseLeft() {
-        return reverseLeft;
+    public boolean isReverseRight() {
+        return !reverseLeft;
     }
 
     private int getBackedgeCrossingScore() {
@@ -474,7 +448,6 @@ public class LayoutNode {
     }
 
     public void computeReversedLinkPoints(boolean reverseLeft) {
-        // reset node, except (x, y)
         this.reverseLeft = reverseLeft;
         initSize();
         setTopMargin(0);
@@ -491,10 +464,10 @@ public class LayoutNode {
     public void optimizeBackEdgeCrossing() {
         if (getReversedLinkStartPoints().isEmpty() && getReversedLinkEndPoints().isEmpty()) return;
         int orig_score = getBackedgeCrossingScore();
-        computeReversedLinkPoints(!isReverseLeft());
+        computeReversedLinkPoints(isReverseRight());
         int reverse_score = getBackedgeCrossingScore();
         if (orig_score > reverse_score) {
-            computeReversedLinkPoints(!isReverseLeft());
+            computeReversedLinkPoints(isReverseRight());
         }
     }
 }

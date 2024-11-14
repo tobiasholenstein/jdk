@@ -54,7 +54,6 @@ public class ClusterInputSlotNode implements Vertex {
         n.addSubNode(this);
 
         final Vertex thisNode = this;
-        final ClusterNode thisBlockNode = blockNode;
 
         outputSlot = new Port() {
 
@@ -76,13 +75,13 @@ public class ClusterInputSlotNode implements Vertex {
 
             public Point getRelativePosition() {
                 Point p = new Point(thisNode.getPosition());
-                p.x += blockNode.PADDING;
+                p.x += ClusterNode.PADDING;
                 p.y = 0;
                 return p;
             }
 
             public Vertex getVertex() {
-                return thisBlockNode;
+                return blockNode;
             }
 
             @Override
@@ -98,11 +97,6 @@ public class ClusterInputSlotNode implements Vertex {
 
     public Port getOutputSlot() {
         return outputSlot;
-    }
-
-    @Override
-    public int getPriority() {
-        return 0;
     }
 
     public Dimension getSize() {

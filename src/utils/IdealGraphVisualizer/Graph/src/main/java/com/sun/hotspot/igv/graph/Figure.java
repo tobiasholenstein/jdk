@@ -223,10 +223,9 @@ public class Figure extends Properties.Entity implements Vertex {
         return inputNode;
     }
 
-    public InputSlot createInputSlot() {
+    public void createInputSlot() {
         InputSlot slot = new InputSlot(this, -1);
         inputSlots.add(slot);
-        return slot;
     }
 
     public void removeSlot(Slot s) {
@@ -366,24 +365,6 @@ public class Figure extends Properties.Entity implements Vertex {
         // Update figure dimensions, as these are affected by the node text.
         updateWidth();
         updateHeight();
-    }
-
-    @Override
-    public int getPriority() {
-        String category = getInputNode().getProperties().get("category");
-        if (category.equals("control")) {
-            return 5;
-        } else if (category.equals("mixed")) {
-            return 4;
-        } else if (category.equals("other")) {
-            return 3;
-        } else if (category.equals("data")) {
-            return 2;
-        } else if (category.equals("memory")) {
-            return 1;
-        } else {
-            return 0;
-        }
     }
 
     @Override

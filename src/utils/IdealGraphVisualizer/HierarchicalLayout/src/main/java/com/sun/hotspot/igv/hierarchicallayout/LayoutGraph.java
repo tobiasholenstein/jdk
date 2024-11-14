@@ -215,37 +215,12 @@ public class LayoutGraph {
         }
     }
 
-    public void addNodeAtPosition(LayoutNode node, int layerNumber, int position) {
-        LayoutLayer layer = getLayer(layerNumber);
-
-        // Ensure nodes in the layer are sorted by position before insertion
-        layer.sort(NODE_POS_COMPARATOR);
-
-        // Set the layer number for the node and add it at the specified position
-        node.setLayer(layerNumber);
-        layer.add(position, node);
-
-        // Shift positions of nodes to accommodate the new node
-        shiftNodePositions(layer, position);
-
-        // Register node in the appropriate collection based on its type
-        registerNode(node);
-    }
-
     public void addNodeToLayer(LayoutNode node, int layerNumber) {
         node.setLayer(layerNumber);
         getLayer(layerNumber).add(node);
 
         // Register node in the appropriate collection based on its type
         registerNode(node);
-    }
-
-    private void shiftNodePositions(LayoutLayer layer, int startPosition) {
-        for (LayoutNode n : layer) {
-            if (n.getPos() >= startPosition) {
-                n.setPos(n.getPos() + 1);
-            }
-        }
     }
 
     private void registerNode(LayoutNode node) {
@@ -473,7 +448,6 @@ public class LayoutGraph {
     }
 
     private void removeEmptyLayer(int layerNr) {
-        // TODO: not working for cut edges
         LayoutLayer layer = getLayer(layerNr);
         if (!layer.isDummyLayer()) return;
 

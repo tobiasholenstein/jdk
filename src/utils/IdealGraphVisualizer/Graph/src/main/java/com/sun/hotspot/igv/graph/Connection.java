@@ -28,19 +28,19 @@ import java.awt.Color;
 
 public interface Connection extends Link {
 
-    public enum ConnectionStyle {
+    enum ConnectionStyle {
         NORMAL,
         DASHED,
         BOLD,
         INVISIBLE
     }
 
-    public ConnectionStyle getStyle();
+    ConnectionStyle getStyle();
 
-    public Color getColor();
+    Color getColor();
 
-    public String getToolTipText();
+    String getToolTipText();
 
-    public boolean hasSlots();
+    boolean hasSlots();
 
 }

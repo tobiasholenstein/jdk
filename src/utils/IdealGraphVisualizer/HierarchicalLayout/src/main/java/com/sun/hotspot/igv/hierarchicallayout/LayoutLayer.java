@@ -84,40 +84,6 @@ public class LayoutLayer extends ArrayList<LayoutNode> {
         }
     }
 
-    public int findPosInLayer(int x) {
-        // find the position in the new layer at location
-        int newPos = 0;
-        for (int j = 1; j < this.size(); j++) {
-            LayoutNode leftNode = this.get(j - 1);
-            LayoutNode rightNode = this.get(j);
-            if (x < leftNode.getRight()) {
-                newPos = leftNode.getPos();
-                break;
-            } else if (x <= rightNode.getRight()) {
-                newPos = rightNode.getPos();
-                break;
-            } else {
-                newPos = rightNode.getPos() + 1;
-            }
-        }
-        return newPos;
-    }
-
-    public void swap(int i, int j) {
-        LayoutNode n1 = get(i);
-        LayoutNode n2 = get(j);
-        int x1 = n1.getX();
-        int x2 = n2.getX();
-        n1.setX(x2);
-        n2.setX(x1);
-        int p1 = n1.getPos();
-        int p2 = n2.getPos();
-        n1.setPos(p2);
-        n2.setPos(p1);
-        set(j, n1);
-        set(i, n2);
-    }
-
     public void setTop(int top) {
         y = top;
     }
@@ -144,16 +110,6 @@ public class LayoutLayer extends ArrayList<LayoutNode> {
 
     public void setHeight(int height) {
         this.height = height;
-    }
-
-    public void printLayerInfo(String label) {
-        System.out.println("Layer Info: " + label);
-        System.out.println("Height: " + height + ", Y: " + y);
-        System.out.println("Nodes:");
-        for (LayoutNode layoutNode : this) {
-            String dummyStr = layoutNode.isDummy() ? "Dummy" : "Node";
-            System.out.println("Pos: " + layoutNode.getPos() + ", X: " + layoutNode.getX() + ", " + dummyStr + ", Succs: " + layoutNode.getSuccs().size() + ", Preds: " + layoutNode.getPreds().size());
-        }
     }
 
     // Layer contains no non-dummy nodes

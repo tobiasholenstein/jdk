@@ -63,7 +63,6 @@ public class ClusterOutputSlotNode implements Vertex {
         n.addSubNode(this);
 
         final Vertex thisNode = this;
-        final ClusterNode thisBlockNode = blockNode;
 
         inputSlot = new Port() {
 
@@ -91,7 +90,7 @@ public class ClusterOutputSlotNode implements Vertex {
             }
 
             public Vertex getVertex() {
-                return thisBlockNode;
+                return blockNode;
             }
 
             @Override
@@ -99,11 +98,6 @@ public class ClusterOutputSlotNode implements Vertex {
                 return "OutPort of " + thisNode;
             }
         };
-    }
-
-    @Override
-    public int getPriority() {
-        return 0;
     }
 
     public Dimension getSize() {
