@@ -65,6 +65,7 @@ public class LayoutNode {
     private int pos = -1; // Position within layer
 
     private float weightedPosition = 0;
+    private boolean reverseLeft = false;
 
     public LayoutNode(Vertex v) {
         vertex = v;
@@ -339,8 +340,43 @@ public class LayoutNode {
         this.weightedPosition = weightedPosition;
     }
 
-    private void computeReversedStartPoints() {
-        TreeMap<Integer, ArrayList<LayoutEdge>> sortedDownMap = new TreeMap<>(Collections.reverseOrder());
+    public boolean isReverseRight() {
+        return !reverseLeft;
+    }
+
+    private int getBackedgeCrossingScore() {
+        int score = 0;
+        for (LayoutEdge predEdge : getPreds()) {
+            if (predEdge.isReversed()) {
+                List<Point> points = getReversedLinkEndPoints().get(predEdge.getLink());
+                if (points != null) {
+                    int x0 = points.get(points.size() - 1).x;
+                    int xn = points.get(0).x;
+                    int startPoint = predEdge.getStartX();
+                    int endPoint = predEdge.getEndX();
+                    int win = (x0 < xn) ? (startPoint - endPoint) : (endPoint - startPoint);
+                    score += win;
+                }
+            }
+        }
+        for (LayoutEdge succEdge : getSuccs()) {
+            if (succEdge.isReversed()) {
+                List<Point> points = getReversedLinkStartPoints().get(succEdge.getLink());
+                if (points != null) {
+                    int x0 = points.get(points.size() - 1).x;
+                    int xn = points.get(0).x;
+                    int startPoint = succEdge.getStartX();
+                    int endPoint = succEdge.getEndX();
+                    int win = (x0 > xn) ? (startPoint - endPoint) : (endPoint - startPoint);
+                    score += win;
+                }
+            }
+        }
+        return score;
+    }
+
+    private boolean computeReversedStartPoints() {
+        TreeMap<Integer, ArrayList<LayoutEdge>> sortedDownMap = reverseLeft ? new TreeMap<>() : new TreeMap<>(Collections.reverseOrder());
         for (LayoutEdge succEdge : getSuccs()) {
             if (succEdge.isReversed()) {
                 succEdge.setRelativeFromX(succEdge.getLink().getTo().getRelativePosition().x);
@@ -350,14 +386,15 @@ public class LayoutNode {
         }
 
         int offset = NODE_OFFSET + LayoutNode.DUMMY_WIDTH;
-        int currentX = getWidth();
+        int offsetX = reverseLeft ? -offset : offset;
+        int currentX = reverseLeft ? 0 : getWidth();
         int startY = 0;
         int currentY = 0;
         for (Map.Entry<Integer, ArrayList<LayoutEdge>> entry : sortedDownMap.entrySet()) {
             int startX = entry.getKey();
             ArrayList<LayoutEdge> reversedSuccs = entry.getValue();
 
-            currentX += offset;
+            currentX += offsetX;
             currentY -= offset;
             setTopMargin(getTopMargin() + offset);
 
@@ -370,12 +407,14 @@ public class LayoutNode {
                 getReversedLinkStartPoints().put(revEdge.getLink(), startPoints);
             }
         }
-        setLeftMargin(getLeftMargin());
-        setRightMargin(getRightMargin() + (sortedDownMap.size() * offset));
+        setLeftMargin(getLeftMargin() + (reverseLeft ? sortedDownMap.size() * offset : 0));
+        setRightMargin(getRightMargin() + (reverseLeft ? 0 : sortedDownMap.size() * offset));
+
+        return !sortedDownMap.isEmpty();
     }
 
-    private void computeReversedEndPoints() {
-        TreeMap<Integer, ArrayList<LayoutEdge>> sortedUpMap = new TreeMap<>(Collections.reverseOrder());
+    private boolean computeReversedEndPoints(boolean left) {
+        TreeMap<Integer, ArrayList<LayoutEdge>> sortedUpMap = left ? new TreeMap<>() : new TreeMap<>(Collections.reverseOrder());
         for (LayoutEdge predEdge : getPreds()) {
             if (predEdge.isReversed()) {
                 predEdge.setRelativeToX(predEdge.getLink().getFrom().getRelativePosition().x);
@@ -385,14 +424,15 @@ public class LayoutNode {
         }
 
         int offset = NODE_OFFSET + LayoutNode.DUMMY_WIDTH;
-        int currentX = getWidth();
+        int offsetX = left ? -offset : offset;
+        int currentX = left ? 0 : getWidth();
         int startY = getHeight();
         int currentY = getHeight();
         for (Map.Entry<Integer, ArrayList<LayoutEdge>> entry : sortedUpMap.entrySet()) {
             int startX = entry.getKey();
             ArrayList<LayoutEdge> reversedPreds = entry.getValue();
 
-            currentX += offset;
+            currentX += offsetX;
             currentY += offset;
             setBottomMargin(getBottomMargin() + offset);
 
@@ -405,39 +445,29 @@ public class LayoutNode {
                 getReversedLinkEndPoints().put(revEdge.getLink(), endPoints);
             }
         }
-        setLeftMargin(getLeftMargin());
-        setRightMargin(getRightMargin() + (sortedUpMap.size() * offset));
+        setLeftMargin(getLeftMargin() + (left ? sortedUpMap.size() * offset : 0));
+        setRightMargin(getRightMargin() + (left ? 0 : sortedUpMap.size() * offset));
+
+        return !sortedUpMap.isEmpty();
     }
 
-    public void computeReversedLinkPoints() {
+    public void computeReversedLinkPoints(boolean reverseLeft) {
+        this.reverseLeft = reverseLeft;
         initSize();
         getReversedLinkStartPoints().clear();
         getReversedLinkEndPoints().clear();
 
-        computeReversedStartPoints();
-        computeReversedEndPoints();
+        boolean hasReversedDown = computeReversedStartPoints();
+        boolean hasReversedUP = computeReversedEndPoints(hasReversedDown != reverseLeft);
     }
 
-    public int calculateOptimalXFromNeighbors() {
-        if (preds.isEmpty() && succs.isEmpty()) {
-            return x;
+    public void optimizeBackEdgeCrossing() {
+        if (getReversedLinkStartPoints().isEmpty() && getReversedLinkEndPoints().isEmpty()) return;
+        int orig_score = getBackedgeCrossingScore();
+        computeReversedLinkPoints(isReverseRight());
+        int reverse_score = getBackedgeCrossingScore();
+        if (orig_score > reverse_score) {
+            computeReversedLinkPoints(isReverseRight());
         }
-
-        int[] values = new int[preds.size() + succs.size()];
-        int i = 0;
-
-        for (LayoutEdge edge : preds) {
-            values[i] = edge.getFromX() - edge.getRelativeToX();
-            i++;
-        }
-
-        for (LayoutEdge edge : succs) {
-            values[i] = edge.getToX() - edge.getRelativeFromX();
-            i++;
-        }
-
-        Arrays.sort(values);
-        int middle = values.length / 2;
-        return (values.length % 2 == 0) ? (values[middle - 1] + values[middle]) / 2 : values[middle];
     }
 }
