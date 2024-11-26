@@ -475,9 +475,18 @@ public class LayoutNode {
         return Collections.unmodifiableList(succs);
     }
 
+    public List<LayoutEdge> getSuccessorsRaw() {
+        return succs;
+    }
+
     public List<LayoutEdge> getPredecessors() {
         return Collections.unmodifiableList(preds);
     }
+
+    public List<LayoutEdge> getPredecessorsRaw() {
+        return preds;
+    }
+
 
     public void addSuccessor(LayoutEdge successor) {
         succs.add(successor);

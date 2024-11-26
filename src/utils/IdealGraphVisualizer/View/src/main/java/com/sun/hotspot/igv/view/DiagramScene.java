@@ -918,9 +918,15 @@ public class DiagramScene extends ObjectScene implements DiagramViewer, DoubleCl
     }
 
     private void doStableSeaLayout(Set<Figure> visibleFigures, Set<Connection> visibleConnections) {
-        layoutMover = hierarchicalStableLayoutManager;
-        hierarchicalStableLayoutManager.setCutEdges(model.getCutEdges());
-        hierarchicalStableLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
+        layoutMover = null;
+        boolean enable = model.getCutEdges();
+        boolean previous = hierarchicalStableLayoutManager.getCutEdges();
+        hierarchicalStableLayoutManager.setCutEdges(enable);
+        if (enable != previous) {
+            hierarchicalStableLayoutManager.doLayout(new LayoutGraph(visibleConnections, visibleFigures));
+        } else {
+            hierarchicalStableLayoutManager.updateLayout(visibleFigures, visibleConnections);
+        }
     }
 
     private void doSeaLayout(Set<Figure> visibleFigures, Set<Connection> visibleConnections) {

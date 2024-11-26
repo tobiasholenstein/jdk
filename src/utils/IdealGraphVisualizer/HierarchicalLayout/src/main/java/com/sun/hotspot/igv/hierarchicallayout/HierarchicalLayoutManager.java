@@ -71,6 +71,8 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
         graph = layoutGraph;
     }
 
+
+
     @Override
     public void moveLink(Point linkPos, int shiftX) {
         int layerNr = graph.findLayer(linkPos.y);
@@ -129,6 +131,10 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
     @Override
     public boolean isFreeForm() {
         return false;
+    }
+
+    public List<LayoutNode> getNodes() {
+        return graph.getAllNodes();
     }
 
     public static class ReverseEdges {
@@ -573,7 +579,7 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
         }
     }
 
-    private static class NodeRow {
+    public static class NodeRow {
 
         private final TreeSet<LayoutNode> treeSet;
         private final ArrayList<Integer> space;
