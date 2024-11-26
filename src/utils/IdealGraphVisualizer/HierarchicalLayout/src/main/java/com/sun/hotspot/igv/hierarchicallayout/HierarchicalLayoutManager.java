@@ -58,7 +58,9 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
         CrossingReduction.apply(layoutGraph);
 
         // STEP 4: Assign X coordinates
-        AssignXCoordinates.apply(layoutGraph);
+        AssignXCoordinatesLegacy.apply(layoutGraph);
+
+        //AssignXCoordinates.apply(layoutGraph);
 
         // STEP 5: Write back to interface
         WriteResult.apply(layoutGraph);
@@ -487,6 +489,155 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
             for (LayoutLayer layer : layers) {
                 layer.updateMinXSpacing(false);
             }
+        }
+    }
+
+    private class AssignXCoordinatesLegacy {
+
+        private static ArrayList<Integer>[] space;
+        private static ArrayList<LayoutNode>[] downProcessingOrder;
+        private static ArrayList<LayoutNode>[] upProcessingOrder;
+
+        private static final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
+            if (n1.isDummy()) {
+                if (n2.isDummy()) {
+                    return 0;
+                }
+                return -1;
+            }
+            if (n2.isDummy()) {
+                return 1;
+            }
+            return n1.getInDegree() - n2.getInDegree();
+        };
+
+        private static final Comparator<LayoutNode> nodeProcessingUpComparator = (n1, n2) -> {
+            if (n1.isDummy()) {
+                if (n2.isDummy()) {
+                    return 0;
+                }
+                return -1;
+            }
+            if (n2.isDummy()) {
+                return 1;
+            }
+            return n1.getOutDegree() - n2.getOutDegree();
+        };
+
+        public static void apply(LayoutGraph graph) {
+            space = new ArrayList[graph.getLayerCount()];
+            downProcessingOrder = new ArrayList[graph.getLayerCount()];
+            upProcessingOrder = new ArrayList[graph.getLayerCount()];
+
+            for (int i = 0; i < graph.getLayerCount(); i++) {
+                space[i] = new ArrayList<>();
+                downProcessingOrder[i] = new ArrayList<>();
+                upProcessingOrder[i] = new ArrayList<>();
+
+                int curX = 0;
+                for (LayoutNode n : graph.getLayer(i)) {
+                    space[i].add(curX);
+                    curX += n.getOuterWidth() + NODE_OFFSET;
+                    downProcessingOrder[i].add(n);
+                    upProcessingOrder[i].add(n);
+                }
+
+                downProcessingOrder[i].sort(nodeProcessingDownComparator);
+                upProcessingOrder[i].sort(nodeProcessingUpComparator);
+            }
+
+            for (LayoutNode n : graph.getLayoutNodes()) {
+                n.setX(space[n.getLayer()].get(n.getPos()));
+            }
+
+            for (LayoutNode n : graph.getDummyNodes()) {
+                n.setX(space[n.getLayer()].get(n.getPos()));
+            }
+
+            for (int i = 0; i < SWEEP_ITERATIONS; i++) {
+                sweepDown(graph);
+                adjustSpace(graph);
+                sweepUp(graph);
+                adjustSpace(graph);
+            }
+
+            sweepDown(graph);
+            adjustSpace(graph);
+            sweepUp(graph);
+        }
+
+        private static void adjustSpace(LayoutGraph graph) {
+            for (int i = 0; i < graph.getLayerCount(); i++) {
+                for (LayoutNode n : graph.getLayer(i)) {
+                    space[i].add(n.getX());
+                }
+            }
+        }
+
+        private static void sweepUp(LayoutGraph graph) {
+            for (int i = graph.getLayerCount() - 1; i >= 0; i--) {
+                NodeRow r = new NodeRow(space[i]);
+                for (LayoutNode n : upProcessingOrder[i]) {
+                    int optimal = n.calculateOptimalXFromSuccessors(true);
+                    r.insert(n, optimal);
+                }
+            }
+        }
+
+        private static void sweepDown(LayoutGraph graph) {
+            for (int i = 1; i < graph.getLayerCount(); i++) {
+                NodeRow r = new NodeRow(space[i]);
+                for (LayoutNode n : downProcessingOrder[i]) {
+                    int optimal = n.calculateOptimalXFromPredecessors(true);
+                    r.insert(n, optimal);
+                }
+            }
+        }
+    }
+
+    private static class NodeRow {
+
+        private final TreeSet<LayoutNode> treeSet;
+        private final ArrayList<Integer> space;
+
+        public NodeRow(ArrayList<Integer> space) {
+            treeSet = new TreeSet<>(NODE_POS_COMPARATOR);
+            this.space = space;
+        }
+
+        public int offset(LayoutNode n1, LayoutNode n2) {
+            int v1 = space.get(n1.getPos()) + n1.getOuterWidth();
+            int v2 = space.get(n2.getPos());
+            return v2 - v1;
+        }
+
+        public void insert(LayoutNode n, int pos) {
+
+            SortedSet<LayoutNode> headSet = treeSet.headSet(n);
+
+            LayoutNode leftNeighbor;
+            int minX = Integer.MIN_VALUE;
+            if (!headSet.isEmpty()) {
+                leftNeighbor = headSet.last();
+                minX = leftNeighbor.getOuterRight() + offset(leftNeighbor, n);
+            }
+
+            if (pos < minX) {
+                n.setX(minX);
+            } else {
+
+                LayoutNode rightNeighbor;
+                SortedSet<LayoutNode> tailSet = treeSet.tailSet(n);
+                int maxX = Integer.MAX_VALUE;
+                if (!tailSet.isEmpty()) {
+                    rightNeighbor = tailSet.first();
+                    maxX = rightNeighbor.getX() - offset(n, rightNeighbor) - n.getOuterWidth();
+                }
+
+                n.setX(Math.min(pos, maxX));
+            }
+
+            treeSet.add(n);
         }
     }
 
