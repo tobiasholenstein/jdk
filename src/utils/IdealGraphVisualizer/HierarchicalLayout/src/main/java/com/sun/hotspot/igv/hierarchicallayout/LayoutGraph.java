@@ -1247,7 +1247,7 @@ public class LayoutGraph {
         for (Map.Entry<Integer, List<LayoutEdge>> portToUnprocessedEdges : portsToUnprocessedEdges.entrySet()) {
             Integer startPort = portToUnprocessedEdges.getKey();
             List<LayoutEdge> unprocessedEdges = portToUnprocessedEdges.getValue();
-            unprocessedEdges.sort(LAYOUT_EDGE_LAYER_COMPARATOR);
+            unprocessedEdges.sort(Comparator.comparingInt(e -> e.getTo().getLayer()));
 
             if (unprocessedEdges.size() == 1) {
                 // process a single edge

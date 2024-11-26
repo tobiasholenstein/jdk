@@ -49,49 +49,6 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
         maxLayerLength = enable ? 10 : -1;
     }
 
-    public static void printLayoutGraphLayers(LayoutGraph layoutGraph, String name) {
-        System.out.print(name);
-        for (LayoutLayer layer : layoutGraph.getLayers()) {
-            for (LayoutNode node : layer) {
-                if (node.isDummy()) {
-                    System.out.print("|");
-                } else {
-                    System.out.print(node.getVertex().toString() + ",");
-                }
-            }
-        }
-        System.out.println();
-    }
-
-
-
-    public static void printLayoutGraphLayersHash(LayoutGraph layoutGraph, String name) {
-        System.out.print(name);
-        StringBuilder sb = new StringBuilder();
-        sb.append(name);
-        for (LayoutLayer layer : layoutGraph.getLayers()) {
-            for (LayoutNode node : layer) {
-                if (node.isDummy()) {
-                    sb.append("|");
-                } else {
-                    sb.append(node.getVertex().toString()).append(",");
-                }
-            }
-        }
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(sb.toString().getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hashBytes) {
-                hexString.append(String.format("%02x", b));
-            }
-            System.out.println(hexString);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
     @Override
     public void doLayout(LayoutGraph layoutGraph) {
         layoutGraph.initializeLayout();
@@ -401,7 +358,6 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
                 for (LayoutNode n : graph.getLayer(i)) {
                     for (LayoutEdge e : n.getSuccessors()) {
                         if (e.getTo().isDummy()) continue;
-                        System.out.print(e.getTo().getVertex());
                         if (!visited.contains(e.getTo())) {
                             visited.add(e.getTo());
                             graph.getLayer(i + 1).add(e.getTo());
@@ -410,7 +366,6 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
                     }
                 }
             }
-            System.out.println();
         }
 
         static public void apply(LayoutGraph graph, int maxLayerLength) {
