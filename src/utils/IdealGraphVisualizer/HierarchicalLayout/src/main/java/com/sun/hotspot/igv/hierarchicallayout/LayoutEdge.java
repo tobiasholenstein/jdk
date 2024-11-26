@@ -240,4 +240,14 @@ public class LayoutEdge {
     public void setLink(Link link) {
         this.link = link;
     }
+
+    private boolean visited = false;
+
+    public void setVisited(boolean b) {
+        visited = b;
+    }
+
+    public boolean isVisited() {
+        return visited;
+    }
 }

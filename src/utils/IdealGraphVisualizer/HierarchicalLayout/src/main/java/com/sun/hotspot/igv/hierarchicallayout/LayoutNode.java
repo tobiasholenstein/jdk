@@ -678,6 +678,16 @@ public class LayoutNode {
         }
     }
 
+    private boolean visited = false;
+
+    public void setVisited(boolean b) {
+        visited = b;
+    }
+
+    public boolean isVisited() {
+        return visited;
+    }
+
     /**
      * Enum to specify the type of neighbors to consider when computing the barycenter.
      */

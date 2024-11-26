@@ -1317,4 +1317,16 @@ public class LayoutGraph {
         createDummiesForNodePredecessor(node);
         updatePositions();
     }
+
+    public void resetVisited() {
+        for (LayoutNode node : getAllNodes()) {
+            node.setVisited(false);
+            for (LayoutEdge edge : node.getPredecessors()) {
+                edge.setVisited(false);
+            }
+            for (LayoutEdge edge : node.getSuccessors()) {
+                edge.setVisited(false);
+            }
+        }
+    }
 }
