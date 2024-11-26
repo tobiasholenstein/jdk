@@ -58,9 +58,7 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
         CrossingReduction.apply(layoutGraph);
 
         // STEP 4: Assign X coordinates
-        AssignXCoordinatesLegacy.apply(layoutGraph);
-
-        //AssignXCoordinates.apply(layoutGraph);
+        AssignXCoordinates.apply(layoutGraph);
 
         // STEP 5: Write back to interface
         WriteResult.apply(layoutGraph);
@@ -439,60 +437,102 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
         }
     }
 
+    static class CrossingReduction {
 
-    public static class CrossingReduction {
-
-        /**
-         * Applies the crossing reduction algorithm to the given graph.
-         *
-         * @param hierarchicalGraph the layout graph to optimize
-         */
-        public static void apply(LayoutGraph hierarchicalGraph) {
-            hierarchicalGraph.updateSpacings(true);
-
-            for (int i = 0; i < CROSSING_ITERATIONS; i++) {
-                sweep(hierarchicalGraph, true);  // Downwards sweep
-                sweep(hierarchicalGraph, false); // Upwards sweep
+        public static void apply(LayoutGraph graph) {
+            for (int i = 0; i < graph.getLayerCount(); i++) {
+                graph.getLayer(i).updateNodeIndices();
+                graph.getLayer(i).initXPositions();
             }
 
-            for (LayoutLayer layer : hierarchicalGraph.getLayers()) {
-                layer.sort(NODE_X_COMPARATOR);
-                layer.updateMinXSpacing(true);
-                layer.updateNodeIndices();
+            // Optimize
+            for (int i = 0; i < 2; i++) {
+                downSweep(graph);
+                upSweep(graph);
+            }
+            downSweep(graph);
+        }
+
+        private static void downSweep(LayoutGraph graph) {
+
+            for (int i = 1; i < graph.getLayerCount(); i++) {
+                for (LayoutNode n : graph.getLayer(i)) {
+                    n.setCrossingNumber(0);
+                }
+                for (LayoutNode n : graph.getLayer(i)) {
+                    int sum = 0;
+                    int count = 0;
+                    for (LayoutEdge e : n.getPredecessors()) {
+                        sum += e.getStartX();
+                        count++;
+                    }
+
+                    if (count > 0) {
+                        sum /= count;
+                        n.setCrossingNumber(sum);
+                    }
+                }
+                updateCrossingNumbers(graph.getLayer(i), true);
+                graph.getLayer(i).sort(NODE_CROSSING_COMPARATOR);
+                graph.getLayer(i).initXPositions();
+                graph.getLayer(i).updateNodeIndices();
             }
         }
 
-        /**
-         * Performs a sweep over the layers to reorder nodes and reduce crossings.
-         *
-         * @param hierarchicalGraph the layout graph
-         * @param downwards         direction of the sweep
-         */
-        private static void sweep(LayoutGraph hierarchicalGraph, boolean downwards) {
-            List<LayoutLayer> layers = hierarchicalGraph.getLayers();
-
-            if (downwards) {
-                // Process layers from top to bottom
-                for (int i = 1; i < layers.size(); i++) {
-                    LayoutLayer layer = layers.get(i);
-                    layer.orderByBarycenters(NeighborType.PREDECESSORS);
-                    layer.reduceCrossings(NeighborType.PREDECESSORS);
+        private static void updateCrossingNumbers(LayoutLayer layer, boolean down) {
+            for (int i = 0; i < layer.size(); i++) {
+                LayoutNode n = layer.get(i);
+                LayoutNode prev = null;
+                if (i > 0) {
+                    prev = layer.get(i - 1);
                 }
-            } else {
-                // Process layers from bottom to top
-                for (int i = layers.size() - 2; i >= 0; i--) {
-                    LayoutLayer layer = layers.get(i);
-                    layer.orderByBarycenters(NeighborType.SUCCESSORS);
-                    layer.reduceCrossings(NeighborType.SUCCESSORS);
+                LayoutNode next = null;
+                if (i < layer.size() - 1) {
+                    next = layer.get(i + 1);
+                }
+                boolean cond = !n.hasSuccessors();
+                if (down) {
+                    cond = !n.hasPredecessors();
+                }
+                if (cond) {
+                    if (prev != null && next != null) {
+                        n.setCrossingNumber((prev.getCrossingNumber() + next.getCrossingNumber()) / 2);
+                    } else if (prev != null) {
+                        n.setCrossingNumber(prev.getCrossingNumber());
+                    } else if (next != null) {
+                        n.setCrossingNumber(next.getCrossingNumber());
+                    }
                 }
             }
-            for (LayoutLayer layer : layers) {
-                layer.updateMinXSpacing(false);
+        }
+
+        private static void upSweep(LayoutGraph graph) {
+            for (int i = graph.getLayerCount() - 2; i >= 0; i--) {
+                for (LayoutNode n : graph.getLayer(i)) {
+                    n.setCrossingNumber(0);
+                }
+                for (LayoutNode n : graph.getLayer(i)) {
+                    int count = 0;
+                    int sum = 0;
+                    for (LayoutEdge e : n.getSuccessors()) {
+                        sum += e.getEndX();
+                        count++;
+                    }
+                    if (count > 0) {
+                        sum /= count;
+                        n.setCrossingNumber(sum);
+                    }
+
+                }
+                updateCrossingNumbers(graph.getLayer(i), false);
+                graph.getLayer(i).sort(NODE_CROSSING_COMPARATOR);
+                graph.getLayer(i).initXPositions();
+                graph.getLayer(i).updateNodeIndices();
             }
         }
     }
 
-    private class AssignXCoordinatesLegacy {
+    static class AssignXCoordinates {
 
         private static ArrayList<Integer>[] space;
         private static ArrayList<LayoutNode>[] downProcessingOrder;
@@ -641,115 +681,6 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
         }
     }
 
-    public static class AssignXCoordinates {
-
-        static public void apply(LayoutGraph graph) {
-
-            for (LayoutLayer layer : graph.getLayers()) {
-                layer.initXPositions();
-            }
-            for (int k = 0; k < SWEEP_ITERATIONS; k++) {
-
-                for (int i = graph.getLayerCount() - 2; i >= 0; i--) {
-                    LayoutLayer layer = graph.getLayer(i);
-                    processLayerUp(layer);
-                }
-                shiftToZero(graph);
-
-                for (int i = 0; i < graph.getLayerCount(); i++) {
-                    LayoutLayer layer = graph.getLayer(i);
-                    processLayerDown(layer);
-                }
-                shiftToZero(graph);
-
-                optimizeByNeighborhood(graph);
-                shiftToZero(graph);
-
-
-            }
-            for (int i = graph.getLayerCount() - 2; i >= 0; i--) {
-                LayoutLayer layer = graph.getLayer(i);
-                processLayerUp(layer);
-            }
-            shiftToZero(graph);
-            graph.optimizeBackEdgeCrossings();
-            graph.straightenEdges();
-        }
-
-        static private void optimizeByNeighborhood(LayoutGraph graph) {
-            List<LayoutNode> processNodes = new ArrayList<>(graph.getLayoutNodes());
-            for (LayoutNode layoutNode : processNodes) {
-                layoutNode.setOptimalX(layoutNode.calculateOptimalXFromNeighbors());
-            }
-            processNodes.sort(NODES_OPTIMAL_DIFFERENCE);
-            for (LayoutNode layoutNode : processNodes) {
-                layoutNode.setX(layoutNode.calculateOptimalXFromNeighbors());
-                graph.getLayer(layoutNode.getLayer()).updateMinXSpacing(false);
-            }
-        }
-
-        static private void shiftToZero(LayoutGraph graph) {
-            int minX = Integer.MAX_VALUE;
-            List<LayoutNode> allNodes = graph.getAllNodes();
-            Set<LayoutNode> uniqueNodes = new LinkedHashSet<>(allNodes);
-            assert uniqueNodes.size() == allNodes.size();
-            for (LayoutNode node : allNodes) {
-                minX = Math.min(node.getX(), minX);
-            }
-            if (0 < minX && minX < Integer.MAX_VALUE) {
-                for (LayoutNode node : allNodes) {
-                    node.shiftX(-minX);
-                }
-            }
-        }
-
-        static private void processLayerUp(LayoutLayer layer) {
-            layer.sort(NODE_PRIORITY.thenComparing(DUMMY_NODES_FIRST).thenComparingInt(LayoutNode::getInDegree));
-            ArrayList<LayoutNode> leaves = new ArrayList<>();
-            for (LayoutNode node : layer) {
-                int optimalX = Integer.MAX_VALUE;
-                if (node.hasSuccessors()) {
-                    optimalX = node.calculateOptimalXFromSuccessors(true);
-                } else {
-                    leaves.add(node);
-                }
-                node.setX(optimalX);
-            }
-            layer.sort(NODE_X_COMPARATOR);
-            layer.updateMinXSpacing(false);
-            for (LayoutNode leaf : leaves) {
-                int leafWidth = leaf.getOuterWidth() + 2 * NODE_OFFSET;
-                int prevRight = 0;
-                for (LayoutNode node : layer) {
-                    int currLeft = node.getOuterLeft();
-                    if (prevRight + leafWidth <= currLeft) {
-                        int x = prevRight + NODE_OFFSET;
-                        leaf.setX(x);
-                        break;
-                    }
-                    prevRight = node.getOuterRight();
-                }
-                layer.sort(NODE_X_COMPARATOR);
-            }
-        }
-
-        static private void processLayerDown(LayoutLayer layer) {
-            for (LayoutNode node : layer) {
-                if (node.isDummy()) {
-                    node.setX(node.calculateOptimalXFromPredecessors(true));
-                } else if (!node.hasSuccessors()) {
-                    node.setX(node.calculateOptimalXFromPredecessors(false));
-                } else if (!node.hasPredecessors()) {
-                    node.setX(node.calculateOptimalXFromSuccessors(false));
-                } else {
-                    node.setX(node.calculateOptimalXFromNeighbors());
-                }
-            }
-            layer.sort(NODE_X_COMPARATOR);
-            layer.updateMinXSpacing(false);
-        }
-
-    }
 
     public static class WriteResult {
 

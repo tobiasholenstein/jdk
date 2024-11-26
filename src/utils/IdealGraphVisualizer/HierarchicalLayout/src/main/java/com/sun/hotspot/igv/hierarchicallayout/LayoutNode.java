@@ -45,6 +45,8 @@ public class LayoutNode {
     public static final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
     public static final Comparator<LayoutNode> NODES_OPTIMAL_X = Comparator.comparingInt(LayoutNode::getOptimalX);
     public static final Comparator<LayoutNode> NODES_OPTIMAL_DIFFERENCE = Comparator.comparingInt(LayoutNode::getOptimalDifference).reversed();
+    public static final Comparator<LayoutNode> NODE_CROSSING_COMPARATOR = Comparator.comparingInt(LayoutNode::getCrossingNumber);
+
 
     // Default dimensions for dummy nodes
     public static final int DUMMY_HEIGHT = 1;
@@ -67,6 +69,8 @@ public class LayoutNode {
     private int leftMargin;
     private int pos = -1; // Position within its layer
     private boolean reverseLeft = false;
+    private int crossingNumber = 0;
+
 
     /**
      * Constructs a LayoutNode associated with the given Vertex.
@@ -104,6 +108,14 @@ public class LayoutNode {
         bottomMargin = 0;
         leftMargin = 0;
         rightMargin = 0;
+    }
+
+    public int getCrossingNumber() {
+        return crossingNumber;
+    }
+
+    public void setCrossingNumber(int crossingNumber) {
+        this.crossingNumber = crossingNumber;
     }
 
     public int getPriority() {
