@@ -471,9 +471,9 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
 
     static class AssignXCoordinates {
 
-        private static ArrayList<Integer>[] space;
-        private static ArrayList<LayoutNode>[] downProcessingOrder;
-        private static ArrayList<LayoutNode>[] upProcessingOrder;
+        private static List<ArrayList<Integer>> space;
+        private static List<ArrayList<LayoutNode>> downProcessingOrder;
+        private static List<ArrayList<LayoutNode>> upProcessingOrder;
 
         private static final Comparator<LayoutNode> nodeProcessingDownComparator = (n1, n2) -> {
             if (n1.isDummy()) {
@@ -502,33 +502,38 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
         };
 
         public static void apply(LayoutGraph graph) {
-            space = new ArrayList[graph.getLayerCount()];
-            downProcessingOrder = new ArrayList[graph.getLayerCount()];
-            upProcessingOrder = new ArrayList[graph.getLayerCount()];
+            space = new ArrayList<>(graph.getLayerCount());
+            downProcessingOrder = new ArrayList<>(graph.getLayerCount());
+            upProcessingOrder = new ArrayList<>(graph.getLayerCount());
 
             for (int i = 0; i < graph.getLayerCount(); i++) {
-                space[i] = new ArrayList<>();
-                downProcessingOrder[i] = new ArrayList<>();
-                upProcessingOrder[i] = new ArrayList<>();
+                // Add a new empty list for each layer
+                space.add(new ArrayList<>());
+                downProcessingOrder.add(new ArrayList<>());
+                upProcessingOrder.add(new ArrayList<>());
 
                 int curX = 0;
                 for (LayoutNode n : graph.getLayer(i)) {
-                    space[i].add(curX);
+                    // Add the current position to space and increment curX
+                    space.get(i).add(curX);
                     curX += n.getOuterWidth() + NODE_OFFSET;
-                    downProcessingOrder[i].add(n);
-                    upProcessingOrder[i].add(n);
+
+                    // Add the current node to processing orders
+                    downProcessingOrder.get(i).add(n);
+                    upProcessingOrder.get(i).add(n);
                 }
 
-                downProcessingOrder[i].sort(nodeProcessingDownComparator);
-                upProcessingOrder[i].sort(nodeProcessingUpComparator);
+                // Sort the processing orders
+                downProcessingOrder.get(i).sort(nodeProcessingDownComparator);
+                upProcessingOrder.get(i).sort(nodeProcessingUpComparator);
             }
 
             for (LayoutNode n : graph.getLayoutNodes()) {
-                n.setX(space[n.getLayer()].get(n.getPos()));
+                n.setX(space.get(n.getLayer()).get(n.getPos()));
             }
 
             for (LayoutNode n : graph.getDummyNodes()) {
-                n.setX(space[n.getLayer()].get(n.getPos()));
+                n.setX(space.get(n.getLayer()).get(n.getPos()));
             }
 
             for (int i = 0; i < SWEEP_ITERATIONS; i++) {
@@ -546,15 +551,15 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
         private static void adjustSpace(LayoutGraph graph) {
             for (int i = 0; i < graph.getLayerCount(); i++) {
                 for (LayoutNode n : graph.getLayer(i)) {
-                    space[i].add(n.getX());
+                    space.get(i).add(n.getX());
                 }
             }
         }
 
         private static void sweepUp(LayoutGraph graph) {
             for (int i = graph.getLayerCount() - 1; i >= 0; i--) {
-                NodeRow r = new NodeRow(space[i]);
-                for (LayoutNode n : upProcessingOrder[i]) {
+                NodeRow r = new NodeRow(space.get(i));
+                for (LayoutNode n : upProcessingOrder.get(i)) {
                     int optimal = n.calculateOptimalXFromSuccessors(true);
                     r.insert(n, optimal);
                 }
@@ -563,8 +568,8 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
 
         private static void sweepDown(LayoutGraph graph) {
             for (int i = 1; i < graph.getLayerCount(); i++) {
-                NodeRow r = new NodeRow(space[i]);
-                for (LayoutNode n : downProcessingOrder[i]) {
+                NodeRow r = new NodeRow(space.get(i));
+                for (LayoutNode n : downProcessingOrder.get(i)) {
                     int optimal = n.calculateOptimalXFromPredecessors(true);
                     r.insert(n, optimal);
                 }
