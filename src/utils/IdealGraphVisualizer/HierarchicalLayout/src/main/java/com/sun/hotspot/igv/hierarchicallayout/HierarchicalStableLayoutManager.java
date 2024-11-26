@@ -122,20 +122,11 @@ public class HierarchicalStableLayoutManager extends LayoutManager implements La
             HierarchicalLayoutManager.WriteResult.apply(graph);
         }
 
-        for (Vertex vertex : graph.getVertices()){
-            assert graph.hasLayoutNode(vertex);
-        }
-
-        for (LayoutNode node : graph.getLayoutNodes()){
-            assert node.getVertex() != null;
-            assert graph.containsVertex(node.getVertex());
-        }
-
         this.prevGraph = graph;
     }
 
     public void updateLayout(LayoutGraph graph) {
-        HashSet<LayoutNode> newLayoutNode = new HashSet<>();
+        HashSet<Vertex> addedVertices = new HashSet<>();
 
         // Reset layout structures
         graph.clearLayout();
@@ -145,52 +136,28 @@ public class HierarchicalStableLayoutManager extends LayoutManager implements La
 
         // Set up layout nodes for each vertex
         for (Vertex vertex : graph.getVertices()) {
-            LayoutNode newNode = graph.createLayoutNode(vertex);
             if (prevGraph.hasLayoutNode(vertex)) {
+                LayoutNode newNode = graph.createLayoutNode(vertex);
                 LayoutNode prevNode = prevGraph.getLayoutNode(vertex);
                 newNode.setPos(prevNode.getPos());
                 newNode.setX(prevNode.getX());
                 newNode.setY(prevNode.getY());
                 graph.addNodeToLayer(newNode, prevNode.getLayer());
             } else {
-                newLayoutNode.add(newNode);
+                addedVertices.add(vertex);
             }
         }
+
+       // the nodes in newLayoutNode, don't have a layer or x yet
 
         // Set up layout edges in a sorted order for reproducibility
         List<Link> sortedLinks = new ArrayList<>(graph.getLinks());
         sortedLinks.sort(LINK_COMPARATOR);
         for (Link link : sortedLinks) {
-            graph.createLayoutEdge(link);
+            //graph.createLayoutEdge(link);
         }
 
-        HierarchicalLayoutManager.ReverseEdges.apply(graph);
-
-        HierarchicalLayoutManager.LayerManager.apply(graph, maxLayerLength);
-
-        graph.removeEmptyLayers();
-
-        HashSet<LayoutNode> roots = new HashSet<>();
-        // TODO: move all roots down
-        for (LayoutNode node : graph.getLayoutNodes()) {
-            if (!node.hasPredecessors()) {
-                if (canMoveNodeDown(node)) {
-                    //moveNodeDown(graph, node);
-                }
-            }
-        }
-
-        HashSet<LayoutNode> leaves = new HashSet<>();
-        // TODO: move all leaves dow
-
-
-        graph.removeEmptyLayers();
-
-        // STEP 3: Crossing Reduction
-        HierarchicalLayoutManager.CrossingReduction.apply(graph);
-
-        // STEP 4: Assign X coordinates
-        HierarchicalLayoutManager.AssignXCoordinates.apply(graph);
+        //HierarchicalLayoutManager.ReverseEdges.apply(graph);
     }
 
     private boolean canMoveNodeUp(LayoutNode node) {
