@@ -38,13 +38,9 @@ import java.util.*;
 public class LayoutNode {
 
     // Comparator constants for sorting LayoutNodes in various ways
-    public static final Comparator<LayoutNode> NODE_PRIORITY = Comparator.comparingInt(LayoutNode::getPriority).reversed();
     public static final Comparator<LayoutNode> LAYOUT_NODE_DEGREE_COMPARATOR = Comparator.comparingInt(LayoutNode::getDegree);
     public static final Comparator<LayoutNode> NODE_POS_COMPARATOR = Comparator.comparingInt(LayoutNode::getPos);
     public static final Comparator<LayoutNode> NODE_X_COMPARATOR = Comparator.comparingInt(LayoutNode::getX);
-    public static final Comparator<LayoutNode> DUMMY_NODES_FIRST = Comparator.comparing(LayoutNode::isDummy).reversed();
-    public static final Comparator<LayoutNode> NODES_OPTIMAL_X = Comparator.comparingInt(LayoutNode::getOptimalX);
-    public static final Comparator<LayoutNode> NODES_OPTIMAL_DIFFERENCE = Comparator.comparingInt(LayoutNode::getOptimalDifference).reversed();
     public static final Comparator<LayoutNode> NODE_CROSSING_COMPARATOR = Comparator.comparingInt(LayoutNode::getCrossingNumber);
 
 
@@ -58,7 +54,6 @@ public class LayoutNode {
     private final HashMap<Link, List<Point>> reversedLinkEndPoints = new HashMap<>();   // End points of reversed edges
     // Layout properties
     private int layer = -1;
-    private int optimal_x;
     private int x;
     private int y;
     private int width;
@@ -116,14 +111,6 @@ public class LayoutNode {
 
     public void setCrossingNumber(int crossingNumber) {
         this.crossingNumber = crossingNumber;
-    }
-
-    public int getPriority() {
-        if (vertex == null) {
-            return 0;
-        } else {
-            return vertex.getPriority();
-        }
     }
 
     public int calculateOptimalXFromPredecessors(boolean useMedian) {
@@ -229,48 +216,6 @@ public class LayoutNode {
     }
 
     /**
-     * Computes the barycenter (average x-coordinate) of this node based on its neighboring nodes.
-     * The calculation can include predecessors, successors, or both, depending on the specified
-     * neighbor type. Optionally, the positions can be weighted by the degree (number of connections)
-     * of each neighboring node.
-     *
-     * @param neighborType Specifies which neighbors to include in the calculation:
-     *                     - PREDECESSORS: Include only predecessor nodes.
-     *                     - SUCCESSORS: Include only successor nodes.
-     *                     - BOTH: Include both predecessors and successors.
-     * @param weighted     If true, weights each neighbor's x-coordinate by its degree;
-     *                     if false, all neighbors are weighted equally (weight of 1).
-     * @return The computed barycenter x-coordinate. Returns 0 if there are no neighbors.
-     */
-    public int computeBarycenterX(NeighborType neighborType, boolean weighted) {
-        int totalWeightedPosition = 0;
-        int totalWeight = 0;
-
-        // Include predecessors if specified
-        if (neighborType == NeighborType.PREDECESSORS || neighborType == NeighborType.BOTH) {
-            for (LayoutEdge predEdge : preds) {
-                LayoutNode predNode = predEdge.getFrom();
-                int weight = weighted ? predNode.getDegree() : 1;
-                totalWeightedPosition += weight * predEdge.getStartX();
-                totalWeight += weight;
-            }
-        }
-
-        // Include successors if specified
-        if (neighborType == NeighborType.SUCCESSORS || neighborType == NeighborType.BOTH) {
-            for (LayoutEdge succEdge : succs) {
-                LayoutNode succNode = succEdge.getTo();
-                int weight = weighted ? succNode.getDegree() : 1;
-                totalWeightedPosition += weight * succEdge.getEndX();
-                totalWeight += weight;
-            }
-        }
-
-        // Calculate the (weighted) average position for the node based on neighbor positions and weights (degree)
-        return totalWeight > 0 ? totalWeightedPosition / totalWeight : 0;
-    }
-
-    /**
      * Gets the left boundary (excluding left margin) of the node.
      *
      * @return The x-coordinate of the left boundary.
@@ -373,33 +318,12 @@ public class LayoutNode {
         }
     }
 
-    public int getOptimalX() {
-        return optimal_x;
-    }
-
-    public void setOptimalX(int optimal_x) {
-        this.optimal_x = optimal_x;
-    }
-
     public int getX() {
         return x;
     }
 
     public void setX(int x) {
         this.x = x;
-    }
-
-    /**
-     * Calculates the absolute difference between the optimal X position and the current X position.
-     *
-     * @return The absolute difference as an integer.
-     */
-    public int getOptimalDifference() {
-        return Math.abs(getOptimalX() - getX());
-    }
-
-    public void shiftX(int shift) {
-        this.x += shift;
     }
 
     public int getY() {
@@ -430,21 +354,6 @@ public class LayoutNode {
         int offset = Math.max(topMargin, bottomMargin);
         topMargin = offset;
         bottomMargin = offset;
-    }
-
-    public List<Integer> getAdjacentX(NeighborType neighborType) {
-        List<Integer> adjacentX = new ArrayList<>();
-        if (neighborType == NeighborType.PREDECESSORS || neighborType == NeighborType.BOTH) {
-            for (LayoutEdge predEdge : preds) {
-                adjacentX.add(predEdge.getFromX());
-            }
-        }
-        if (neighborType == NeighborType.SUCCESSORS || neighborType == NeighborType.BOTH) {
-            for (LayoutEdge succEdge : succs) {
-                adjacentX.add(succEdge.getToX());
-            }
-        }
-        return adjacentX;
     }
 
     public Vertex getVertex() {
@@ -487,7 +396,6 @@ public class LayoutNode {
         return preds;
     }
 
-
     public void addSuccessor(LayoutEdge successor) {
         succs.add(successor);
     }
@@ -502,24 +410,6 @@ public class LayoutNode {
 
     public void removePredecessor(LayoutEdge predecessor) {
         preds.remove(predecessor);
-    }
-
-    /**
-     * Determines if the node has neighbors of the specified type.
-     *
-     * @param neighborType the type of neighbors to check for (PREDECESSORS, SUCCESSORS, or BOTH)
-     * @return {@code true} if the node has neighbors of the specified type; {@code false} otherwise
-     */
-    public boolean hasNeighborsOfType(NeighborType neighborType) {
-        if (neighborType.equals(NeighborType.PREDECESSORS)) {
-            return hasPredecessors();
-        } else if (neighborType.equals(NeighborType.SUCCESSORS)) {
-            return hasSuccessors();
-        } else if (neighborType.equals(NeighborType.BOTH)) {
-            return hasPredecessors() || hasSuccessors();
-        } else {
-            return false;
-        }
     }
 
     public Map<Link, List<Point>> getReversedLinkStartPoints() {
@@ -685,24 +575,5 @@ public class LayoutNode {
         if (orig_score > reverse_score) {
             computeReversedLinkPoints(isReverseRight());
         }
-    }
-
-    private boolean visited = false;
-
-    public void setVisited(boolean b) {
-        visited = b;
-    }
-
-    public boolean isVisited() {
-        return visited;
-    }
-
-    /**
-     * Enum to specify the type of neighbors to consider when computing the barycenter.
-     */
-    public enum NeighborType {
-        PREDECESSORS,
-        SUCCESSORS,
-        BOTH
     }
 }

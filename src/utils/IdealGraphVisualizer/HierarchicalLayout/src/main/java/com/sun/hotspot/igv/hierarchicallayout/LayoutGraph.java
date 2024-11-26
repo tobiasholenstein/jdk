@@ -23,7 +23,6 @@
  */
 package com.sun.hotspot.igv.hierarchicallayout;
 
-import static com.sun.hotspot.igv.hierarchicallayout.LayoutEdge.LAYOUT_EDGE_LAYER_COMPARATOR;
 import static com.sun.hotspot.igv.hierarchicallayout.LayoutNode.NODE_POS_COMPARATOR;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Port;
@@ -129,34 +128,6 @@ public class LayoutGraph {
     }
 
     /**
-     * Adds a new link to the graph between EXISTING vertices.
-     *
-     * @param link The Link to be added.
-     */
-    public void addLink(Link link) {
-        assert !links.contains(link) : "Link already exists in the graph";
-
-        Port fromPort = link.getFrom();
-        Port toPort = link.getTo();
-        Vertex fromVertex = fromPort.getVertex();
-        Vertex toVertex = toPort.getVertex();
-
-        // Ensure vertices exist
-        assert vertices.contains(fromVertex) && vertices.contains(toVertex) : "Both vertices must exist in the graph to add a link.";
-
-        // Add to links set
-        links.add(link);
-
-        // Update portLinks
-        portLinks.computeIfAbsent(fromPort, k -> new HashSet<>()).add(link);
-        portLinks.computeIfAbsent(toPort, k -> new HashSet<>()).add(link);
-
-        // Update inputPorts and outputPorts
-        outputPorts.computeIfAbsent(fromVertex, k -> new HashSet<>()).add(fromPort);
-        inputPorts.computeIfAbsent(toVertex, k -> new HashSet<>()).add(toPort);
-    }
-
-    /**
      * Removes a link from the graph.
      *
      * @param link The Link to be removed.
@@ -210,22 +181,6 @@ public class LayoutGraph {
 
         // Remove corresponding LayoutEdge
         removeEdge(link);
-    }
-
-    /**
-     * Adds a new vertex to the graph, creates a LayoutNode
-     *
-     * @param vertex The Vertex to be added.
-     */
-    public void addVertex(Vertex vertex) {
-        assert !vertices.contains(vertex) : "Vertex already exists in the graph";
-
-        // Add to vertices set
-        vertices.add(vertex);
-
-        // Initialize ports
-        inputPorts.put(vertex, new HashSet<>());
-        outputPorts.put(vertex, new HashSet<>());
     }
 
     /**
@@ -327,7 +282,6 @@ public class LayoutGraph {
         }
     }
 
-
     /**
      * Ensures that no neighboring nodes of the specified node are in the same layer.
      * If any neighbor is found in the specified layer, inserts a new layer to avoid conflicts.
@@ -427,10 +381,6 @@ public class LayoutGraph {
         return layoutNodes.get(vertex);
     }
 
-    public boolean hasLayoutNode(Vertex vertex) {
-        return layoutNodes.containsKey(vertex);
-    }
-
     /**
      * Adds a LayoutNode to the specified layer and registers it in the graph.
      *
@@ -466,19 +416,6 @@ public class LayoutGraph {
     public void updatePositions() {
         for (LayoutLayer layer : layers) {
             layer.updateNodeIndices();
-        }
-    }
-
-    /**
-     * Adjusts the X-coordinates of all nodes in each layer to ensure minimum spacing between them.
-     * This method should be called after changes to node positions, node sizes, or layer compositions
-     * that may affect node spacing.
-     *
-     * @param startFromZero if true, starts positioning from X = 0; otherwise, uses the first node's current X.
-     */
-    public void updateSpacings(boolean startFromZero) {
-        for (LayoutLayer layer : layers) {
-            layer.updateMinXSpacing(startFromZero);
         }
     }
 
@@ -758,21 +695,6 @@ public class LayoutGraph {
      */
     public LayoutLayer getLayer(int layerNr) {
         return layers.get(layerNr);
-    }
-
-    /**
-     * Checks if the specified layer number exists within the layers collection.
-     *
-     * @param layerNr The layer number to check (zero-based index).
-     * @return {@code true} if the layer exists; {@code false} otherwise.
-     */
-    public boolean hasLayer(int layerNr) {
-        if (layers == null || layers.isEmpty()) return false;
-        return layerNr >= 0 && layerNr < layers.size();
-    }
-
-    public boolean hasLayers() {
-        return layers != null && !layers.isEmpty();
     }
 
     /**
@@ -1316,17 +1238,5 @@ public class LayoutGraph {
         createDummiesForNodeSuccessor(node, maxLayerLength);
         createDummiesForNodePredecessor(node);
         updatePositions();
-    }
-
-    public void resetVisited() {
-        for (LayoutNode node : getAllNodes()) {
-            node.setVisited(false);
-            for (LayoutEdge edge : node.getPredecessors()) {
-                edge.setVisited(false);
-            }
-            for (LayoutEdge edge : node.getSuccessors()) {
-                edge.setVisited(false);
-            }
-        }
     }
 }

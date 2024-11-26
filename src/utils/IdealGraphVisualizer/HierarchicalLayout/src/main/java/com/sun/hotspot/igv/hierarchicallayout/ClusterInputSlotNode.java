@@ -113,11 +113,6 @@ public class ClusterInputSlotNode implements Vertex {
         return null;
     }
 
-    @Override
-    public int getPriority() {
-        return 1;
-    }
-
     public boolean isRoot() {
         return true;
     }

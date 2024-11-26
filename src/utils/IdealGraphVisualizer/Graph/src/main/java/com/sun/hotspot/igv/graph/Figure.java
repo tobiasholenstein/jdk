@@ -416,18 +416,6 @@ public class Figure extends Properties.Entity implements Vertex {
         return Objects.hash(getInputNode());
     }
 
-    @Override
-    public int getPriority() {
-        String category = getInputNode().getProperties().get("category");
-        if (category.equals("control")) {
-            return 2;
-        } else if (category.equals("mixed")) {
-            return 2;
-        } else {
-            return 1;
-        }
-    }
-
     public void setCustomColor(Color color) {
         inputNode.setCustomColor(color);
     }

@@ -25,7 +25,6 @@
 package com.sun.hotspot.igv.hierarchicallayout;
 
 import com.sun.hotspot.igv.layout.Link;
-import java.util.Comparator;
 
 /**
  * Represents an edge in the layout graph between two nodes (LayoutNode).
@@ -34,13 +33,6 @@ import java.util.Comparator;
  */
 public class LayoutEdge {
 
-    /**
-     * Comparator to sort LayoutEdges based on the layer of their target nodes.
-     */
-    public static final Comparator<LayoutEdge> LAYOUT_EDGE_LAYER_COMPARATOR = Comparator
-            .comparingInt((LayoutEdge e) -> e.getTo().getLayer()) // Primary: Layer of the target node
-            .thenComparingInt(e -> e.getFrom().getLayer())       // Secondary: Layer of the source node
-            .thenComparingInt(System::identityHashCode);  // Tertiary: Unique identifier (fallback)
     private Link link;
     private LayoutNode from;
     private LayoutNode to;
@@ -239,15 +231,5 @@ public class LayoutEdge {
 
     public void setLink(Link link) {
         this.link = link;
-    }
-
-    private boolean visited = false;
-
-    public void setVisited(boolean b) {
-        visited = b;
-    }
-
-    public boolean isVisited() {
-        return visited;
     }
 }

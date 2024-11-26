@@ -29,12 +29,6 @@ import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Point;
 import java.util.*;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.stream.Collectors;
-
-
 public class HierarchicalLayoutManager extends LayoutManager implements LayoutMover {
 
     int maxLayerLength;
@@ -389,8 +383,7 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
                 graph.getLayer(i).initXPositions();
             }
 
-            // Optimize
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < CROSSING_ITERATIONS; i++) {
                 downSweep(graph);
                 upSweep(graph);
             }
@@ -624,7 +617,6 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
             treeSet.add(n);
         }
     }
-
 
     public static class WriteResult {
 

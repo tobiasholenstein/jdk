@@ -23,6 +23,8 @@
  */
 package com.sun.hotspot.igv.hierarchicallayout;
 
+import static com.sun.hotspot.igv.hierarchicallayout.LayoutManager.LAYER_OFFSET;
+import static com.sun.hotspot.igv.hierarchicallayout.LayoutManager.NODE_OFFSET;
 import com.sun.hotspot.igv.layout.Link;
 import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Dimension;
@@ -31,10 +33,6 @@ import java.util.*;
 
 public class HierarchicalStableLayoutManager {
 
-    public static final int DUMMY_HEIGHT = 1;
-    public static final int DUMMY_WIDTH = 1;
-    public static final int X_OFFSET = 8;
-    public static final int LAYER_OFFSET = 8;
     // Algorithm global data structures
     private Set<? extends Vertex> currentVertices;
     private Set<? extends Link> currentLinks;
@@ -161,7 +159,7 @@ public class HierarchicalStableLayoutManager {
         int curX = 0;
         for (LayoutNode n : nodes) {
             space.add(curX);
-            curX += n.getOuterWidth() + X_OFFSET;
+            curX += n.getOuterWidth() + NODE_OFFSET;
             nodeProcessingOrder.add(n);
         }
 
