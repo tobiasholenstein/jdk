@@ -201,29 +201,6 @@ public class LayoutNode {
         }
     }
 
-    public int calculateOptimalXFromNeighbors() {
-        int num = succs.size() + preds.size();
-        if (num == 0) {
-            return getX();
-        }
-
-        List<Integer> positions = new ArrayList<>(num);
-        for (LayoutEdge edge : succs) {
-            positions.add(edge.getEndX() - edge.getRelativeFromX());
-        }
-        for (LayoutEdge edge : preds) {
-            positions.add(edge.getEndX() - edge.getRelativeFromX());
-        }
-
-        int sum = 0;
-        for (int pos : positions) {
-            sum += pos;
-        }
-        return sum / num;
-
-    }
-
-
     /**
      * Calculates the node's out-degree (number of outgoing edges).
      *

@@ -29,6 +29,11 @@ import com.sun.hotspot.igv.layout.Vertex;
 import java.awt.Point;
 import java.util.*;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.stream.Collectors;
+
 
 public class HierarchicalLayoutManager extends LayoutManager implements LayoutMover {
 
@@ -43,6 +48,49 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
     public void setCutEdges(boolean enable) {
         maxLayerLength = enable ? 10 : -1;
     }
+
+    public static void printLayoutGraphLayers(LayoutGraph layoutGraph, String name) {
+        System.out.print(name);
+        for (LayoutLayer layer : layoutGraph.getLayers()) {
+            for (LayoutNode node : layer) {
+                if (node.isDummy()) {
+                    System.out.print("|");
+                } else {
+                    System.out.print(node.getVertex().toString() + ",");
+                }
+            }
+        }
+        System.out.println();
+    }
+
+
+
+    public static void printLayoutGraphLayersHash(LayoutGraph layoutGraph, String name) {
+        System.out.print(name);
+        StringBuilder sb = new StringBuilder();
+        sb.append(name);
+        for (LayoutLayer layer : layoutGraph.getLayers()) {
+            for (LayoutNode node : layer) {
+                if (node.isDummy()) {
+                    sb.append("|");
+                } else {
+                    sb.append(node.getVertex().toString()).append(",");
+                }
+            }
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(sb.toString().getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                hexString.append(String.format("%02x", b));
+            }
+            System.out.println(hexString);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     @Override
     public void doLayout(LayoutGraph layoutGraph) {
@@ -353,6 +401,7 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
                 for (LayoutNode n : graph.getLayer(i)) {
                     for (LayoutEdge e : n.getSuccessors()) {
                         if (e.getTo().isDummy()) continue;
+                        System.out.print(e.getTo().getVertex());
                         if (!visited.contains(e.getTo())) {
                             visited.add(e.getTo());
                             graph.getLayer(i + 1).add(e.getTo());
@@ -361,77 +410,11 @@ public class HierarchicalLayoutManager extends LayoutManager implements LayoutMo
                     }
                 }
             }
+            System.out.println();
         }
 
         static public void apply(LayoutGraph graph, int maxLayerLength) {
-            int cntUnassigned = 0;
-            for (LayoutNode node : graph.getLayoutNodes()) {
-                if (node.getLayer() < 0) {
-                    cntUnassigned++;
-                }
-            }
             assignLayers(graph);
-
-            cntUnassigned = 0;
-            int maxLayer = 0;
-            for (LayoutNode node : graph.getLayoutNodes()) {
-                maxLayer = Math.max(maxLayer, node.getLayer());
-                if (node.getLayer() < 0) {
-                    cntUnassigned++;
-                }
-            }
-
-            graph.initLayers(maxLayer + 1);
-
-            Set<LayoutEdge> toReverse = new HashSet<>();
-            Set<LayoutEdge> sameLayerEdges = new HashSet<>();
-
-            for (LayoutNode node : graph.getLayoutNodes()) {
-                int currentLayer = node.getLayer();
-                for (LayoutEdge e : node.getSuccessors()) {
-                    int layerBelow = e.getTo().getLayer();
-                    if (layerBelow < currentLayer) {
-                        toReverse.add(e);
-                    } else if (layerBelow == currentLayer) {
-                        sameLayerEdges.add(e);
-                    }
-                }
-
-                for (LayoutEdge e : node.getPredecessors()) {
-                    int layerAbove = e.getFrom().getLayer();
-                    if (layerAbove > currentLayer) {
-                        toReverse.add(e);
-                    } else if (layerAbove == currentLayer) {
-                        sameLayerEdges.add(e);
-                    }
-                }
-            }
-
-            for (LayoutEdge e : toReverse) {
-                ReverseEdges.reverseEdge(e);
-            }
-
-            for (LayoutEdge e : sameLayerEdges) {
-                assert e.getLink() != null;
-                graph.removeEdge(e.getLink());
-            }
-
-            for (LayoutNode node : graph.getLayoutNodes()) {
-                int currentLayer = node.getLayer();
-                for (LayoutEdge e : node.getSuccessors()) {
-                    int layerBelow = e.getTo().getLayer();
-                    assert layerBelow != currentLayer;  // TODO: fails
-                    assert layerBelow > currentLayer;  // TODO: fails
-                }
-
-                for (LayoutEdge e : node.getPredecessors()) {
-                    int layerAbove = e.getFrom().getLayer();
-                    assert layerAbove != currentLayer;
-                    assert layerAbove < currentLayer;
-                }
-            }
-
-
             createDummyNodes(graph, maxLayerLength);
             graph.updatePositions();
         }
