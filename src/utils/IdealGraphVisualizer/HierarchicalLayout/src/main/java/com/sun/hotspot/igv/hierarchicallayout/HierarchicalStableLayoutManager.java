@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -318,7 +318,7 @@ public class HierarchicalStableLayoutManager {
         } else {
             generateActions();
 
-            new BuildDatastructure().run();
+            new BuildDatastructures().run();
 
             findInitialReversedLinks();
 
@@ -354,7 +354,7 @@ public class HierarchicalStableLayoutManager {
         }
     }
 
-    private class BuildDatastructure {
+    private class BuildDatastructures {
 
         // In case there are changes in the node size, its layer must be updated
         Set<Integer> layersToUpdate = new HashSet<>();
@@ -966,10 +966,7 @@ public class HierarchicalStableLayoutManager {
 
             if (toNode.getLayer() < fromNode.getLayer()) {
                 // Reversed edge
-                LayoutNode temp = toNode;
                 toNode = fromNode;
-                fromNode = temp;
-
                 reversedLinks.remove(l);
             }
 
