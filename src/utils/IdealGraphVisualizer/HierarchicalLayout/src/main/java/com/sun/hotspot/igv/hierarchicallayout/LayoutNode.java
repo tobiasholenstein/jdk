@@ -51,7 +51,7 @@ public class LayoutNode {
     // Default dimensions for dummy nodes
     public static final int DUMMY_HEIGHT = 1;
     public static final int DUMMY_WIDTH = 1;
-    private final Vertex vertex; // Associated graph vertex; null for dummy nodes
+    private Vertex vertex; // Associated graph vertex; null for dummy nodes
     private final List<LayoutEdge> preds = new ArrayList<>(); // Incoming edges
     private final List<LayoutEdge> succs = new ArrayList<>(); // Outgoing edges
     private final HashMap<Link, List<Point>> reversedLinkStartPoints = new HashMap<>(); // Start points of reversed edges
@@ -449,6 +449,10 @@ public class LayoutNode {
 
     public Vertex getVertex() {
         return vertex;
+    }
+
+    public void setVertex(Vertex vertex) {
+        this.vertex = vertex;
     }
 
     public boolean hasPredecessors() {

@@ -41,7 +41,7 @@ public class LayoutEdge {
             .comparingInt((LayoutEdge e) -> e.getTo().getLayer()) // Primary: Layer of the target node
             .thenComparingInt(e -> e.getFrom().getLayer())       // Secondary: Layer of the source node
             .thenComparingInt(System::identityHashCode);  // Tertiary: Unique identifier (fallback)
-    private final Link link;
+    private Link link;
     private LayoutNode from;
     private LayoutNode to;
     // Horizontal distance relative to the start of 'from' node.
@@ -235,5 +235,9 @@ public class LayoutEdge {
      */
     public Link getLink() {
         return link;
+    }
+
+    public void setLink(Link link) {
+        this.link = link;
     }
 }
